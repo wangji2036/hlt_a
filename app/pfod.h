@@ -1,0 +1,45 @@
+#ifndef PFOD_H_
+#define PFOD_H_
+
+enum prx_type_t {
+	EPRX_TYPE_UNKNOWN    = 0x00,
+	EPRX_TYPE_SAMSUNG    = 0x01,
+	EPRX_TYPE_APPLE_STD  = 0x02,
+	EPRX_TYPE_APPLE_MAG  = 0x03,
+	EPRX_TYPE_XIAOMI_BPP = 0x04,
+	EPRX_TYPE_XIAOMI_EPP = 0x05,
+	EPRX_TYPE_NUVOLTA    = 0x06,
+	EPRX_TYPE_HUAWEI     = 0x07,
+	EPRX_TYPE_MEIZU      = 0x08,
+	EPRX_TYPE_GOOGLE     = 0x09,
+	ERX_TYPE_APPLE_MPP,
+	ERX_TYPE_NVT_MPP,
+	ERX_TYPE_NOK9_MPP_SGS,
+	ERX_TYPE_NOK9_MPP_HONK,
+	ERX_TYPE_NOK9_MPP_MICRO,
+	ERX_TYPE_GRL_MPP,
+	ERX_TYPE_YBZ_MPP_FIXTURE,
+};
+
+enum pfod_evnt_t {
+	EXFER_FOD_EVENT_NONE                 = 0x00,
+	EXFER_FOD_EVENT_NOK9_BPP_FOD_DISABLE = 0x01,
+	EXFER_FOD_EVENT_NOK9_EPP_FOD_DISABLE = 0x02,
+	EXFER_FOD_EVENT_NOK9_BPP_FOD_TPR_XXX = 0x03,
+	EXFER_FOD_EVENT_NOK9_EPP_FOD_TPR_XX7 = 0x04,
+	EXFER_FOD_EVENT_NOK9_EPP_FOD_TPR_MP3 = 0x05,
+};
+
+void pfod_init(void);
+uint8_t pfod_common(void);
+
+void pfod_mpla_init(void);
+uint8_t pfod_mpla(void);
+
+void pfod_dploss_init(void);
+void pfod_dploss_cal(void);
+uint8_t pfod_dploss_cal_cmt(uint16_t *alpha, uint16_t *beta);
+uint8_t pfod_dploss(void);
+void pfod_log_print(void);
+
+#endif /* PFOD_H_ */

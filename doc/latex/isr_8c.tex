@@ -1,0 +1,67 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/isr.c File Reference}
+\label{isr_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/isr.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/isr.c}}
+
+
+Interrupt service routine(\+ISR) is called by the processor when an interrupt occurs.~\newline
+ This file provides firmware functions to manage the following ~\newline
+  
+
+
+{\ttfamily \#include "{}typdef.\+h"{}}\newline
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}printk.\+h"{}}\newline
+{\ttfamily \#include "{}delay.\+h"{}}\newline
+{\ttfamily \#include "{}tcpc.\+h"{}}\newline
+{\ttfamily \#include "{}isr.\+h"{}}\newline
+
+
+\doxysubsection{Detailed Description}
+Interrupt service routine(\+ISR) is called by the processor when an interrupt occurs.~\newline
+ This file provides firmware functions to manage the following ~\newline
+ 
+
+
+\begin{DoxyItemize}
+\item deafaul\+\_\+\+IRQHandler() -\/ default ~\newline
+
+\end{DoxyItemize}
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech.~\newline
+ All rights reserved.~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### Interrupt Service Routine Features #####
+==============================================================================
+[..] 
+The ISR has the following features:
+(+) defaul_IRQHandler() - default ISR handler for unhandled(issues like NMI, HardFault, etc) interrupt vectors.
+(+) USBPD_IRQHandler() - USBPD interrupt handler.
+(+) UFCS_IRQHandler() - UFCS interrupt handler.
+(+) DPDM_SINK_IRQHandler() - DPDM SINK interrupt handler.
+(+) DCP_HVDCP_IRQHandler() - DCP HVDCP interrupt handler.
+(+) QC_SRC_IRQHandler() - QC SRC interrupt handler.
+(+) AFC_SCP_SRC_IRQHandler() - AFC SCP SRC interrupt handler.
+(+) TCPC_IRQHandler() - TCPC interrupt handler.
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+  (#) When an interrupt occurs, the corresponding ISR is called by the processor.
+  (#) The ISR handler should be implemented in the corresponding file (isr.c) and 
+    should be declared as an ISR using the __attribute__((isr)) keyword.
+  (#) The ISR handler should be defined as void __attribute__((isr)) ISR_Handler(void) 
+    and should be placed in the interrupt vector table (IVT).
+  (#) The ISR handler should call the corresponding function to handle the interrupt.
+  (#) The ISR handler should not return any value.
+    (#) When an abnormal issue(like NMI, HardFault, stack overflow, etc) occurs, 
+    the system will go to default_IRQHandler() to handle the interrupt.\end{DoxyVerb}
+ 

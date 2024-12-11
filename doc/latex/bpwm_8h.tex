@@ -1,0 +1,91 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/bpwm.h File Reference}
+\label{bpwm_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/bpwm.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/bpwm.h}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+bpwm\+\_\+start} (\textbf{ TS\+\_\+\+BPWM} $\ast$bpwm, uint16\+\_\+t perd\+\_\+cycle, uint16\+\_\+t duty\+\_\+cycle)
+\begin{DoxyCompactList}\small\item\em Initializes the BPWM peripheral according to the specified parameters $\ast$ in the bpwm. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+bpwm\+\_\+update} (\textbf{ TS\+\_\+\+BPWM} $\ast$bpwm, uint16\+\_\+t perd\+\_\+cycle, uint16\+\_\+t duty\+\_\+cycle)
+\begin{DoxyCompactList}\small\item\em Updates the BPWM settings for the specified period and duty cycle. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+bpwm\+\_\+stop} (\textbf{ TS\+\_\+\+BPWM} $\ast$bpwm)
+\begin{DoxyCompactList}\small\item\em Stops the BPWM operation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\index{bpwm.h@{bpwm.h}!hal\_bpwm\_start@{hal\_bpwm\_start}}
+\index{hal\_bpwm\_start@{hal\_bpwm\_start}!bpwm.h@{bpwm.h}}
+\doxysubsubsection{hal\_bpwm\_start()}
+{\footnotesize\ttfamily \label{bpwm_8h_aa9bc2b7a6deb4bf734cc94a3417a8c63} 
+void hal\+\_\+bpwm\+\_\+start (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+BPWM} $\ast$}]{bpwm}{, }\item[{uint16\+\_\+t}]{perd\+\_\+cycle}{, }\item[{uint16\+\_\+t}]{duty\+\_\+cycle}{}\end{DoxyParamCaption})}
+
+
+
+Initializes the BPWM peripheral according to the specified parameters $\ast$ in the bpwm. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bpwm} & Pointer to an instance of the BPWM module. \\
+\hline
+{\em perd\+\_\+cycle} & The time value of the cycle. \\
+\hline
+{\em duty\+\_\+cycle} & The time value of the duty cycle. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyNote}{Note}
+This function should be called before \doxyref{hal\+\_\+bpwm\+\_\+start()}{p.}{bpwm_8h_aa9bc2b7a6deb4bf734cc94a3417a8c63} to initialize the BPWM module. 
+\end{DoxyNote}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{bpwm.h@{bpwm.h}!hal\_bpwm\_stop@{hal\_bpwm\_stop}}
+\index{hal\_bpwm\_stop@{hal\_bpwm\_stop}!bpwm.h@{bpwm.h}}
+\doxysubsubsection{hal\_bpwm\_stop()}
+{\footnotesize\ttfamily \label{bpwm_8h_a461689e54eadd1492e0824758e929104} 
+void hal\+\_\+bpwm\+\_\+stop (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+BPWM} $\ast$}]{bpwm}{}\end{DoxyParamCaption})}
+
+
+
+Stops the BPWM operation. 
+
+\begin{DoxyNote}{Note}
+This function should be called after \doxyref{hal\+\_\+bpwm\+\_\+update()}{p.}{bpwm_8h_a6992e21ca0bef16cd64e55219f4d3323} to stop the BPWM module. 
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em bpwm} & Pointer to the structure of the BPWM module. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{bpwm.h@{bpwm.h}!hal\_bpwm\_update@{hal\_bpwm\_update}}
+\index{hal\_bpwm\_update@{hal\_bpwm\_update}!bpwm.h@{bpwm.h}}
+\doxysubsubsection{hal\_bpwm\_update()}
+{\footnotesize\ttfamily \label{bpwm_8h_a6992e21ca0bef16cd64e55219f4d3323} 
+void hal\+\_\+bpwm\+\_\+update (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+BPWM} $\ast$}]{bpwm}{, }\item[{uint16\+\_\+t}]{perd\+\_\+cycle}{, }\item[{uint16\+\_\+t}]{duty\+\_\+cycle}{}\end{DoxyParamCaption})}
+
+
+
+Updates the BPWM settings for the specified period and duty cycle. 
+
+\begin{DoxyNote}{Note}
+This function should be called after a call to \doxyref{hal\+\_\+bpwm\+\_\+start()}{p.}{bpwm_8h_aa9bc2b7a6deb4bf734cc94a3417a8c63} to update the parameters of the BPWM module. 
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em bpwm} & Pointer to the structure of the BPWM module. \\
+\hline
+{\em perd\+\_\+cycle} & The length of the cycle, in units that can be the number of clock cycles. \\
+\hline
+{\em duty\+\_\+cycle} & The duty cycle, which indicates how long the signal will be high during a cycle, in clock cycles. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}

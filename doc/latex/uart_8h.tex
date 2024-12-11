@@ -1,0 +1,105 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/uart.h File Reference}
+\label{uart_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/uart.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/uart.h}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+uart\+\_\+init} (\textbf{ TS\+\_\+\+UART} $\ast$uart)
+\begin{DoxyCompactList}\small\item\em Initialize the UART. Mason 17111 have two UARTs, UART1 and UART2. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+uart\+\_\+putc} (\textbf{ TS\+\_\+\+UART} $\ast$uart, uint8\+\_\+t chr)
+\begin{DoxyCompactList}\small\item\em Uart transmit a character. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+uart\+\_\+reg\+\_\+int\+\_\+cb} (\textbf{ TS\+\_\+\+UART} $\ast$uart, void($\ast$func)(void))
+\begin{DoxyCompactList}\small\item\em Register the interrupt callback function. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\index{uart.h@{uart.h}!hal\_uart\_init@{hal\_uart\_init}}
+\index{hal\_uart\_init@{hal\_uart\_init}!uart.h@{uart.h}}
+\doxysubsubsection{hal\_uart\_init()}
+{\footnotesize\ttfamily \label{uart_8h_afae437c640adb4c459dedc73ecbfa537} 
+void hal\+\_\+uart\+\_\+init (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{}\end{DoxyParamCaption})}
+
+
+
+Initialize the UART. Mason 17111 have two UARTs, UART1 and UART2. 
+
+
+\begin{DoxyItemize}
+\item The UART is configured as a USCI\+\_\+\+A0 module.
+\item The baud rate is set to 250K. ~\newline
+ 
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+None 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This function should be called before using the UART.
+\end{DoxyNote}
+
+\item The UART is configured as a USCI\+\_\+\+A0 module.
+\item The baud rate is set to 250K. ~\newline
+ 
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This function should be called before using the UART. 
+\end{DoxyNote}
+
+\end{DoxyItemize}\index{uart.h@{uart.h}!hal\_uart\_putc@{hal\_uart\_putc}}
+\index{hal\_uart\_putc@{hal\_uart\_putc}!uart.h@{uart.h}}
+\doxysubsubsection{hal\_uart\_putc()}
+{\footnotesize\ttfamily \label{uart_8h_a79bad480bd35566858eaae1ca0af6bb3} 
+void hal\+\_\+uart\+\_\+putc (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{, }\item[{uint8\+\_\+t}]{chr}{}\end{DoxyParamCaption})}
+
+
+
+Uart transmit a character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+{\em chr} & The character to be transmitted. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em None} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+{\em chr} & The character to be transmitted. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{uart.h@{uart.h}!hal\_uart\_reg\_int\_cb@{hal\_uart\_reg\_int\_cb}}
+\index{hal\_uart\_reg\_int\_cb@{hal\_uart\_reg\_int\_cb}!uart.h@{uart.h}}
+\doxysubsubsection{hal\_uart\_reg\_int\_cb()}
+{\footnotesize\ttfamily \label{uart_8h_a062f93f9e117c7a4419d4844708ad5b9} 
+void hal\+\_\+uart\+\_\+reg\+\_\+int\+\_\+cb (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{, }\item[{void($\ast$}]{func~}{)(void)}\end{DoxyParamCaption})}
+
+
+
+Register the interrupt callback function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 of \doxyref{TS\+\_\+\+UART}{p.}{struct_t_s___u_a_r_t} type. \\
+\hline
+{\em func} & The callback function to be registered. \\
+\hline
+\end{DoxyParams}

@@ -1,0 +1,447 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/tcpc.h File Reference}
+\label{tcpc_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/tcpc.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/tcpc.h}}
+{\ttfamily \#include "{}pd.\+h"{}}\newline
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \textbf{ RP\+\_\+\+VALUE\+\_\+\+DEFAULT}~(0)
+\item 
+\#define \textbf{ RP\+\_\+\+VALUE\+\_\+1\+A5}~(1)
+\item 
+\#define \textbf{ RP\+\_\+\+VALUE\+\_\+3\+A0}~(2)
+\item 
+\#define \textbf{ RP\+\_\+\+VALUE\+\_\+\+RESERVED}~(3)
+\item 
+\#define \textbf{ CC\+\_\+\+STATE\+\_\+\+RA}~(0)
+\item 
+\#define \textbf{ CC\+\_\+\+STATE\+\_\+\+RP}~(1)
+\item 
+\#define \textbf{ CC\+\_\+\+STATE\+\_\+\+RD}~(2)
+\item 
+\#define \textbf{ CC\+\_\+\+STATE\+\_\+\+OPEN}~(3)
+\item 
+\#define \textbf{ EN\+\_\+\+SOP}~(0x01$<$$<$0)
+\item 
+\#define \textbf{ EN\+\_\+\+SOP1}~(0x01$<$$<$1)
+\item 
+\#define \textbf{ EN\+\_\+\+SOP2}~(0x01$<$$<$2)
+\item 
+\#define \textbf{ EN\+\_\+\+SOP1\+DB}~(0x01$<$$<$3)
+\item 
+\#define \textbf{ EN\+\_\+\+SOP2\+DB}~(0x01$<$$<$4)
+\item 
+\#define \textbf{ EN\+\_\+\+HARD\+\_\+\+RESET}~(0x01$<$$<$5)
+\item 
+\#define \textbf{ EN\+\_\+\+CABLE\+\_\+\+RESET}~(0x01$<$$<$6)
+\item 
+\#define \textbf{ V\+\_\+\+VBUS\+\_\+\+PRESENT\+\_\+\+TH}~3800
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \textbf{ transmit\+\_\+frame\+\_\+type} \{ \newline
+\textbf{ Transmit\+\_\+\+SOP} = 0
+, \textbf{ Transmit\+\_\+\+SOP1}
+, \textbf{ Transmit\+\_\+\+SOP2}
+, \textbf{ Transmit\+\_\+\+SOP\+\_\+\+DBG1}
+, \newline
+\textbf{ Transmit\+\_\+\+SOP\+\_\+\+DBG2}
+, \textbf{ Transmit\+\_\+\+Hard\+Reset}
+, \textbf{ Transmit\+\_\+\+Cable\+Reset}
+, \textbf{ Transmit\+\_\+\+BIST\+\_\+\+Carrier\+Mode2}
+ \}
+\item 
+enum \textbf{ data\+\_\+role\+\_\+e} \{ \textbf{ TYPEC\+\_\+\+DEVICE} = 0
+, \textbf{ TYPEC\+\_\+\+HOST}
+ \}
+\item 
+enum \textbf{ pwr\+\_\+role\+\_\+e} \{ \textbf{ TYPEC\+\_\+\+SINK} = 0
+, \textbf{ TYPEC\+\_\+\+SOURCE}
+ \}
+\item 
+enum \textbf{ tc\+\_\+cc\+\_\+status} \{ \newline
+\textbf{ TYPEC\+\_\+\+CC\+\_\+\+OPEN}
+, \textbf{ TYPEC\+\_\+\+CC\+\_\+\+RA}
+, \textbf{ TYPEC\+\_\+\+CC\+\_\+\+RD}
+, \textbf{ TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+\+DEF}
+, \newline
+\textbf{ TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+1\+\_\+5}
+, \textbf{ TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+3\+\_\+0}
+ \}
+\item 
+enum \textbf{ tc\+\_\+cc\+\_\+polarity} \{ \textbf{ TYPEC\+\_\+\+POLARITY\+\_\+\+CC1}
+, \textbf{ TYPEC\+\_\+\+POLARITY\+\_\+\+CC2}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+init} (void)
+\item 
+bool \textbf{ hal\+\_\+tcpc\+\_\+vbus\+\_\+is\+\_\+present} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+data\+\_\+role} (enum \textbf{ data\+\_\+role\+\_\+e} role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+pwr\+\_\+role} (enum \textbf{ pwr\+\_\+role\+\_\+e} role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+cc} (enum \textbf{ tc\+\_\+cc\+\_\+status} cc)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+gate\+\_\+en} (bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+vconn} (bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+rx} (uint32\+\_\+t sop, bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+roles} (enum \textbf{ pwr\+\_\+role\+\_\+e} pwr\+\_\+role, enum \textbf{ data\+\_\+role\+\_\+e} data\+\_\+role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pkt\+\_\+transmit} (enum \textbf{ transmit\+\_\+frame\+\_\+type} frame, struct tcpm\+\_\+pd\+\_\+pkt\+\_\+t $\ast$pkt)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+polarity} (enum \textbf{ tc\+\_\+cc\+\_\+polarity} polarity)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+get\+\_\+cc} (enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$cc1, enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$cc2)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+reset\+\_\+pd\+\_\+phy} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+enable} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+disable} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+request\+\_\+mgs} (uint32\+\_\+t rdo)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+hardreset} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+ctrl\+\_\+mgs} (enum pd\+\_\+data\+\_\+msg\+\_\+type msg\+\_\+type)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\index{tcpc.h@{tcpc.h}!CC\_STATE\_OPEN@{CC\_STATE\_OPEN}}
+\index{CC\_STATE\_OPEN@{CC\_STATE\_OPEN}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{CC\_STATE\_OPEN}
+{\footnotesize\ttfamily \label{tcpc_8h_a0a19b2a2a33b4b65ecc0cd57a5d25685} 
+\#define CC\+\_\+\+STATE\+\_\+\+OPEN~(3)}
+
+\index{tcpc.h@{tcpc.h}!CC\_STATE\_RA@{CC\_STATE\_RA}}
+\index{CC\_STATE\_RA@{CC\_STATE\_RA}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{CC\_STATE\_RA}
+{\footnotesize\ttfamily \label{tcpc_8h_af734a16ccca5190ccad3047940d9c6f3} 
+\#define CC\+\_\+\+STATE\+\_\+\+RA~(0)}
+
+\index{tcpc.h@{tcpc.h}!CC\_STATE\_RD@{CC\_STATE\_RD}}
+\index{CC\_STATE\_RD@{CC\_STATE\_RD}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{CC\_STATE\_RD}
+{\footnotesize\ttfamily \label{tcpc_8h_ad07666cad8cfe061f993ed5d7a8a021e} 
+\#define CC\+\_\+\+STATE\+\_\+\+RD~(2)}
+
+\index{tcpc.h@{tcpc.h}!CC\_STATE\_RP@{CC\_STATE\_RP}}
+\index{CC\_STATE\_RP@{CC\_STATE\_RP}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{CC\_STATE\_RP}
+{\footnotesize\ttfamily \label{tcpc_8h_ab34b526c0a93a1fe56841f471609cd60} 
+\#define CC\+\_\+\+STATE\+\_\+\+RP~(1)}
+
+\index{tcpc.h@{tcpc.h}!EN\_CABLE\_RESET@{EN\_CABLE\_RESET}}
+\index{EN\_CABLE\_RESET@{EN\_CABLE\_RESET}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_CABLE\_RESET}
+{\footnotesize\ttfamily \label{tcpc_8h_a5323675f0461cc89457fb21d11557040} 
+\#define EN\+\_\+\+CABLE\+\_\+\+RESET~(0x01$<$$<$6)}
+
+\index{tcpc.h@{tcpc.h}!EN\_HARD\_RESET@{EN\_HARD\_RESET}}
+\index{EN\_HARD\_RESET@{EN\_HARD\_RESET}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_HARD\_RESET}
+{\footnotesize\ttfamily \label{tcpc_8h_aac3ded08e227737e0646d293be11bd5d} 
+\#define EN\+\_\+\+HARD\+\_\+\+RESET~(0x01$<$$<$5)}
+
+\index{tcpc.h@{tcpc.h}!EN\_SOP@{EN\_SOP}}
+\index{EN\_SOP@{EN\_SOP}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_SOP}
+{\footnotesize\ttfamily \label{tcpc_8h_ad6e25d3820b7b15d242c0d8d670251da} 
+\#define EN\+\_\+\+SOP~(0x01$<$$<$0)}
+
+\index{tcpc.h@{tcpc.h}!EN\_SOP1@{EN\_SOP1}}
+\index{EN\_SOP1@{EN\_SOP1}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_SOP1}
+{\footnotesize\ttfamily \label{tcpc_8h_acfe9c3925d5aafd0ff7374b806ebde6f} 
+\#define EN\+\_\+\+SOP1~(0x01$<$$<$1)}
+
+\index{tcpc.h@{tcpc.h}!EN\_SOP1DB@{EN\_SOP1DB}}
+\index{EN\_SOP1DB@{EN\_SOP1DB}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_SOP1DB}
+{\footnotesize\ttfamily \label{tcpc_8h_a65d2a651d75c8ddc2331d907a25ecc62} 
+\#define EN\+\_\+\+SOP1\+DB~(0x01$<$$<$3)}
+
+\index{tcpc.h@{tcpc.h}!EN\_SOP2@{EN\_SOP2}}
+\index{EN\_SOP2@{EN\_SOP2}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_SOP2}
+{\footnotesize\ttfamily \label{tcpc_8h_ab6acb59fdef82555c3de40caa36a234b} 
+\#define EN\+\_\+\+SOP2~(0x01$<$$<$2)}
+
+\index{tcpc.h@{tcpc.h}!EN\_SOP2DB@{EN\_SOP2DB}}
+\index{EN\_SOP2DB@{EN\_SOP2DB}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{EN\_SOP2DB}
+{\footnotesize\ttfamily \label{tcpc_8h_a0dc826929fb92868e01fac8358e48dd5} 
+\#define EN\+\_\+\+SOP2\+DB~(0x01$<$$<$4)}
+
+\index{tcpc.h@{tcpc.h}!RP\_VALUE\_1A5@{RP\_VALUE\_1A5}}
+\index{RP\_VALUE\_1A5@{RP\_VALUE\_1A5}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{RP\_VALUE\_1A5}
+{\footnotesize\ttfamily \label{tcpc_8h_ae13b030a1c4938e5fbeab28f3a5b9f48} 
+\#define RP\+\_\+\+VALUE\+\_\+1\+A5~(1)}
+
+\index{tcpc.h@{tcpc.h}!RP\_VALUE\_3A0@{RP\_VALUE\_3A0}}
+\index{RP\_VALUE\_3A0@{RP\_VALUE\_3A0}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{RP\_VALUE\_3A0}
+{\footnotesize\ttfamily \label{tcpc_8h_af152ccda5cd680f1ab428ad6d6255b2d} 
+\#define RP\+\_\+\+VALUE\+\_\+3\+A0~(2)}
+
+\index{tcpc.h@{tcpc.h}!RP\_VALUE\_DEFAULT@{RP\_VALUE\_DEFAULT}}
+\index{RP\_VALUE\_DEFAULT@{RP\_VALUE\_DEFAULT}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{RP\_VALUE\_DEFAULT}
+{\footnotesize\ttfamily \label{tcpc_8h_ac55665adbdb215156a160c34328492bf} 
+\#define RP\+\_\+\+VALUE\+\_\+\+DEFAULT~(0)}
+
+\index{tcpc.h@{tcpc.h}!RP\_VALUE\_RESERVED@{RP\_VALUE\_RESERVED}}
+\index{RP\_VALUE\_RESERVED@{RP\_VALUE\_RESERVED}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{RP\_VALUE\_RESERVED}
+{\footnotesize\ttfamily \label{tcpc_8h_a3172fc1ded697d46f2b4e571404d1e02} 
+\#define RP\+\_\+\+VALUE\+\_\+\+RESERVED~(3)}
+
+\index{tcpc.h@{tcpc.h}!V\_VBUS\_PRESENT\_TH@{V\_VBUS\_PRESENT\_TH}}
+\index{V\_VBUS\_PRESENT\_TH@{V\_VBUS\_PRESENT\_TH}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{V\_VBUS\_PRESENT\_TH}
+{\footnotesize\ttfamily \label{tcpc_8h_a79323b255959a08facebd388c871ef35} 
+\#define V\+\_\+\+VBUS\+\_\+\+PRESENT\+\_\+\+TH~3800}
+
+
+
+\doxysubsection{Enumeration Type Documentation}
+\index{tcpc.h@{tcpc.h}!data\_role\_e@{data\_role\_e}}
+\index{data\_role\_e@{data\_role\_e}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{data\_role\_e}
+{\footnotesize\ttfamily \label{tcpc_8h_a2696f0d6a46e1e621a0531ce2a07a695} 
+enum \textbf{ data\+\_\+role\+\_\+e}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_DEVICE@{TYPEC\_DEVICE}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_DEVICE@{TYPEC\_DEVICE}}}\label{tcpc_8h_a2696f0d6a46e1e621a0531ce2a07a695} 
+TYPEC\+\_\+\+DEVICE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_HOST@{TYPEC\_HOST}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_HOST@{TYPEC\_HOST}}}\label{tcpc_8h_a2696f0d6a46e1e621a0531ce2a07a695} 
+TYPEC\+\_\+\+HOST&\\
+\hline
+
+\end{DoxyEnumFields}
+\index{tcpc.h@{tcpc.h}!pwr\_role\_e@{pwr\_role\_e}}
+\index{pwr\_role\_e@{pwr\_role\_e}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{pwr\_role\_e}
+{\footnotesize\ttfamily \label{tcpc_8h_a09c848cee76ec116602beee6669b0a5f} 
+enum \textbf{ pwr\+\_\+role\+\_\+e}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_SINK@{TYPEC\_SINK}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_SINK@{TYPEC\_SINK}}}\label{tcpc_8h_a09c848cee76ec116602beee6669b0a5f} 
+TYPEC\+\_\+\+SINK&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_SOURCE@{TYPEC\_SOURCE}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_SOURCE@{TYPEC\_SOURCE}}}\label{tcpc_8h_a09c848cee76ec116602beee6669b0a5f} 
+TYPEC\+\_\+\+SOURCE&\\
+\hline
+
+\end{DoxyEnumFields}
+\index{tcpc.h@{tcpc.h}!tc\_cc\_polarity@{tc\_cc\_polarity}}
+\index{tc\_cc\_polarity@{tc\_cc\_polarity}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{tc\_cc\_polarity}
+{\footnotesize\ttfamily \label{tcpc_8h_ac5b4b58840c9b076a869a5816ba100db} 
+enum \textbf{ tc\+\_\+cc\+\_\+polarity}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_POLARITY\_CC1@{TYPEC\_POLARITY\_CC1}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_POLARITY\_CC1@{TYPEC\_POLARITY\_CC1}}}\label{tcpc_8h_ac5b4b58840c9b076a869a5816ba100db} 
+TYPEC\+\_\+\+POLARITY\+\_\+\+CC1&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_POLARITY\_CC2@{TYPEC\_POLARITY\_CC2}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_POLARITY\_CC2@{TYPEC\_POLARITY\_CC2}}}\label{tcpc_8h_ac5b4b58840c9b076a869a5816ba100db} 
+TYPEC\+\_\+\+POLARITY\+\_\+\+CC2&\\
+\hline
+
+\end{DoxyEnumFields}
+\index{tcpc.h@{tcpc.h}!tc\_cc\_status@{tc\_cc\_status}}
+\index{tc\_cc\_status@{tc\_cc\_status}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{tc\_cc\_status}
+{\footnotesize\ttfamily \label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+enum \textbf{ tc\+\_\+cc\+\_\+status}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_OPEN@{TYPEC\_CC\_OPEN}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_OPEN@{TYPEC\_CC\_OPEN}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+OPEN&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_RA@{TYPEC\_CC\_RA}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_RA@{TYPEC\_CC\_RA}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+RA&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_RD@{TYPEC\_CC\_RD}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_RD@{TYPEC\_CC\_RD}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+RD&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_RP\_DEF@{TYPEC\_CC\_RP\_DEF}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_RP\_DEF@{TYPEC\_CC\_RP\_DEF}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+\+DEF&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_RP\_1\_5@{TYPEC\_CC\_RP\_1\_5}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_RP\_1\_5@{TYPEC\_CC\_RP\_1\_5}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+1\+\_\+5&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TYPEC\_CC\_RP\_3\_0@{TYPEC\_CC\_RP\_3\_0}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!TYPEC\_CC\_RP\_3\_0@{TYPEC\_CC\_RP\_3\_0}}}\label{tcpc_8h_a040e2eca38fe9071016c5cac97b540c5} 
+TYPEC\+\_\+\+CC\+\_\+\+RP\+\_\+3\+\_\+0&\\
+\hline
+
+\end{DoxyEnumFields}
+\index{tcpc.h@{tcpc.h}!transmit\_frame\_type@{transmit\_frame\_type}}
+\index{transmit\_frame\_type@{transmit\_frame\_type}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{transmit\_frame\_type}
+{\footnotesize\ttfamily \label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+enum \textbf{ transmit\+\_\+frame\+\_\+type}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_SOP@{Transmit\_SOP}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_SOP@{Transmit\_SOP}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+SOP&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_SOP1@{Transmit\_SOP1}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_SOP1@{Transmit\_SOP1}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+SOP1&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_SOP2@{Transmit\_SOP2}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_SOP2@{Transmit\_SOP2}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+SOP2&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_SOP\_DBG1@{Transmit\_SOP\_DBG1}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_SOP\_DBG1@{Transmit\_SOP\_DBG1}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+SOP\+\_\+\+DBG1&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_SOP\_DBG2@{Transmit\_SOP\_DBG2}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_SOP\_DBG2@{Transmit\_SOP\_DBG2}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+SOP\+\_\+\+DBG2&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_HardReset@{Transmit\_HardReset}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_HardReset@{Transmit\_HardReset}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+Hard\+Reset&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_CableReset@{Transmit\_CableReset}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_CableReset@{Transmit\_CableReset}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+Cable\+Reset&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{Transmit\_BIST\_CarrierMode2@{Transmit\_BIST\_CarrierMode2}!tcpc.h@{tcpc.h}}\index{tcpc.h@{tcpc.h}!Transmit\_BIST\_CarrierMode2@{Transmit\_BIST\_CarrierMode2}}}\label{tcpc_8h_a297778fc6ea70906396599a5616a8c15} 
+Transmit\+\_\+\+BIST\+\_\+\+Carrier\+Mode2&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_get\_cc@{hal\_tcpc\_get\_cc}}
+\index{hal\_tcpc\_get\_cc@{hal\_tcpc\_get\_cc}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_get\_cc()}
+{\footnotesize\ttfamily \label{tcpc_8h_a22d2387ee8ebe0f04d8c4bc9325cd43f} 
+void hal\+\_\+tcpc\+\_\+get\+\_\+cc (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$}]{cc1}{, }\item[{enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$}]{cc2}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_init@{hal\_tcpc\_init}}
+\index{hal\_tcpc\_init@{hal\_tcpc\_init}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_init()}
+{\footnotesize\ttfamily \label{tcpc_8h_ad34dabb6fac5a5682ed992092d0549b2} 
+void hal\+\_\+tcpc\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_pd\_phy\_disable@{hal\_tcpc\_pd\_phy\_disable}}
+\index{hal\_tcpc\_pd\_phy\_disable@{hal\_tcpc\_pd\_phy\_disable}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_pd\_phy\_disable()}
+{\footnotesize\ttfamily \label{tcpc_8h_a1455d0c1ea0539d7989b5b144fb5f032} 
+void hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+disable (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_pd\_phy\_enable@{hal\_tcpc\_pd\_phy\_enable}}
+\index{hal\_tcpc\_pd\_phy\_enable@{hal\_tcpc\_pd\_phy\_enable}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_pd\_phy\_enable()}
+{\footnotesize\ttfamily \label{tcpc_8h_aa45166cd6284a6cccfc6c8d465a00305} 
+void hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+enable (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_pkt\_transmit@{hal\_tcpc\_pkt\_transmit}}
+\index{hal\_tcpc\_pkt\_transmit@{hal\_tcpc\_pkt\_transmit}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_pkt\_transmit()}
+{\footnotesize\ttfamily \label{tcpc_8h_a401182670172fed6a891a51291733acc} 
+void hal\+\_\+tcpc\+\_\+pkt\+\_\+transmit (\begin{DoxyParamCaption}\item[{enum \textbf{ transmit\+\_\+frame\+\_\+type}}]{frame}{, }\item[{struct tcpm\+\_\+pd\+\_\+pkt\+\_\+t $\ast$}]{pkt}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_reset\_pd\_phy@{hal\_tcpc\_reset\_pd\_phy}}
+\index{hal\_tcpc\_reset\_pd\_phy@{hal\_tcpc\_reset\_pd\_phy}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_reset\_pd\_phy()}
+{\footnotesize\ttfamily \label{tcpc_8h_a8a9b280858651dcf80e915d5ba243c2b} 
+void hal\+\_\+tcpc\+\_\+reset\+\_\+pd\+\_\+phy (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_send\_ctrl\_mgs@{hal\_tcpc\_send\_ctrl\_mgs}}
+\index{hal\_tcpc\_send\_ctrl\_mgs@{hal\_tcpc\_send\_ctrl\_mgs}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_send\_ctrl\_mgs()}
+{\footnotesize\ttfamily \label{tcpc_8h_a643518e7b31f226383bba0340d13196b} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+ctrl\+\_\+mgs (\begin{DoxyParamCaption}\item[{enum pd\+\_\+data\+\_\+msg\+\_\+type}]{msg\+\_\+type}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_send\_hardreset@{hal\_tcpc\_send\_hardreset}}
+\index{hal\_tcpc\_send\_hardreset@{hal\_tcpc\_send\_hardreset}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_send\_hardreset()}
+{\footnotesize\ttfamily \label{tcpc_8h_a2e80ab4499227095c9d7a742d2b35c68} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+hardreset (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_send\_request\_mgs@{hal\_tcpc\_send\_request\_mgs}}
+\index{hal\_tcpc\_send\_request\_mgs@{hal\_tcpc\_send\_request\_mgs}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_send\_request\_mgs()}
+{\footnotesize\ttfamily \label{tcpc_8h_a51927fe58bd3e5c1bc2250fcb56554e8} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+request\+\_\+mgs (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{rdo}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_cc@{hal\_tcpc\_set\_cc}}
+\index{hal\_tcpc\_set\_cc@{hal\_tcpc\_set\_cc}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_cc()}
+{\footnotesize\ttfamily \label{tcpc_8h_ab9be728349edc2d97da5c5c134454478} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+cc (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+status}}]{cc}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_data\_role@{hal\_tcpc\_set\_data\_role}}
+\index{hal\_tcpc\_set\_data\_role@{hal\_tcpc\_set\_data\_role}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_data\_role()}
+{\footnotesize\ttfamily \label{tcpc_8h_a91202e0032dcde69daaeef30107c64ab} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+data\+\_\+role (\begin{DoxyParamCaption}\item[{enum \textbf{ data\+\_\+role\+\_\+e}}]{role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_gate\_en@{hal\_tcpc\_set\_gate\_en}}
+\index{hal\_tcpc\_set\_gate\_en@{hal\_tcpc\_set\_gate\_en}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_gate\_en()}
+{\footnotesize\ttfamily \label{tcpc_8h_a6288cb464daa317751a345a2821b9ee5} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+gate\+\_\+en (\begin{DoxyParamCaption}\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_pd\_rx@{hal\_tcpc\_set\_pd\_rx}}
+\index{hal\_tcpc\_set\_pd\_rx@{hal\_tcpc\_set\_pd\_rx}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_pd\_rx()}
+{\footnotesize\ttfamily \label{tcpc_8h_ab7a95d48bb1d88dd04f7004ff17a5764} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+rx (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{sop}{, }\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_polarity@{hal\_tcpc\_set\_polarity}}
+\index{hal\_tcpc\_set\_polarity@{hal\_tcpc\_set\_polarity}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_polarity()}
+{\footnotesize\ttfamily \label{tcpc_8h_add793838ef11c51ab0b4fc825cd2dfb6} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+polarity (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+polarity}}]{polarity}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_pwr\_role@{hal\_tcpc\_set\_pwr\_role}}
+\index{hal\_tcpc\_set\_pwr\_role@{hal\_tcpc\_set\_pwr\_role}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_pwr\_role()}
+{\footnotesize\ttfamily \label{tcpc_8h_af6929078035bad02ba391662603d835c} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+pwr\+\_\+role (\begin{DoxyParamCaption}\item[{enum \textbf{ pwr\+\_\+role\+\_\+e}}]{role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_roles@{hal\_tcpc\_set\_roles}}
+\index{hal\_tcpc\_set\_roles@{hal\_tcpc\_set\_roles}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_roles()}
+{\footnotesize\ttfamily \label{tcpc_8h_ae6362ab29caddbfe33d704ff49bada79} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+roles (\begin{DoxyParamCaption}\item[{enum \textbf{ pwr\+\_\+role\+\_\+e}}]{pwr\+\_\+role}{, }\item[{enum \textbf{ data\+\_\+role\+\_\+e}}]{data\+\_\+role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_set\_vconn@{hal\_tcpc\_set\_vconn}}
+\index{hal\_tcpc\_set\_vconn@{hal\_tcpc\_set\_vconn}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_set\_vconn()}
+{\footnotesize\ttfamily \label{tcpc_8h_a14059f7a561a121c71082da5e4ec036e} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+vconn (\begin{DoxyParamCaption}\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.h@{tcpc.h}!hal\_tcpc\_vbus\_is\_present@{hal\_tcpc\_vbus\_is\_present}}
+\index{hal\_tcpc\_vbus\_is\_present@{hal\_tcpc\_vbus\_is\_present}!tcpc.h@{tcpc.h}}
+\doxysubsubsection{hal\_tcpc\_vbus\_is\_present()}
+{\footnotesize\ttfamily \label{tcpc_8h_ae7d5276d2d3c2793b3383c7bd30baf2a} 
+bool hal\+\_\+tcpc\+\_\+vbus\+\_\+is\+\_\+present (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+

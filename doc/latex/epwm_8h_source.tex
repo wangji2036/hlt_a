@@ -1,0 +1,24 @@
+\doxysection{epwm.\+h}
+\label{epwm_8h_source}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/epwm.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/epwm.h}}
+\textbf{ Go to the documentation of this file.}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ EPWM\_H\_}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ EPWM\_H\_}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{comment}{//frequency\ :\ 360K,\ (110K,\ 148K)}}
+\DoxyCodeLine{00005\ \textcolor{comment}{//duty\_ratio:\ 0-\/500}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//phase:\ 0-\/180deg}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00016\ \textcolor{keywordtype}{void}\ hal\_epwm\_pwm\_start(TS\_EPWM\ *epwm,\ uint16\_t\ perd\_cycle,\ uint16\_t\ duty\_ratio,\ uint16\_t\ phas\_angle);}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00026\ \textcolor{keywordtype}{void}\ hal\_epwm\_pwm\_update(TS\_EPWM\ *epwm,\ uint16\_t\ perd\_cycle,\ uint16\_t\ duty\_ratio,\ uint16\_t\ phas\_angle);}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00033\ \textcolor{keywordtype}{void}\ hal\_epwm\_pwm\_stop(TS\_EPWM\ *epwm);}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00042\ \textcolor{keywordtype}{void}\ hal\_epwm\_afd\_start(TS\_EPWM\ *epwm,\ uint8\_t\ cycle,\ uint8\_t\ count);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00049\ \textcolor{keywordtype}{void}\ hal\_epwm\_afd\_stop(TS\_EPWM\ *epwm);}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ EPWM\_H\_\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

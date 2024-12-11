@@ -1,0 +1,38 @@
+\doxysection{eadc.\+h}
+\label{eadc_8h_source}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/eadc.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/eadc.h}}
+\textbf{ Go to the documentation of this file.}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ EADC\_H\_}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ EADC\_H\_}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ \ hal\_eadc\_init();}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//\ \ EADC-\/>CTRL.WORD\ \&=\ \string~EADC\_CTRL\_CONV\_START\_Msk;}}
+\DoxyCodeLine{00007\ \textcolor{comment}{//\ \ EADC-\/>CTRL.WORD\ |=\ EADC\_CTRL\_CONV\_START\_Msk;}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{comment}{//\ \ hal\_eadc\_sho();}}
+\DoxyCodeLine{00010\ \textcolor{comment}{//\ \ EADC-\/>CTRL.WORD\ |=\ EADC\_CTRL\_CONV\_START\_Msk;}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ GPA-\/>DOUT.BITS.PIN6\ \string^=\ 1;}}
+\DoxyCodeLine{00014\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ EADC-\/>CTRL.WORD\ |=\ EADC\_CTRL\_VCAP\_DETECT\_EN\_Msk;}}
+\DoxyCodeLine{00015\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ while\ ((EADC-\/>FLAG.WORD\ \&\ EADC\_FLAG\_DONE\_FLAG\_Msk)\ ==\ 0);}}
+\DoxyCodeLine{00016\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ GPA-\/>DOUT.BITS.PIN7\ \string^=\ 1;}}
+\DoxyCodeLine{00017\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ printk("{}\(\backslash\)r\(\backslash\)n\ "{});}}
+\DoxyCodeLine{00018\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ for(int\ i=0;\ i<20;\ i++)}}
+\DoxyCodeLine{00019\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \{}}
+\DoxyCodeLine{00020\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ \ \ printk("{}\%d\ "{},\ EADC-\/>DATA[i].BITS.CONV\_DATA);}}
+\DoxyCodeLine{00021\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \}}}
+\DoxyCodeLine{00022\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ printk("{}\(\backslash\)r\(\backslash\)n\ "{});}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00028\ \textcolor{keywordtype}{void}\ hal\_eadc\_sho(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00034\ \textcolor{keywordtype}{void}\ hal\_eadc\_init(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00035\ \textcolor{keywordtype}{void}\ hal\_eadc\_stop(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00036\ uint16\_t\ hal\_eadc\_meas(\textcolor{keyword}{enum}\ eadc\_chan\_t\ channel);}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \textcolor{keywordtype}{void}\ hal\_eadc\_ddm\_init(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ EADC\_H\_\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

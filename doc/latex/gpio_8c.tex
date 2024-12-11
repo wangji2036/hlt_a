@@ -1,0 +1,120 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/gpio.c File Reference}
+\label{gpio_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/gpio.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/gpio.c}}
+
+
+GPIO HAL module driver.~\newline
+ The functionalities of the General Purpose Input/\+Output (GPIO) peripheral\+:~\newline
+  
+
+
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}gpio.\+h"{}}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+gpio\+\_\+init} (void)
+\begin{DoxyCompactList}\small\item\em Initialization function for the GPIO peripheral. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+GPIO HAL module driver.~\newline
+ The functionalities of the General Purpose Input/\+Output (GPIO) peripheral\+:~\newline
+ 
+
+
+\begin{DoxyItemize}
+\item Initialization and de-\/initialization functions ~\newline
+
+\item IO operation functions
+\end{DoxyItemize}
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech. ~\newline
+ All rights reserved. ~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### GPIO Peripheral features #####
+==============================================================================
+[..] 
+Subject to the specific hardware characteristics of each I/O port listed in the datasheet, each
+port bit of the General Purpose IO (GPIO) Ports, can be individually configured by software
+in several modes:
+(+) Input mode 
+(+) Analog mode
+(+) Output mode
+(+) Alternate function mode
+(+) External interrupt/event lines
+
+[..]  
+During and just after reset, the alternate functions and external interrupt  
+lines are not active and the I/O ports are configured in input floating mode.
+
+[..]   
+The GPIO pins are programmable general-purpose I/O pins whose functions can be assigned. 
+These pins can be configured both as inputs and outputs (either push-pull or open-drain) 
+according to the selected function. The GPIN pins can only be configured as inputs.
+
+[..]
+In Output or Alternate mode, each IO can be configured on open-drain or push-pull
+type and the IO speed can be selected depending on the VDD value.
+
+[..]  
+23x GPIO+7x GPIN, keep every GPIO/GPIN channel independent.
+The minimum Logic High is 1.4V(VDD =2.5V~5V),1.5V(VDD=5.5V).The maximum Logic Low is 0.6V. 
+
+[..]
+For the GPIO PA,PB,PC,the structure is shown as the below figure.
+All the PAs,PBs,PCs have the same structure except from the function in the red frame.
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+  (#) Configure the GPIO pin(s) using hal_gpio_init().
+    (++) Only the default configuration works for the GPIO pins.
+    (++) Other GPIO function will be release in furture version.
+  (#) ...
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Function Documentation}
+\index{gpio.c@{gpio.c}!hal\_gpio\_init@{hal\_gpio\_init}}
+\index{hal\_gpio\_init@{hal\_gpio\_init}!gpio.c@{gpio.c}}
+\doxysubsubsection{hal\_gpio\_init()}
+{\footnotesize\ttfamily \label{gpio_8c_ab5ae6f712980fbf6f16ecb6dc8ae1a36} 
+void hal\+\_\+gpio\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+Initialization function for the GPIO peripheral. 
+
+
+\begin{DoxyItemize}
+\item PIN0\+: input enable, output disable, output value 0, open drain enable, pull-\/up disable, pull-\/down disable, mode 00\+:SCL1\+\_\+S
+\item PIN1\+: input enable, output disable, output value 0, open drain enable, pull-\/up disable, pull-\/down disable, mode 00\+:SDA1\+\_\+S, interrupt disable, trigger type 00\+:Falling Edge
+\item PIN4\+: input disable, output enable, output value 0, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PA4
+\item PIN5\+: input disable, output enable, output value 0, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PA5 , interrupt disable, trigger type 00\+:Falling Edge
+\item PIN6\+: input disable, output enable, output value 1, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PA6
+\item PIN7\+: input disable, output enable, output value 1, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PA7
+\item PB0\+: input disable, output enable, output value 0, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PB0
+\item PB1\+: input disable, output enable, output value 0, open drain disable, pull-\/up disable, pull-\/down disable, mode 00\+:PB1 , interrupt disable, trigger type 00\+:Falling Edge ~\newline
+
+\end{DoxyItemize}
+
+
+\begin{DoxyParams}{Parameters}
+{\em void.} & \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void.} & \\
+\hline
+\end{DoxyRetVals}

@@ -1,0 +1,35 @@
+\doxysection{ecap.\+h}
+\label{ecap_8h_source}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/ecap.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/ecap.h}}
+\textbf{ Go to the documentation of this file.}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ ECAP\_H\_}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ ECAP\_H\_}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00010\ \textcolor{keywordtype}{void}\ hal\_ecap\_init(TS\_ECAP\ *ecap,\ \textcolor{keyword}{enum}\ ECAP\_FUNC\_MODE\ mode);}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00017\ \textcolor{keywordtype}{void}\ hal\_ecap\_open(TS\_ECAP\ *ecap);}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00024\ \textcolor{keywordtype}{void}\ hal\_ecap\_close(TS\_ECAP\ *ecap);}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00031\ \textcolor{keywordtype}{void}\ hal\_ecap\_reg\_int\_cb(\textcolor{keywordtype}{void}\ (*func)(uint8\_t,\ uint16\_t));}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{comment}{//\ \ ECAP2-\/>OVER\_CNT.WORD\ =\ (1125\ *\ 2\ <<\ ECAP\_OVER\_CNT\_OVERFLOW\_CNT\_Pos);}}
+\DoxyCodeLine{00034\ \textcolor{comment}{//\ \ ECAP2-\/>DDM\_CTRL.WORD\ =\ (\_ECAP\_DDMCAP\_TIMER\_CLKDIV\_32\ <<\ ECAP\_DDM\_CTRL\_CLOCK\_DIV\_SEL\_Pos)\ |\ (\_ECAP\_EDGE\_TYPE\_RISEING\_FALLING\ <<\ ECAP\_DDM\_CTRL\_EDGE\_TYPE\_SEL\_Pos);}}
+\DoxyCodeLine{00035\ \textcolor{comment}{//\ \ ECAP2-\/>GEN\_CTRL.WORD\ =\ (\_ECAP\_FUNC\_MODE\_DDM\ <<\ ECAP\_GEN\_CTRL\_FUNC\_WORKING\_MODE\_Pos)\ |\ (\_ECAP\_INPUT\_CHAN\_INR\_DDM\_OUT\ <<\ ECAP\_GEN\_CTRL\_INPUT\_CHANNEL\_SEL\_Pos)\ |}}
+\DoxyCodeLine{00036\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\_ECAP\_DEGILTC\_TIME\_80us\ <<\ ECAP\_GEN\_CTRL\_DEGLITEC\_TIME\_SEL\_Pos)\ |\ ECAP\_GEN\_CTRL\_OVERFLOW\_INT\_EN\_Msk\ |\ ECAP\_GEN\_CTRL\_EDGE\_DET\_INT\_EN\_Msk;}}
+\DoxyCodeLine{00037\ \textcolor{comment}{//\ \ ECAP2-\/>STS\_FLAG.WORD\ =\ ECAP\_STS\_FLAG\_EDGE\_DET\_FLAG\_Msk\ |\ ECAP\_STS\_FLAG\_OVERFLOW\_FLAG\_Msk;}}
+\DoxyCodeLine{00038\ \textcolor{comment}{//}}
+\DoxyCodeLine{00039\ \textcolor{comment}{//\ \ ECAP4-\/>OVER\_CNT.WORD\ =\ (1125\ *\ 2\ <<\ ECAP\_OVER\_CNT\_OVERFLOW\_CNT\_Pos);}}
+\DoxyCodeLine{00040\ \textcolor{comment}{//\ \ ECAP4-\/>DDM\_CTRL.WORD\ =\ (\_ECAP\_DDMCAP\_TIMER\_CLKDIV\_32\ <<\ ECAP\_DDM\_CTRL\_CLOCK\_DIV\_SEL\_Pos)\ |\ (\_ECAP\_EDGE\_TYPE\_RISEING\_FALLING\ <<\ ECAP\_DDM\_CTRL\_EDGE\_TYPE\_SEL\_Pos);}}
+\DoxyCodeLine{00041\ \textcolor{comment}{//\ \ ECAP4-\/>GEN\_CTRL.WORD\ =\ (\_ECAP\_FUNC\_MODE\_DDM\ <<\ ECAP\_GEN\_CTRL\_FUNC\_WORKING\_MODE\_Pos)\ |\ (\_ECAP\_INPUT\_CHAN\_INR\_DDM\_OUT\ <<\ ECAP\_GEN\_CTRL\_INPUT\_CHANNEL\_SEL\_Pos)\ |}}
+\DoxyCodeLine{00042\ \textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\_ECAP\_DEGILTC\_TIME\_80us\ <<\ ECAP\_GEN\_CTRL\_DEGLITEC\_TIME\_SEL\_Pos)\ |\ ECAP\_GEN\_CTRL\_OVERFLOW\_INT\_EN\_Msk\ |\ ECAP\_GEN\_CTRL\_EDGE\_DET\_INT\_EN\_Msk;}}
+\DoxyCodeLine{00043\ \textcolor{comment}{//\ \ ECAP4-\/>STS\_FLAG.WORD\ =\ ECAP\_STS\_FLAG\_EDGE\_DET\_FLAG\_Msk\ |\ ECAP\_STS\_FLAG\_OVERFLOW\_FLAG\_Msk;}}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \textcolor{comment}{//\ \ hal\_ecap\_open(ECAP2);}}
+\DoxyCodeLine{00046\ \textcolor{comment}{//\ \ hal\_ecap\_open(ECAP4);}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keywordtype}{void}\ hal\_ecap\_dig\_ddm\_init(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ ECAP\_H\_\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

@@ -1,0 +1,177 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/uart.c File Reference}
+\label{uart_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/uart.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/uart.c}}
+
+
+Uart HAL module driver.~\newline
+ The functionalities of the UART peripheral\+:~\newline
+  
+
+
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}debug.\+h"{}}\newline
+{\ttfamily \#include "{}uart.\+h"{}}\newline
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef void($\ast$ \textbf{ p\+Func}) (void)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+uart\+\_\+init} (\textbf{ TS\+\_\+\+UART} $\ast$uart)
+\begin{DoxyCompactList}\small\item\em Initialize the UART. Mason 17111 have two UARTs, UART1 and UART2. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+uart\+\_\+putc} (\textbf{ TS\+\_\+\+UART} $\ast$uart, uint8\+\_\+t chr)
+\begin{DoxyCompactList}\small\item\em Uart transmit a character. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+uart\+\_\+reg\+\_\+int\+\_\+cb} (\textbf{ TS\+\_\+\+UART} $\ast$uart, void($\ast$func)(void))
+\begin{DoxyCompactList}\small\item\em Register the interrupt callback function. \end{DoxyCompactList}\item 
+void \textbf{ retarget\+\_\+fputc} (uint8\+\_\+t chr)
+\begin{DoxyCompactList}\small\item\em Retaget the fputc function to the uart transmit function. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Uart HAL module driver.~\newline
+ The functionalities of the UART peripheral\+:~\newline
+ 
+
+
+\begin{DoxyItemize}
+\item Initialization and de-\/initialization functions. ~\newline
+
+\item Uart transmit a character. ~\newline
+
+\begin{DoxyItemize}
+\item Register the interrupt callback function. ~\newline
+
+\item Retarget the fputc function to the uart transmit function. ~\newline
+
+\item UART1 and UART2 Interrupt handler. ~\newline
+
+\end{DoxyItemize}
+\end{DoxyItemize}
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech.~\newline
+ All rights reserved. ~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### UART Peripheral Features #####
+==============================================================================
+[..] 
+@todo Need to add the description of the UART features when IC datasheet is available.
+
+[..] 
+The UART has the following features:
+-# Configurable baud rate.
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+  (#) Configure the Uart1 or UART2 using the hal_uart_init() function.
+  (#) Register the interrupt callback function using the hal_uart_reg_int_cb() function before using the UART.
+  (#) Use the hal_uart_putc() function to transmit a character.
+  (#) Use the retarget_fputc() function to redirect the fputc() function to the hal_uart_putc() function.   \end{DoxyVerb}
+ 
+
+\doxysubsection{Typedef Documentation}
+\index{uart.c@{uart.c}!pFunc@{pFunc}}
+\index{pFunc@{pFunc}!uart.c@{uart.c}}
+\doxysubsubsection{pFunc}
+{\footnotesize\ttfamily \label{uart_8c_a0da641b34251a0a12acb032108b8bf80} 
+typedef void($\ast$ p\+Func) (void)}
+
+
+
+\doxysubsection{Function Documentation}
+\index{uart.c@{uart.c}!hal\_uart\_init@{hal\_uart\_init}}
+\index{hal\_uart\_init@{hal\_uart\_init}!uart.c@{uart.c}}
+\doxysubsubsection{hal\_uart\_init()}
+{\footnotesize\ttfamily \label{uart_8c_afae437c640adb4c459dedc73ecbfa537} 
+void hal\+\_\+uart\+\_\+init (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{}\end{DoxyParamCaption})}
+
+
+
+Initialize the UART. Mason 17111 have two UARTs, UART1 and UART2. 
+
+
+\begin{DoxyItemize}
+\item The UART is configured as a USCI\+\_\+\+A0 module.
+\item The baud rate is set to 250K. ~\newline
+ 
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}
+\begin{DoxyNote}{Note}
+This function should be called before using the UART. 
+\end{DoxyNote}
+
+\end{DoxyItemize}\index{uart.c@{uart.c}!hal\_uart\_putc@{hal\_uart\_putc}}
+\index{hal\_uart\_putc@{hal\_uart\_putc}!uart.c@{uart.c}}
+\doxysubsubsection{hal\_uart\_putc()}
+{\footnotesize\ttfamily \label{uart_8c_a79bad480bd35566858eaae1ca0af6bb3} 
+void hal\+\_\+uart\+\_\+putc (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{, }\item[{uint8\+\_\+t}]{chr}{}\end{DoxyParamCaption})}
+
+
+
+Uart transmit a character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 \\
+\hline
+{\em chr} & The character to be transmitted. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{uart.c@{uart.c}!hal\_uart\_reg\_int\_cb@{hal\_uart\_reg\_int\_cb}}
+\index{hal\_uart\_reg\_int\_cb@{hal\_uart\_reg\_int\_cb}!uart.c@{uart.c}}
+\doxysubsubsection{hal\_uart\_reg\_int\_cb()}
+{\footnotesize\ttfamily \label{uart_8c_a062f93f9e117c7a4419d4844708ad5b9} 
+void hal\+\_\+uart\+\_\+reg\+\_\+int\+\_\+cb (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+UART} $\ast$}]{uart}{, }\item[{void($\ast$}]{func~}{)(void)}\end{DoxyParamCaption})}
+
+
+
+Register the interrupt callback function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em uart} & UART1 or UART2 of \doxyref{TS\+\_\+\+UART}{p.}{struct_t_s___u_a_r_t} type. \\
+\hline
+{\em func} & The callback function to be registered. \\
+\hline
+\end{DoxyParams}
+\index{uart.c@{uart.c}!retarget\_fputc@{retarget\_fputc}}
+\index{retarget\_fputc@{retarget\_fputc}!uart.c@{uart.c}}
+\doxysubsubsection{retarget\_fputc()}
+{\footnotesize\ttfamily \label{uart_8c_aef13aac00af30f569303bb5243b3558c} 
+void retarget\+\_\+fputc (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{chr}{}\end{DoxyParamCaption})}
+
+
+
+Retaget the fputc function to the uart transmit function. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em chr} & The character to be transmitted. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}

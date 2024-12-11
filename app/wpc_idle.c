@@ -1,0 +1,630 @@
+#include "regdef.h"
+#include "printk.h"
+#include "g_data.h"
+#include "delay.h"
+#include "osal.h"
+#include "qdt.h"
+#include "pid.h"
+#include "gui.h"
+#include "_wpc.h"
+#include "wpc_idle.h"
+#include "wpc_ping.h"
+#include "debug.h"
+#include "mpp.h"
+
+static uint8_t rx_may_still_be_flag;
+static uint8_t qdt_try_ping_count;
+static uint8_t qdt_have_obj_count;
+static uint8_t qdt_obj_remove_count;
+static uint8_t qdt_large_metal_count;
+static uint16_t qdt_just_count;
+
+static uint8_t xfer_fod_remove_delta_Q;
+static uint8_t xfer_fod_remove_delta_F;
+static uint8_t xfer_fod_obj_remove_cnt;
+
+static uint16_t pre_q[4], pre_f[4], delta_q_pre, delta_f_pre;
+
+uint32_t delta_abs(uint32_t a, uint32_t b)
+{
+	return (a > b) ? a - b: b - a;
+}
+
+void enter_buff(uint16_t q, uint16_t f)
+{
+	delta_q_pre = delta_abs(q, pre_q[3]);
+	delta_f_pre = delta_abs(f, pre_f[3]);
+
+	pre_q[0] = pre_q[1];
+	pre_q[1] = pre_q[2];
+	pre_q[2] = pre_q[3];
+	pre_q[3] = q;
+
+	pre_f[0] = pre_f[1];
+	pre_f[1] = pre_f[2];
+	pre_f[2] = pre_f[3];
+	pre_f[3] = f;
+}
+
+uint8_t is_stable(void)
+{
+	uint16_t q_max, q_min, f_max, f_min;
+
+	q_max = q_min = pre_q[0];
+	f_max = f_min = pre_f[0];
+
+	for (int i=0; i<4; i++)
+	{
+		if (pre_q[i] > q_max) q_max = pre_q[i];
+		if (pre_q[i] < q_min) q_min = pre_q[i];
+		if (pre_f[i] > f_max) f_max = pre_f[i];
+		if (pre_f[i] < f_min) f_min = pre_f[i];
+
+//		printk("\r\n %d %d", pre_q[i], pre_q[i]);
+	}
+
+//	printk("\r\n max_min %d %d %d %d", q_max, q_min, f_max, f_min);
+
+	return (delta_abs(q_max, q_min) < 30) && (delta_abs(f_max, f_min) < 30);
+}
+
+void idle_qfod_init(void)
+{
+	// for (int i=0; i<4; i++)
+	// {
+	// 	pre_q[i] = ap->q_factor_base_value;
+	// 	pre_f[i] = ap->fs_base_value;
+	// }
+
+	qdt_try_ping_count = 0;
+	qdt_have_obj_count = 0;
+	qdt_obj_remove_count = 0;
+	qdt_large_metal_count = 0;
+	qdt_just_count = 0;
+	xfer_fod_remove_delta_Q = 4;
+	xfer_fod_remove_delta_F = 50;
+	xfer_fod_obj_remove_cnt = 0;
+	gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+}
+
+uint8_t idle_qdt_back_to_normal(void)
+{
+	return (gd->tx_infos.q_fact + ap->q_factor_reco_value > ap->q_factor_base_value && gd->tx_infos.q_fact < ap->q_factor_limH_value &&
+			gd->tx_infos.f_self + ap->fs_reco_value > ap->fs_base_value && gd->tx_infos.f_self < ap->fs_limH_value);
+}
+
+static void idle_obj_remove_detect(void)
+{
+	if (idle_qdt_back_to_normal())
+	{
+		if (++qdt_obj_remove_count > 3)
+		{
+			idle_qfod_init();
+			gd->tx_infos.ept_attempt_cnt = 0;
+		}
+	}
+	else
+	{
+		qdt_obj_remove_count = 0;
+	}
+}
+
+extern void mpp_mate_q_detect(void);
+
+uint8_t qfod_detect(void)
+{
+	uint8_t no_obj = 1;
+
+	static uint8_t rx_may_still_be_remove_cnt = 0;
+	if (rx_may_still_be_flag != 0)
+	{
+		if (idle_qdt_back_to_normal())
+		{
+			if (++rx_may_still_be_remove_cnt > 3)
+			{
+				rx_may_still_be_flag = 0;
+				rx_may_still_be_remove_cnt = 0;
+				gd->tx_infos.fo_exist = 0;
+				gd->power_mode = nominal;
+			}
+		}
+		else
+		{
+			rx_may_still_be_remove_cnt = 0;
+		}
+	}
+	else
+	{
+		rx_may_still_be_remove_cnt = 0;
+	}
+
+//	if (rx_may_still_be_flag != 0 && idle_qdt_back_to_normal())
+//	{
+//		rx_may_still_be_flag = 0;
+//	}
+
+//	printk("\r\n sta:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
+//			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
+//			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre);
+
+	switch (gd->ptx_idle_phase_status)
+	{
+		case WPC_IDLE_STAT_STANDBY:
+			if (gd->tx_infos.q_fact < ap->q_factor_limL_value || gd->tx_infos.q_fact > ap->q_factor_limH_value ||
+					gd->tx_infos.f_self < ap->fs_limL_value || gd->tx_infos.f_self > ap->fs_limH_value)
+			{
+				qdt_try_ping_count = 0;
+				qdt_have_obj_count = 0;
+				if (++qdt_large_metal_count >= 3)
+				{
+					gd->ptx_idle_phase_status = WPC_IDLE_STAT_LAR_MET;
+				}
+			}
+			else
+			{
+				qdt_large_metal_count = 0;
+
+				if (qdt_have_obj_count)
+				{
+					if (idle_qdt_back_to_normal())
+					{
+						qdt_have_obj_count = 0;
+					}
+					else
+					{
+						if (++qdt_have_obj_count > ap->pin_fod_cnt)
+						{
+							idle_qfod_init();
+							gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_FOD;
+						}
+					}
+				}
+				else
+				{
+					if ((gd->tx_infos.q_fact + 0 + rx_may_still_be_flag * 10 + ap->q_factor_obj_value < ap->q_factor_base_value) ||
+						(gd->tx_infos.f_self > ap->fs_limL_value && gd->tx_infos.f_self + ap->fs_obj_value + rx_may_still_be_flag * 160 < ap->fs_base_value))
+					{
+						++qdt_have_obj_count;
+						qdt_try_ping_count = 0;
+					}
+					else
+					{
+						qdt_try_ping_count += (1 + rx_may_still_be_flag * ap->pin_max_cnt);
+					}
+				}
+			}
+			break;
+		case WPC_IDLE_STAT_XER_COM:
+			idle_obj_remove_detect();
+			if ((++qdt_just_count * ap->t_next_ping) > 11 * 60 * 1000) //11min
+			{
+				idle_qfod_init();
+			}
+			break;
+		case WPC_IDLE_STAT_XER_FOD:
+			idle_obj_remove_detect();
+			break;
+		case WPC_IDLE_STAT_QDT_FOD:
+			idle_obj_remove_detect();
+			break;
+		case WPC_IDLE_STAT_LAR_MET:
+			idle_obj_remove_detect();
+			break;
+		case WPC_IDLE_STAT_EPT_ERR:
+			idle_obj_remove_detect();
+			if ((++qdt_just_count * ap->t_next_ping) > 11 * 60 * 1000) //Refer to other TX, 11min is enough, IOC test 10min.
+			{
+				idle_qfod_init();
+			}
+			break;
+		case WPC_IDLE_STAT_EPT_RES:
+			idle_obj_remove_detect();
+			if (gd->tx_infos.ept_attempt_cnt < 3)
+			{
+				idle_qfod_init();
+				qdt_have_obj_count = 2; //force a digital ping
+			}
+			break;
+		case WPC_IDLE_STAT_EPT_REP:
+			idle_obj_remove_detect();
+			if (++qdt_just_count >= 1)
+			{
+				idle_qfod_init();
+				qdt_have_obj_count = 2; //force a digital ping
+			}
+			break;
+		default:
+			break;
+	}
+
+	if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
+	{
+		no_obj = 0;
+		qdt_try_ping_count = 0;
+	}
+
+	if (ap->pin_fod_dis)
+	{
+		no_obj = 0;
+		gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+	}
+
+	return no_obj;
+}
+/*----------------------------------- IDLE -----------------------------------*/
+
+void wpc_idle_dping_select(void)
+{
+	switch (gd->adp.adp_type)
+	{
+		case EADP_TYPE_QC3P0_12V:
+		case EADP_TYPE_QC3P0_20V:
+		case EADP_TYPE_PD3P0_10W:
+		case EADP_TYPE_PD3P0_20W:
+		case EADP_TYPE_PD3P0_30W:
+		case EADP_TYPE_PD3P0_50W:
+			gd->dig_ping_volt = ap->dig_ping_volt_6v;
+			gd->dig_ping_perd = ap->dig_ping_perd_6v;
+			gd->dig_ping_duty = ap->dig_ping_duty_6v;
+			gd->dig_ping_phas = ap->dig_ping_phas_6v;
+			break;
+		case EADP_TYPE_QC2P0_09V:
+		case EADP_TYPE_PD2P0_09V:
+		case EADP_TYPE_PD2P0_12V:
+		case EADP_TYPE_DCSRC_09V:
+			gd->dig_ping_volt = ap->dig_ping_volt_9v;
+			gd->dig_ping_perd = ap->dig_ping_perd_9v;
+			gd->dig_ping_duty = ap->dig_ping_duty_9v;
+			gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			break;
+//		case EADP_TYPE_PD2P0_12V:
+//			gd->dig_ping_volt = ap->dig_ping_volt_12v;
+//			gd->dig_ping_perd = ap->dig_ping_perd_12v;
+//			gd->dig_ping_duty = ap->dig_ping_duty_12v;
+//			gd->dig_ping_phas = ap->dig_ping_phas_12v;
+//			break;
+		default:
+			gd->dig_ping_volt = ap->dig_ping_volt_5v;
+			gd->dig_ping_perd = ap->dig_ping_perd_5v;
+			gd->dig_ping_duty = ap->dig_ping_duty_5v;
+			gd->dig_ping_phas = ap->dig_ping_phas_5v;
+			break;
+	}
+}
+
+static uint8_t cnt_cloak_ping = 0;
+static uint8_t cnt_cloak_det_ping = 0;
+void wpc_idle_cloak_phase_process(void)
+{
+	if (TRUE == gd->tx_infos.flg_mode_cloak)
+	{
+		cnt_cloak_ping++;
+		cnt_cloak_det_ping++;
+
+		if(cnt_cloak_ping >= gd->tx_infos.cloak_ping_delay)
+		{//digital ping
+			cnt_cloak_ping = 0;
+			cnt_cloak_det_ping = 0;
+
+//			gd->dig_ping_volt = 11000;
+//			gd->dig_ping_perd = 144000000/360000;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 0;
+//
+//	//		pid_init();
+//			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+//			pid_set_duty_limit(500, 500, 500);
+//			pid_set_phas_limit( 50,  40,   0);
+
+	//		fml_nu103x_ddm_init();
+			fml_nu103x_config(_1030_CFG_ALL_RST);
+			fml_nu103x_config(_1030_CFG_OCP_08A);
+			fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
+			fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
+
+			fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);
+			fml_nu103x_config(_1030_CFG_VDM_PIN_EVDM_IN_);
+
+			fml_nu103x_config(_1030_CFG_DRVH1_TURN_OFF);
+			fml_nu103x_config(_1030_CFG_DRVH1_TURN_OFF);
+
+			fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+			fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+
+			fml_nu103x_config(_1030_CFG_DMO1_DDM_SRC_EVDM);
+			fml_nu103x_config(_1030_CFG_DMO2_DDM_SRC_VCAP);
+
+			gd->pid_volt = gd->dig_ping_volt;
+			gd->pid_perd = gd->dig_ping_perd;
+			gd->pid_duty = gd->dig_ping_duty;
+			gd->pid_phas = 50;
+
+			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+			hal_timer_init(TMR3);
+			if (ap->mpp_dither_en)
+			{
+				hal_epwm_afd_start(EPWM1, 4, 2);
+			}
+			fml_ask_enbale();
+
+#if DIG_DDM_ENABLE
+			hal_ddm_dig_ping();
+			hal_ecap_dig_ddm_init();
+			hal_eadc_ddm_init();
+			fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+			fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
+#endif
+			gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
+			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
+		}
+		else if (cnt_cloak_det_ping >= gd->tx_infos.cloak_det_ping_delay)
+		{
+			//short ping
+			cnt_cloak_det_ping = 0;
+
+			gd->dig_ping_volt = 11500;
+			gd->dig_ping_perd = 144000000/360000;
+			gd->dig_ping_duty = 500;
+			gd->dig_ping_phas = 0;
+
+			fml_nu103x_ddm_init();
+
+			gd->pid_volt = gd->dig_ping_volt;
+			gd->pid_perd = gd->dig_ping_perd;
+			gd->pid_duty = 100;
+			gd->pid_phas = gd->dig_ping_phas;
+
+			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+			delay_1us(2000);
+			hal_epwm_pwm_stop(EPWM1);
+		}
+	}
+}
+
+void wpc_idle_phase_process(void)
+{
+	if (gd->ptx_protocol_phase != WPC_PHASE_IDLE)
+	{
+		return;
+	}
+
+	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
+		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
+		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag)
+	{
+		printk("\r\n system protection ");
+		if (gd->prot_sts.tntc_otp_flag) printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp);
+		if (gd->prot_sts.tntc_utp_flag) printk("[tntc_utp:%d]", gd->sys_infos.ntc_temp);
+		if (gd->prot_sts.tdie_otp_flag) printk("[tdie_otp:%d]", gd->sys_infos.die_temp);
+		if (gd->prot_sts.tdie_utp_flag) printk("[tdie_utp:%d]", gd->sys_infos.die_temp);
+		if (gd->prot_sts.isns_ocp_flag) printk("[isns_ocp:%d]", gd->isns);
+		if (gd->prot_sts.vbus_ovp_flag) printk("[vbus_ovp:%d]", gd->vbus);
+		if (gd->prot_sts.vbus_uvp_flag) printk("[vbus_uvp:%d]", gd->vbus);
+		if (gd->prot_sts.vbus_dpl_flag) printk("[vbus_dpl:%d]", gd->vbus);
+		if (gd->prot_sts.vpwr_ovp_flag) printk("[vpwr_ovp:%d]", gd->vpwr);
+		if (gd->prot_sts.pout_opp_flag) printk("[pout_opp:%d %d]", gd->vpwr, gd->isns);
+		return;
+	}
+
+	switch (gd->tx_infos.ping_type)
+	{
+		case qdt_ping:
+			break;
+		case dig_ping:
+			break;
+		case det_ping:
+			break;
+		default:
+			break;
+	}
+
+	hal_badc_isns_chan_offest_update();
+
+	if (gd->tx_infos.dig_ping_type == _128K_HB)
+	{
+		fml_nu103x_por_rst();
+
+		fml_qdt_detect((uint32_t *)&gd->tx_infos.q_fact, (uint32_t *)&gd->tx_infos.f_self);
+
+		enter_buff(gd->tx_infos.q_fact, gd->tx_infos.f_self);
+
+		if (qfod_detect())
+		{
+			return;
+		}
+//		if(port_vbus == 9000)
+//			tcpm_wpc_dping_select(9000);
+//		else
+//			tcpm_wpc_dping_select(5000);
+		//wpc_idle_dping_select();
+
+//		tcpm_wpc_dping_select();
+//		gd->dig_ping_volt = 9000;
+//		gd->dig_ping_perd = 1127;//127.77K
+//		gd->dig_ping_duty = 500; // 250;
+//		gd->dig_ping_phas = 0;
+
+		pid_init();
+		mpp_power_limit_init();
+//		fml_nu103x_ddm_init();
+
+		if (gd->pid_volt != gd->dig_ping_volt)
+		{
+			gd->pid_volt = gd->dig_ping_volt;
+			fml_adp_volt_set(gd->pid_volt);
+		}
+
+		fml_nu103x_por_rst();
+		ctx_switch(4);
+
+		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+//		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		/*
+			dmo1_phase     0->dig ping 1->low power 2->high power
+			DMO1_DDM_SRC   0->iavg     1->vdm
+			DDM_GAIN_MODE  0->auto     1->fixed
+			DDM_GAIN_FIX   0->36       1->60
+		*/
+		printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
+				gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
+		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
+
+		gd->pid_volt = gd->dig_ping_volt;
+		gd->pid_perd = gd->dig_ping_perd;
+		gd->pid_duty = gd->dig_ping_duty;
+		gd->pid_phas = gd->dig_ping_phas;
+
+		gd->sys_infos.tim3_evnt |= 1; //duty ramp up
+		hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+		hal_timer_init(TMR3);//1ms
+	}
+	else if (gd->tx_infos.dig_ping_type == _360K_FB)
+	{
+		gd->tx_infos.dig_ping_type = _128K_HB;//init ping_type
+
+//		wpc_idle_dping_select();
+//		gd->dig_ping_volt = 11000;
+//		gd->dig_ping_perd = 144000000/360000;
+//		gd->dig_ping_duty = 500;
+//		gd->dig_ping_phas = 50;
+
+//		pid_init();
+		pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+		pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+		pid_set_duty_limit(500, 500, 500);
+		pid_set_phas_limit(60, 40, 0);
+
+//		fml_nu103x_ddm_init();
+		fml_nu103x_por_rst();
+
+		if (gd->power_mode == high)
+		{
+#if MPP_25W_HPM_PING_ENALBE
+			if (gd->k_est< MPP_25W_LOW_K_VALUE)
+			{
+				ctx_switch(2);
+			}
+			else
+			{
+				ctx_switch(3);
+			}
+			gd->dig_ping_volt = 16000;
+			gd->dig_ping_phas = MPP_25W_360K_DIG_PING_PHASE;
+
+			pid_set_volt_limit(20100, 11000, 16000);
+#else
+			if (gd->k_est < MPP_25W_LOW_K_VALUE)
+			{
+				ctx_switch(1);
+			}
+			else
+			{
+				ctx_switch(2);
+			}
+			gd->dig_ping_volt = 11000;
+			gd->dig_ping_phas = MPP_25W_360K_DIG_PING_PHASE;
+
+			pid_set_volt_limit(20100, 11000, 16000);
+#endif
+		}
+		else
+		{
+			if (gd->k_est < MPP_25W_LOW_K_VALUE)
+			{
+				ctx_switch(1);
+			}
+			else
+			{
+				ctx_switch(2);
+			}
+			gd->dig_ping_volt = 11000;
+			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+		}
+
+		if (gd->pid_volt != gd->dig_ping_volt)
+		{
+			gd->pid_volt = gd->dig_ping_volt;
+			fml_adp_volt_set(gd->pid_volt);
+		}
+		
+#ifdef _PRINT_REPING_MSG
+		printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
+				gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
+				gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
+				gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
+				gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
+#endif
+
+		printk(" [power mode:%d ctx:%d %d k:%d] ", gd->power_mode, gd->ctx_ind, gd->ctx, gd->k_est);
+
+		//config_1
+		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+//		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
+				gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
+		/*
+			dmo2_phase     0->dig ping 1->low power 2->high power
+			DMO2_DDM_SRC   0->vcap     1->phase
+			DDM_GAIN_MODE  0->auto     1->fixed
+			DDM_GAIN_FIX   0->36       1->60
+			VCAP_RATIO_K   0->k2       1->k3        2->k1
+		*/
+		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
+
+
+		gd->pid_perd = gd->dig_ping_perd;
+		gd->pid_duty = gd->dig_ping_duty;
+		gd->pid_phas = 180;
+
+//		gd->sys_infos.tim3_evnt = 2; //phase ramp up
+		while (gd->pid_phas > gd->dig_ping_phas)//phase ramp up
+		{
+			gd->pid_phas--;
+			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+			delay_1us(2);
+		}
+		if (ap->mpp_dither_en)
+		{
+			hal_epwm_afd_start(EPWM1, 4, 2);
+		}
+	}
+#ifdef	_PRINT_REPING_MSG
+	printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
+			gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
+#endif
+	fml_ask_enbale();
+
+#if DIG_DDM_ENABLE
+	if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360)
+	{
+		hal_ddm_dig_ping();
+		hal_ecap_dig_ddm_init();
+		hal_eadc_ddm_init();
+		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
+		printk("\r\n ----- enable digital ddm");
+	}
+#endif
+
+	gd->ptx_protocol_phase = WPC_PHASE_PING;
+	osal_start_timerEx(WPC_NEXT_TIMER, T_PING, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
+}

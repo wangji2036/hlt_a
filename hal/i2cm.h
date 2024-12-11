@@ -1,0 +1,22 @@
+#ifndef I2CM_H_
+#define I2CM_H_
+
+void hal_i2cm_init(uint32_t u32BusClock);
+
+int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data);
+int hal_i2cm_wirte_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t data);
+int hal_i2cm_read_multi_bytes(uint8_t devAddr, uint8_t regAddr, uint8_t *data, uint8_t len);
+int hal_i2cm_write_multi_bytes(uint8_t devAddr, uint8_t regAddr, uint8_t *data, uint8_t len);
+
+int hal_i2cm_read_one_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t *data);
+int hal_i2cm_write_one_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t data);
+int hal_i2cm_read_multi_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t *data, uint8_t len);
+int hal_i2cm_write_multi_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t *data, uint8_t len);
+
+//These sub functions are designed for fm1210 se_ic
+void hal_i2cm_start(void);
+void hal_i2cm_stop(void);
+int hal_i2cm_byte_send(uint8_t byte);
+int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ); //0-ack 1-nak
+
+#endif /* I2CM_H_ */

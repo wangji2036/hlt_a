@@ -1,0 +1,233 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/tcpc.c File Reference}
+\label{tcpc_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/tcpc.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/tcpc.c}}
+
+
+Currently not implemented. ~\newline
+  
+
+
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}printk.\+h"{}}\newline
+{\ttfamily \#include "{}tcpc.\+h"{}}\newline
+{\ttfamily \#include "{}isr.\+h"{}}\newline
+{\ttfamily \#include "{}bsp.\+h"{}}\newline
+{\ttfamily \#include "{}g\+\_\+data.\+h"{}}\newline
+{\ttfamily \#include "{}pd.\+h"{}}\newline
+{\ttfamily \#include "{}osal.\+h"{}}\newline
+{\ttfamily \#include "{}tcpm.\+h"{}}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \textbf{ tcpc\+\_\+s}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+init} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+cc} (enum \textbf{ tc\+\_\+cc\+\_\+status} cc)
+\item 
+enum \textbf{ tc\+\_\+cc\+\_\+status} \textbf{ hal\+\_\+tcpc\+\_\+to\+\_\+typec\+\_\+cc} (uint32\+\_\+t cc, bool sink)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+get\+\_\+cc} (enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$cc1, enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$cc2)
+\item 
+bool \textbf{ hal\+\_\+tcpc\+\_\+vbus\+\_\+is\+\_\+present} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+data\+\_\+role} (enum \textbf{ data\+\_\+role\+\_\+e} role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+pwr\+\_\+role} (enum \textbf{ pwr\+\_\+role\+\_\+e} role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+gate\+\_\+en} (bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+vconn} (bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+rx} (uint32\+\_\+t sop, bool en)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+roles} (enum \textbf{ pwr\+\_\+role\+\_\+e} pwr\+\_\+role, enum \textbf{ data\+\_\+role\+\_\+e} data\+\_\+role)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+polarity} (enum \textbf{ tc\+\_\+cc\+\_\+polarity} polarity)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+reset\+\_\+pd\+\_\+phy} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+enable} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+disable} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+hardreset} (void)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+pkt\+\_\+transmit} (enum \textbf{ transmit\+\_\+frame\+\_\+type} frame, struct tcpm\+\_\+pd\+\_\+pkt\+\_\+t $\ast$pkt)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+request\+\_\+mgs} (uint32\+\_\+t rdo)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+send\+\_\+ctrl\+\_\+mgs} (enum pd\+\_\+data\+\_\+msg\+\_\+type msg\+\_\+type)
+\item 
+void \textbf{ hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+voltage} (void)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+struct \textbf{ tcpc\+\_\+s} \textbf{ g\+\_\+tcpc}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Currently not implemented. ~\newline
+ 
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech. ~\newline
+ All rights reserved. ~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### TCPC Peripheral Features #####
+==============================================================================
+[..] 
+@todo Need to add the description of the TCPC features when IC datasheet is available.
+
+[..] 
+
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+  (#) @todo Add the implemenation and description of how to use this driver.\end{DoxyVerb}
+ 
+
+\doxysubsection{Function Documentation}
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_get\_cc@{hal\_tcpc\_get\_cc}}
+\index{hal\_tcpc\_get\_cc@{hal\_tcpc\_get\_cc}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_get\_cc()}
+{\footnotesize\ttfamily \label{tcpc_8c_a22d2387ee8ebe0f04d8c4bc9325cd43f} 
+void hal\+\_\+tcpc\+\_\+get\+\_\+cc (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$}]{cc1}{, }\item[{enum \textbf{ tc\+\_\+cc\+\_\+status} $\ast$}]{cc2}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_init@{hal\_tcpc\_init}}
+\index{hal\_tcpc\_init@{hal\_tcpc\_init}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_init()}
+{\footnotesize\ttfamily \label{tcpc_8c_ad34dabb6fac5a5682ed992092d0549b2} 
+void hal\+\_\+tcpc\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_pd\_phy\_disable@{hal\_tcpc\_pd\_phy\_disable}}
+\index{hal\_tcpc\_pd\_phy\_disable@{hal\_tcpc\_pd\_phy\_disable}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_pd\_phy\_disable()}
+{\footnotesize\ttfamily \label{tcpc_8c_a1455d0c1ea0539d7989b5b144fb5f032} 
+void hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+disable (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_pd\_phy\_enable@{hal\_tcpc\_pd\_phy\_enable}}
+\index{hal\_tcpc\_pd\_phy\_enable@{hal\_tcpc\_pd\_phy\_enable}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_pd\_phy\_enable()}
+{\footnotesize\ttfamily \label{tcpc_8c_aa45166cd6284a6cccfc6c8d465a00305} 
+void hal\+\_\+tcpc\+\_\+pd\+\_\+phy\+\_\+enable (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_pkt\_transmit@{hal\_tcpc\_pkt\_transmit}}
+\index{hal\_tcpc\_pkt\_transmit@{hal\_tcpc\_pkt\_transmit}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_pkt\_transmit()}
+{\footnotesize\ttfamily \label{tcpc_8c_a401182670172fed6a891a51291733acc} 
+void hal\+\_\+tcpc\+\_\+pkt\+\_\+transmit (\begin{DoxyParamCaption}\item[{enum \textbf{ transmit\+\_\+frame\+\_\+type}}]{frame}{, }\item[{struct tcpm\+\_\+pd\+\_\+pkt\+\_\+t $\ast$}]{pkt}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_reset\_pd\_phy@{hal\_tcpc\_reset\_pd\_phy}}
+\index{hal\_tcpc\_reset\_pd\_phy@{hal\_tcpc\_reset\_pd\_phy}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_reset\_pd\_phy()}
+{\footnotesize\ttfamily \label{tcpc_8c_a8a9b280858651dcf80e915d5ba243c2b} 
+void hal\+\_\+tcpc\+\_\+reset\+\_\+pd\+\_\+phy (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_send\_ctrl\_mgs@{hal\_tcpc\_send\_ctrl\_mgs}}
+\index{hal\_tcpc\_send\_ctrl\_mgs@{hal\_tcpc\_send\_ctrl\_mgs}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_send\_ctrl\_mgs()}
+{\footnotesize\ttfamily \label{tcpc_8c_a643518e7b31f226383bba0340d13196b} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+ctrl\+\_\+mgs (\begin{DoxyParamCaption}\item[{enum pd\+\_\+data\+\_\+msg\+\_\+type}]{msg\+\_\+type}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_send\_hardreset@{hal\_tcpc\_send\_hardreset}}
+\index{hal\_tcpc\_send\_hardreset@{hal\_tcpc\_send\_hardreset}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_send\_hardreset()}
+{\footnotesize\ttfamily \label{tcpc_8c_a2e80ab4499227095c9d7a742d2b35c68} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+hardreset (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_send\_request\_mgs@{hal\_tcpc\_send\_request\_mgs}}
+\index{hal\_tcpc\_send\_request\_mgs@{hal\_tcpc\_send\_request\_mgs}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_send\_request\_mgs()}
+{\footnotesize\ttfamily \label{tcpc_8c_a51927fe58bd3e5c1bc2250fcb56554e8} 
+void hal\+\_\+tcpc\+\_\+send\+\_\+request\+\_\+mgs (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{rdo}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_cc@{hal\_tcpc\_set\_cc}}
+\index{hal\_tcpc\_set\_cc@{hal\_tcpc\_set\_cc}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_cc()}
+{\footnotesize\ttfamily \label{tcpc_8c_ab9be728349edc2d97da5c5c134454478} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+cc (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+status}}]{cc}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_data\_role@{hal\_tcpc\_set\_data\_role}}
+\index{hal\_tcpc\_set\_data\_role@{hal\_tcpc\_set\_data\_role}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_data\_role()}
+{\footnotesize\ttfamily \label{tcpc_8c_a91202e0032dcde69daaeef30107c64ab} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+data\+\_\+role (\begin{DoxyParamCaption}\item[{enum \textbf{ data\+\_\+role\+\_\+e}}]{role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_gate\_en@{hal\_tcpc\_set\_gate\_en}}
+\index{hal\_tcpc\_set\_gate\_en@{hal\_tcpc\_set\_gate\_en}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_gate\_en()}
+{\footnotesize\ttfamily \label{tcpc_8c_a6288cb464daa317751a345a2821b9ee5} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+gate\+\_\+en (\begin{DoxyParamCaption}\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_pd\_rx@{hal\_tcpc\_set\_pd\_rx}}
+\index{hal\_tcpc\_set\_pd\_rx@{hal\_tcpc\_set\_pd\_rx}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_pd\_rx()}
+{\footnotesize\ttfamily \label{tcpc_8c_ab7a95d48bb1d88dd04f7004ff17a5764} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+rx (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{sop}{, }\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_pd\_voltage@{hal\_tcpc\_set\_pd\_voltage}}
+\index{hal\_tcpc\_set\_pd\_voltage@{hal\_tcpc\_set\_pd\_voltage}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_pd\_voltage()}
+{\footnotesize\ttfamily \label{tcpc_8c_a4c21b59b8a16fd2d05f3e208cd5a2bf9} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+pd\+\_\+voltage (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_polarity@{hal\_tcpc\_set\_polarity}}
+\index{hal\_tcpc\_set\_polarity@{hal\_tcpc\_set\_polarity}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_polarity()}
+{\footnotesize\ttfamily \label{tcpc_8c_add793838ef11c51ab0b4fc825cd2dfb6} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+polarity (\begin{DoxyParamCaption}\item[{enum \textbf{ tc\+\_\+cc\+\_\+polarity}}]{polarity}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_pwr\_role@{hal\_tcpc\_set\_pwr\_role}}
+\index{hal\_tcpc\_set\_pwr\_role@{hal\_tcpc\_set\_pwr\_role}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_pwr\_role()}
+{\footnotesize\ttfamily \label{tcpc_8c_af6929078035bad02ba391662603d835c} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+pwr\+\_\+role (\begin{DoxyParamCaption}\item[{enum \textbf{ pwr\+\_\+role\+\_\+e}}]{role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_roles@{hal\_tcpc\_set\_roles}}
+\index{hal\_tcpc\_set\_roles@{hal\_tcpc\_set\_roles}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_roles()}
+{\footnotesize\ttfamily \label{tcpc_8c_ae6362ab29caddbfe33d704ff49bada79} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+roles (\begin{DoxyParamCaption}\item[{enum \textbf{ pwr\+\_\+role\+\_\+e}}]{pwr\+\_\+role}{, }\item[{enum \textbf{ data\+\_\+role\+\_\+e}}]{data\+\_\+role}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_set\_vconn@{hal\_tcpc\_set\_vconn}}
+\index{hal\_tcpc\_set\_vconn@{hal\_tcpc\_set\_vconn}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_set\_vconn()}
+{\footnotesize\ttfamily \label{tcpc_8c_a14059f7a561a121c71082da5e4ec036e} 
+void hal\+\_\+tcpc\+\_\+set\+\_\+vconn (\begin{DoxyParamCaption}\item[{bool}]{en}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_to\_typec\_cc@{hal\_tcpc\_to\_typec\_cc}}
+\index{hal\_tcpc\_to\_typec\_cc@{hal\_tcpc\_to\_typec\_cc}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_to\_typec\_cc()}
+{\footnotesize\ttfamily \label{tcpc_8c_a54f93537479e7557bf17be63fb046bd7} 
+enum \textbf{ tc\+\_\+cc\+\_\+status} hal\+\_\+tcpc\+\_\+to\+\_\+typec\+\_\+cc (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{cc}{, }\item[{bool}]{sink}{}\end{DoxyParamCaption})}
+
+\index{tcpc.c@{tcpc.c}!hal\_tcpc\_vbus\_is\_present@{hal\_tcpc\_vbus\_is\_present}}
+\index{hal\_tcpc\_vbus\_is\_present@{hal\_tcpc\_vbus\_is\_present}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{hal\_tcpc\_vbus\_is\_present()}
+{\footnotesize\ttfamily \label{tcpc_8c_ae7d5276d2d3c2793b3383c7bd30baf2a} 
+bool hal\+\_\+tcpc\+\_\+vbus\+\_\+is\+\_\+present (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Variable Documentation}
+\index{tcpc.c@{tcpc.c}!g\_tcpc@{g\_tcpc}}
+\index{g\_tcpc@{g\_tcpc}!tcpc.c@{tcpc.c}}
+\doxysubsubsection{g\_tcpc}
+{\footnotesize\ttfamily \label{tcpc_8c_ac83ed42b4a2556f5a2f4d972666e9e60} 
+struct \textbf{ tcpc\+\_\+s} g\+\_\+tcpc}
+

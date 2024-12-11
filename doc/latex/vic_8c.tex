@@ -1,0 +1,99 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/vic.c File Reference}
+\label{vic_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/vic.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/vic.c}}
+
+
+Interrup vector table and interrupt handler for the VIC HAL module driver. ~\newline
+ The functionalities of the UART peripheral\+:~\newline
+  
+
+
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}vic.\+h"{}}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+vic\+\_\+init} (void)
+\begin{DoxyCompactList}\small\item\em Enable and set the priority of each interrupt. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Interrup vector table and interrupt handler for the VIC HAL module driver. ~\newline
+ The functionalities of the UART peripheral\+:~\newline
+ 
+
+
+\begin{DoxyItemize}
+\item Initialization and set the priority of each interrupt ~\newline
+
+\end{DoxyItemize}
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech. ~\newline
+ All rights reserved. ~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### Intertupt Vector Features #####
+==============================================================================
+[..] 
+The VIC has the following features:
+(+) Enable the interrupt sources
+(+) Set the priority of each interrupt
+(+) Set the interrupt vector table base address
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+(#) Enable and set the priority of each interrupt using the hal_vic_init() function.\end{DoxyVerb}
+ 
+
+\doxysubsection{Function Documentation}
+\index{vic.c@{vic.c}!hal\_vic\_init@{hal\_vic\_init}}
+\index{hal\_vic\_init@{hal\_vic\_init}!vic.c@{vic.c}}
+\doxysubsubsection{hal\_vic\_init()}
+{\footnotesize\ttfamily \label{vic_8c_acbea6ad4547a44d10e23fb920c6d42be} 
+void hal\+\_\+vic\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+Enable and set the priority of each interrupt. 
+
+The priority of each interrupt as below(\+Lower value has higher priority)\+:
+\begin{DoxyItemize}
+\item IRQn\+\_\+\+TMR0\+: 3
+\item IRQn\+\_\+\+TMR1\+: 1
+\item IRQn\+\_\+\+TMR2\+: 3
+\item IRQn\+\_\+\+TMR3\+: 3
+\item IRQn\+\_\+\+EADC\+: 2
+\item IRQn\+\_\+\+ECAP1\+: 2
+\item IRQn\+\_\+\+ECAP2\+: 2
+\item IRQn\+\_\+\+ECAP3\+: 2
+\item IRQn\+\_\+\+ECAP4\+: 2
+\item IRQn\+\_\+\+ECAP5\+: 2
+\item IRQn\+\_\+\+UART1\+: 3
+\item IRQn\+\_\+\+I2\+CS\+: 3
+\item IRQn\+\_\+\+USBPD\+: 0
+\item IRQn\+\_\+\+FSK1\+: 1
+\item IRQn\+\_\+\+FSK2\+: 1 
+\begin{DoxyParams}{Parameters}
+{\em void} & \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & ~\newline
+ \\
+\hline
+\end{DoxyRetVals}
+\begin{DoxyNote}{Note}
+This function should be called in the main function after the clocks are enabled. 
+\end{DoxyNote}
+
+\end{DoxyItemize}

@@ -1,0 +1,106 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/ecap.h File Reference}
+\label{ecap_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/ecap.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/ecap.h}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+ecap\+\_\+init} (\textbf{ TS\+\_\+\+ECAP} $\ast$ecap, enum \textbf{ ECAP\+\_\+\+FUNC\+\_\+\+MODE} mode)
+\begin{DoxyCompactList}\small\item\em Initializes the ECAP peripheral. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+ecap\+\_\+open} (\textbf{ TS\+\_\+\+ECAP} $\ast$ecap)
+\begin{DoxyCompactList}\small\item\em Opens the ECAP capture functionality. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+ecap\+\_\+close} (\textbf{ TS\+\_\+\+ECAP} $\ast$ecap)
+\begin{DoxyCompactList}\small\item\em Closes the ECAP capture functionality. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+ecap\+\_\+reg\+\_\+int\+\_\+cb} (void($\ast$func)(uint8\+\_\+t, uint16\+\_\+t))
+\begin{DoxyCompactList}\small\item\em Registers a callback function for ECAP interrupts. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+ecap\+\_\+dig\+\_\+ddm\+\_\+init} (void)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\index{ecap.h@{ecap.h}!hal\_ecap\_close@{hal\_ecap\_close}}
+\index{hal\_ecap\_close@{hal\_ecap\_close}!ecap.h@{ecap.h}}
+\doxysubsubsection{hal\_ecap\_close()}
+{\footnotesize\ttfamily \label{ecap_8h_a6d8b2efd045a977911d5842b26fc5038} 
+void hal\+\_\+ecap\+\_\+close (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+ECAP} $\ast$}]{ecap}{}\end{DoxyParamCaption})}
+
+
+
+Closes the ECAP capture functionality. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ecap} & Pointer to the ECAP instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{ecap.h@{ecap.h}!hal\_ecap\_dig\_ddm\_init@{hal\_ecap\_dig\_ddm\_init}}
+\index{hal\_ecap\_dig\_ddm\_init@{hal\_ecap\_dig\_ddm\_init}!ecap.h@{ecap.h}}
+\doxysubsubsection{hal\_ecap\_dig\_ddm\_init()}
+{\footnotesize\ttfamily \label{ecap_8h_ab0e4b13acb882c59d74056a1a1e7e232} 
+void hal\+\_\+ecap\+\_\+dig\+\_\+ddm\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{ecap.h@{ecap.h}!hal\_ecap\_init@{hal\_ecap\_init}}
+\index{hal\_ecap\_init@{hal\_ecap\_init}!ecap.h@{ecap.h}}
+\doxysubsubsection{hal\_ecap\_init()}
+{\footnotesize\ttfamily \label{ecap_8h_a8e31a3bb831980b0c20767cdf877b464} 
+void hal\+\_\+ecap\+\_\+init (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+ECAP} $\ast$}]{ecap}{, }\item[{enum \textbf{ ECAP\+\_\+\+FUNC\+\_\+\+MODE}}]{mode}{}\end{DoxyParamCaption})}
+
+
+
+Initializes the ECAP peripheral. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ecap} & Pointer to the ECAP instance. \\
+\hline
+{\em mode} & Operating mode of the ECAP. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{ecap.h@{ecap.h}!hal\_ecap\_open@{hal\_ecap\_open}}
+\index{hal\_ecap\_open@{hal\_ecap\_open}!ecap.h@{ecap.h}}
+\doxysubsubsection{hal\_ecap\_open()}
+{\footnotesize\ttfamily \label{ecap_8h_a91fcee8ee020faa1e8993c82887f6af5} 
+void hal\+\_\+ecap\+\_\+open (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+ECAP} $\ast$}]{ecap}{}\end{DoxyParamCaption})}
+
+
+
+Opens the ECAP capture functionality. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ecap} & Pointer to the ECAP instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{ecap.h@{ecap.h}!hal\_ecap\_reg\_int\_cb@{hal\_ecap\_reg\_int\_cb}}
+\index{hal\_ecap\_reg\_int\_cb@{hal\_ecap\_reg\_int\_cb}!ecap.h@{ecap.h}}
+\doxysubsubsection{hal\_ecap\_reg\_int\_cb()}
+{\footnotesize\ttfamily \label{ecap_8h_adacdbc0ea2986f7c8754ba83ebb7abb1} 
+void hal\+\_\+ecap\+\_\+reg\+\_\+int\+\_\+cb (\begin{DoxyParamCaption}\item[{void($\ast$}]{func~}{)(uint8\+\_\+t, uint16\+\_\+t)}\end{DoxyParamCaption})}
+
+
+
+Registers a callback function for ECAP interrupts. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em func} & Pointer to the callback function. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}

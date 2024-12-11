@@ -1,0 +1,77 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/wdt.h File Reference}
+\label{wdt_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/wdt.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/wdt.h}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+wdt\+\_\+init} (void)
+\begin{DoxyCompactList}\small\item\em Enable and configure the Watchdog timer timeout to 1000ms(1 second). \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+wdt\+\_\+feed} (void)
+\begin{DoxyCompactList}\small\item\em Watchdog timer feed function. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+wdt\+\_\+stop} (void)
+\begin{DoxyCompactList}\small\item\em Stop the watchdog timer. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\index{wdt.h@{wdt.h}!hal\_wdt\_feed@{hal\_wdt\_feed}}
+\index{hal\_wdt\_feed@{hal\_wdt\_feed}!wdt.h@{wdt.h}}
+\doxysubsubsection{hal\_wdt\_feed()}
+{\footnotesize\ttfamily \label{wdt_8h_a2c43e2f683b0b09e0ad66b3aa6529cc4} 
+void hal\+\_\+wdt\+\_\+feed (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+Watchdog timer feed function. 
+
+This function feeds the watchdog timer to prevent a system reset. 
+\begin{DoxyParams}{Parameters}
+{\em void} & \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{wdt.h@{wdt.h}!hal\_wdt\_init@{hal\_wdt\_init}}
+\index{hal\_wdt\_init@{hal\_wdt\_init}!wdt.h@{wdt.h}}
+\doxysubsubsection{hal\_wdt\_init()}
+{\footnotesize\ttfamily \label{wdt_8h_a9dc0c3eb89584296b65c4025f3ae0dea} 
+void hal\+\_\+wdt\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+Enable and configure the Watchdog timer timeout to 1000ms(1 second). 
+
+This function initializes the watchdog timer with a timeout of 1000ms(1 second).
+\begin{DoxyItemize}
+\item If the watchdog timer is not fed within this time, the system will reset. 
+\begin{DoxyParams}{Parameters}
+{\em void} & \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\end{DoxyItemize}\index{wdt.h@{wdt.h}!hal\_wdt\_stop@{hal\_wdt\_stop}}
+\index{hal\_wdt\_stop@{hal\_wdt\_stop}!wdt.h@{wdt.h}}
+\doxysubsubsection{hal\_wdt\_stop()}
+{\footnotesize\ttfamily \label{wdt_8h_a6e73a0b7f192e3570b393c86bad66092} 
+void hal\+\_\+wdt\+\_\+stop (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+
+
+Stop the watchdog timer. 
+
+This function stops the watchdog timer. 
+\begin{DoxyParams}{Parameters}
+{\em void} & \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}

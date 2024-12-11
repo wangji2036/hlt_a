@@ -1,0 +1,200 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/epwm.h File Reference}
+\label{epwm_8h}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/epwm.h@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/epwm.h}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+epwm\+\_\+pwm\+\_\+start} (\textbf{ TS\+\_\+\+EPWM} $\ast$epwm, uint16\+\_\+t perd\+\_\+cycle, uint16\+\_\+t duty\+\_\+ratio, uint16\+\_\+t phas\+\_\+angle)
+\begin{DoxyCompactList}\small\item\em Starts the EPWM output. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+epwm\+\_\+pwm\+\_\+update} (\textbf{ TS\+\_\+\+EPWM} $\ast$epwm, uint16\+\_\+t perd\+\_\+cycle, uint16\+\_\+t duty\+\_\+ratio, uint16\+\_\+t phas\+\_\+angle)
+\begin{DoxyCompactList}\small\item\em Updates the EPWM output settings. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+epwm\+\_\+pwm\+\_\+stop} (\textbf{ TS\+\_\+\+EPWM} $\ast$epwm)
+\begin{DoxyCompactList}\small\item\em Stops the EPWM output. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+epwm\+\_\+afd\+\_\+start} (\textbf{ TS\+\_\+\+EPWM} $\ast$epwm, uint8\+\_\+t cycle, uint8\+\_\+t count)
+\begin{DoxyCompactList}\small\item\em Starts the Automatic Frequency Detection (AFD) functionality. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+epwm\+\_\+afd\+\_\+stop} (\textbf{ TS\+\_\+\+EPWM} $\ast$epwm)
+\begin{DoxyCompactList}\small\item\em Stops the Automatic Frequency Detection (AFD) functionality. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\index{epwm.h@{epwm.h}!hal\_epwm\_afd\_start@{hal\_epwm\_afd\_start}}
+\index{hal\_epwm\_afd\_start@{hal\_epwm\_afd\_start}!epwm.h@{epwm.h}}
+\doxysubsubsection{hal\_epwm\_afd\_start()}
+{\footnotesize\ttfamily \label{epwm_8h_a50a99257d73cbfdbe80731a9d95f749f} 
+void hal\+\_\+epwm\+\_\+afd\+\_\+start (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+EPWM} $\ast$}]{epwm}{, }\item[{uint8\+\_\+t}]{cycle}{, }\item[{uint8\+\_\+t}]{count}{}\end{DoxyParamCaption})}
+
+
+
+Starts the Automatic Frequency Detection (AFD) functionality. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em cycle} & Cycle count for AFD. \\
+\hline
+{\em count} & Step count for AFD. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em cycle} & Cycle count for AFD. \\
+\hline
+{\em count} & Step count for AFD. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{epwm.h@{epwm.h}!hal\_epwm\_afd\_stop@{hal\_epwm\_afd\_stop}}
+\index{hal\_epwm\_afd\_stop@{hal\_epwm\_afd\_stop}!epwm.h@{epwm.h}}
+\doxysubsubsection{hal\_epwm\_afd\_stop()}
+{\footnotesize\ttfamily \label{epwm_8h_a187495e19dc9a2ed9222a605806f5123} 
+void hal\+\_\+epwm\+\_\+afd\+\_\+stop (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+EPWM} $\ast$}]{epwm}{}\end{DoxyParamCaption})}
+
+
+
+Stops the Automatic Frequency Detection (AFD) functionality. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{epwm.h@{epwm.h}!hal\_epwm\_pwm\_start@{hal\_epwm\_pwm\_start}}
+\index{hal\_epwm\_pwm\_start@{hal\_epwm\_pwm\_start}!epwm.h@{epwm.h}}
+\doxysubsubsection{hal\_epwm\_pwm\_start()}
+{\footnotesize\ttfamily \label{epwm_8h_a84e76341c3285355eb44ec07c0864d30} 
+void hal\+\_\+epwm\+\_\+pwm\+\_\+start (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+EPWM} $\ast$}]{epwm}{, }\item[{uint16\+\_\+t}]{perd\+\_\+cycle}{, }\item[{uint16\+\_\+t}]{duty\+\_\+ratio}{, }\item[{uint16\+\_\+t}]{phas\+\_\+angle}{}\end{DoxyParamCaption})}
+
+
+
+Starts the EPWM output. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em perd\+\_\+cycle} & Period of the PWM signal. \\
+\hline
+{\em duty\+\_\+ratio} & Duty cycle ratio. \\
+\hline
+{\em phas\+\_\+angle} & Phase angle. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em perd\+\_\+cycle} & Period of the PWM signal. \\
+\hline
+{\em duty\+\_\+ratio} & Duty cycle ratio. \\
+\hline
+{\em phas\+\_\+angle} & Phase angle. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{epwm.h@{epwm.h}!hal\_epwm\_pwm\_stop@{hal\_epwm\_pwm\_stop}}
+\index{hal\_epwm\_pwm\_stop@{hal\_epwm\_pwm\_stop}!epwm.h@{epwm.h}}
+\doxysubsubsection{hal\_epwm\_pwm\_stop()}
+{\footnotesize\ttfamily \label{epwm_8h_ad156203078d376722d6a1d592e4ef799} 
+void hal\+\_\+epwm\+\_\+pwm\+\_\+stop (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+EPWM} $\ast$}]{epwm}{}\end{DoxyParamCaption})}
+
+
+
+Stops the EPWM output. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{epwm.h@{epwm.h}!hal\_epwm\_pwm\_update@{hal\_epwm\_pwm\_update}}
+\index{hal\_epwm\_pwm\_update@{hal\_epwm\_pwm\_update}!epwm.h@{epwm.h}}
+\doxysubsubsection{hal\_epwm\_pwm\_update()}
+{\footnotesize\ttfamily \label{epwm_8h_a39c20a6e4d148555c3aff8ccabe94554} 
+void hal\+\_\+epwm\+\_\+pwm\+\_\+update (\begin{DoxyParamCaption}\item[{\textbf{ TS\+\_\+\+EPWM} $\ast$}]{epwm}{, }\item[{uint16\+\_\+t}]{perd\+\_\+cycle}{, }\item[{uint16\+\_\+t}]{duty\+\_\+ratio}{, }\item[{uint16\+\_\+t}]{phas\+\_\+angle}{}\end{DoxyParamCaption})}
+
+
+
+Updates the EPWM output settings. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em perd\+\_\+cycle} & Period of the PWM signal. \\
+\hline
+{\em duty\+\_\+ratio} & Duty cycle ratio. \\
+\hline
+{\em phas\+\_\+angle} & Phase angle. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+
+\begin{DoxyParams}{Parameters}
+{\em epwm} & Pointer to the EPWM instance. \\
+\hline
+{\em perd\+\_\+cycle} & Period of the PWM signal. \\
+\hline
+{\em duty\+\_\+ratio} & Duty cycle ratio. \\
+\hline
+{\em phas\+\_\+angle} & Phase angle. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}

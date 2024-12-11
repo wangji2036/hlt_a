@@ -1,0 +1,107 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/fmc.c File Reference}
+\label{fmc_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/fmc.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/fmc.c}}
+
+
+Flash HAL module driver. This file provides firmware functions to manage the following ~\newline
+ The functionalities of the Flash peripherals as below\+: ~\newline
+  
+
+
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}fmc.\+h"{}}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+fmc\+\_\+erase\+\_\+page} (uint32\+\_\+t addr)
+\begin{DoxyCompactList}\small\item\em Erase a page. The page size is 512 bytes. \end{DoxyCompactList}\item 
+void \textbf{ hal\+\_\+fmc\+\_\+write\+\_\+word} (uint32\+\_\+t addr, uint32\+\_\+t data)
+\begin{DoxyCompactList}\small\item\em Writes a word data to specified flash address. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Flash HAL module driver. This file provides firmware functions to manage the following ~\newline
+ The functionalities of the Flash peripherals as below\+: ~\newline
+ 
+
+
+\begin{DoxyItemize}
+\item Erase one page of the Flash memory. ~\newline
+
+\item Write a word to the Flash memory. ~\newline
+
+\end{DoxyItemize}
+
+\begin{DoxyAttention}{Attention}
+
+\end{DoxyAttention}
+Copyright (c) 2024 Novltatech. ~\newline
+ All rights reserved. ~\newline
+
+
+This software is licensed under terms that can be found in the LICENSE file ~\newline
+ in the root directory of this software component. ~\newline
+ If no LICENSE file comes with this software, it is provided AS-\/\+IS.
+
+\begin{DoxyVerb}==============================================================================
+                  ##### Flash Peripheral Features #####
+==============================================================================
+[..] 
+@todo Need to add the description of the Flash features when IC datasheet is available.
+
+[..] 
+The Flash has the following features:
+(+) 64K Flash memory organized into 256 pages of 128 bytes each.
+(+) 16-bit data bus.
+(+) 128-bit flash erase command.
+(+) 32-bit flash program command.
+
+==============================================================================
+                   ##### How to use this driver #####
+==============================================================================  
+[..]
+  (#) Erase the page of the Flash memory using the hal_fmc_erase_page() function.
+  (#) Write a word to the Flash memory using the hal_fmc_write_word() function.
+    -   Before writing a word to the Flash memory, the erease operation should be performed.\end{DoxyVerb}
+ 
+
+\doxysubsection{Function Documentation}
+\index{fmc.c@{fmc.c}!hal\_fmc\_erase\_page@{hal\_fmc\_erase\_page}}
+\index{hal\_fmc\_erase\_page@{hal\_fmc\_erase\_page}!fmc.c@{fmc.c}}
+\doxysubsubsection{hal\_fmc\_erase\_page()}
+{\footnotesize\ttfamily \label{fmc_8c_a3001e6722b2511956f3cd4077200e60b} 
+void hal\+\_\+fmc\+\_\+erase\+\_\+page (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{addr}{}\end{DoxyParamCaption})}
+
+
+
+Erase a page. The page size is 512 bytes. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em addr} & Flash page address. Must be a 512-\/byte aligned address. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyRetVals}{Return values}
+{\em void} & \\
+\hline
+\end{DoxyRetVals}
+\index{fmc.c@{fmc.c}!hal\_fmc\_write\_word@{hal\_fmc\_write\_word}}
+\index{hal\_fmc\_write\_word@{hal\_fmc\_write\_word}!fmc.c@{fmc.c}}
+\doxysubsubsection{hal\_fmc\_write\_word()}
+{\footnotesize\ttfamily \label{fmc_8c_a330a345083558e5ac5c545e6d6349c64} 
+void hal\+\_\+fmc\+\_\+write\+\_\+word (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{addr}{, }\item[{uint32\+\_\+t}]{data}{}\end{DoxyParamCaption})}
+
+
+
+Writes a word data to specified flash address. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em addr} & Destination address, Must be a 4-\/byte aligned address. \\
+\hline
+{\em data} & Word data to be written \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+void 
+\end{DoxyReturn}

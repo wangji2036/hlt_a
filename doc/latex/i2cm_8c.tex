@@ -1,0 +1,252 @@
+\doxysection{D\+:/\+Git\+\_\+\+Project/nu17112/mpp\+\_\+tx\+\_\+module/hal/i2cm.c File Reference}
+\label{i2cm_8c}\index{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/i2cm.c@{D:/Git\_Project/nu17112/mpp\_tx\_module/hal/i2cm.c}}
+{\ttfamily \#include "{}regdef.\+h"{}}\newline
+{\ttfamily \#include "{}printk.\+h"{}}\newline
+{\ttfamily \#include "{}delay.\+h"{}}\newline
+{\ttfamily \#include "{}i2cm.\+h"{}}\newline
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \textbf{ \+\_\+\+I2\+C\+\_\+\+WRIT\+\_\+\+BIT}~0
+\item 
+\#define \textbf{ \+\_\+\+I2\+C\+\_\+\+READ\+\_\+\+BIT}~1
+\item 
+\#define \textbf{ \+\_\+\+I2\+C\+\_\+\+RESP\+\_\+\+ACK}~0
+\item 
+\#define \textbf{ \+\_\+\+I2\+C\+\_\+\+RESP\+\_\+\+NAK}~1
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT}~\textbf{ GPA}
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx}~PIN7
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PORT}~\textbf{ GPA}
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PINx}~PIN6
+\item 
+\#define \textbf{ \+\_\+\+PIN\+\_\+\+LEVEL\+\_\+\+HI}~(1)
+\item 
+\#define \textbf{ \+\_\+\+PIN\+\_\+\+LEVEL\+\_\+\+LO}~(0)
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+D\+\_\+\+IN}~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT}-\/$>$\textbf{ D\+\_\+\+IN.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx})
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+DOUT}~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT}-\/$>$\textbf{ DOUT.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx})
+\item 
+\#define \textbf{ \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+DOUT}~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PORT}-\/$>$\textbf{ DOUT.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PINx})
+\item 
+\#define \textbf{ \+\_\+\+SET\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+IN\+\_\+\+PUT}()
+\item 
+\#define \textbf{ \+\_\+\+SET\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+OUTPUT}()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \textbf{ hal\+\_\+i2cm\+\_\+init} (uint32\+\_\+t u32\+Bus\+Clock)
+\item 
+void \textbf{ hal\+\_\+i2cm\+\_\+start} (void)
+\item 
+void \textbf{ hal\+\_\+i2cm\+\_\+stop} (void)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+byte\+\_\+send} (uint8\+\_\+t byte)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+byte\+\_\+read} (uint8\+\_\+t $\ast$byte, uint8\+\_\+t resp\+\_\+typ)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+read\+\_\+one\+\_\+byte} (uint8\+\_\+t dev\+Addr, uint8\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+wirte\+\_\+one\+\_\+byte} (uint8\+\_\+t dev\+Addr, uint8\+\_\+t reg\+Addr, uint8\+\_\+t data)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+read\+\_\+multi\+\_\+bytes} (uint8\+\_\+t dev\+Addr, uint8\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data, uint8\+\_\+t \textbf{ len})
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+write\+\_\+multi\+\_\+bytes} (uint8\+\_\+t dev\+Addr, uint8\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data, uint8\+\_\+t \textbf{ len})
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+read\+\_\+one\+\_\+byte\+\_\+16bit} (uint8\+\_\+t dev\+Addr, uint16\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+write\+\_\+one\+\_\+byte\+\_\+16bit} (uint8\+\_\+t dev\+Addr, uint16\+\_\+t reg\+Addr, uint8\+\_\+t data)
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+read\+\_\+multi\+\_\+byte\+\_\+16bit} (uint8\+\_\+t dev\+Addr, uint16\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data, uint8\+\_\+t \textbf{ len})
+\item 
+int \textbf{ hal\+\_\+i2cm\+\_\+write\+\_\+multi\+\_\+byte\+\_\+16bit} (uint8\+\_\+t dev\+Addr, uint16\+\_\+t reg\+Addr, uint8\+\_\+t $\ast$data, uint8\+\_\+t \textbf{ len})
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\index{i2cm.c@{i2cm.c}!\_I2C\_READ\_BIT@{\_I2C\_READ\_BIT}}
+\index{\_I2C\_READ\_BIT@{\_I2C\_READ\_BIT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2C\_READ\_BIT}
+{\footnotesize\ttfamily \label{i2cm_8c_aaa721c431eb5be4ec38fde69fb3a0d90} 
+\#define \+\_\+\+I2\+C\+\_\+\+READ\+\_\+\+BIT~1}
+
+\index{i2cm.c@{i2cm.c}!\_I2C\_RESP\_ACK@{\_I2C\_RESP\_ACK}}
+\index{\_I2C\_RESP\_ACK@{\_I2C\_RESP\_ACK}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2C\_RESP\_ACK}
+{\footnotesize\ttfamily \label{i2cm_8c_ac736d48f51836e8c9f8fffef48a1897a} 
+\#define \+\_\+\+I2\+C\+\_\+\+RESP\+\_\+\+ACK~0}
+
+\index{i2cm.c@{i2cm.c}!\_I2C\_RESP\_NAK@{\_I2C\_RESP\_NAK}}
+\index{\_I2C\_RESP\_NAK@{\_I2C\_RESP\_NAK}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2C\_RESP\_NAK}
+{\footnotesize\ttfamily \label{i2cm_8c_afb418c933086bcc53cfce2a62ede85de} 
+\#define \+\_\+\+I2\+C\+\_\+\+RESP\+\_\+\+NAK~1}
+
+\index{i2cm.c@{i2cm.c}!\_I2C\_WRIT\_BIT@{\_I2C\_WRIT\_BIT}}
+\index{\_I2C\_WRIT\_BIT@{\_I2C\_WRIT\_BIT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2C\_WRIT\_BIT}
+{\footnotesize\ttfamily \label{i2cm_8c_a1483cc8f7b4273e5fbb385eb59fe0b1b} 
+\#define \+\_\+\+I2\+C\+\_\+\+WRIT\+\_\+\+BIT~0}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SCL\_DOUT@{\_I2CM\_SCL\_DOUT}}
+\index{\_I2CM\_SCL\_DOUT@{\_I2CM\_SCL\_DOUT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SCL\_DOUT}
+{\footnotesize\ttfamily \label{i2cm_8c_af0c2210ac738e989e10693cdd70f0abf} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+DOUT~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PORT}-\/$>$\textbf{ DOUT.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PINx})}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SCL\_PINx@{\_I2CM\_SCL\_PINx}}
+\index{\_I2CM\_SCL\_PINx@{\_I2CM\_SCL\_PINx}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SCL\_PINx}
+{\footnotesize\ttfamily \label{i2cm_8c_ab894acaba5ea2ddb15f6205dcf2175c9} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PINx~PIN6}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SCL\_PORT@{\_I2CM\_SCL\_PORT}}
+\index{\_I2CM\_SCL\_PORT@{\_I2CM\_SCL\_PORT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SCL\_PORT}
+{\footnotesize\ttfamily \label{i2cm_8c_ae8df139496a9bebf2875e4b5fe3c6826} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SCL\+\_\+\+PORT~\textbf{ GPA}}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SDA\_D\_IN@{\_I2CM\_SDA\_D\_IN}}
+\index{\_I2CM\_SDA\_D\_IN@{\_I2CM\_SDA\_D\_IN}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SDA\_D\_IN}
+{\footnotesize\ttfamily \label{i2cm_8c_ade678d62c0cb4c193d74f35a7e7b926f} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+D\+\_\+\+IN~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT}-\/$>$\textbf{ D\+\_\+\+IN.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx})}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SDA\_DOUT@{\_I2CM\_SDA\_DOUT}}
+\index{\_I2CM\_SDA\_DOUT@{\_I2CM\_SDA\_DOUT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SDA\_DOUT}
+{\footnotesize\ttfamily \label{i2cm_8c_a4e5992d2104f0231a21e651ddff00d48} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+DOUT~(\textbf{ \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT}-\/$>$\textbf{ DOUT.\+BITS.\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx})}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SDA\_PINx@{\_I2CM\_SDA\_PINx}}
+\index{\_I2CM\_SDA\_PINx@{\_I2CM\_SDA\_PINx}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SDA\_PINx}
+{\footnotesize\ttfamily \label{i2cm_8c_af131f136963188404a0ce4a47e18d743} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PINx~PIN7}
+
+\index{i2cm.c@{i2cm.c}!\_I2CM\_SDA\_PORT@{\_I2CM\_SDA\_PORT}}
+\index{\_I2CM\_SDA\_PORT@{\_I2CM\_SDA\_PORT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_I2CM\_SDA\_PORT}
+{\footnotesize\ttfamily \label{i2cm_8c_acaee2bd8699941c2fd5091d8de430f7e} 
+\#define \+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+PORT~\textbf{ GPA}}
+
+\index{i2cm.c@{i2cm.c}!\_PIN\_LEVEL\_HI@{\_PIN\_LEVEL\_HI}}
+\index{\_PIN\_LEVEL\_HI@{\_PIN\_LEVEL\_HI}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_PIN\_LEVEL\_HI}
+{\footnotesize\ttfamily \label{i2cm_8c_ae0e38cca84fc3b754bea321d9c1275e3} 
+\#define \+\_\+\+PIN\+\_\+\+LEVEL\+\_\+\+HI~(1)}
+
+\index{i2cm.c@{i2cm.c}!\_PIN\_LEVEL\_LO@{\_PIN\_LEVEL\_LO}}
+\index{\_PIN\_LEVEL\_LO@{\_PIN\_LEVEL\_LO}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_PIN\_LEVEL\_LO}
+{\footnotesize\ttfamily \label{i2cm_8c_aca327092e66277a56e6375b82ce75628} 
+\#define \+\_\+\+PIN\+\_\+\+LEVEL\+\_\+\+LO~(0)}
+
+\index{i2cm.c@{i2cm.c}!\_SET\_I2CM\_SDA\_IN\_PUT@{\_SET\_I2CM\_SDA\_IN\_PUT}}
+\index{\_SET\_I2CM\_SDA\_IN\_PUT@{\_SET\_I2CM\_SDA\_IN\_PUT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_SET\_I2CM\_SDA\_IN\_PUT}
+{\footnotesize\ttfamily \label{i2cm_8c_ad7e366c70243be3dde771d76f4287d17} 
+\#define \+\_\+\+SET\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+IN\+\_\+\+PUT(\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+{\bfseries Value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{do}\ \{\ \_I2CM\_SDA\_PORT-\/>O\_EN.BITS.\_I2CM\_SDA\_PINx\ =\ 0;\ \_I2CM\_SDA\_PORT-\/>I\_EN.BITS.\_I2CM\_SDA\_PINx\ =\ 1;\ \}\ \textcolor{keywordflow}{while}\ (0)}
+
+\end{DoxyCode}
+\index{i2cm.c@{i2cm.c}!\_SET\_I2CM\_SDA\_OUTPUT@{\_SET\_I2CM\_SDA\_OUTPUT}}
+\index{\_SET\_I2CM\_SDA\_OUTPUT@{\_SET\_I2CM\_SDA\_OUTPUT}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{\_SET\_I2CM\_SDA\_OUTPUT}
+{\footnotesize\ttfamily \label{i2cm_8c_af455e4b52de4fb00a801414a1f915a54} 
+\#define \+\_\+\+SET\+\_\+\+I2\+CM\+\_\+\+SDA\+\_\+\+OUTPUT(\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+{\bfseries Value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{do}\ \{\ \_I2CM\_SDA\_PORT-\/>I\_EN.BITS.\_I2CM\_SDA\_PINx\ =\ 0;\ \_I2CM\_SDA\_PORT-\/>O\_EN.BITS.\_I2CM\_SDA\_PINx\ =\ 1;\ \}\ \textcolor{keywordflow}{while}\ (0)}
+
+\end{DoxyCode}
+
+
+\doxysubsection{Function Documentation}
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_byte\_read@{hal\_i2cm\_byte\_read}}
+\index{hal\_i2cm\_byte\_read@{hal\_i2cm\_byte\_read}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_byte\_read()}
+{\footnotesize\ttfamily \label{i2cm_8c_a069bb7c638aa9d5d990959bf2f6a7f76} 
+int hal\+\_\+i2cm\+\_\+byte\+\_\+read (\begin{DoxyParamCaption}\item[{uint8\+\_\+t $\ast$}]{byte}{, }\item[{uint8\+\_\+t}]{resp\+\_\+typ}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_byte\_send@{hal\_i2cm\_byte\_send}}
+\index{hal\_i2cm\_byte\_send@{hal\_i2cm\_byte\_send}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_byte\_send()}
+{\footnotesize\ttfamily \label{i2cm_8c_a17a5ff26802590bf6680988e49f13f0d} 
+int hal\+\_\+i2cm\+\_\+byte\+\_\+send (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{byte}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_init@{hal\_i2cm\_init}}
+\index{hal\_i2cm\_init@{hal\_i2cm\_init}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_init()}
+{\footnotesize\ttfamily \label{i2cm_8c_ab4dcbe3893c23928959270b386efa8b3} 
+void hal\+\_\+i2cm\+\_\+init (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{u32\+Bus\+Clock}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_read\_multi\_byte\_16bit@{hal\_i2cm\_read\_multi\_byte\_16bit}}
+\index{hal\_i2cm\_read\_multi\_byte\_16bit@{hal\_i2cm\_read\_multi\_byte\_16bit}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_read\_multi\_byte\_16bit()}
+{\footnotesize\ttfamily \label{i2cm_8c_ae56ecc68ad8e66d75a6c6a6fb88ceb11} 
+int hal\+\_\+i2cm\+\_\+read\+\_\+multi\+\_\+byte\+\_\+16bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint16\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{, }\item[{uint8\+\_\+t}]{len}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_read\_multi\_bytes@{hal\_i2cm\_read\_multi\_bytes}}
+\index{hal\_i2cm\_read\_multi\_bytes@{hal\_i2cm\_read\_multi\_bytes}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_read\_multi\_bytes()}
+{\footnotesize\ttfamily \label{i2cm_8c_a6181bb66539f16ecc0ad7e474aea7292} 
+int hal\+\_\+i2cm\+\_\+read\+\_\+multi\+\_\+bytes (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint8\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{, }\item[{uint8\+\_\+t}]{len}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_read\_one\_byte@{hal\_i2cm\_read\_one\_byte}}
+\index{hal\_i2cm\_read\_one\_byte@{hal\_i2cm\_read\_one\_byte}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_read\_one\_byte()}
+{\footnotesize\ttfamily \label{i2cm_8c_a0e1c9f0a5320b075caf02bed5f524865} 
+int hal\+\_\+i2cm\+\_\+read\+\_\+one\+\_\+byte (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint8\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_read\_one\_byte\_16bit@{hal\_i2cm\_read\_one\_byte\_16bit}}
+\index{hal\_i2cm\_read\_one\_byte\_16bit@{hal\_i2cm\_read\_one\_byte\_16bit}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_read\_one\_byte\_16bit()}
+{\footnotesize\ttfamily \label{i2cm_8c_aeac52a01c162e084a9b5ed16ec474788} 
+int hal\+\_\+i2cm\+\_\+read\+\_\+one\+\_\+byte\+\_\+16bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint16\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_start@{hal\_i2cm\_start}}
+\index{hal\_i2cm\_start@{hal\_i2cm\_start}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_start()}
+{\footnotesize\ttfamily \label{i2cm_8c_a8410bf0624bc1e872f78313eadb2cb99} 
+void hal\+\_\+i2cm\+\_\+start (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_stop@{hal\_i2cm\_stop}}
+\index{hal\_i2cm\_stop@{hal\_i2cm\_stop}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_stop()}
+{\footnotesize\ttfamily \label{i2cm_8c_a8dfe6849691cc44f35265b800c34e7d5} 
+void hal\+\_\+i2cm\+\_\+stop (\begin{DoxyParamCaption}\item[{void}]{}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_wirte\_one\_byte@{hal\_i2cm\_wirte\_one\_byte}}
+\index{hal\_i2cm\_wirte\_one\_byte@{hal\_i2cm\_wirte\_one\_byte}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_wirte\_one\_byte()}
+{\footnotesize\ttfamily \label{i2cm_8c_aee091d3037f7b5270fcf4c9296b36824} 
+int hal\+\_\+i2cm\+\_\+wirte\+\_\+one\+\_\+byte (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint8\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t}]{data}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_write\_multi\_byte\_16bit@{hal\_i2cm\_write\_multi\_byte\_16bit}}
+\index{hal\_i2cm\_write\_multi\_byte\_16bit@{hal\_i2cm\_write\_multi\_byte\_16bit}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_write\_multi\_byte\_16bit()}
+{\footnotesize\ttfamily \label{i2cm_8c_a925d4181bdb57f4fed1a2ce5d6f7429f} 
+int hal\+\_\+i2cm\+\_\+write\+\_\+multi\+\_\+byte\+\_\+16bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint16\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{, }\item[{uint8\+\_\+t}]{len}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_write\_multi\_bytes@{hal\_i2cm\_write\_multi\_bytes}}
+\index{hal\_i2cm\_write\_multi\_bytes@{hal\_i2cm\_write\_multi\_bytes}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_write\_multi\_bytes()}
+{\footnotesize\ttfamily \label{i2cm_8c_a24eff2526f6528af0a01664a777e68dd} 
+int hal\+\_\+i2cm\+\_\+write\+\_\+multi\+\_\+bytes (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint8\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t $\ast$}]{data}{, }\item[{uint8\+\_\+t}]{len}{}\end{DoxyParamCaption})}
+
+\index{i2cm.c@{i2cm.c}!hal\_i2cm\_write\_one\_byte\_16bit@{hal\_i2cm\_write\_one\_byte\_16bit}}
+\index{hal\_i2cm\_write\_one\_byte\_16bit@{hal\_i2cm\_write\_one\_byte\_16bit}!i2cm.c@{i2cm.c}}
+\doxysubsubsection{hal\_i2cm\_write\_one\_byte\_16bit()}
+{\footnotesize\ttfamily \label{i2cm_8c_a36eeff29fad03aa6c6a9dcaadf62eebf} 
+int hal\+\_\+i2cm\+\_\+write\+\_\+one\+\_\+byte\+\_\+16bit (\begin{DoxyParamCaption}\item[{uint8\+\_\+t}]{dev\+Addr}{, }\item[{uint16\+\_\+t}]{reg\+Addr}{, }\item[{uint8\+\_\+t}]{data}{}\end{DoxyParamCaption})}
+

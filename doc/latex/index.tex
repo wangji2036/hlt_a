@@ -1,0 +1,94 @@
+\chapter{NU171\+XX MPP Transmitter User Guide Documentation}
+\label{index}\index{NU171XX MPP Transmitter User Guide Documentation@{NU171XX MPP Transmitter User Guide Documentation}}
+{\bfseries{NU171xx is a high efficiency, high integration Qi 2.\+x compliant transmitter IC for wireless charging with input voltage from 3V to 21V.}} ~\newline
+ It integrates low Rdson Full bridge FETs and gate driver, 32bit 36MHz MCU core, 8kB SRAM and 128kB Flash, and fast charging block TCPC/\+PD/\+BC1.\+2/\+QC/\+FCP/ SCP/\+AFC.\doxysection{Introduction}\label{index_autotoc_md0}
+This project is aimed to develop a high-\/efficiency, high-\/integration Qi 2.\+x compliant transmitter IC for wireless charging with input voltage from 3V to 21V. ~\newline
+ The project is developed using the C-\/\+Sky Development Suite for C-\/\+SKY CDS C/\+C++ Developers (V5.\+2.\+14 B20231027) development environment and the MPP-\/\+TX board.\doxysection{Features}\label{index_autotoc_md1}
+
+\begin{DoxyItemize}
+\item Core\+:
+\begin{DoxyItemize}
+\item 32-\/bit CK802 core running up to 36 MHz
+\item Built-\/in Nested Vectored Interrupt Controller(\+NVIC)
+\end{DoxyItemize}
+\item Memory\+:
+\begin{DoxyItemize}
+\item 8KB SRAM
+\item 64KB Flash
+\end{DoxyItemize}
+\item Input Voltage\+:
+\begin{DoxyItemize}
+\item 3V to 21V input voltage
+\end{DoxyItemize}
+\item Charging Block\+:
+\begin{DoxyItemize}
+\item TCPC/\+PD/\+BC1.\+2/\+QC/\+FCP/\+SCP/\+AFC
+\end{DoxyItemize}
+\item Package\+:
+\begin{DoxyItemize}
+\item LQFP-\/100 package
+\end{DoxyItemize}
+\item Dimensions\+:
+\begin{DoxyItemize}
+\item 3.\+5\+X4.\+5
+\end{DoxyItemize}
+\item Interface\+:
+\begin{DoxyItemize}
+\item 2$\ast$\+UARTs
+\item 12$\ast$\+GPIOs
+\item I2C Slave\+:100K/400\+KHz
+\end{DoxyItemize}
+\item Temperature\+:
+\begin{DoxyItemize}
+\item -\/40°C to 85°
+\end{DoxyItemize}
+\item Operating Voltage\+:
+\begin{DoxyItemize}
+\item 2.\+8V
+\end{DoxyItemize}
+\item Operating Frequency\+:
+\begin{DoxyItemize}
+\item 36MHz
+\end{DoxyItemize}
+\item Protocal Wire Charging\+:
+\begin{DoxyItemize}
+\item PD Sink
+\end{DoxyItemize}
+\item Qi 2.\+x Compliance\+:
+\begin{DoxyItemize}
+\item Qi 2.\+0
+\end{DoxyItemize}
+\item Development Kit\+:
+\begin{DoxyItemize}
+\item C-\/\+SKY CDS C/\+C++ Developers (V5.\+2.\+14 B20231027)
+\end{DoxyItemize}
+\end{DoxyItemize}\doxysection{Getting Started}\label{index_autotoc_md2}
+Follow these steps to get started with the project\+:
+\begin{DoxyEnumerate}
+\item Please download the CK-\/\+CPU C/\+C++ Developers ( V5.\+2.\+14 B20231027) development environment from the official website.~\newline
+
+\begin{DoxyItemize}
+\item {\texttt{ https\+://www.\+xrvm.\+cn/community/download}}
+\end{DoxyItemize}
+\item Please check with AE team for the MPP-\/\+TX board and get the datasheet.
+\end{DoxyEnumerate}\doxysection{API Reference}\label{index_autotoc_md3}
+For detailed information on the project\textquotesingle{}s API, You can refer to the following modules and drivers documentation. \doxysection{Table of Contents Peripheral Modules Drivers Documentation}\label{index_autotoc_md4}
+
+\begin{DoxyItemize}
+\item \doxyref{GPIO}{p.}{gpio_8c}
+\item \doxyref{UART}{p.}{uart_8c}
+\item \doxyref{I2S}{p.}{i2cs_8c}
+\item \doxyref{Watchdog Timer}{p.}{wdt_8c}
+\item \doxyref{Timer}{p.}{timer_8c}
+\item \doxyref{Flash}{p.}{fmc_8c}
+\item \doxyref{System}{p.}{sys_8c}
+\item \doxyref{Vector Table}{p.}{vic_8c}
+\item \doxyref{Isr}{p.}{isr_8c}
+\item \doxyref{BADC}{p.}{badc_8c}
+\item \doxyref{EADC}{p.}{eadc_8c}
+\item \doxyref{ECAP}{p.}{ecap_8c}
+\item \doxyref{PWM}{p.}{bpwm_8c}
+\item \doxyref{EPWM}{p.}{epwm_8c}
+\item \doxyref{FSK}{p.}{fsk_8c}
+\item \doxyref{ASK}{p.}{ask_8c} 
+\end{DoxyItemize}
