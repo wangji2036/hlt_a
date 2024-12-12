@@ -471,7 +471,7 @@ void tcpm_task_event_handler(uint32_t event)
 				{
 					//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-					if(port_vbus != 9000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+					if(port_vbus != 9000  && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
 					osal_start_timerEx(TCPM_CHG_TIMER, 1000, 0, USB_TASK, TCPM_EVT_SNK_START_CHARGER);
 				}
 			}
