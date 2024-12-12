@@ -163,5 +163,5 @@ void fml_qdt_detect(uint32_t *q_fact, uint32_t *f_self)
 	*q_fact = q_tmp;
 	*f_self = f_tmp;
 
-//	printk("\r\n QDT-> %d %d %d %d %d %d", vqm_decay_time_cnt, vqm_width_last_cnt, nqm_reson_freq_cnt, *f_self, *q_fact, vpeak_th2);
+//	printk("\r\n QDT-> %d %d %d %d %d %d %d %d", vqm_decay_time_cnt, vqm_width_last_cnt, nqm_reson_freq_cnt, *f_self, *q_fact, vpeak_th2, *q_fact, *f_self);
 }

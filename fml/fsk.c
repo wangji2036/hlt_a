@@ -174,7 +174,8 @@ static int fml_fsk_data_encoding(TS_EPWM *epwm, uint8_t *data, uint8_t len)
 		fsk_need_send_cnt[idx] = len + 1;
 	}
 
-	//MPP data packet need add 4-bit-preamble
+	//MPP data packet need add 4-bit preamble
+	//EPP also have 128-cycles now.
 	if ((len > 1) && (epwm->FSK_CTRL.BITS.BIT_CYCLE == _FSK_BIT_CYCLES_128) && (fsk_need_preamble[idx] != 0))
 	{
 		uint32_t tmp_data = fsk_encoding_data_buff[idx][0];

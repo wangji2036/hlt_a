@@ -57,12 +57,12 @@
 #define ICAP_MAX_VAULE_360K_GAIN    (       129)
 #define ICAP_MAX_VAULE_360K_BIAS    (       -48)
 #define ICAP_MAX_VAULE_128K_GAIN    (        68)
-#define ICAP_MAX_VAULE_128K_BIAS    (       578)
+#define ICAP_MAX_VAULE_128K_BIAS    (       448)
 
 #define ICAP_RMS_VAULE_360K_GAIN    (       139)
 #define ICAP_RMS_VAULE_360K_BIAS    (       -45)
 #define ICAP_RMS_VAULE_128K_GAIN    (       129)
-#define ICAP_RMS_VAULE_128K_BIAS    (      -512)
+#define ICAP_RMS_VAULE_128K_BIAS    (      -368)
 
 static uint16_t eadc_vref_gain;
 static  int16_t eadc_vref_bias;
@@ -134,7 +134,7 @@ static uint16_t hal_eadc_vref_update(void)
 
 uint16_t hal_eadc_meas(enum eadc_chan_t channel)
 {
-	if (channel != _EADC_CH_INR_VCAP)
+	if (channel != _EADC_CH_INR_VCAP || EPWM1->PWM_CTRL.BITS.EPWM_EN == 0)
 	{
 		return 0;
 	}

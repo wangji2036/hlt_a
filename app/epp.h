@@ -1,6 +1,10 @@
 #ifndef EPP_H_
 #define EPP_H_
 
+//The structure of this code is not easy to read. 
+//The content is also not easy to read in places, it is a read-unfriendly code, shame on you!
+//If you have any questions, please contact: 15577577568 or i@iotang.cn
+
 #include "typdef.h"
 #include "printk.h"
 #include "pkt_type.h"
@@ -125,7 +129,7 @@ struct wpc_fsk_cfg
 {
 	uint8_t pola;	//The requested FSK polarity is positive (ZERO) or negative (ONE).
 	uint8_t depth;	//
-	uint8_t Ncycles; // 0 : 512 cycles, 1 : 256 cycles, 2 : 128 cycles, 3 : 64 cycles
+	uint8_t Ncycles; //qi2 new content 0 : 512 cycles, 1 : 256 cycles, 2 : 128 cycles, 3 : 64 cycles
 };
 
 struct power_contract
@@ -136,8 +140,8 @@ struct power_contract
 	uint8_t rcv_pwr_type;
 	uint8_t guaranteed_power;
 	uint8_t wait_update;
-	uint8_t re_ping_delay;
-	struct wpc_fsk_cfg fsk_params;		//这个是CFG阶段中的参数
+	uint8_t re_ping_delay;		
+	struct wpc_fsk_cfg fsk_params;		//This is the parameter in the CFG stage
 	
 } __attribute__((packed));
 
@@ -187,19 +191,18 @@ struct epp_auth_t
 	uint8_t rec_challenge_data_offset;
 	uint8_t rec_challenge_data_len;
 
-	uint8_t send_challenge_slot;
 	uint8_t send_challenge_data_index;
 	uint8_t send_challenge_data_len;
 
 	uint8_t need_poll_rx_data;
 };
 
-enum auth_header_t
-{
-	RSP_DIGESTS     = 0x11,
-	RSP_CERTIFICATE = 0x12,
-	RSP_CHALLENGE   = 0x13,
-};
+//enum auth_header_t
+//{
+//	RSP_DIGESTS     = 0x11,
+//	RSP_CERTIFICATE = 0x12,
+//	RSP_CHALLENGE   = 0x13,
+//};
 
 enum EPP_auth_massage_header_request_type
 {
@@ -322,7 +325,8 @@ struct epp_ptx_fsk_pkt_t
 	} epp_fsk;
 } __attribute__((packed));
 
-extern void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask);
+void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask);
+void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask);
 
 extern void initializePTC(void);
 #endif // !EPP_H_

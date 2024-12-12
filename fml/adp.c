@@ -41,7 +41,7 @@ void fml_adp_init(void)
 //		}
 //	}
 //
-	fml_adp_type_set(EADP_TYPE_DCSRC_09V,  5000, 5000, 15 * 2);
+	fml_adp_type_set(EADP_TYPE_DCSRC_09V,  5000, 15000, 15 * 2);
 	ap->vbus_uvp_thd = 4000;
 //	else
 //	{
@@ -81,7 +81,7 @@ void fml_adp_volt_set(uint16_t volt)
 		case EADP_TYPE_PD2P0_09V:
 		case EADP_TYPE_PD2P0_12V:
 
-			if(wpc_work_mode == TCPM_WPC_WORK_BOOST)
+			//if(wpc_work_mode == TCPM_WPC_WORK_BOOST)
 				hal_tcpc_pd_set_bus_iv(3,volt,3000,0,0);
 
 			//else

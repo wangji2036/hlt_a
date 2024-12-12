@@ -7,6 +7,7 @@
 #include "pid.h"
 #include "gui.h"
 #include "_wpc.h"
+#include "qfod.h"
 #include "wpc_idle.h"
 #include "wpc_ping.h"
 #include "debug.h"
@@ -143,9 +144,9 @@ uint8_t qfod_detect(void)
 //		rx_may_still_be_flag = 0;
 //	}
 
-//	printk("\r\n sta:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
-//			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
-//			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre);
+	printk("\r\n sta:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
+			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
+			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre);
 
 	switch (gd->ptx_idle_phase_status)
 	{
@@ -233,7 +234,11 @@ uint8_t qfod_detect(void)
 				qdt_have_obj_count = 2; //force a digital ping
 			}
 			break;
+		case WPC_IDLE_STAT_QDT_CAL:
+			qfod_qdt_cali_process();
+			break;
 		default:
+			idle_obj_remove_detect();
 			break;
 	}
 
@@ -306,16 +311,16 @@ void wpc_idle_cloak_phase_process(void)
 			cnt_cloak_ping = 0;
 			cnt_cloak_det_ping = 0;
 
-//			gd->dig_ping_volt = 11000;
-//			gd->dig_ping_perd = 144000000/360000;
-//			gd->dig_ping_duty = 500;
-//			gd->dig_ping_phas = 0;
-//
-//	//		pid_init();
-//			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-//			pid_set_duty_limit(500, 500, 500);
-//			pid_set_phas_limit( 50,  40,   0);
+			gd->dig_ping_volt = 11000;
+			gd->dig_ping_perd = 144000000/360000;
+			gd->dig_ping_duty = 500;
+			gd->dig_ping_phas = 0;
+
+	//		pid_init();
+			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+			pid_set_duty_limit(500, 500, 500);
+			pid_set_phas_limit( 50,  40,   0);
 
 	//		fml_nu103x_ddm_init();
 			fml_nu103x_config(_1030_CFG_ALL_RST);
@@ -423,27 +428,38 @@ void wpc_idle_phase_process(void)
 
 	if (gd->tx_infos.dig_ping_type == _128K_HB)
 	{
+//		while (1)
+//		{
+//			fml_nu103x_por_rst();
+//			fml_qdt_detect((uint32_t *)&gd->tx_infos.q_fact, (uint32_t *)&gd->tx_infos.f_self);
+//			delay_1ms(200);
+//		}
+
 		fml_nu103x_por_rst();
 
 		fml_qdt_detect((uint32_t *)&gd->tx_infos.q_fact, (uint32_t *)&gd->tx_infos.f_self);
+
+		if ((0 == gd->tx_infos.q_fact_air) && (0 == gd->tx_infos.f_self_air))
+		{
+			gd->tx_infos.q_fact_air = gd->tx_infos.q_fact;
+			gd->tx_infos.f_self_air = gd->tx_infos.f_self;
+
+			printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
+		}
 
 		enter_buff(gd->tx_infos.q_fact, gd->tx_infos.f_self);
 
 		if (qfod_detect())
 		{
-			return;
+			printk("q no object");
+			//return;
 		}
-//		if(port_vbus == 9000)
-//			tcpm_wpc_dping_select(9000);
-//		else
-//			tcpm_wpc_dping_select(5000);
-		//wpc_idle_dping_select();
 
-//		tcpm_wpc_dping_select();
-//		gd->dig_ping_volt = 9000;
-//		gd->dig_ping_perd = 1127;//127.77K
-//		gd->dig_ping_duty = 500; // 250;
-//		gd->dig_ping_phas = 0;
+		//wpc_idle_dping_select();
+		gd->dig_ping_volt = 5000;
+		gd->dig_ping_perd = 1127;//127.77K
+		gd->dig_ping_duty = 500; // 250;
+		gd->dig_ping_phas = 0;
 
 		pid_init();
 		mpp_power_limit_init();
@@ -481,7 +497,7 @@ void wpc_idle_phase_process(void)
 
 		gd->pid_volt = gd->dig_ping_volt;
 		gd->pid_perd = gd->dig_ping_perd;
-		gd->pid_duty = gd->dig_ping_duty;
+		gd->pid_duty = 50;
 		gd->pid_phas = gd->dig_ping_phas;
 
 		gd->sys_infos.tim3_evnt |= 1; //duty ramp up
@@ -494,9 +510,9 @@ void wpc_idle_phase_process(void)
 
 //		wpc_idle_dping_select();
 //		gd->dig_ping_volt = 11000;
-//		gd->dig_ping_perd = 144000000/360000;
-//		gd->dig_ping_duty = 500;
-//		gd->dig_ping_phas = 50;
+		gd->dig_ping_perd = 144000000/360000;
+		gd->dig_ping_duty = 500;
+		gd->dig_ping_phas = 50;
 
 //		pid_init();
 		pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
@@ -521,7 +537,7 @@ void wpc_idle_phase_process(void)
 			gd->dig_ping_volt = 16000;
 			gd->dig_ping_phas = MPP_25W_360K_DIG_PING_PHASE;
 
-			pid_set_volt_limit(20100, 11000, 16000);
+			pid_set_volt_limit(20100, 16000, 11000);
 #else
 			if (gd->k_est < MPP_25W_LOW_K_VALUE)
 			{

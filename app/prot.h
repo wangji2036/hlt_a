@@ -6,6 +6,7 @@ int16_t fml_die_temp_get(void);
 /*--------------------------------------------------------------------------*/
 void fml_tntc_otp_init(void);
 void fml_tntc_otp_check(int16_t);
+void fml_tntc_otp_limit_power(int16_t tntc);
 /*--------------------------------------------------------------------------*/
 void fml_tntc_utp_init(void);
 void fml_tntc_utp_check(int16_t);

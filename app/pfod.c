@@ -406,6 +406,7 @@ static uint8_t pfod_action(void)
 
 			if (((fod_count >= FOD_MAX_CNT && gd->rx_prect < 5000) || fod_count >= 30 || !pfo_en_reco)) {
 				gd->prot_sts.xfer_fod_flag = 1;
+				gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
 				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_POWER_LOSS_FOD);
 			} else {
 				gd->power_limit_sts.fop_flag = 1;
@@ -469,7 +470,8 @@ uint8_t pfod_mpla(void)
 {
 	// uint8_t res = 0;
 	// int32_t pfo_sum;
-
+    uint32_t temp_power;
+    
 	ploss = ploss_calc(gd->rx_infos.pla_type);
 
 	if (gd->rx_power < 4000 && ploss > 1600)
@@ -481,7 +483,21 @@ uint8_t pfod_mpla(void)
 	else if (ploss > 4000)
 		ploss = 4000;
 
-	pfo = gd->tx_power-ploss-gd->rx_power;
+//	pfo = gd->tx_power-ploss-gd->rx_power;
+    #if 1
+    if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
+    {
+        if (gd->rx_power > 10000)
+            temp_power = gd->rx_power*815/1000;
+        else
+            temp_power = gd->rx_power*800/1000;
+        pfo = gd->tx_power-ploss-temp_power;
+    }
+    else 
+	    pfo = gd->tx_power-ploss-gd->rx_power-300;
+    #else
+	pfo = gd->tx_power-ploss-gd->rx_power - 300;//TODO: need tuning FOD later
+	#endif
 
 	pfo_en_reco = 1; //pfo_en_reco = (gd->extend.k > 6200)? 1 : 0;
 	if (gd->rx_infos.rx_type == ERX_TYPE_APPLE_MPP) {
@@ -497,6 +513,19 @@ uint8_t pfod_mpla(void)
 		}
 
 		//Fixtures' FOD adjust
+		#if 1
+		if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE) {
+			pfo_en_reco = 0;
+		} else if (gd->rx_infos.rx_type == ERX_TYPE_NVT_MPP) {
+			pfo_en_reco = 0;
+			if (gd->rx_power > 8000)
+				pfo += 650;
+			else if (gd->rx_power > 4000)
+				pfo += 450;
+			else
+				pfo += 450;
+		}
+		#else
 		if (gd->rx_infos.rx_type == ERX_TYPE_NVT_MPP || gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE) {
 			pfo_en_reco = 0;
 			if (gd->rx_power > 8000)
@@ -522,6 +551,7 @@ uint8_t pfod_mpla(void)
 //				}
 //			}
 		}
+		#endif
 	}
 	return pfod_action();
 
@@ -719,7 +749,8 @@ uint8_t pfod_dploss(void)
 	u64_tmp1 = u64_tmp0 / 1000000;
 	Plc_cal = Plc_cal + u64_tmp1;
 
-	pfo = Plc - Plc_cal;
+//	pfo = Plc - Plc_cal;
+	pfo = Plc - Plc_cal - 300;//TODO: need tuning FOD
 
 	printk("\r\n a:%d b:%d pcircu:%d plc:%d pcal:%d",gd->tx_infos.dp_alpha, gd->tx_infos.dp_beta, Pcircuit, Plc, Plc_cal);
 
@@ -759,7 +790,6 @@ uint8_t pfod_common(void)
 	uint8_t res;
 	uint8_t u8Idx0, u8Idx1;
 	uint16_t u16LargeLossTHD;
-
 	u8Idx0 = (uint8_t)gd->rx_infos.rx_type;
 	if (u8Idx0 >= sizeof(u16_kp_tbl) / sizeof(u16_kp_tbl[0])) u8Idx0 = 0;
 	u8Idx1 = gd->rx_power / 4000;
@@ -779,13 +809,20 @@ uint8_t pfod_common(void)
 		//Loose FOD for IPX/IP8
 		ploss <<= 1;
 	}
+	
 	if (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG && ploss > 1000) {
 		ploss = 1000;
 	} else if (ploss > 3500) {
 		ploss = 3500;
 	}
 
-	pfo = gd->tx_power-ploss-gd->rx_power;
+	if ((gd->rx_infos.rx_type == ERX_TYPE_YBZ_BPP_FIXTURE) || ((gd->rx_infos.rx_type == ERX_TYPE_YBZ_EPP_FIXTURE))) {
+	    pfo_thd = 0;
+        pfo = gd->tx_power-ploss-(gd->rx_power*810/1000);
+	} else if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_PPDE_FIXTURE) {
+        pfo = gd->tx_power-ploss-gd->rx_power-2500;
+	} else
+	    pfo = gd->tx_power-ploss-gd->rx_power;
 
 	res = (pfo > pfo_thd) ? 1 : 0;
 	if (res == 1)

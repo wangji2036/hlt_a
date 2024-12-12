@@ -21,7 +21,6 @@ enum led_state_t {
 };
 
 void led_init(void);
-void ui_update(void);
-void ui_display (void);
+void led_display(void);
 
 #endif /* LED_H_ */

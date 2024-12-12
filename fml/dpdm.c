@@ -205,35 +205,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 	}
 }
 
-void dpdm_src_afc_handle(void)
-{
-	#define AFC_CMD_RESET                       (0x01)                  //afc 5v
-	#define AFC_CMD_5V                          (0x08)                  //afc 5v
-	#define AFC_CMD_9V                          (0x46)                  //afc 9v
-	#define AFC_CMD_12V                         (0x79)                  //afc 12v
-	static uint16_t afc_volt = 5000;
 
-	switch(DPDM->AFC_RX_0.BITS.RX_BUFFER_0)
-	{
-		case AFC_CMD_RESET:
-			afc_volt = 5000;
-			break;
-		case AFC_CMD_5V:
-			DPDM->AFC_TX_0.WORD =( (AFC_CMD_5V << 8) | 0x01);
-			afc_volt = 5000;
-			break;
-		case AFC_CMD_9V:
-			DPDM->AFC_TX_0.WORD =( (AFC_CMD_9V << 8) | 0x01);
-			afc_volt = 9000;
-			break;
-		case AFC_CMD_12V:
-			DPDM->AFC_TX_0.WORD =( (AFC_CMD_12V << 8) | 0x01);
-			afc_volt = 12000;
-			break;
-	}
-
-	hal_tcpc_pd_set_bus_iv(0,afc_volt,3000,2,0);
-}
 
 void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 {

@@ -604,6 +604,11 @@ struct mpp_prx_ask_pkt_mated_q_coeff_t {//0xA8 mated_q_coeff
 	uint8_t reserved[6];
 } __attribute__ ((packed));
 
+struct mpp_prx_ask_pkt_prop_t
+{
+	uint8_t data[20];
+} __attribute__ ((packed));
+
 struct mpp_prx_ask_pkt_t
 {
 	uint8_t hdr;
@@ -627,6 +632,7 @@ struct mpp_prx_ask_pkt_t
 		struct mpp_prx_ask_pkt_ecap_t ecap;
 		struct mpp_prx_ask_pkt_cal_capture_t cal_capture;
 		struct mpp_prx_ask_pkt_mated_q_coeff_t mate_q;
+		struct mpp_prx_ask_pkt_prop_t prop;
 	} msg;
 } __attribute__ ((packed));
 

@@ -18,13 +18,13 @@
 #include "wpc_ping.h"
 #include "fm1210.h"
 #include "usb_pd.h"
-#include "usb_qc.h"
 #include "tcpm.h"
+#include "usb_qc.h"
 
 uint16_t rrlen;
 
 extern uint8_t array_digest[];
-extern uint8_t adt_rcv_buff[18];
+extern uint8_t adt_data_recv_buf[18];
 extern uint8_t cert_chain[];
 
 extern void tc_init(void);
@@ -59,13 +59,15 @@ int main(void)
 //	WPC_vInit();
 
 	printk("\r\n ap_t size-> %d", sizeof(struct ap_t));
+	printk("\r\n base_q [%d]", ap->q_factor_base_value);
+	printk("\r\n base_fre [%d]", ap->fs_base_value);
 	printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
 	fm1210_init();
 
 	printk("\r\n -->NU%d-%02d UID->%08X", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER, SYS->UID_INFO.BITS.UID);
 
 	delay_1ms(100);
-	fm1210_get_qi_id(adt_rcv_buff);
+	fm1210_get_qi_id(adt_data_recv_buf);
 	fm1210_read_cert_hash(array_digest + 1);
 	fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 328 need outside config, using sizeof arr
 
@@ -82,7 +84,7 @@ int main(void)
 
 
 	fml_task_init();
-	wpc_task_init();
+	//wpc_task_init();
 
 
 

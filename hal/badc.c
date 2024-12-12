@@ -72,7 +72,7 @@
 #define BADC_TRIM_ADDR_ISNS_GAIN    (0x00001C92)
 #define BADC_TRIM_ADDR_ISNS_BIAS    (0x00001C90)
 
-#define BADC_ISNS_CHAN_FIXED_OFS    (      1000) //1000mV
+#define BADC_ISNS_CHAN_DC_OFFSET    (      1000) //1000mV
 
 static uint16_t badc_vref_gain;
 static  int16_t badc_vref_bias;
@@ -229,9 +229,9 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			}
 			break;
 		case _BADC_CH_PD6_ADC3:
-			if (tmp > BADC_ISNS_CHAN_FIXED_OFS)
+			if (tmp > BADC_ISNS_CHAN_DC_OFFSET)
 			{
-				tmp -= BADC_ISNS_CHAN_FIXED_OFS;
+				tmp -= BADC_ISNS_CHAN_DC_OFFSET;
 				tmp = tmp * badc_isns_gain / 10000;
 				tmp = ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 400) ? tmp * 1039 / 1000 : tmp * 1012 / 1000;
 				tmp = tmp + badc_isns_bias;
@@ -248,6 +248,11 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			}
 			break;
 		case _BADC_CH_PB5_ADC6:
+			if (tmp > 0)
+			{
+				rst = tmp;
+				if (rst < 1) rst = 1;
+			}
 			break;
 		case _BADC_CH_PB6_ADC7:
 			if (tmp > 0)

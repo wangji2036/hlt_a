@@ -20,11 +20,11 @@ void hal_i2cm_init(uint32_t bps)
 	//where X is the frequency division value that needs to be set
 	if (bps != 0)
 	{
-		I2CM->GEN_CTRL.BITS.BRGEN_CLKDIV = (36000000 / bps - 8) * 4 / 23;
+		I2CM->GEN_CTRL.BITS.BRGEN_CLKDIV = (HCLK / bps - 8) * 4 / 23;
 	}
 	else
 	{
-		I2CM->GEN_CTRL.BITS.BRGEN_CLKDIV = 36000000 / 100000;
+		I2CM->GEN_CTRL.BITS.BRGEN_CLKDIV = HCLK / 100000;
 	}
 }
 

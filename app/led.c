@@ -13,15 +13,15 @@
 //static uint8_t ui_initialed;
 //test use end
 // following variable will be update to be GB data.
-uint8_t soc_show = 0;// SOC的数值，用于最终的显示
-static uint8_t flash_flag;//1:充电闪，2：异常闪--全闪。
-static uint8_t flash_light_on;//用于闪烁控制，置位的时候，说明闪烁为亮的状态，否则为关闭状态。
-static uint8_t ui_scan_index;//用于扫描查询目录。
+uint8_t soc_show = 0;// SOC鐨勬暟鍊硷紝鐢ㄤ簬鏈�粓鐨勬樉绀�
+static uint8_t flash_flag;//1:鍏呯數闂紝2锛氬紓甯搁棯--鍏ㄩ棯銆�
+static uint8_t flash_light_on;//鐢ㄤ簬闂儊鎺у埗锛岀疆浣嶇殑鏃跺�锛岃鏄庨棯鐑佷负浜殑鐘舵�锛屽惁鍒欎负鍏抽棴鐘舵�銆�
+static uint8_t ui_scan_index;//鐢ㄤ簬鎵弿鏌ヨ鐩綍銆�
 #ifdef LED_DISPLAY
-static uint8_t soc_show_ram_led = 0;//临时变量，用于表征LED灯显，各个LED是否需要点亮。
-static uint8_t flash_flag_wls;//无线冲的LED指示，是否闪烁
+static uint8_t soc_show_ram_led = 0;//涓存椂鍙橀噺锛岀敤浜庤〃寰丩ED鐏樉锛屽悇涓狶ED鏄惁闇�鐐逛寒銆�
+static uint8_t flash_flag_wls;//鏃犵嚎鍐茬殑LED鎸囩ず锛屾槸鍚﹂棯鐑�
 #else
-static uint32_t soc_show_ram = 0;//一个临时变量，各个bit用于表征数码管各个码段，
+static uint32_t soc_show_ram = 0;//涓�釜涓存椂鍙橀噺锛屽悇涓猙it鐢ㄤ簬琛ㄥ緛鏁扮爜绠″悇涓爜娈碉紝
 #endif
 
 #define WAIT_IN_250MS 20
@@ -89,7 +89,7 @@ static void drv_IO_control(uint8_t pinx, bool status)
 #define LED_FLOW_4          (0x0F)
 //#define LED_FLOW_5          (0x1F)
 
-//set which LED should be on according to the battery level。
+//set which LED should be on according to the battery level銆�
 static uint8_t batt_level_table[6]=
 {
     LED_FLOW_0,             //!< level 0        //
@@ -109,7 +109,7 @@ typedef enum
  //   LEVEL_5,
 }batt_level_t;
 
-//电池电量档位、百分比对应关系
+//鐢垫睜鐢甸噺妗ｄ綅銆佺櫨鍒嗘瘮瀵瑰簲鍏崇郴
 #define BATT_ENERGY_LEVEL1              (25)
 #define BATT_ENERGY_LEVEL2              (50)
 #define BATT_ENERGY_LEVEL3              (75)
@@ -303,7 +303,7 @@ static void ui_update_digital(void)
 //		}
 	}
 	soc_show_ram = ((gram[LED_PRCNT].byte & 0x01) << 17) | ((gram[LED_FAST_CH].byte & 0x01) << 16) | \
-	            ((gram[LED_UNITS].byte & 0x7F) << 9) | ((gram[LED_TENS].byte & 0x7F) << 2) | ((gram[LED_HUNDREDS].byte & 0x03)) ; // 将GRAM数据保存到临时变量中
+	            ((gram[LED_UNITS].byte & 0x7F) << 9) | ((gram[LED_TENS].byte & 0x7F) << 2) | ((gram[LED_HUNDREDS].byte & 0x03)) ; // 灏咷RAM鏁版嵁淇濆瓨鍒颁复鏃跺彉閲忎腑
 }
 #endif
 
@@ -316,20 +316,20 @@ static void ui_update_digital(void)
 void ui_display (void)
 {
 #ifdef LED_DISPLAY
-//	_SET_ALL_PINS_IN_PUT();//如果是多个IO脚高低电平刷新的方式
-    // led map scan,如果用快速扫描方式
-	 if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 增加UI刷新状态
+//	_SET_ALL_PINS_IN_PUT();//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
+    // led map scan,濡傛灉鐢ㄥ揩閫熸壂鎻忔柟寮�
+	 if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 澧炲姞UI鍒锋柊鐘舵�
 	 {
-		 ui_scan_index = 0; // 当刷新状态超过时，将其重置为0
+		 ui_scan_index = 0; // 褰撳埛鏂扮姸鎬佽秴杩囨椂锛屽皢鍏堕噸缃负0
 	 }
 	 bool _sw;
-	 _sw = (bool)((soc_show_ram_led >> ui_scan_index) & 0x01); // 获取对应索引的GRAM数据位的值
+	 _sw = (bool)((soc_show_ram_led >> ui_scan_index) & 0x01); // 鑾峰彇瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶇殑鍊�
 
-	 if (_sw == true) // 如果对应索引的GRAM数据位为1
+	 if (_sw == true) // 濡傛灉瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶄负1
 	 {
 		 drv_IO_control(disp_map[ui_scan_index], false);
-		 //drv_IO_control(disp_map[ui_scan_index][0], true);//如果是多个IO脚高低电平刷新的方式
-		 //drv_IO_control(disp_map[ui_scan_index][1], false);//如果是多个IO脚高低电平刷新的方式
+		 //drv_IO_control(disp_map[ui_scan_index][0], true);//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
+		 //drv_IO_control(disp_map[ui_scan_index][1], false);//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
 	 }
 	 else
 	 {
@@ -338,15 +338,15 @@ void ui_display (void)
 
 #else
 		_SET_ALL_PINS_IN_PUT();
-		if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 增加UI刷新状态
+		if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 澧炲姞UI鍒锋柊鐘舵�
 		{
-			ui_scan_index = 0; // 当刷新状态超过时，将其重置为0
+			ui_scan_index = 0; // 褰撳埛鏂扮姸鎬佽秴杩囨椂锛屽皢鍏堕噸缃负0
 		}
 
 		bool _sw;
-		_sw = (bool)((soc_show_ram >> ui_scan_index) & 0x0001); // 获取对应索引的GRAM数据位的值
+		_sw = (bool)((soc_show_ram >> ui_scan_index) & 0x0001); // 鑾峰彇瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶇殑鍊�
 
-		if (_sw == true) // 如果对应索引的GRAM数据位为1
+		if (_sw == true) // 濡傛灉瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶄负1
 		{
 			drv_IO_control(disp_map[ui_scan_index][0], true);
 			drv_IO_control(disp_map[ui_scan_index][1], false);
@@ -379,12 +379,12 @@ void ui_update(void)
     	flash_flag = 0;
     }
 
-    printk("\r\n SOC show--------------------> %d  row-------------------------> %d", soc_show,SOCPack_RealSOC_pct);
-    printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
-    		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
+    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);
+    //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
+    //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
 
-    printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
-    		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
+    //printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
+    //		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
 #ifdef LED_DISPLAY
 	ui_update_led();
 #else

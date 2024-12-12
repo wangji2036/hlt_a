@@ -9,10 +9,10 @@
 #include "pfod.h"
 #include "debug.h"
 
-__attribute__((weak)) void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
-{
-
-}
+//__attribute__((weak)) void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
+//{
+//
+//}
 
 enum mpp_prx_get_request_type_t
 {
@@ -137,7 +137,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			break;
 	}
 
-	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+//	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 }
 
 void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
@@ -193,7 +193,8 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 			break;
 		case GET_PTx_ECAP:
-			fsk_pkt.mpp_fsk.ecap.cal_support = 1;
+//			fsk_pkt.mpp_fsk.ecap.cal_support = 1;
+			fsk_pkt.mpp_fsk.ecap.cal_support = 0;
 			if (gd->tx_infos.fo_exist)
 			{
 				gd->tx_infos.tar_cap_fod = 250;
@@ -328,15 +329,15 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			break;
 	}
 
-	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+//	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 }
 
 /* using this func if the mpp_mate_q_detect() is in-effective */
-static void temp_mate_q_detect(void)
-{
-	if (gd->tx_infos.q_fact < 100)
-		gd->tx_infos.fo_exist = 1;
-}
+//static void temp_mate_q_detect(void)
+//{
+//	if (gd->tx_infos.q_fact < 100)
+//		gd->tx_infos.fo_exist = 1;
+//}
 
 void mpp_mate_q_detect(void)
 {
@@ -496,9 +497,15 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 				wpc_stop_to_idle(ESYS_ERR_CODE_NEG_PHASE_NO_THIS_PKT);
+				goto __NEGO_PHASE_ERR__;
 			}
 			break;
 	}
+
+	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+
+__NEGO_PHASE_ERR__:
+	return;
 }
 
 void wpc_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)

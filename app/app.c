@@ -7,6 +7,7 @@
 #include "prot.h"
 #include "_wpc.h"
 #include "led.h"
+#include "gui.h"
 #include "app.h"
 #include "ask.h"
 
@@ -14,9 +15,13 @@
 #define T_APP_100ms_POLL    100
 #define T_APP_010ms_POLL     10
 
+static uint16_t u16Isns[5] = {0};
+static uint16_t u16IsnsTmp[5] = {0};
+static uint8_t indexIsns = 0;
+
 void apl_task_init(void)
 {
-	fml_tntc_otp_init();
+//	fml_tntc_otp_init();
 	fml_tntc_utp_init();
 	fml_tdie_otp_init();
 	fml_tdie_utp_init();
@@ -94,24 +99,76 @@ void apl_task_event_handler(uint32_t event)
 #endif
 			break;
 		case APL_EVT_100ms_POLL:
+//			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
 			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
 			gd->sys_infos.die_temp = fml_die_temp_get();
 //			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
-//			fml_tntc_utp_check(gd->sys_infos.ntc_temp);
-//			fml_tdie_otp_check(gd->sys_infos.die_temp);
-//			fml_tdie_utp_check(gd->sys_infos.die_temp);
+			fml_tntc_otp_limit_power(gd->sys_infos.ntc_temp);
+			fml_tntc_utp_check(gd->sys_infos.ntc_temp);
+			fml_tdie_otp_check(gd->sys_infos.die_temp);
+			fml_tdie_utp_check(gd->sys_infos.die_temp);
 			break;
 		case APL_EVT_010ms_POLL:
 			gd->isns = hal_badc_meas(_BADC_CH_PD6_ADC3);
+
+			u16Isns[indexIsns++] = gd->isns;
+			if (indexIsns >= 5)
+			{
+				indexIsns = 0;
+			}
+
+			uint8_t i;
+			for (i=0; i<5; i++)
+			{
+				u16IsnsTmp[i] = u16Isns[i];
+			}
+
+		    for (uint8_t i = 0; i < 4; i++)
+		    {
+		        for (uint8_t j = 0; j < (4 - i); j++)
+		        {
+		            if (u16IsnsTmp[j] < u16IsnsTmp[j + 1])
+		            {
+		            	uint8_t temp = u16IsnsTmp[j];
+		            	u16IsnsTmp[j] = u16IsnsTmp[j + 1];
+		            	u16IsnsTmp[j + 1] = temp;
+		            }
+		        }
+		    }
+
+		    uint16_t Tmp_max = u16IsnsTmp[0] - u16IsnsTmp[4];
+
+			if ((Tmp_max > 500) && (gd->isns < 400) && (u16IsnsTmp[0] > 700))
+			{
+//				if (gd->dig_ping_perd == 144000000/360000)
+//				{
+//					gd->pid_duty = 500;
+//					gd->pid_phas = 50;
+//				}
+//				else
+//				{
+//					gd->pid_duty = 125;
+//					gd->pid_phas = 0;
+//				}
+//				hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+//
+//				gd->pid_volt = 11000;
+//				fml_adp_volt_set(gd->pid_volt);
+
+				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_CEP_TIMEOUT);
+
+				printk("\r\n------>!!!!!%d,%d",Tmp_max,gd->isns);
+			}
+
 			gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);
 			//gd->tx_power = gd->isns * gd->vpwr / 1000;//TODO
 			gd->vbus = hal_badc_meas(_BADC_CH_PB6_ADC7);
-//			fml_isns_ocp_check(gd->isns);
-//			fml_vpwr_ovp_check(gd->vpwr);
-//			fml_vbus_ovp_check(gd->vbus);
-//			fml_vbus_uvp_check(gd->vbus);
-//			fml_vbus_dpl_check(gd->vbus);
-//			fml_pout_opp_check(gd->vpwr, gd->isns);
+			fml_isns_ocp_check(gd->isns);
+			fml_vpwr_ovp_check(gd->vpwr);
+			fml_vbus_ovp_check(gd->vbus);
+			fml_vbus_uvp_check(gd->vbus);
+			fml_vbus_dpl_check(gd->vbus);
+			fml_pout_opp_check(gd->vpwr, gd->isns);
 			if (gd->ptx_protocol_phase >= WPC_PHASE_XFER)
 			{
 				fml_ask_decode_check();
@@ -268,6 +325,36 @@ void APP_vHandler(void)
 		rxdata_received_flag = 0;
 		uint8_t tmp_buff[4] = { 0x01, 0x02, 0x03, 0x04, };
 		app_send_data(0x7A, 4, tmp_buff);
+	}
+}
+
+uint32_t switch_big_little_endian(uint32_t Value)
+{
+	uint32_t u32Tmp;
+	uint8_t B3,B2,B1,B0;
+
+	B3 = (Value & 0xFF000000) >> 24;
+	B2 = (Value & 0x00FF0000) >> 16;
+	B1 = (Value & 0x0000FF00) >> 8;
+	B0 =  Value & 0x000000FF;
+	u32Tmp = (B0 << 24) | (B1 << 16) | (B2 << 8) | B3;
+
+	return u32Tmp;
+}
+
+void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
+{
+	uint32_t u32Tmp;
+
+	if ((0x12 == com_pkt->msg.prop.data[0]) && (0x34 == com_pkt->msg.prop.data[1]))
+	{
+		hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
+
+		u32Tmp = switch_big_little_endian(gd->tx_infos.q_fact_air);
+		hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE, u32Tmp);
+
+		u32Tmp = switch_big_little_endian(gd->tx_infos.f_self_air);
+		hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
 	}
 }
 

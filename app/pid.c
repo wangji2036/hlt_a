@@ -110,9 +110,10 @@ void pid_init(void)
 			break;
 		case EADP_TYPE_DCSRC_05V:
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_duty_limit(500, 350, 150);
-			pid_set_phas_limit(0, 0, 0);
+			//pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+			pid_set_freq_limit(144000000/90000, 144000000/127772, 144000000/145000);
+			pid_set_duty_limit(500, 450, 400);
+			pid_set_phas_limit(50, 25, 0);
 			break;
 		case EADP_TYPE_QC2P0_09V:
 		case EADP_TYPE_DCSRC_09V:
@@ -120,8 +121,8 @@ void pid_init(void)
 		case EADP_TYPE_PD2P0_12V:
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_duty_limit(500, 350, 100);
-			pid_set_phas_limit(0, 0, 0);
+			pid_set_duty_limit(500, 450, 400);
+			pid_set_phas_limit(50, 25, 0);
 			break;
 		case EADP_TYPE_DCSRC_12V:
 			break;
@@ -142,7 +143,7 @@ void pid_cep_handler(int8_t cep)
 {
 	pid_ctrl_mode_sel(cep);
 
-	printk("cep =%d ctrl_mode= %d\n",cep,m_pid_ctrl_mode);
+	printk("\r\n ce=%d ctrl=%d\n",cep,m_pid_ctrl_mode);
 
 	if (cep == 0) return;
 
@@ -314,7 +315,7 @@ void pid_cep_handler(int8_t cep)
 	}
 
 #ifdef _PRINT_PID_MSG
-	printk(" #:[%02x] %5d %6d %3d %2d", (m_pid_ctrl_mode << 4) | m_pid_ctrl_evnt, gd->pid_volt, 144000000/gd->pid_perd, gd->pid_duty, gd->pid_phas);
+	printk(" #:[%02x] %5d %6d %3d %2d", (m_pid_ctrl_evnt << 4) | m_pid_ctrl_mode, gd->pid_volt, 144000000/gd->pid_perd, gd->pid_duty, gd->pid_phas);
 #endif
 }
 

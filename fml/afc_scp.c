@@ -145,7 +145,7 @@ void fcp_single_write_handle(void)
 			if(SCP_REG[scp_packet.bytes.msg_1] & 0x01)
 			{
 				scp_vout = (uint16_t)SCP_REG[FCP_REG_VOUT_CONFIG]* 100;
-				if(scp_vout >= 10000) scp_vout = 10000;
+				//if(scp_vout >= 10000) scp_vout = 10000;
 				scp_iout = 24000000 / scp_vout;
 				if(scp_iout >= 2400) scp_iout = 2400;
 				//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
@@ -156,7 +156,7 @@ void fcp_single_write_handle(void)
 			break;
 		case FCP_REG_VOUT_CONFIG:
         	scp_vout = (uint16_t)SCP_REG[FCP_REG_VOUT_CONFIG]* 100;
-        	if(scp_vout >= 10000) scp_vout = 10000;
+        	//if(scp_vout >= 10000) scp_vout = 10000;
 			scp_iout = 24000000 / scp_vout;
 			if(scp_iout >= 2400) scp_iout = 2400;
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
@@ -227,8 +227,6 @@ void fcp_multi_read_handle(void)
 
 void fcp_multi_write_handle(void)
 {
-	uint16_t scp_vout = 5000;
-
 	DPDM->AFC_TX_0.WORD =( (FCP_ACK << 8) | 0x01);
 	SCP_REG[scp_packet.bytes.msg_1] = scp_packet.bytes.msg_2;
 
@@ -246,13 +244,46 @@ void fcp_multi_write_handle(void)
 			//printk("SCP_REG_VSET_H = %d\n",SCP_REG[SCP_REG_VSET_H]);
 			//printk("SCP_REG_VSET_L = %d\n",SCP_REG[SCP_REG_VSET_L]);
 			//printk("scp_vout = %d\n",scp_vout);
-			if(scp_vout >= 10000) scp_vout = 10000;
+        	if(scp_vout >= 10000) scp_vout = 10000;
+			scp_iout = 24000000 / scp_vout;
+			if(scp_iout >= 2400) scp_iout = 2400;
 			//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
             hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
 			break;
 	}
+}
+
+void dpdm_src_afc_handle(void)
+{
+	#define AFC_CMD_RESET                       (0x01)                  //afc 5v
+	#define AFC_CMD_5V                          (0x08)                  //afc 5v
+	#define AFC_CMD_9V                          (0x46)                  //afc 9v
+	#define AFC_CMD_12V                         (0x79)                  //afc 12v
+
+
+	switch(DPDM->AFC_RX_0.BITS.RX_BUFFER_0)
+	{
+		case AFC_CMD_RESET:
+			scp_vout = 5000;
+			break;
+		case AFC_CMD_5V:
+			DPDM->AFC_TX_0.WORD =( (AFC_CMD_5V << 8) | 0x01);
+			scp_vout = 5000;
+			break;
+		case AFC_CMD_9V:
+			DPDM->AFC_TX_0.WORD =( (AFC_CMD_9V << 8) | 0x01);
+			scp_vout = 9000;
+			break;
+		case AFC_CMD_12V:
+			DPDM->AFC_TX_0.WORD =( (AFC_CMD_12V << 8) | 0x01);
+			scp_vout = 12000;
+			break;
+	}
+
+	scp_iout = 3000;
+	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
 }
 
 

@@ -85,9 +85,9 @@ void fml_nu103x_config(enum nu103x_cmd_t cmd)
 void fml_nu103x_por_rst(void)
 {
 	//don't delete, need more test -- Sean
-//	hal_epwm_pwm_start(EPWM1, 144000/1800, 500, 180);
-//	delay_1us(1);
-//	hal_epwm_pwm_stop(EPWM1);
+	hal_epwm_pwm_start(EPWM1, 144000/1800, 500, 180);
+	delay_1us(1);
+	hal_epwm_pwm_stop(EPWM1);
 
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 
@@ -263,8 +263,8 @@ void fml_nu103x_dmo2_xfer_param_chose(void)
 			DDM_GAIN_FIX   0->36       1->60
 			VCAP_RATIO_K   0->k2       1->k3        2->k1
 		*/
-	//	printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
-	//		gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
+		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
 	}
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 }

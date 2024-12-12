@@ -52,8 +52,8 @@ typedef enum {
 	ESYS_ERR_CODE_CLOAK_SWITCH			            = 0x42,
 	ESYS_ERR_CODE_CLOAK_PHASE_NO_THIS_PKT           = 0x43,
 	ESYS_ERR_CODE_MPP_ILLEGAL_PKT                   = 0x55,
-
-	ESYS_ERR_CODE_TYPEC_CHANGE                   	= 0x60,
+	ESYS_ERR_CODE_NEED_QDT_CALIBRATION              = 0x60,
+	ESYS_ERR_CODE_TYPEC_CHANGE                   	= 0x70,
 } TE_SYS_ERR_CODE;
 
 //typedef enum {
@@ -161,6 +161,7 @@ enum ptx_idle_phase_state_t {
 	WPC_IDLE_STAT_EPT_RES = 6,
 	WPC_IDLE_STAT_EPT_REP = 7,
 	WPC_IDLE_STAT_CLOAK_DET_PING = 8,
+	WPC_IDLE_STAT_QDT_CAL = 9,
 };
 
 enum
@@ -168,6 +169,18 @@ enum
 	_NU103x_DM_PHASE_DIG_PING = 0,
 	_NU103x_DM_PHASE_LO_POWER = 1,
 	_NU103x_DM_PHASE_HI_POWER = 2,
+};
+
+enum
+{
+	power_limit_reason_no = 0,
+	power_limit_reason_rsv1 = 1,
+	power_limit_reason_fop = 2,
+	power_limit_reason_bop = 3,
+	power_limit_reason_ot = 4,
+	power_limit_reason_rsv5 = 5,
+	power_limit_reason_oc = 6,
+	power_limit_reason_map = 7,
 };
 
 uint8_t wpc_msg_size_get(uint8_t hdr);

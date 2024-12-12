@@ -1,9 +1,6 @@
 #include "regdef.h"
+#include "printk.h"
 #include "g_data.h"
-
-#define AP_CFG_ROM_ADDR_BASE    (0x00001600)
-#define AP_CFG_RAM_ADDR_BASE    (0x20000000)
-#define G_DATA_RAM_ADDR_BASE    (0x20000200)
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
@@ -11,13 +8,15 @@ volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
 void ap_data_init(void)
 {
 	uint32_t i;
+	uint32_t *pdest0 = (uint32_t *)(AP_CFG_ROM_ADDR_BASE);
+	uint32_t *pdest1 = (uint32_t *)(AP_CFG_ROM_ADDR_BASE + 4);
 
 	for (i=0; i<256; i++)
 	{
 		__write_08bits(AP_CFG_RAM_ADDR_BASE + i, __read_08bits(AP_CFG_ROM_ADDR_BASE + i));
 	}
 
-	ap->tntc_otp_dis = 1;//0
+	ap->tntc_otp_dis = 0;//0
 	ap->tntc_otp_thd = 85;//80
 	ap->tntc_otp_hys = 30;
 
@@ -42,7 +41,7 @@ void ap_data_init(void)
 	ap->vbus_ovp_hys = 1000;
 
 	ap->vbus_uvp_dis = 0;
-	ap->vbus_uvp_thd = 8000;
+	ap->vbus_uvp_thd = 7800;//8000;
 	ap->vbus_uvp_hys = 500;
 
 	ap->vbus_dpl_dis = 0;
@@ -62,11 +61,11 @@ void ap_data_init(void)
 	ap->mpp_dither_en = 0;
 
 	ap->pin_max_cnt = 10;
-	ap->pin_fod_cnt = 0xff;
+	ap->pin_fod_cnt = 10;//0xff;
 	ap->pin_fod_dis = 0;
 
 	ap->rpp_fod_cnt = 5;
-	ap->rpp_fod_dis = 1;
+	ap->rpp_fod_dis = 0;
 
 	ap->dig_ping_volt_5v = 5000;
 	ap->dig_ping_perd_5v = 144000000 / 127772;
@@ -88,11 +87,26 @@ void ap_data_init(void)
 	ap->dig_ping_duty_12v = 200;
 	ap->dig_ping_phas_12v = 0;
 
-	ap->q_factor_base_value = 240; // 390;
+	if ((*pdest0 < 0) || (*pdest0 > 30000))
+	{
+		ap->q_factor_base_value = 240; // 390;
+	}
+	else
+	{
+		ap->q_factor_base_value = *pdest0;
+	}
 	ap->q_factor_reco_value =  20;
 	ap->q_factor_limH_value = 500;
 	ap->q_factor_limL_value =  	0;
-	ap->fs_base_value = 800; // 2190;
+
+	if ((*pdest0 < 0) || (*pdest0 > 30000))
+	{
+		ap->fs_base_value = 800; // 2190;
+	}
+	else
+	{
+		ap->fs_base_value = *pdest1;
+	}
 	ap->fs_reco_value = 20;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
@@ -103,6 +117,9 @@ void ap_data_init(void)
 	ap->fs_stable_value = 30;
 
 	ap->t_next_ping = 200;
+
+	printk("\r\n base_q [%d]", ap->q_factor_base_value);
+	printk("\r\n base_fre [%d]", ap->fs_base_value);
 }
 
 void gd_data_init(void)

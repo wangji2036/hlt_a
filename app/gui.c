@@ -194,7 +194,7 @@ void iic_write_info_sync(void)
 {
 	iic_master_msg master_adp_msg;
 	uint16_t master_adp_volt, master_adp_cur;
-	iic_io_ctl io_ctl_msg;
+//	iic_io_ctl io_ctl_msg;
 	master_adp_msg.byte = app_reg_buff[master_msg];
 
 	if (1 == master_adp_msg.bits.ready)
@@ -210,21 +210,33 @@ void iic_write_info_sync(void)
 		{
 			if (master_adp_volt >= 9000)
 			{
-				master_adp_volt = 9000;
-				app_reg_buff[tx_required_volt_l] = 0x28;
-				app_reg_buff[tx_required_volt_h] = 0x23;
+				if (master_adp_cur <= 1000)
+				{
+					master_adp_volt = 5000;
+					app_reg_buff[tx_required_volt_l] = 0x88;
+					app_reg_buff[tx_required_volt_h] = 0x13;
+					gd->tx_infos.master_adaptor_cap = 1;
+				}
+				else
+				{
+					master_adp_volt = 9000;
+					app_reg_buff[tx_required_volt_l] = 0x28;
+					app_reg_buff[tx_required_volt_h] = 0x23;
+					gd->tx_infos.master_adaptor_cap = 2;
+				}
 			}
 			else
 			{
 				master_adp_volt = 5000;
 				app_reg_buff[tx_required_volt_l] = 0x88;
 				app_reg_buff[tx_required_volt_h] = 0x13;
+				gd->tx_infos.master_adaptor_cap = 1;
 			}
 
 			//add new adaptor type
 		}
 	}
-
+#if CUST_BEISI
 	if (io_ctl_msg.bits.pin8)
 	{
 		fml_nu103x_config(_1030_CFG_DRVH2_TURN_ON_);
@@ -242,5 +254,6 @@ void iic_write_info_sync(void)
 	{
 		GPA->DOUT.BITS.PIN5 = 0;
 	}
+#endif
 }
 

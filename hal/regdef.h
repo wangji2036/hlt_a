@@ -794,6 +794,17 @@ enum {
 	_SYS_TSD_THD_125C = 1,
 };
 
+#define PLL_CLK     (144000000) //144M
+#define HIRC        (  8000000) //  8M
+#define LIRC        (    64000) // 64K
+#define HCLK        (SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 0 ? (36000000) \
+		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 1 ? (24000000) \
+		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 2 ? (18000000) \
+		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 3 ? (12000000) \
+		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 4 ? ( 9000000) \
+		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 5 ? ( 6000000) \
+		           : (36000000))
+
 #define  SP3800         ( 3800)
 #define  SP3802         ( 3802)
 #define  SP3811         ( 3811)

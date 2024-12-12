@@ -55,18 +55,120 @@
 #include "tcpc.h"
 #include "isr.h"
 
-void __attribute__((isr)) default_IRQHandler(uint32_t vector, uint32_t pc, uint32_t sp)
+void __attribute__((isr, weak)) default_IRQHandler(uint32_t vector, uint32_t pc, uint32_t sp)
 {
 	printk("\r\n IRQn-> default_exception_handler: %d %x %x", vector, pc, sp);
 	while (1);
 }
 
-void __attribute__((isr)) UFCS_IRQHandler(void)
+void __attribute__((isr, weak)) PROT_IRQHandler(void)
 {
 }
 
-void __attribute__((isr)) TCPC_IRQHandler(void)
+void __attribute__((isr, weak)) WDT_IRQHandler(void)
 {
 }
 
+void __attribute__((isr, weak)) TMR0_IRQHandler(void)
+{
+}
 
+void __attribute__((isr, weak)) TMR1_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) TMR2_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) TMR3_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) EADC_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) BADC_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) ECAP1_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) ECAP2_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) ECAP3_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) ECAP4_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) ECAP5_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) GPIO_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) UART1_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) UART2_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) I2CS_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) I2CM_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) USBPD_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) UFCS_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) DPDM_SINK_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) DCP_HVDCP_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) QC_SRC_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) AFC_SCP_SRC_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) FSK1_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) FSK2_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) DMA_IRQHandler(void)
+{
+}
+
+void __attribute__((isr, weak)) TCPC_IRQHandler(void)
+{
+}

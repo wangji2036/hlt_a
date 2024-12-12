@@ -8,6 +8,7 @@
 #include "pfod.h"
 #include "fsk.h"
 #include "_wpc.h"
+#include "epp.h"
 #include "pkt_type.h"
 #include "wpc_ping.h"
 #include "wpc_cnfg.h"
@@ -31,6 +32,24 @@ static uint8_t get_prx_type(uint16_t prmc)
 	{
 		case 0x0042:
 			gd->rx_infos.rx_type = EPRX_TYPE_SAMSUNG;
+			break;
+		case 0x0056:
+			if (gd->rx_infos.device_id == 0x44035445 && gd->rx_infos.qi_version == 0x12)//YBZ BPP RX FIXTURE 71 12 00 56 44 03 54 45 63
+			{
+				gd->rx_infos.rx_type = ERX_TYPE_YBZ_BPP_FIXTURE;
+			}
+			break;
+		case 0x0058:
+			if (gd->rx_infos.device_id == 0x33035445 && gd->rx_infos.qi_version == 0x12)//YBZ EPP RX FIXTURE 71 12 00 56 44 03 54 45 63
+			{
+				gd->rx_infos.rx_type = ERX_TYPE_YBZ_EPP_FIXTURE;
+			}
+			break;
+		case 0x425A:
+			if (gd->rx_infos.device_id == 0x00035464 && gd->rx_infos.qi_version == 0x59)//YBZ PPDE RX FIXTURE 71 59 42 5A 00 03 54 64 03
+			{
+				gd->rx_infos.rx_type = ERX_TYPE_YBZ_PPDE_FIXTURE;
+			}
 			break;
 		case 0x005A:
 			gd->rx_infos.rx_type = EPRX_TYPE_APPLE_STD;
@@ -103,7 +122,8 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				}
 				if (gd->rx_infos.rx_type == ERX_TYPE_NVT_MPP)
 				{
-					gd->power_mode = high;//fixture test
+//					gd->power_mode = high;//fixture test
+					gd->power_mode = nominal;
 				}
 			}
 			else
@@ -240,7 +260,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->rx_infos.opt_cnt = 0;
 				gd->rx_infos.phase_state = 0;
-				gd->rx_infos.gant_power_temp = gd->rx_infos.guaranteed_power;;
+				gd->rx_infos.gant_power_temp = gd->rx_infos.guaranteed_power;
 				gd->rx_infos.max_power_temp = gd->rx_infos.max_power;
 				if (gd->pid_perd != 144000/360)
 				{
@@ -266,7 +286,8 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 goto __CNFG_PHASE_ERR__;
 			}
-			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high >= 20)
+			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high >= 20
+					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
 			{
 				if (com_ask->msg.cfg.max_power > 10)
 				{
@@ -312,11 +333,11 @@ goto __CNFG_PHASE_ERR__;
 				{
 //					if (gd->rx_infos.rx_type != EPRX_TYPE_APPLE_STD && gd->rx_infos.rx_type != EPRX_TYPE_APPLE_MAG)
 					{
-						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
+						pid_set_freq_limit(144000000/90000, 144000000/147000, 144000000/147000);
 					}
 					if (gd->rx_infos.ssp_value > 180 && gd->rx_infos.qi_version >= 0x20) //for IOC test
 					{
-						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/180000);
+						pid_set_freq_limit(144000000/90000, 144000000/147000, 144000000/180000);
 					}
 
 					//even MPP/EPP, but input power is limit, enter BPP

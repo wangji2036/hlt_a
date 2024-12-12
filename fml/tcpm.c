@@ -13,7 +13,7 @@
 #include "pid.h"
 uint16_t port_vbus = 5000;
 uint16_t port_defualt_voltage = 5000;
-uint8_t wpc_work_mode = TCPM_WPC_WORK_FIX5V;
+uint8_t wpc_work_mode = TCPM_WPC_WORK_BOOST;
 
 static uint8_t usba_state = 0;
 static uint8_t usba_cnt = 0;
@@ -75,34 +75,34 @@ void tcpm_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc
 
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 {
-	wpc_work_mode = mode;
-
-	switch(mode)
-	{
-		case TCPM_WPC_WORK_FIX5V:
-			gd->dig_ping_volt = 5000;
-			gd->dig_ping_perd = 144000000/360000;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 0;
-			pid_set_volt_limit(5000, 5000, 5000);
-			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-			pid_set_duty_limit(500, 500, 500);
-			pid_set_phas_limit( 50,  40,   0);
-			break;
-		case TCPM_WPC_WORK_BOOST:
-			gd->dig_ping_volt = 5000;
-			gd->dig_ping_perd = 144000000/360000;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 0;
-			pid_set_volt_limit(20000, 5000, 5000);
-			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-			pid_set_duty_limit(500, 500, 500);
-			pid_set_phas_limit( 50,  40,   0);
-			break;
-		case TCPM_WPC_WORK_ADP_FIX:
-		case TCPM_WPC_WORK_PD_PPS:
-			break;
-	}
+//	wpc_work_mode = mode;
+//
+//	switch(mode)
+//	{
+//		case TCPM_WPC_WORK_FIX5V:
+//			gd->dig_ping_volt = 5000;
+//			gd->dig_ping_perd = 144000000/360000;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 0;
+//			pid_set_volt_limit(5000, 5000, 5000);
+//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+//			pid_set_duty_limit(500, 500, 500);
+//			pid_set_phas_limit( 50,  40,   0);
+//			break;
+//		case TCPM_WPC_WORK_BOOST:
+//			gd->dig_ping_volt = 5000;
+//			gd->dig_ping_perd = 144000000/360000;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 0;
+//			pid_set_volt_limit(20000, 5000, 5000);
+//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+//			pid_set_duty_limit(500, 500, 500);
+//			pid_set_phas_limit( 50,  40,   0);
+//			break;
+//		case TCPM_WPC_WORK_ADP_FIX:
+//		case TCPM_WPC_WORK_PD_PPS:
+//			break;
+//	}
 
 	printk("wpc_work_mode= %d\n",mode);
 }
@@ -145,7 +145,10 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 				{
 					if(g_tc[1].tc_index == g_tcpc.tc_port_map && usba_state == 0)
 					{
-						usb_pd_requsrt_voltage(2,9000,2000);
+						if(port_vbus != 9000 && g_buckboost.adc_vbat > 6000)
+						{
+							usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+						}
 					}
 					else
 					{
@@ -186,7 +189,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 					{
 			    		if(g_tc[0].tc_index == g_tcpc.tc_port_map && usba_state == 0)
 						{
-			    			usb_pd_requsrt_voltage(2,9000,2000);
+			    			if(port_vbus != 9000 && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
 						}
 			    		else
 			    		{
@@ -249,7 +252,10 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 
 			    	if(g_tc[1].usb_tc_state == TC_SNK_Attached)
 			    	{
-			    		if(g_tc[1].tc_index == g_tcpc.tc_port_map) usb_pd_requsrt_voltage(2,9000,2000);
+			    		if(g_tc[1].tc_index == g_tcpc.tc_port_map)
+						{
+			    			if(g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+						}
 			    		updata_pdo_of_sink((uint32_t *)sink_pdo_level_1,SIZEOF_SINK_PDO_LEVEL1);
 
 			    		osal_start_timerEx(TCPM_PORT0_TIMER, 50, 0, USB_TASK, TCPM_EVT_TYPECB_SNK_ATTACHED);
@@ -280,7 +286,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    	if(g_tc[0].usb_tc_state == TC_SNK_Attached)
 			    	{
 			    		//usb_tc_set_state(&g_tc[0],TC_SNK_Attached,enter_state);
-			    		if(g_tc[0].tc_index == g_tcpc.tc_port_map) usb_pd_requsrt_voltage(2,9000,2000);
+			    		if(g_tc[0].tc_index == g_tcpc.tc_port_map && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
 			    		updata_pdo_of_sink((uint32_t *)sink_pdo_level_1,SIZEOF_SINK_PDO_LEVEL1);
 			    		osal_start_timerEx(TCPM_PORT0_TIMER, 50, 0, USB_TASK, TCPM_EVT_TYPECA_SNK_ATTACHED);
 			    	}
@@ -401,9 +407,9 @@ void tcpm_task_event_handler(uint32_t event)
 
 			break;
 		case TCPM_EVT_TYPECB_PORT_STATE_CHANGE:
-		#ifdef MULTI_PORT_ALT_MODE
+
 			temp_port_state_change_handle(&g_tc[1]);
-		#endif
+
 			break;
 		case TCPM_EVT_TYPECA_SNK_ATTACHED:
 			if(g_tc[1].usb_tc_state != TC_SNK_Attached)
@@ -485,7 +491,7 @@ void tcpm_task_event_handler(uint32_t event)
 
 			if(usba_state)
 			{
-				if(g_buckboost.adc_ibus < 160 && g_buckboost.adc_ibus >= 0 )
+				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
 				{
 					usba_cnt++;
 					if(usba_cnt >= 10)

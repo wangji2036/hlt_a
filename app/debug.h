@@ -26,7 +26,7 @@
 //#define _CLOAK_TX_INIT
 
 //------MPP_25W_DEBUG
-#define MPP_25W_HPM_PING_ENALBE     (0)//enable: 360K 16V 468nF high K, 115nF low K, disable: 360K 11V 115nF/68nF
+#define MPP_25W_HPM_PING_ENALBE     (1)//enable: 360K 16V 468nF high K, 115nF low K, disable: 360K 11V 115nF/68nF
 #define MPP_25W_LOW_K_VALUE         (8100)//0mm 8000, 2mm 7600, times 1.07
 #define MPP_25W_360K_DIG_PING_PHASE (50)//spec is 50 (goodd for iphone), lower to 20 for DDM (good for GRL)
 

@@ -224,7 +224,7 @@ int fm1210_read_cert_hash(uint8_t *rbuf)
 {
 	uint16_t slen = 0;
 	uint16_t read_len;
-	uint8_t	 i, ret;
+	uint8_t	 /*i,*/ ret;
 
 	fm_pack.cmd = 0x30;
 	fm_pack.apdu_data[0] = 0x30;
@@ -443,7 +443,7 @@ int ecc_private_key_cal_p256r1sha256(uint8_t* hashresult, uint8_t* rbuf)
     return (0);
 }
 
-extern uint8_t adt_rcv_buff[18];
+extern uint8_t adt_data_recv_buf[18];
 uint8_t	tbs_auth[54]		= { 0 };
 uint8_t	tbs_authhash[32]	= { 0 };
 
@@ -465,7 +465,7 @@ int fm1210_get_tbs_auth(uint8_t *rbuf)
     /*Challenge Request */
     tbs_auth[pos++] = 0x1B;
     tbs_auth[pos++] = 0x00;
-    osal_mem_copy(tbs_auth + pos, adt_rcv_buff + 2, 16);
+    osal_mem_copy(tbs_auth + pos, adt_data_recv_buf + 2, 16);
     pos += 16;
 
     /*CHALLENGE_AUTH response */

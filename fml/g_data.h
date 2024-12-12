@@ -7,6 +7,10 @@
 #include "ask.h"
 #include "fsk.h"
 
+#define AP_CFG_ROM_ADDR_BASE    (0x00001600)
+#define AP_CFG_RAM_ADDR_BASE    (0x20000000)
+#define G_DATA_RAM_ADDR_BASE    (0x20000200)
+
 struct ap_t
 {
 	uint8_t app_info_0; //0-0x2000
@@ -150,6 +154,7 @@ struct gd_t
 	uint32_t tx_power;
 	uint32_t rx_power;
 	uint32_t rx_prect;
+	uint32_t p_rect_max_ntc_ot;
 
 	uint16_t vctx_pp;
 	uint32_t k_est;
@@ -185,6 +190,8 @@ struct gd_t
 		uint16_t t_re_ping;
 		uint32_t q_fact;
 		uint32_t f_self;
+		uint32_t q_fact_air;
+		uint32_t f_self_air;
 		 uint8_t need_full_brg; //cep_event
 		 uint8_t fo_exist;
 		 uint8_t pfod_event; //ioc_event
@@ -209,6 +216,7 @@ struct gd_t
 		 uint8_t power_limit_reason;
 		 uint8_t tar_cap_fod;
 		 uint8_t tar_cap_cali;
+		 uint8_t tar_cap_otp;
 		 //  uint8_t tar_cap_uvp;
 		 //  uint8_t tar_cap_ocp;
 		 //  uint8_t tar_cap_opp;
@@ -222,6 +230,7 @@ struct gd_t
 		uint16_t dp_beta;
 		uint8_t ept_attempt_cnt;
 		uint8_t rx_status;//1: Rx attached, 0: Rx detached.
+		uint8_t master_adaptor_cap;//1: BPP 5W, 2: MPP 15W
 	} tx_infos;
 
 	uint8_t pla_id;
@@ -269,13 +278,14 @@ struct gd_t
 	 } pid_limit;
 
 	struct {
-		uint16_t fop_flag : 1;
+		uint16_t fop_flag : 1;//fod limit power flag
 		uint16_t vbus_uv_flag : 1;
-		uint16_t tntc_ot_flag : 1;
+		uint16_t tntc_ot_flag : 1;//NTC temperature limit power flag,1: will let CEP=-5 to reduce power, 0:
 		uint16_t vbus_ov_flag : 1;
 		uint16_t isns_oc_flag : 1;
 		uint16_t pout_op_flag : 1;
 	 } power_limit_sts;
+	 uint8_t tntc_ot_flag_atn;//0: initial value, 1:need send ATN, 2: have sent ATN
 
 	 struct ask_packet_t wpc_pkt;
 	 struct adp_t adp;

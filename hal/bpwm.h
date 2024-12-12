@@ -31,5 +31,4 @@ void hal_bpwm_update(TS_BPWM *bpwm, uint16_t perd_cycle, uint16_t duty_cycle);
  */
 void hal_bpwm_stop(TS_BPWM* bpwm);
 
-
 #endif /* BPWM_H_ */

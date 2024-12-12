@@ -105,6 +105,6 @@ void hal_wdt_stop(void)
  * @param  	void
  * @retval 	void
  */
-void __attribute__((isr, weak)) WDT_IRQHandler(void)
+void __attribute__((isr)) WDT_IRQHandler(void)
 {
 }

@@ -16,6 +16,8 @@
 #include "wpc_xfer.h"
 #include "debug.h"
 #include "usb_pd.h"
+#include "t91206.h"
+#include "wpc_5_xfer_4_dstrm.h"
 
 static uint8_t special_cep_cnt;
 uint8_t wpc_msg_size_get(uint8_t hdr)
@@ -137,24 +139,21 @@ void wpc_stop_power(void)
 			{
 				gd->tx_infos.t_next_ping = ap->t_next_ping;
 			}
-			osal_start_timerEx(WPC_PING_TIMER, gd->tx_infos.t_next_ping, ap->t_next_ping, WPC_TASK, WPC_EVT_DIG_PING);
 		}
 		else
 		{
 			gd->tx_infos.t_next_ping = ap->t_next_ping;
 		}
-
 		gd->ptx_protocol_phase = WPC_PHASE_IDLE;
 	}
+
+	osal_stop_timerEx(WPC_NEXT_TIMER);
+	osal_start_timerEx(WPC_PING_TIMER, gd->tx_infos.t_next_ping, ap->t_next_ping, WPC_TASK, WPC_EVT_DIG_PING);
 
 #if MPP_25W_HPM_PING_ENALBE
 	if (gd->power_mode == high && gd->tx_infos.dig_ping_type == _360K_FB && gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP)
 	{
-		gd->dig_ping_volt = 16000;
-		if (usb_pd_15v_flag)
-		{
-			USBPD_vSetVolt(15000);
-		}
+		//gd->dig_ping_volt = 16000;
 	
 		if (gd->k_est < MPP_25W_LOW_K_VALUE) {
 			ctx_switch(2);
@@ -165,7 +164,8 @@ void wpc_stop_power(void)
 	else
 #endif
 	{
-		//gd->dig_ping_volt = 9000;
+		//gd->dig_ping_volt = 11000;
+
 		ctx_switch(4);//for qdt
 	}
 
@@ -174,7 +174,6 @@ void wpc_stop_power(void)
 		//gd->pid_volt = gd->dig_ping_volt;
 		//fml_adp_volt_set(gd->pid_volt);
 	}
-
 
 	gd->rx_power = 0;
 	gd->tx_power = 0;
@@ -330,7 +329,6 @@ void wpc_task_event_handler(uint32_t event)
 			wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_RPP_TIMEOUT);
 			break;
 		case WPC_EVT_PCH_TO:
-
 			if (gd->rx_infos.cep_val == 5 && gd->isns < 150)
 			{
 				if (++special_cep_cnt >= 5)
@@ -350,7 +348,6 @@ void wpc_task_event_handler(uint32_t event)
 			osal_start_timerEx(WPC_NEXT_TIMER, T_WINDOW, 0, WPC_TASK, WPC_EVT_2ND_WND);
 //			wpc_xfer_ptx_power_update();
 			gd->isns_avg = hal_badc_meas(_BADC_CH_PD6_ADC3);
-			//gd->vpwr_avg = hal_badc_meas(_BADC_CH_PD0_ADC8);
 			gd->vpwr_avg = hal_badc_meas(_BADC_CH_PB6_ADC7);
 
 			uint8_t last_k = gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K;
@@ -442,7 +439,12 @@ void wpc_task_event_handler(uint32_t event)
 			wpc_stop_to_idle(ESYS_ERR_CODE_NEGO_PHASE_WAIT_NEXT_PKT_TIMEOUT);
 			break;
 		case WPC_EVT_PFOD:
-			pfod_common();
+			//pfod_common();
+			if (pfod_common())
+			{
+                gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
+				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_POWER_LOSS_FOD);
+			}
 			break;
 		case WPC_EVT_HDR_START:
 			break;

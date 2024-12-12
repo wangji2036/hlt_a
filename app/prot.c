@@ -5,6 +5,7 @@
 #include "prot.h"
 #include "g_data.h"
 #include "_wpc.h"
+#include "config.h"
 
 #define NTC_TEMP_BUFF_SIZE_Max    (                         8)
 #define NTC_TEMP_BUFF_SIZE_Msk    (NTC_TEMP_BUFF_SIZE_Max - 1)
@@ -12,6 +13,31 @@
 #define DIE_TEMP_BUFF_SIZE_Max    (                         8)
 #define DIE_TEMP_BUFF_SIZE_Msk    (DIE_TEMP_BUFF_SIZE_Max - 1)
 
+static uint8_t DeltaTemp_N_1;
+
+
+#if IC_PN_17111
+//MM customer: Nu17111 IC NTC resistance is 82/NTC
+static const uint16_t ntc_tbl[] =
+{
+	 3146, 3137, 3127, 3117, 3106, 3095, 3083, 3071, 3058, 3044,  //-29 ~ -20
+	 3030, 3015, 3000, 2984, 2968, 2950, 2933, 2914, 2895, 2875,  //-19 ~ -10
+	 2854, 2833, 2811, 2789, 2765, 2741, 2717, 2691, 2665, 2638,  // -9 ~   0
+	 2611, 2583, 2554, 2525, 2495, 2465, 2434, 2402, 2370, 2338,  //  1 ~  10
+	 2305, 2271, 2238, 2203, 2169, 2134, 2099, 2064, 2028, 1993,  // 11 ~  20
+	 1957, 1921, 1885, 1849, 1813, 1777, 1742, 1706, 1670, 1635,  // 21 ~  30
+	 1600, 1565, 1530, 1496, 1462, 1429, 1395, 1362, 1330, 1298,  // 31 ~  40
+	 1266, 1235, 1205, 1175, 1145, 1116, 1087, 1059, 1032, 1005,  // 41 ~  50
+	 978, 952, 927, 902, 878, 854, 831, 808, 786, 764,  // 51 ~  60
+	 743, 723, 703, 683, 664, 646, 628, 610, 593, 576,  // 61 ~  70
+	 560, 544, 529, 514, 499, 485, 472, 458, 445, 433,  // 71 ~  80
+	 421, 409, 397, 386, 375, 365, 355, 345, 335, 326,  // 81 ~  90
+	 317, 308, 299, 291, 283, 275, 268, 260, 253, 246,  // 91 ~ 100
+	 239, 233, 227, 220, 214, 209, 203, 198, 192, 187,  //101 ~ 110
+	 182, 177, 173, 168, 164, 159, 155, 151, 147, 143,  //111 ~ 120
+};
+#else
+//Nu17112 IC NTC resistance is 10/NTC
 static const uint16_t ntc_tbl[] =
 {
 	 3022, 3008, 2994, 2980, 2965, 2949, 2933, 2917, 2899, 2882, //-29 ~ -20
@@ -30,15 +56,30 @@ static const uint16_t ntc_tbl[] =
 	  287,  280,  274,  267,  261,  255,  250,  244,  238,  233, //101 ~ 110
 	  228,  223,  218,  213,  208,  203,  199,  194,  190,  186, //111 ~ 120
 };
+#endif
 
 int16_t fml_ntc_temp_get(void)
 {
 	static uint8_t  vntc_idx = 0;
-	static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650 };
+
+#if IC_PN_17111
+		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1813, 1813, 1813, 1813, 1813, 1813, 1813, 1813 };
+#else
+		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650 };
+#endif
 
 	uint16_t i, v_ntc = 0;
 
-	vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB2_ADC2);
+	if (SYS->PID_INFO.BITS.PID == NU17111)
+	{
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB5_ADC6);
+	}
+	else
+	{
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB2_ADC2);
+	}
+
+
 	vntc_idx &= NTC_TEMP_BUFF_SIZE_Msk;
 
 	for (i=0; i<NTC_TEMP_BUFF_SIZE_Max; ++i)
@@ -82,6 +123,62 @@ int16_t fml_die_temp_get(void)
 }
 
 /*+++++++++++++++++++++++++++++++++++++++++++ TNTC_OTP +++++++++++++++++++++++++++++++++++++++++++*/
+void fml_tntc_otp_limit_power(int16_t tntc)
+{
+	uint8_t DeltaTemp = 0;
+	//flg_action = 0;//default value, no action.
+	//flg_action = 1;//cep=-5, reduce power
+	//flg_action = 2;//go to send ATN and update the nego cap
+//	uint8_t flg_action = 0;
+
+	if (tntc >= 72)
+	{
+		gd->prot_sts.tntc_otp_flag = 1;
+		gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+		wpc_stop_to_idle(ESYS_ERR_CODE_NTC_OTP);
+		return;
+	}
+	else if (tntc > 55)
+	{
+		DeltaTemp = tntc - 55;
+	}
+	else
+	{
+		DeltaTemp = 0;
+		DeltaTemp_N_1 = 0;
+		//re-initial parameter value
+		gd->tx_infos.power_limit_reason = power_limit_reason_no;
+		gd->tx_infos.tar_cap_otp = gd->tx_infos.max_cap;
+		gd->power_limit_sts.tntc_ot_flag = 0;
+		gd->tntc_ot_flag_atn = 0;
+		gd->prot_sts.tntc_otp_flag = 0;
+	}
+
+	if ((DeltaTemp_N_1 != DeltaTemp) && (DeltaTemp != 0))
+	{
+		DeltaTemp_N_1 = DeltaTemp;
+		gd->tx_infos.tar_cap_otp = gd->tx_infos.max_cap - (10 * DeltaTemp);
+
+		if (power_limit_reason_ot == gd->tx_infos.power_limit_reason)
+		{
+			goto __NTC_OT_Limit_Handle__;
+		}
+		else
+		{
+			if (gd->tx_infos.tar_cap_otp < gd->tx_infos.nego_cap)
+			{
+	__NTC_OT_Limit_Handle__:
+				gd->tx_infos.nego_cap = gd->tx_infos.tar_cap_otp;
+				gd->tx_infos.power_limit_reason = power_limit_reason_ot;
+				gd->power_limit_sts.tntc_ot_flag = 1;
+				gd->tntc_ot_flag_atn = 1;
+			}
+		}
+	}
+}
+
+
+/*
 static struct tntc_otp_t
 {
 	uint8_t  writ_idx;
@@ -144,6 +241,7 @@ void fml_tntc_otp_check(int16_t tntc)
 		wpc_stop_to_idle(ESYS_ERR_CODE_NTC_OTP);
 	}
 }
+*/
 /*------------------------------------------- TNTC_OTP -------------------------------------------*/
 
 /*+++++++++++++++++++++++++++++++++++++++++++ TNTC_UTP +++++++++++++++++++++++++++++++++++++++++++*/
