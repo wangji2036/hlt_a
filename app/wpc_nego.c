@@ -36,17 +36,17 @@ enum mpp_prx_get_request_type_t
 
 enum mpp_prx_srq_request_type_t
 {
-	SRQ_END_00      = 0x00,
-	SRQ_RP_04       = 0x04,
-	SRQ_REP_05      = 0x05,
-	SRQ_FREQ_SEL_F0 = 0xF0,
-	SRQ_EPGL_F3     = 0xF3,
-	SRQ_EPGH_F4     = 0xF4,
-	SRQ_CLOAKL_F5   = 0xF5,
-	SRQ_PCP_F6      = 0xF6,
-	SRQ_CLOAKH_F7   = 0xF7,
-	SRQ_DETECT_F8   = 0xF8,
-	SRQ_PLA_SEL_A0  = 0xA0,
+	SRQ_END_00                = 0x00,
+	SRQ_RP_04                 = 0x04,
+	SRQ_REP_05                = 0x05,
+	SRQ_FREQ_SEL_F0           = 0xF0,
+	SRQ_EPGL_F3               = 0xF3,
+	SRQ_EPGH_F4               = 0xF4,
+	SRQ_CLOAK_DIG_PING_LSB_F5 = 0xF5,
+	SRQ_PCP_F6                = 0xF6,
+	SRQ_CLOAK_DIG_PING_MSB_F7 = 0xF7,
+	SRQ_CLOAK_DET_PING_F8     = 0xF8,
+	SRQ_PLA_SEL_A0            = 0xA0,
 };
 
 //static uint8_t mpp_tx_cap, mpp_tx_cur_cap, mpp_tx_is_nego_cap = 0;
@@ -68,14 +68,26 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 	switch (mpp_ask->msg.srq.request)
 	{
 		case SRQ_END_00:
+			//TODO: if PRx Not received ACK successfully, and retry 20 00 packet, need to consider this situation. --Sean
 			osal_stop_timerEx(WPC_NEXT_TIMER);
+			osal_stop_timerEx(WPC_NEGO_TIMER);
 			osal_start_timerEx(WPC_CEP_TIMER, T_MPP_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 			osal_start_timerEx(WPC_RPP_TIMER, T_MPP_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
 			gd->ptx_protocol_phase = WPC_PHASE_XFER;
+			gd->ptx_end_nego_event |= MPP_END_NEGO_FLAG;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
+
+			if (gd->rx_infos.mpp_restricted_mode == 1)
+			{
+				gd->rx_infos.mpp_restricted_mode = 0;
+			}
+
 			if (gd->pid_perd == 1127)//128K
+			{
 				gd->tx_infos._128_nego_gd |= 2;
+			}
 			else
+			{
 				gd->tx_infos._128_nego_gd = 0;
 #if DIG_DDM_ENABLE
 				if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360 && gd->nu103x_sts_curr.BITS.DMO2_OUT_MODE == _NU1030_DMO2_OUT_MODE_CAP)
@@ -90,8 +102,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 					printk("\r\n ----- disable digital ddm");
 				}
 #endif
-
-			return;
+			}
 			break;
 		case SRQ_REP_05:
 			gd->tx_infos.t_re_ping = (mpp_ask->msg.srq.parameter & 0x3F) * 200;
@@ -103,6 +114,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			{
 				gd->tx_infos.dig_ping_type = _360K_FB;
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
+				printk("\r\n 360k-2");
 			}
 			else
 			{
@@ -114,18 +126,20 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		case SRQ_EPGH_F4://TODO: compare load power value
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
-		case SRQ_CLOAKL_F5:
-			gd->tx_infos.cloak_ping_delay = mpp_ask->msg.srq.parameter;//unit: 100mS_Cloak_Ping
-
+		case SRQ_CLOAK_DIG_PING_LSB_F5:
+			gd->tx_infos.cloak_dig_ping_delay &= ~0x00FF;
+			gd->tx_infos.cloak_dig_ping_delay |= mpp_ask->msg.srq.parameter;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
 		case SRQ_PCP_F6:
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
-		case SRQ_CLOAKH_F7:
+		case SRQ_CLOAK_DIG_PING_MSB_F7:
+			gd->tx_infos.cloak_dig_ping_delay &= ~0x0300;
+			gd->tx_infos.cloak_dig_ping_delay |= (mpp_ask->msg.srq.parameter & 0x03) << 8;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
-		case SRQ_DETECT_F8:
+		case SRQ_CLOAK_DET_PING_F8:
 			gd->tx_infos.cloak_det_ping_delay = mpp_ask->msg.srq.parameter;//unit: 100mS_Cloak_Ping
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
@@ -497,12 +511,20 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 				wpc_stop_to_idle(ESYS_ERR_CODE_NEG_PHASE_NO_THIS_PKT);
+				osal_stop_timerEx(WPC_NEXT_TIMER);
 				goto __NEGO_PHASE_ERR__;
 			}
 			break;
 	}
 
-	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+	if (gd->ptx_protocol_phase == WPC_PHASE_XFER)
+	{
+		osal_stop_timerEx(WPC_NEXT_TIMER);
+	}
+	else
+	{
+		osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+	}
 
 __NEGO_PHASE_ERR__:
 	return;

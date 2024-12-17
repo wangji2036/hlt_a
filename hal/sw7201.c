@@ -60,9 +60,20 @@ void hal_sw7201_buckboost_usb_a_dischg(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x01));
 }
 
+void hal_sw7201_buckboost_vbus_dischg(bool en)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
+	if(en)
+		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read | 0x08);
+	else
+		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x08));
+}
+
 void hal_sw7201_buckboost_a2_detect_enable(void)
 {
-	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,0x00);
+	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,0x00);
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x00);
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x01);
 }
 
@@ -202,16 +213,29 @@ int16_t hal_sw7201_buckboost_get_bat_current(void)
 
 uint16_t hal_sw7201_buckboost_get_bat_voltage(void)
 {
-	uint16_t ibus = 0;
+	uint16_t vbat = 0;
 	uint8_t read = 0;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_Type,0);
 
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
 
-	ibus = read << 4;
+	vbat = read << 4;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
-	ibus |= read & 0x0F;
-	return ibus *75 / 10;
+	vbat |= read & 0x0F;
+	return vbat *75 / 10;
+}
+uint16_t hal_sw7201_buckboost_get_bus_voltage(void)
+{
+	uint16_t vbus = 0;
+	uint8_t read = 0;
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_Type,1);
+
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+
+	vbus = read << 4;
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+	vbus |= read & 0x0F;
+	return vbus *75 / 10;
 }
 
 uint16_t hal_sw7201_buckboost_get_bat_temperature(void)

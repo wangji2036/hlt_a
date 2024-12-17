@@ -63,11 +63,13 @@ uint16_t hal_sw7201_buckboost_get_bus_current(void);
 int16_t hal_sw7201_buckboost_get_bat_current(void);
 void hal_sw7201_buckboost_usb_a_gate_en(bool en);
 uint16_t hal_sw7201_buckboost_get_bat_voltage(void);
+uint16_t hal_sw7201_buckboost_get_bus_voltage(void);
 void hal_sw7201_buckboost_a2_detect_enable(void);
 bool hal_sw7201_buckboost_get_a2_state(void);
 void hal_sw7201_buckboost_typeca_dischg(bool en);
 void hal_sw7201_buckboost_typecb_dischg(bool en);
 void hal_sw7201_buckboost_usb_a_dischg(bool en);
+void hal_sw7201_buckboost_vbus_dischg(bool en);
 uint16_t hal_sw7201_buckboost_get_bat_temperature(void);
 
 #endif /* SW7201_H_ */

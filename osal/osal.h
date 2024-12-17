@@ -11,10 +11,10 @@ enum {
 	WPC_PING_TIMER = 4,
 	WPC_NEXT_TIMER = 5,
 	WPC_RESP_TIMER = 6,
-	WPC_AUTH_TIMER = 7,
-	WPC_CEP_TIMER = 8,
-	WPC_RPP_TIMER = 9,
-	WPC_DDM_TIMER = 10,
+	WPC_NEGO_TIMER = 7, WPC_AUTH_TIMER = 7,
+	WPC_CEP_TIMER  = 8,
+	WPC_RPP_TIMER  = 9,
+	WPC_DDM_TIMER  =10,
 
 	USB_TC_PD_TIMER = 11,
 	USB_BC12_TIMER = 12,
@@ -72,6 +72,7 @@ enum {
 #define WPC_EVT_CLOAK_PING        osal_event_declare(21)
 #define WPC_EVT_STOP_AFTER_FSK    osal_event_declare(22)
 #define WPC_EVT_FOD_REPORTED	  osal_event_declare(23)
+#define WPC_EVT_RENEGO_TO         osal_event_declare(24)
 
 void osal_init(void);
 void osal_start_system(void);

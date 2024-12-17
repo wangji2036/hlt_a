@@ -13,6 +13,7 @@
 #include "epp.h"
 #include "wpc_5_xfer_4_dstrm.h"
 
+static uint8_t need_cloak_atn;
 static uint8_t cnt_cep0 = 0;
 static uint8_t cnt_cloak_pkt = 0;
 
@@ -24,6 +25,8 @@ void auth_init(void)
 	need_atn_cnt = 0;
 	need_atn_evt = 0;
 	ds_init();
+
+	gd->tx_infos.cloak_dig_ping_delay = 0; //TODO: don't zero it here
 }
 
 static uint8_t is_bpp_xfer_phase_illegal_pkt(uint8_t hdr)
@@ -46,7 +49,8 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 		case 0x28:
 			if (gd->rx_infos.prmc == 0x005C && gd->rx_infos.device_id == 0x16197510)
 			{
-				if (com_ask->msg.prop.data[0] == 0x12 && com_ask->msg.prop.data[1] == 0x34)
+				if ((com_ask->msg.prop.data[0] == 0x12 && com_ask->msg.prop.data[1] == 0x34) ||
+				    (com_ask->msg.prop.data[0] == 0x43 && com_ask->msg.prop.data[1] == 0x21))
 				{
 					qfod_qdt_cali_init();
 					gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_CAL;
@@ -93,10 +97,9 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 	switch (com_ask->hdr)
 	{
 		case WPC_PRx_PKT_TYP_CE_03:
-
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
-			printk("bpp ce=%d\n",gd->rx_infos.cep_val);
-			if (gd->rx_power > 6500)
+
+			if (gd->rx_power > 6500 && gd->rx_infos.power_profile_mode == MPP)
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 1;
 			}
@@ -105,11 +108,11 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				gd->rx_infos.mpp_restricted_power_limit = 0;
 			}
 
-//			if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
-//			{
-//				gd->rx_infos.cep_val = 0;
-//				printk("#");
-//			}
+			if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
+			{
+				gd->rx_infos.cep_val = 0;
+				printk("#");
+			}
 
 			osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
@@ -117,7 +120,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case WPC_PRx_PKT_TYP_RP8_04:
 			gd->rx_power = (com_ask->msg.rp8.rp_value * (uint32_t)gd->rx_infos.max_power * 1000) >> 8;
 			osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
-			//osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
+			osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
 			break;
 		case WPC_PRx_PKT_TYP_CHS_05:
 			gd->rx_infos.chr_status = com_ask->msg.chs.chs_value;
@@ -145,7 +148,7 @@ __XFER_PHASE_ERR__:
 
 void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 {
-	uint8_t res;
+	uint8_t res = 0;
 	if (mpp_ask->msg.report_pla.select == 1)//TODO: add fod func here, add a timer print log to avoid the FSK window
 	{
 		gd->rx_power = mpp_ask->msg.report_pla.rcvd_power_msb << 8 | mpp_ask->msg.report_pla.rcvd_power_lsb;
@@ -154,7 +157,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 		gd->tx_infos.fsk_done_event |= 8;//set reported event print long log
 
-		res = pfod_mpla();
+		//res = pfod_mpla();
 		printk("\r\n ---> res-> %d", res);
 		if (res == 0)
 		{
@@ -200,7 +203,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 void mpp_pla2_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 {
-	uint8_t res;
+	uint8_t res = 0;
 
 	gd->rx_infos.pla_type = 2;
 	//gd->rx_infos.rpp_tick++;
@@ -213,10 +216,10 @@ void mpp_pla2_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 	gd->tx_infos.fsk_done_event |= 8;//set reported event print long log
 
-	if (gd->dploss_cal.success == 1)
-		res = pfod_dploss();
-	else
-		res = pfod_mpla();
+	//if (gd->dploss_cal.success == 1)
+	//	res = pfod_dploss();
+	//else
+	//	res = pfod_mpla();
 
 	if (res == 0)
 	{
@@ -264,6 +267,14 @@ void mpp_dsr_poll_handler(void)
 	else if (gd->tx_infos.power_mode_trans_atn == 1)
 	{
 		gd->tx_infos.power_mode_trans_atn = 0;
+		fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
+	}
+	else if (need_cloak_atn == 1)
+	{
+		need_cloak_atn = 0;
+		fsk_pkt.mpp_fsk.cloak.hdr_1E = 0x1E;
+		fsk_pkt.mpp_fsk.cloak.selector = 0x00;
+		fsk_pkt.mpp_fsk.cloak.reason = 0x02;
 		fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 	}
 }
@@ -361,7 +372,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case MPP_PRx_PKT_TYP_XCE_19:
 			gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
-			printk("mpp ce=%d\n",gd->rx_infos.cep_val);
+
 			if ((0 == gd->rx_infos.cep_val) && (TRUE == gd->tx_infos.flg_cloak_tx_init))//TODO: tx init cloak here, should not happen in a normal process
 			{
 				if (cnt_cep0++ > 20)
@@ -369,6 +380,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					cnt_cep0 = 0;
 					gd->tx_infos.flg_cloak_tx_enter = TRUE;
 					need_atn_cnt = 100;
+					need_cloak_atn = 1;
 				}
 			}
 
@@ -413,6 +425,8 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			}
 			break;
 		case WPC_PRx_PKT_TYP_NEGO_09:
+			osal_stop_timerEx(WPC_CEP_TIMER);
+			osal_start_timerEx(WPC_NEGO_TIMER, T_RENEGO_TO, 0, WPC_TASK, WPC_EVT_RENEGO_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, T_RENEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 			gd->ptx_protocol_phase = WPC_PHASE_NEGO;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
@@ -422,7 +436,6 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case MPP_PRx_PKT_TYP_CLOAK_18:
 			gd->tx_infos.cloak_reason = mpp_ask->msg.cloak.reason;
-
 			if (gd->tx_infos.cloak_reason <= 0x06)
 			{
 				gd->tx_infos.flg_cloak_tx_enter = FALSE;
@@ -430,8 +443,8 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 				gd->tx_infos.fsk_done_event |= 4; //cloak
 
-				gd->tx_infos.cloak_ping_delay = (gd->tx_infos.cloak_ping_delay > 0)?gd->tx_infos.cloak_ping_delay : 5;
-				gd->tx_infos.cloak_det_ping_delay = (gd->tx_infos.cloak_det_ping_delay > 0)?gd->tx_infos.cloak_det_ping_delay : 1;
+				gd->tx_infos.cloak_dig_ping_delay = (gd->tx_infos.cloak_dig_ping_delay > 0) ? gd->tx_infos.cloak_dig_ping_delay : 5;
+				gd->tx_infos.cloak_det_ping_delay = (gd->tx_infos.cloak_det_ping_delay > 0) ? gd->tx_infos.cloak_det_ping_delay : 1;
 			}
 			break;
 		case MPP_PRx_PKT_TYP_GET_28:
@@ -586,6 +599,7 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 {
 	struct mpp_prx_ask_pkt_t *mpp = (struct mpp_prx_ask_pkt_t *)com_pkt;
 
+	osal_stop_timerEx(WPC_PING_TIMER);
 	switch (mpp->hdr)
 	{
 		case MPP_PRx_PKT_TYP_CLOAK_18:
@@ -598,17 +612,6 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 					gd->tx_infos.flg_cloak_tx_exit = TRUE;
 				}
 			}
-
-#if MPP_25W_POWER_MODE_TRANS_W_CLOAK
-			if (gd->tx_infos.power_mode_trans_cloak == 1)
-			{
-				if(cnt_cloak_pkt++ >= 0)//2
-				{
-					cnt_cloak_pkt = 0;
-					gd->tx_infos.flg_cloak_tx_exit = TRUE;
-				}
-			}
-#endif
 
 			if (FALSE == gd->tx_infos.flg_cloak_tx_exit)
 			{
@@ -627,19 +630,19 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 				osal_stop_timerEx(WPC_NEXT_TIMER);
 			}
 			break;
-
 		case MPP_PRx_PKT_TYP_REPORT_58:
+			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT_EX, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 			gd->tx_infos.flg_cloak_tx_exit = FALSE;
 
 
 			uint32_t tmp_id = 0;
 			uint32_t tmp_base_id = 0;
 			tmp_id = ((mpp->msg.report_xid.prx_byteid0 << 16 | mpp->msg.report_xid.prx_byteid1 << 8 | mpp->msg.report_xid.prx_byteid2)>>3) & 0xFFFFF;
-			tmp_base_id = gd->rx_infos.device_id >> 11 & 0xFFFFF;
+			tmp_base_id = (gd->rx_infos.device_id >> 11) & 0xFFFFF;
 
 			if (tmp_base_id != tmp_id)
 			{
-//				printk("\r\n%x,%x",tmp_base_id,tmp_id);
+				printk("\r\n %x %x", tmp_base_id, tmp_id);
 				goto _CLOAK_PHASE_ERR_;
 			}
 			else
@@ -666,6 +669,10 @@ _CLOAK_PHASE_ERR_:
 
 				gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 				wpc_stop_to_idle(ESYS_ERR_CODE_CLOAK_PHASE_NO_THIS_PKT);
+			}
+			else
+			{
+				//TODO: response ACK?
 			}
 			break;
 	}

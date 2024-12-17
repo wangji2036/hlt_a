@@ -8,6 +8,7 @@
 #include "fsk.h"
 #include "_wpc.h"
 #include "algo.h"
+#include "osal.h"
 #include "wpc_xfer.h"
 #include "wpc_5_xfer_4_dstrm.h"
 
@@ -153,20 +154,15 @@ static void ds_mpp_ptx_sadc_open(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 			get_cert_ofs = ((adt_data_recv_buf[1] & 0xFF) >> 5) * 256 + adt_data_recv_buf[2];
 			get_cert_len = ((adt_data_recv_buf[1] & 0x1C) >> 2) * 256 + adt_data_recv_buf[3];
 
-			printk("\r\n A-> %d %d", get_cert_ofs, get_cert_len);
-
 			if (get_cert_ofs >= 0x600)
 			{
 				get_cert_ofs = 2 + 32 + 4 + (cert_chain[36] << 8) + cert_chain[37] + get_cert_ofs - 0x600;
-				printk("\r\n B-> %d %d", get_cert_ofs, get_cert_len);
 			}
 
 			if (get_cert_len == 0)
 			{
 				get_cert_len = ((cert_chain[0] << 8) | cert_chain[1]) > get_cert_ofs ? ((cert_chain[0] << 8) | cert_chain[1]) - get_cert_ofs : (cert_chain[0] << 8) | cert_chain[1];
-				printk("\r\n C-> %d %d", get_cert_ofs, get_cert_len);
 			}
-			printk("\r\n ------------------------auth-> %d %d", get_cert_ofs, get_cert_len);
 
 			if (((cert_chain[0] << 8) | cert_chain[1]) < get_cert_ofs + get_cert_len)
 			{
@@ -225,6 +221,22 @@ static void ds_mpp_ptx_sadc_open(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 	fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt->mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt->mpp_fsk.data[0]) + 1);
 
 	ds_record_ptx_fsk_data(fsk_pkt);
+
+	switch (auth_request_type)
+	{
+		case GET_DIGESTS:
+			printk(" [RSP_DIGESTS]");
+			break;
+		case GET_CERTIFICATE:
+			printk(" [RSP_CERTIFICATE] [cert: %d %d]", get_cert_ofs, get_cert_len);
+			break;
+		case GET_CHALLENGE_AUTH:
+			printk(" [RSP_CHALLENGE_AUTH]");
+			break;
+		default:
+			printk(" [RSP_ERROR]");
+			break;
+	}
 }
 
 static void ds_mpp_ptx_sadc_close(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
@@ -446,12 +458,6 @@ void ds_mpp_prx_sadt_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		return;
 	}
 
-	if (ds_incoming_status[mpp_ask->msg.sadt.stream_num] == DS_STS_OPENING)
-	{
-		ds_incoming_status[mpp_ask->msg.sadt.stream_num] = DS_STS_SENDING;
-		auth_request_type = mpp_ask->msg.sadt.data[0];
-	}
-
 	if ((mpp_ask->hdr & 0x01) == ds_incoming_parity[mpp_ask->msg.sadt.stream_num])
 	{
 		adt_buff_recv_crc = crc16_ccitt(&mpp_ask->msg.sadt.data[0], (mpp_ask->hdr >> 4) - 1, adt_have_recv_len == 0 ? CRC_INITIAL_VALUE : adt_buff_recv_crc);
@@ -467,6 +473,26 @@ void ds_mpp_prx_sadt_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 	}
 
 	fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
+
+	if (ds_incoming_status[mpp_ask->msg.sadt.stream_num] == DS_STS_OPENING)
+	{
+		ds_incoming_status[mpp_ask->msg.sadt.stream_num] = DS_STS_SENDING;
+		auth_request_type = mpp_ask->msg.sadt.data[0];
+		switch (auth_request_type)
+		{
+			case GET_DIGESTS:
+				printk(" [GET_DIGESTS]");
+				break;
+			case GET_CERTIFICATE:
+				printk(" [GET_CERTIFICATE]");
+				break;
+			case GET_CHALLENGE_AUTH:
+				printk(" [GET_CHALLENGE_AUTH]");
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 void ds_mpp_prx_dsr_poll_handler(struct mpp_ptx_fsk_pkt_t *fsk_pkt)

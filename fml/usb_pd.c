@@ -19,6 +19,8 @@ static uint8_t usb_pd_substate = 0;
 uint32_t pd_rx_buff[32];
 uint8_t rx_cnt = 0;
 
+uint8_t softreset_reason = 0;
+
 struct usb_pd_s g_usb_pd_s;
 struct usb_pd_pkt_t g_pd_packet;
 
@@ -470,6 +472,7 @@ static void PE_SNK_Send_Soft_Reset_Entry(void)
 	usb_pd_reset_prl();
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_SOFTRESET;
 	hal_tcpc_send_ctrl_mgs(PD_CTRL_SOFT_RESET);
+	printk("softreset reason = %d\n",softreset_reason);
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 }
 
@@ -1277,7 +1280,10 @@ void usb_pd_sop_data_msg_handle(void)
 			{
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 				if(g_tcpc.pwr_role == TYPEC_SINK)
+				{
 					usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+					softreset_reason = 1;
+				}
 				else
 					usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
@@ -1388,7 +1394,10 @@ void usb_pd_sop_ctrl_msg_handle(void)
 				default:
 				#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 					if(g_tcpc.pwr_role == TYPEC_SINK)
+					{
 						usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+						softreset_reason = 2;
+					}
 					else
 						usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 				#endif
@@ -1414,7 +1423,10 @@ void usb_pd_sop_ctrl_msg_handle(void)
 				default:
 				#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 					if(g_tcpc.pwr_role == TYPEC_SINK)
+					{
 						usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+						softreset_reason = 3;
+					}
 					else
 						usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 				#endif
@@ -1908,7 +1920,10 @@ void transmit_timeout_cb(void)
 		default:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 			if(g_tcpc.pwr_role == TYPEC_SINK)
+			{
 				usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+				softreset_reason = 5;
+			}
 			else
 				usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 		#endif
@@ -1943,7 +1958,7 @@ void usb_pd_run(void)
 	if(g_usb_pd_s.pe_prl_busy)
 	{
 		prl_busy_cnt++;
-		if(prl_busy_cnt >= 15)
+		if(prl_busy_cnt >= 200)
 		{
 			prl_busy_cnt = 0;
 			transmit_timeout_cb();
@@ -2025,7 +2040,10 @@ void usb_pd_pkts_transmit_softreset_callback(void)
 
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 	if(g_tcpc.pwr_role == TYPEC_SINK)
+	{
 		usb_pd_set_state(PE_SNK_Send_Soft_Reset,exit_state);
+		softreset_reason = 5;
+	}
 	else
 		usb_pd_set_state(PE_SRC_Send_Soft_Reset,exit_state);
 #endif
@@ -2239,7 +2257,10 @@ void transmit_fail_cb(void)
 			{
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 				if(g_tcpc.pwr_role == TYPEC_SINK)
+				{
 					usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+					softreset_reason = 6;
+				}
 				else
 					usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
@@ -2262,7 +2283,10 @@ void transmit_fail_cb(void)
 		default:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 			if(g_tcpc.pwr_role == TYPEC_SINK)
+			{
 				usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+				softreset_reason = 7;
+			}
 			else
 				usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 		#endif
@@ -2308,7 +2332,10 @@ void transmit_discard_cb(void)
 		default:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 			if(g_tcpc.pwr_role == TYPEC_SINK)
+			{
 				usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+				softreset_reason = 8;
+			}
 			else
 				usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 		#endif

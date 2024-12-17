@@ -216,19 +216,20 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         EPP_Debug("\r\n NGE Cnt:%x %d", contract.nego_mask, cnt);
         if (epp_ask->msg.srq.parameter != cnt)
         {
-#if (NEGO_ERR_PROTECT == 1)
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
             EPP_Debug("\r\n NGE ERR:%x %d", contract.nego_mask, cnt);
-#else
-            EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
-#endif
         }
         else
         {
             if (gd->rx_infos.qi_version > 0x12 && contract.nego_fod_mask != 0x03) // Qi > 1.3 must send FOD/qf and FOD/rf
             {
+                printk("\r\n enter bpp xfer");
                 EPP_Debug("\r\n No Send FOD/rq or FOD/rf"); // for IEC 8.3.48
                 EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
+
+            	gd->rx_infos.power_profile_mode = BPP;
+                osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
+                osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
             }
             else
             {
@@ -244,7 +245,24 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
         osal_start_timerEx(WPC_RPP_TIMER, EPP_RP1_TIMEOUT, 0, WPC_TASK, WPC_EVT_RPP_TO);
         gd->ptx_protocol_phase = WPC_PHASE_XFER;
+        gd->ptx_end_nego_event |= EPP_END_NEGO_FLAG;
 
+        if (gd->rx_infos.power_profile_mode == EPP)
+        {
+    		if (gd->pid_duty < 350)
+    		{
+    			gd->pid_duty = 350;
+    			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+    		}
+        }
+        else
+        {
+    		if (gd->pid_duty < 250)
+    		{
+    			gd->pid_duty = 250;
+    			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+    		}
+        }
         return; // goto transfer phase
         break;
     case EPP_SRQ_gp_01: // Received Power reporting
@@ -440,18 +458,13 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
         EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
         break;
     case EPP_PRx_PKT_TYP_CE:
-    	gd->rx_infos.power_profile_mode = BPP;
-    	gd->ptx_protocol_phase = WPC_PHASE_XFER;
-        osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
-        osal_stop_timerEx(WPC_NEXT_TIMER);
-        goto __NEGO_PHASE_ERR__;
-        break;
-    case EPP_PRx_PKT_TYPE_RPP_8bit: // 在nego阶段时如果收到RP8bit包，则认为Rx NEGO Fail
+    case EPP_PRx_PKT_TYPE_RPP_8bit: // 在nego阶段时如果收到CEP/RP8bit包，则认为Rx NEGO Fail
     	gd->rx_infos.power_profile_mode = BPP;
         gd->ptx_protocol_phase = WPC_PHASE_XFER;
         osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
+        osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
         osal_stop_timerEx(WPC_NEXT_TIMER);
-        goto __NEGO_PHASE_ERR__;
+        printk("\r\n enter bpp xfer");
         break;
     case EPP_PRx_PKT_TYPE_RPP_24bit:
         wpc_epp_RPP_24bit_pkt_process(com_ask);
@@ -481,7 +494,14 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
         break;
     }
 
-    osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+    if (gd->ptx_protocol_phase != WPC_PHASE_NEGO)
+    {
+    	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+    }
+    else
+    {
+    	osal_stop_timerEx(WPC_NEXT_TIMER);
+    }
 
 __NEGO_PHASE_ERR__:
     return;
@@ -676,7 +696,7 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
     {
     case EPP_PRx_PKT_TYP_CE:
 		gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
-		printk("epp ce=%d\n",gd->rx_infos.cep_val);
+
 		if (gd->rx_power > gd->rx_infos.max_power * 5000 / 8) //1.2 * max_power
 		{
 			gd->rx_infos.mpp_restricted_power_limit = 1;
@@ -686,11 +706,11 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_infos.mpp_restricted_power_limit = 0;
 		}
 
-//		if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
-//		{
-//			gd->rx_infos.cep_val = 0;
-//			printk("#");
-//		}
+		if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
+		{
+			gd->rx_infos.cep_val = 0;
+			printk("#");
+		}
 
 		if (cali_cep_flag) //for IOC test
 		{
@@ -720,8 +740,13 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
         wpc_epp_RPP_24bit_pkt_process((struct com_prx_ask_pkt_t *)com_ask);
         break;
     case EPP_PRx_PKT_TYPE_RPP_8bit: // 0x04
-        hal_epwm_pwm_stop(EPWM1); //need to < 28ms for IOC test
-        wpc_epp_xfer_phase_error();
+//        hal_epwm_pwm_stop(EPWM1); //need to < 28ms for IOC test
+//        wpc_epp_xfer_phase_error();
+//        gd->sys_err_code = ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT;
+//        wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT);
+//        gd->ptx_protocol_phase = WPC_PHASE_IDLE;
+
+        EPP_Debug("\r\n error: bpp_rp8");
         break;
     case EPP_PRx_PKT_TYP_CHS:
         EPP_Debug("\r\n CHS:%d", com_ask->msg.chs.chs_value);
@@ -779,7 +804,7 @@ void wpc_epp_xfer_phase_error(void)
 {
     gd->sys_err_code = ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT;
     wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT);
-    gd->ptx_protocol_phase = WPC_PHASE_IDLE;
+//    gd->ptx_protocol_phase = WPC_PHASE_IDLE;
 }
 
 ///////////////////////////////////////// EPP Transfer phase END /////////////////////////////////////////////

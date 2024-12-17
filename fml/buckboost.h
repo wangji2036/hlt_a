@@ -34,6 +34,7 @@ struct buckboost_s
 
 	uint16_t adc_vbat;
 	uint16_t adc_tbat;
+	uint16_t adc_vbus;
 };
 
 struct buckboost_operations
@@ -48,7 +49,7 @@ struct buckboost_operations
 	void (*typca_dischg_en)(bool en);
 	void (*typcb_dischg_en)(bool en);
 	void (*usb_a_dischg_en)(bool en);
-
+	void (*vbus_dischg_en)(bool en);
 	void (*en_a2_detect)(void);
 
 
@@ -58,6 +59,7 @@ struct buckboost_operations
 	uint16_t (*get_bus_current)(void);
 	int16_t (*get_bat_current)(void);
 	uint16_t (*get_bat_voltage)(void);
+	uint16_t (*get_bus_voltage)(void);
 	bool (*get_a2_state)(void);
 	uint16_t (*get_bat_temperature)(void);
 

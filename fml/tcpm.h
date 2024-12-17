@@ -30,11 +30,14 @@
 #define TCPM_EVT_QI_WORK			   		osal_event_declare(15)
 
 #define TCPM_EVT_PD_READY			   		osal_event_declare(16)
+#define TCPM_EVT_QI_SET_VOLT			   	osal_event_declare(17)
 
 void tcpm_task_init(void);
 void tcpm_task_event_handler(uint32_t event);
 
 extern uint16_t port_vbus;
+extern uint8_t tcpm_qi_work_delay;
+extern uint16_t qi_volt;
 
 enum wpc_work_mode
 {

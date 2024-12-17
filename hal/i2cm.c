@@ -766,10 +766,10 @@ int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data)
 
 	hal_i2cm_stop();
 
-//	if(devAddr == SW7201_I2C_DEV_ADDR )
-//	{
-//		printk("sw7201 R [0x%x] = 0x%x\n",regAddr,(uint8_t)*data);
-//	}
+	if(devAddr == SW7201_I2C_DEV_ADDR )
+	{
+		printk("sw7201 R [0x%x] = 0x%x\n",regAddr,(uint8_t)*data);
+	}
 
 	return rst;
 }
@@ -803,8 +803,8 @@ int hal_i2cm_wirte_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t data)
 
 	hal_i2cm_stop();
 
-//	if(devAddr == SW7201_I2C_DEV_ADDR )
-//		printk("sw7201 W [0x%x] = 0x%x\n",regAddr,data);
+	if(devAddr == SW7201_I2C_DEV_ADDR )
+		printk("sw7201 W [0x%x] = 0x%x\n",regAddr,data);
 //
 //	if(devAddr == SW7201_I2C_DEV_ADDR )
 //	{

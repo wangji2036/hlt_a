@@ -262,7 +262,7 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
     uint16_t slen = 0;
     uint16_t read_len;
     uint8_t  ret;
-    uint8_t  i;
+    uint8_t  i = 0;
     uint8_t	 blocknumber;
     uint8_t	 blockleft;
 
@@ -280,7 +280,7 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
     }
     else
     {
-    	printk(" \r\n rbuf-0x3001[%d]-> ", 1);
+    	printk(" \r\n rbuf-0x3001[%d]-> ", i);
     	for (i=0; i<read_len; i++)
     	{
     		printk("%02X ", rbuf[i]);

@@ -86,8 +86,8 @@ void fml_ask_int_handler(uint8_t ask_chan, uint16_t cnt);
 #define BIT_ZERO            0
 #define BIT_ONE             1
 
-#define	PRMBL_CNT_MIN       5
-#define	PRMBL_CNT_MAX      50
+#define	PRMBL_CNT_MIN       8
+#define	PRMBL_CNT_MAX      30
 
 ///1cnt <-> 1/1.125 = 0.8889us
 //#define	FULL_BIT_0_MAX    900 //900/1.125 -> 800us
@@ -99,7 +99,7 @@ void fml_ask_int_handler(uint8_t ask_chan, uint16_t cnt);
 #define	FULL_BIT_0_MIN    (400 * 1125 / 1000) //450/1.125 -> 400us
 #define	STAR_BIT_0_MIN    (360 * 1125 / 1000) //405/1.125 -> 360us
 #define	HALF_BIT_1_MAX    (300 * 1125 / 1000) //338/1.125 -> 300us
-#define	HALF_BIT_1_MIN    ( 88 * 1125 / 1000) // 99/1.125 ->  88us
+#define	HALF_BIT_1_MIN    (120 * 1125 / 1000) //120/1.125 -> 120us
 
 /**
  * @enum pkt_error_t

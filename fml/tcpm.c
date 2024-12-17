@@ -12,15 +12,19 @@
 #include "g_data.h"
 #include "pid.h"
 uint16_t port_vbus = 5000;
+uint16_t qi_volt = 5000;
 uint16_t port_defualt_voltage = 5000;
-uint8_t wpc_work_mode = TCPM_WPC_WORK_BOOST;
+uint8_t wpc_mode = TCPM_WPC_WORK_BOOST;
+uint8_t tcpm_qi_work_delay = 0;
 
 static uint8_t usba_state = 0;
 static uint8_t usba_cnt = 0;
 static uint8_t qi_state = 0;
 static uint8_t qi_cnt = 0;
 
+#define WPC_DELAY				10
 #define UBSA_GATA_INDEX 		2
+#define WPC_INDEX 				2
 
 #define VOLTAGE_5V  5000
 
@@ -72,39 +76,57 @@ void tcpm_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc
 	tc->usb_tc_substate = tc_substate;
 }
 
+void tcpm_stop_wpc(uint8_t delay_ping_unit)
+{
+	tcpm_qi_work_delay = delay_ping_unit;
+	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
+	printk("wpc stop = %d\n",delay_ping_unit);
+}
+
 
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 {
-//	wpc_work_mode = mode;
-//
-//	switch(mode)
-//	{
-//		case TCPM_WPC_WORK_FIX5V:
-//			gd->dig_ping_volt = 5000;
-//			gd->dig_ping_perd = 144000000/360000;
-//			gd->dig_ping_duty = 500;
-//			gd->dig_ping_phas = 0;
-//			pid_set_volt_limit(5000, 5000, 5000);
-//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-//			pid_set_duty_limit(500, 500, 500);
-//			pid_set_phas_limit( 50,  40,   0);
-//			break;
-//		case TCPM_WPC_WORK_BOOST:
-//			gd->dig_ping_volt = 5000;
-//			gd->dig_ping_perd = 144000000/360000;
-//			gd->dig_ping_duty = 500;
-//			gd->dig_ping_phas = 0;
-//			pid_set_volt_limit(20000, 5000, 5000);
-//			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-//			pid_set_duty_limit(500, 500, 500);
-//			pid_set_phas_limit( 50,  40,   0);
-//			break;
-//		case TCPM_WPC_WORK_ADP_FIX:
-//		case TCPM_WPC_WORK_PD_PPS:
-//			break;
-//	}
+	wpc_mode = mode;
+	switch(mode)
+	{
+		case TCPM_WPC_WORK_FIX5V:
+			gd->dig_ping_volt = 5000;
+			gd->dig_ping_perd = 144000000/127772;
+			gd->dig_ping_duty = 500;
+			gd->dig_ping_phas = 0;
+			fml_adp_type_set(EADP_TYPE_POWERBANK_05V,  5000, 5000, 5 * 2);
+		    pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			pid_set_freq_limit(144000000/111000, 144000000/127772, 144000000/147000);
+			pid_set_duty_limit(500, 350, 150);
+			pid_set_phas_limit(0, 0, 0);
+			break;
+		case TCPM_WPC_WORK_ADP_FIX:
+			gd->dig_ping_volt = 9000;
+			gd->dig_ping_perd = 144000000/127772;
+			gd->dig_ping_duty = 500;
+			gd->dig_ping_phas = 20;
+			fml_adp_type_set(EADP_TYPE_POWERBANK_09V,  5000, 5000, 10 * 2);
+			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+			pid_set_duty_limit(500, 500, 500);
+			pid_set_phas_limit( 50,  40,   0);
+			break;
+		case TCPM_WPC_WORK_BOOST:
+		case TCPM_WPC_WORK_PD_PPS:
+			gd->dig_ping_volt = 9000;
+			gd->dig_ping_perd = 144000000/127772;
+			gd->dig_ping_duty = 500;
+			gd->dig_ping_phas = 20;
+			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
+			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+			pid_set_duty_limit(500, 500, 500);
+			pid_set_phas_limit( 50,  40,   0);
+			break;
+	}
 
-	printk("wpc_work_mode= %d\n",mode);
+
+	printk("wpc_mode= %d\n",mode);
 }
 
 void tcpm_set_default_request_fix_volt(uint16_t fix_volt)
@@ -125,7 +147,11 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 
 			if(tc->tc_index == 0)
 			{
-				if(g_tc[1].usb_tc_state ==  TC_DRP_TOGGLE) hal_tcpc_set_phy_port(0);
+				if(g_tc[1].usb_tc_state ==  TC_DRP_TOGGLE)
+				{
+					hal_tcpc_set_phy_port(0);
+					usb_dpdm_select(0);
+				}
 
 				if(g_tc[1].usb_tc_state != TC_SNK_Attached)
 				{
@@ -145,9 +171,24 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 				{
 					if(g_tc[1].tc_index == g_tcpc.tc_port_map && usba_state == 0)
 					{
-						if(port_vbus != 9000 && g_buckboost.adc_vbat > 6000)
+						uint32_t source_pdo = 0;
+						if(g_usb_pd_s.explicit_contract)
 						{
-							usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+							source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+						}
+						if(g_buckboost.adc_vbat > 6000)
+						{
+							if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 20000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
+							{
+								printk("WPC PPS\n");
+								usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,9000,pdo_pps_apdo_max_current(source_pdo));
+								tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+							}
+							else if(port_vbus != 9000)
+							{
+								if(g_usb_pd_s.snk_rx_pdo_n >= 2) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+								tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+							}
 						}
 					}
 					else
@@ -161,7 +202,11 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			}
 			if(tc->tc_index == 1)
 			{
-				if(g_tc[0].usb_tc_state ==  TC_DRP_TOGGLE) hal_tcpc_set_phy_port(1);
+				if(g_tc[0].usb_tc_state ==  TC_DRP_TOGGLE)
+				{
+					hal_tcpc_set_phy_port(1);
+					usb_dpdm_select(1);
+				}
 
 				hal_tcpc_set_gate_en(UBSA_GATA_INDEX,false);
 
@@ -189,7 +234,27 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 					{
 			    		if(g_tc[0].tc_index == g_tcpc.tc_port_map && usba_state == 0)
 						{
-			    			if(port_vbus != 9000 && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+			    			//if(port_vbus != 9000 && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+							uint32_t source_pdo = 0;
+							if(g_usb_pd_s.explicit_contract)
+							{
+								source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+							}
+
+							if(g_buckboost.adc_vbat > 6000)
+							{
+								if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 20000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
+								{
+									printk("WPC PPS\n");
+									usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,9000,pdo_pps_apdo_max_current(source_pdo));
+									tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+								}
+								else if(port_vbus != 9000)
+								{
+									if(g_usb_pd_s.snk_rx_pdo_n >= 2) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+									tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+								}
+							}
 						}
 			    		else
 			    		{
@@ -205,21 +270,19 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 				if(qi_state == 1)
 				{
 					//wpc stop
-
-					//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-
-					if(usba_state == 1)
-					{
-						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
-					}
-					else if(g_tc[1].usb_tc_state == TC_SNK_Attached ||g_tc[1].usb_tc_state == TC_DRP_TOGGLE)
-					{
-						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-						//
-						//tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
-					}
+					tcpm_stop_wpc(WPC_DELAY);
 				}
 
+				if(usba_state == 1)
+				{
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				}
+				else //if(g_tc[1].usb_tc_state == TC_SNK_Attached ||g_tc[1].usb_tc_state == TC_DRP_TOGGLE)
+				{
+					//tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+					//
+					//tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				}
 				//osal_start_timerEx(TCPM_PORT1_TIMER, 50, 0, USB_TASK, TCPM_EVT_TYPECB_SNK_ATTACHED);
 			}
 			break;
@@ -233,7 +296,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 
 			    if(g_tc[1].usb_tc_state == TC_DRP_TOGGLE)
 				{
-			    	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
+			    	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3500,0,0);
 			    	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 			    	//updata_pdo_of_source((uint32_t *)source_pdo_level_1,SIZEOF_PDO_LEVEL1);
 				}
@@ -242,7 +305,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    	if(g_tc[1].usb_tc_state == TC_SRC_Attached)
 			    	{
 			    		hal_tcpc_set_gate_en(g_tc[1].tc_index,false);
-			    		hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
+			    		hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3500,0,0);
 			    		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 						usb_pd_set_event(g_tc[1].tc_index,USB_PD_EVT_SRC_UNATTACH);
 						usb_tc_set_state(&g_tc[1],TC_SRC_AttachWait,enter_state);
@@ -254,7 +317,25 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    	{
 			    		if(g_tc[1].tc_index == g_tcpc.tc_port_map)
 						{
-			    			if(g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+							uint32_t source_pdo = 0;
+							if(g_usb_pd_s.explicit_contract)
+							{
+								source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+							}
+							if(g_buckboost.adc_vbat > 6000)
+							{
+								if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 20000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
+								{
+									printk("WPC PPS\n");
+									usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,9000,pdo_pps_apdo_max_current(source_pdo));
+									tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+								}
+								else if(port_vbus != 9000)
+								{
+									if(g_usb_pd_s.snk_rx_pdo_n >= 2) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+									tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+								}
+							}
 						}
 			    		updata_pdo_of_sink((uint32_t *)sink_pdo_level_1,SIZEOF_SINK_PDO_LEVEL1);
 
@@ -268,7 +349,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    hal_tcpc_set_gate_en(tc->tc_index,false);
 			    if(g_tc[0].usb_tc_state == TC_DRP_TOGGLE)
 				{
-			    	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
+			    	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3500,0,0);
 			    	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 				}
 			    else
@@ -276,7 +357,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    	if(g_tc[0].usb_tc_state == TC_SRC_Attached)
 			    	{
 			    		hal_tcpc_set_gate_en(g_tc[0].tc_index,false);
-			    		hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
+			    		hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3500,0,0);
 			    		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 						usb_pd_set_event(g_tc[0].tc_index,USB_PD_EVT_SRC_UNATTACH);
 						usb_tc_set_state(&g_tc[0],TC_SRC_AttachWait,enter_state);
@@ -286,7 +367,25 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			    	if(g_tc[0].usb_tc_state == TC_SNK_Attached)
 			    	{
 			    		//usb_tc_set_state(&g_tc[0],TC_SNK_Attached,enter_state);
-			    		if(g_tc[0].tc_index == g_tcpc.tc_port_map && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+						uint32_t source_pdo = 0;
+						if(g_usb_pd_s.explicit_contract)
+						{
+							source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+						}
+						if(g_buckboost.adc_vbat > 6000)
+						{
+							if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 20000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
+							{
+								printk("WPC PPS\n");
+								usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,9000,pdo_pps_apdo_max_current(source_pdo));
+								tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+							}
+							else if(port_vbus != 9000)
+							{
+								if(g_usb_pd_s.snk_rx_pdo_n >= 2) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+								tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+							}
+						}
 			    		updata_pdo_of_sink((uint32_t *)sink_pdo_level_1,SIZEOF_SINK_PDO_LEVEL1);
 			    		osal_start_timerEx(TCPM_PORT0_TIMER, 50, 0, USB_TASK, TCPM_EVT_TYPECA_SNK_ATTACHED);
 			    	}
@@ -301,7 +400,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 			break;
 		case TC_Try_SRC:
 		case TC_SRC_AttachWait:
-			hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
+			hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3500,0,0);
 
 			if(tc->tc_index == 0)
 			{
@@ -342,7 +441,12 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 		    {
 		    	updata_pdo_of_source((uint32_t *)source_pdo_level_0,SIZEOF_SOURCE_PDO_LEVEL0);
 		    }
-
+			if(qi_state == 1)
+			{
+				//wpc stop
+				tcpm_stop_wpc(WPC_DELAY);
+			}
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 			break;
 		case TC_SRC_Attached:
 			if(tc->tc_index == 0)
@@ -373,6 +477,7 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 				}
 				hal_tcpc_set_gate_en(tc->tc_index,true);
 			}
+
 			break;
 		case TC_DEBUG_Attached:
 		case TC_Try_SNK:
@@ -393,6 +498,9 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 
 void tcpm_task_event_handler(uint32_t event)
 {
+	uint16_t ibus_limit;
+	uint16_t ibat_limit;
+
 	switch (event)
 	{
 		case TCPM_EVT_TIME_PERIOD:
@@ -404,12 +512,18 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_TYPECA_PORT_STATE_CHANGE:
 
 			temp_port_state_change_handle(&g_tc[0]);
-
+			if(!usba_state)
+			{
+				osal_start_timerEx(TCPM_USB_A_TIMER, 5000, 0, USB_TASK, TCPM_EVT_USBA_PLUG);
+			}
 			break;
 		case TCPM_EVT_TYPECB_PORT_STATE_CHANGE:
 
 			temp_port_state_change_handle(&g_tc[1]);
-
+			if(!usba_state)
+			{
+				osal_start_timerEx(TCPM_USB_A_TIMER, 5000, 0, USB_TASK, TCPM_EVT_USBA_PLUG);
+			}
 			break;
 		case TCPM_EVT_TYPECA_SNK_ATTACHED:
 			if(g_tc[1].usb_tc_state != TC_SNK_Attached)
@@ -446,12 +560,19 @@ void tcpm_task_event_handler(uint32_t event)
 //			break;
 		case TCPM_EVT_SNK_START_CHARGER:
 			usb_pd_snk_dump_pdoinfo();
-			uint16_t ibus_limit;
-			uint16_t ibat_limit;
+
 			if(g_tc[g_tcpc.tc_port_map].usb_tc_state == TC_SNK_Attached )
 			{
-				ibus_limit = rdo_op_current(g_usb_pd_s.snk_rdo);
-				ibat_limit = 5000;//ibus_limit * pdo_fixed_voltage(g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) -1])/ 4000;
+				if(qi_state == 0)
+				{
+					ibus_limit = rdo_op_current(g_usb_pd_s.snk_rdo) * 80 / 100;
+					ibat_limit = 3000;
+				}
+				else
+				{
+					ibus_limit = 500;
+					ibat_limit = 500;
+				}//ibus_limit * pdo_fixed_voltage(g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) -1])/ 4000;
 				//if(ibat_limit > 1500) ibat_limit = 1500;
 			}
 			else
@@ -462,6 +583,13 @@ void tcpm_task_event_handler(uint32_t event)
 
 			printk("ibat_limit =%d ibus_limit =%d\n",ibat_limit,ibus_limit);
 			hal_tcpc_set_snk_charge_current(ibat_limit,ibus_limit);
+
+			if(!usba_state)
+			{
+				osal_start_timerEx(TCPM_USB_A_TIMER, 1000, 0, USB_TASK, TCPM_EVT_USBA_PLUG);
+			}
+			else
+				osal_set_event(USB_TASK,TCPM_EVT_USBA_WORK);
 			break;
 
 		case TCPM_EVT_PD_READY:
@@ -469,15 +597,38 @@ void tcpm_task_event_handler(uint32_t event)
 			{
 				if(g_tc[0].usb_tc_state !=  TC_SRC_Attached && g_tc[1].usb_tc_state !=  TC_SRC_Attached && usba_state == 0)
 				{
-					//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-					if(port_vbus != 9000  && g_buckboost.adc_vbat > 6000) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+
+
+					uint32_t source_pdo = 0;
+					if(g_usb_pd_s.explicit_contract)
+					{
+						source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+					}
+					if(g_buckboost.adc_vbat > 6000)
+					{
+						if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 20000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
+						{
+							if(g_usb_pd_s.explicit_contract && !g_usb_pd_s.is_in_pps)
+							{
+								usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,9000,pdo_pps_apdo_max_current(source_pdo));
+								tcpm_stop_wpc(WPC_DELAY);
+							}
+							printk("WPC PPS\n");
+							tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+						}
+						else if(port_vbus != 9000)
+						{
+							if(g_usb_pd_s.snk_rx_pdo_n >= 2) usb_pd_requsrt_voltage(2,9000,pdo_max_current(g_usb_pd_s.snk_rx_source_cap[1]));
+							tcpm_stop_wpc(WPC_DELAY);
+							tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+						}
+					}
 					osal_start_timerEx(TCPM_CHG_TIMER, 1000, 0, USB_TASK, TCPM_EVT_SNK_START_CHARGER);
 				}
 			}
 			else
 			{
-				//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
+				tcpm_stop_wpc(WPC_DELAY);
 				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
 			}
 			break;
@@ -498,6 +649,7 @@ void tcpm_task_event_handler(uint32_t event)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
+						buckboost_ops.usb_a_gate_en(false);
 						osal_set_event(USB_TASK,TCPM_EVT_USBA_PLUG);
 					}
 				}
@@ -512,14 +664,16 @@ void tcpm_task_event_handler(uint32_t event)
 				{
 					qi_state = 0;
 					qi_cnt = 0;
+					if(g_tc[0].usb_tc_state ==  TC_SNK_Attached || g_tc[1].usb_tc_state ==  TC_SNK_Attached)
+						osal_set_event(USB_TASK,TCPM_EVT_SNK_START_CHARGER);
+
 				}
 			}
 			else
 				qi_cnt = 0;
 			//
 
-
-			printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_work_mode);
+			printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			break;
 
 		case TCPM_EVT_USBA_PLUG:
@@ -532,7 +686,7 @@ void tcpm_task_event_handler(uint32_t event)
 				else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 				{
 		    		//hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-		    		hal_tcpc_pd_set_bus_iv(UBSA_GATA_INDEX,5000,3000,0,0);
+		    		hal_tcpc_pd_set_bus_iv(UBSA_GATA_INDEX,5000,3500,0,0);
 
 			    	if(g_tc[0].usb_tc_state == TC_SRC_Attached)
 			    	{
@@ -549,30 +703,44 @@ void tcpm_task_event_handler(uint32_t event)
 			    	}
 			    	updata_pdo_of_source((uint32_t *)source_pdo_level_0,SIZEOF_SOURCE_PDO_LEVEL0);
 				}
-				//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
+				tcpm_stop_wpc(WPC_DELAY);
 				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				osal_start_timerEx(TCPM_USB_A_TIMER, 500, 0, USB_TASK, TCPM_EVT_USBA_WORK);
+
+
 			}
 			else
 			{
 				osal_set_event(USB_TASK,TCPM_EVT_USBA_WORK);
-				osal_start_timerEx(TCPM_USB_A_TIMER, 1000, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
+				osal_start_timerEx(TCPM_USB_A_TIMER, 300, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
 				buckboost_ops.usb_a_dischg_en(true);
-
 			}
+
+			if(usba_state == 0 && g_tc[0].usb_tc_state ==  TC_DRP_TOGGLE && g_tc[1].usb_tc_state ==  TC_DRP_TOGGLE)
+			{
+				tcpm_stop_wpc(WPC_DELAY);
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+			}
+
 			break;
 
 		case TCPM_EVT_USBA_WORK:
 			if(usba_state)
 			{
 				hal_tcpc_set_gate_en(UBSA_GATA_INDEX,true);
+				if(g_tc[0].usb_tc_state ==  TC_DRP_TOGGLE && g_tc[1].usb_tc_state ==  TC_DRP_TOGGLE)
+				{
+					usb_dpdm_select(UBSA_GATA_INDEX);
+					osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
+				}
+
 			}
 			else
 			{
-				hal_tcpc_set_gate_en(UBSA_GATA_INDEX,false);
+				//hal_tcpc_set_gate_en(UBSA_GATA_INDEX,false);
 			    if(g_tc[0].usb_tc_state == TC_DRP_TOGGLE && g_tc[1].usb_tc_state == TC_DRP_TOGGLE && usba_state == 0)
 			    {
-			    	//wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
+			    	tcpm_stop_wpc(WPC_DELAY);
 			    	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
 			    }
 			}
@@ -580,11 +748,27 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_USBA_DETEN:
 			buckboost_ops.usb_a_dischg_en(false);
 			buckboost_ops.en_a2_detect();
+			buckboost_ops.vbus_dischg_en(true);
+			buckboost_ops.vbus_dischg_en(false);
+			printk("enable A det\n");
 			break;
 
 		case TCPM_EVT_QI_WORK:
 			qi_state = 1;
-			qi_cnt = 0;
+			//osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
+			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				osal_set_event(USB_TASK,TCPM_EVT_SNK_START_CHARGER);
+			else {}
+
+			break;
+		case TCPM_EVT_QI_SET_VOLT:
+			if(wpc_mode == TCPM_WPC_WORK_BOOST)
+				hal_tcpc_pd_set_bus_iv(WPC_INDEX,qi_volt,3500,0,0);
+			else if(wpc_mode == TCPM_WPC_WORK_PD_PPS)
+			{
+				uint32_t source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,qi_volt,pdo_pps_apdo_max_current(source_pdo));
+			}
 			break;
 #endif
 		default:

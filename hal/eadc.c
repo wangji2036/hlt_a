@@ -59,8 +59,8 @@
 #define ICAP_MAX_VAULE_128K_GAIN    (        68)
 #define ICAP_MAX_VAULE_128K_BIAS    (       448)
 
-#define ICAP_RMS_VAULE_360K_GAIN    (       139)
-#define ICAP_RMS_VAULE_360K_BIAS    (       -45)
+#define ICAP_RMS_VAULE_360K_GAIN    (       127)
+#define ICAP_RMS_VAULE_360K_BIAS    (      -100)
 #define ICAP_RMS_VAULE_128K_GAIN    (       129)
 #define ICAP_RMS_VAULE_128K_BIAS    (      -368)
 

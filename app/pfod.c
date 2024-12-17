@@ -378,7 +378,7 @@ static uint8_t pfod_action(void)
 {
 	uint8_t res = 0;
 	int32_t pfo_sum;
-
+return res;
 	if (mpla_count++ >= 5)
 		mpla_count = 5;
 

@@ -72,9 +72,10 @@ void buckboost_task_init(void)
 	g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 	g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 	g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 
 //	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
-//	buckboost_set_bus_iv(11000,3000,0,0);
+//	buckboost_set_bus_iv(5000,3000,0,0);
 }
 
 
@@ -91,6 +92,7 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 			g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 			if(g_buckboost.adc_vbat < 6000)
 			{
 				g_tc[TYPEC_PORT_A].is_deadbattery = 1;
@@ -101,7 +103,7 @@ void buckboost_task_event_handler(uint32_t event)
 				g_tc[TYPEC_PORT_A].is_deadbattery = 0;
 				g_tc[TYPEC_PORT_B].is_deadbattery = 0;
 			}
-			printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
+		//	printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
@@ -165,12 +167,14 @@ const struct buckboost_operations buckboost_ops =
 	.get_bus_current = 			hal_sw7201_buckboost_get_bus_current,
 	.get_bat_current =  		hal_sw7201_buckboost_get_bat_current,
 	.get_bat_voltage =  		hal_sw7201_buckboost_get_bat_voltage,
+	.get_bus_voltage =  		hal_sw7201_buckboost_get_bus_voltage,
 	.get_a2_state    = 			hal_sw7201_buckboost_get_a2_state,
 	.en_a2_detect  = 			hal_sw7201_buckboost_a2_detect_enable,
 	.get_bat_temperature =      hal_sw7201_buckboost_get_bat_temperature,
 	.typca_dischg_en = 			hal_sw7201_buckboost_typeca_dischg,
 	.typcb_dischg_en = 			hal_sw7201_buckboost_typecb_dischg,
 	.usb_a_dischg_en = 			hal_sw7201_buckboost_usb_a_dischg,
+	.vbus_dischg_en = 			hal_sw7201_buckboost_vbus_dischg,
 };
 
 

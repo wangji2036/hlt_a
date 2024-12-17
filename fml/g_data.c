@@ -61,14 +61,14 @@ void ap_data_init(void)
 	ap->mpp_dither_en = 0;
 
 	ap->pin_max_cnt = 10;
-	ap->pin_fod_cnt = 10;//0xff;
+	ap->pin_fod_cnt = 250;//10;//0xff;
 	ap->pin_fod_dis = 0;
 
 	ap->rpp_fod_cnt = 5;
 	ap->rpp_fod_dis = 0;
 
 	ap->dig_ping_volt_5v = 5000;
-	ap->dig_ping_perd_5v = 144000000 / 127772;
+	ap->dig_ping_perd_5v = 1127;
 	ap->dig_ping_duty_5v = 500;
 	ap->dig_ping_phas_5v = 0;
 
@@ -77,19 +77,19 @@ void ap_data_init(void)
 	ap->dig_ping_duty_6v = 400;
 	ap->dig_ping_phas_6v = 0;
 
-	ap->dig_ping_volt_9v = 11000;
+	ap->dig_ping_volt_9v = 9000;
 	ap->dig_ping_perd_9v = 1127;
 	ap->dig_ping_duty_9v = 250;
 	ap->dig_ping_phas_9v = 0;
 
-	ap->dig_ping_volt_12v = 12000;
-	ap->dig_ping_perd_12v = 144000000 / 127772;
-	ap->dig_ping_duty_12v = 200;
-	ap->dig_ping_phas_12v = 0;
+	ap->dig_ping_volt_11v = 11000;//12000;
+	ap->dig_ping_perd_11v = 1127;//144000000 / 127772;
+	ap->dig_ping_duty_11v = 250;//200;
+	ap->dig_ping_phas_11v = 0;
 
 	if ((*pdest0 < 0) || (*pdest0 > 30000))
 	{
-		ap->q_factor_base_value = 240; // 390;
+		ap->q_factor_base_value = 170; // 390;
 	}
 	else
 	{

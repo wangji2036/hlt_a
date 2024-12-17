@@ -119,7 +119,7 @@ static void osal_event_handle(void)
 
 		while (event != 0)
 		{
-            if (event & 0xFF)
+            if (event & 0x000000FF)
             {
             	evt_msk = (1 << ( 0 + bit_map[((event & 0x000000FF) >>  0)]));
             }
@@ -288,22 +288,34 @@ void osal_mem_copy(void *dst, const void *src, int len)
 			*tmp_dst-- = *tmp_src--;
 		}
 	}
-
-	return;
 }
 
 void osal_mem_set(void *mem, uint8_t val, int len)
 {
 	__IO uint8_t *pmem = (__IO uint8_t *)mem;
 
+	if (mem == NULL || len == 0)
+	{
+		return;
+	}
+
 	while (len--)
+	{
 		*pmem++ = val;
+	}
 }
 
 void osal_mem_clear(void *mem, int len)
 {
 	__IO uint8_t *pmem = (__IO uint8_t *)mem;
 
+	if (mem == NULL || len == 0)
+	{
+		return;
+	}
+
 	while (len--)
+	{
 		*pmem++ = 0;
+	}
 }

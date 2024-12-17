@@ -110,19 +110,27 @@ void pid_init(void)
 			break;
 		case EADP_TYPE_DCSRC_05V:
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			//pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_freq_limit(144000000/90000, 144000000/127772, 144000000/145000);
-			pid_set_duty_limit(500, 450, 400);
-			pid_set_phas_limit(50, 25, 0);
+			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+			pid_set_duty_limit(500, 350, 150);
+			pid_set_phas_limit(0, 0, 0);
+			break;
+		case EADP_TYPE_POWERBANK_05V:
+		    pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			pid_set_freq_limit(144000000/111000, 144000000/127772, 144000000/147000);
+			pid_set_duty_limit(500, 350, 150);
+			pid_set_phas_limit(0, 0, 0);
 			break;
 		case EADP_TYPE_QC2P0_09V:
 		case EADP_TYPE_DCSRC_09V:
 		case EADP_TYPE_PD2P0_09V:
 		case EADP_TYPE_PD2P0_12V:
+		case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
+		case EADP_TYPE_POWERBANK_09V:
+		case EADP_TYPE_POWERBANK_PPS:
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_duty_limit(500, 450, 400);
-			pid_set_phas_limit(50, 25, 0);
+			pid_set_duty_limit(500, 350, 100);
+			pid_set_phas_limit(0, 0, 0);
 			break;
 		case EADP_TYPE_DCSRC_12V:
 			break;
@@ -143,7 +151,7 @@ void pid_cep_handler(int8_t cep)
 {
 	pid_ctrl_mode_sel(cep);
 
-	printk("\r\n ce=%d ctrl=%d\n",cep,m_pid_ctrl_mode);
+	//printk("\r\n ce=%d ctrl=%d\n",cep,m_pid_ctrl_mode);
 
 	if (cep == 0) return;
 
@@ -172,6 +180,7 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_DCSRC_12V:
 					case EADP_TYPE_PD2P0_09V:
 					case EADP_TYPE_PD2P0_12V:
+					case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
 						if (cep > 24) cep = 24;
 						gd->pid_volt += 20 * ((cep >> 0) + 1);
 						break;
@@ -207,6 +216,7 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_DCSRC_12V:
 					case EADP_TYPE_PD2P0_09V:
 					case EADP_TYPE_PD2P0_12V:
+					case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
 						if (cep < -24) cep = -24;
 						cep *= -1;
 						gd->pid_volt -= 20 * ((cep >> 0) + 1);

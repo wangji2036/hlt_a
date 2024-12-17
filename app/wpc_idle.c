@@ -12,6 +12,7 @@
 #include "wpc_ping.h"
 #include "debug.h"
 #include "mpp.h"
+#include "tcpm.h"
 
 static uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
@@ -273,14 +274,22 @@ void wpc_idle_dping_select(void)
 			gd->dig_ping_duty = ap->dig_ping_duty_6v;
 			gd->dig_ping_phas = ap->dig_ping_phas_6v;
 			break;
-		case EADP_TYPE_QC2P0_09V:
-		case EADP_TYPE_PD2P0_09V:
-		case EADP_TYPE_PD2P0_12V:
-		case EADP_TYPE_DCSRC_09V:
+		case EADP_TYPE_POWERBANK_09V:
 			gd->dig_ping_volt = ap->dig_ping_volt_9v;
 			gd->dig_ping_perd = ap->dig_ping_perd_9v;
 			gd->dig_ping_duty = ap->dig_ping_duty_9v;
 			gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			break;
+		case EADP_TYPE_QC2P0_09V:
+		case EADP_TYPE_PD2P0_09V:
+		case EADP_TYPE_PD2P0_12V:
+		case EADP_TYPE_DCSRC_09V:
+		case EADP_TYPE_POWERBANK_PPS:
+		case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
+			gd->dig_ping_volt = ap->dig_ping_volt_11v;
+			gd->dig_ping_perd = ap->dig_ping_perd_11v;
+			gd->dig_ping_duty = ap->dig_ping_duty_11v;
+			gd->dig_ping_phas = ap->dig_ping_phas_11v;
 			break;
 //		case EADP_TYPE_PD2P0_12V:
 //			gd->dig_ping_volt = ap->dig_ping_volt_12v;
@@ -297,78 +306,223 @@ void wpc_idle_dping_select(void)
 	}
 }
 
-static uint8_t cnt_cloak_ping = 0;
-static uint8_t cnt_cloak_det_ping = 0;
-void wpc_idle_cloak_phase_process(void)
+void wpc_idle_dig_ping_init_128K(void)
 {
-	if (TRUE == gd->tx_infos.flg_mode_cloak)
+	/*
+	//wpc_idle_dping_select();
+	gd->dig_ping_volt = 11000;
+	gd->dig_ping_perd = 1127;//127.77K
+	gd->dig_ping_duty = 125; // 250;
+	gd->dig_ping_phas = 0;
+*/
+	wpc_idle_dping_select();
+	pid_init();
+	mpp_power_limit_init();
+
+	if (gd->pid_volt != gd->dig_ping_volt)
 	{
-		cnt_cloak_ping++;
-		cnt_cloak_det_ping++;
+		gd->pid_volt = gd->dig_ping_volt;
+		fml_adp_volt_set(gd->pid_volt);
+	}
 
-		if(cnt_cloak_ping >= gd->tx_infos.cloak_ping_delay)
-		{//digital ping
-			cnt_cloak_ping = 0;
-			cnt_cloak_det_ping = 0;
+	fml_nu103x_por_rst();
+	ctx_switch(4);
 
-			gd->dig_ping_volt = 11000;
-			gd->dig_ping_perd = 144000000/360000;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 0;
+	fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+//	fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+	fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+	gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
 
-	//		pid_init();
-			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-			pid_set_duty_limit(500, 500, 500);
-			pid_set_phas_limit( 50,  40,   0);
+	fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+	fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+//	fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+	gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
 
-	//		fml_nu103x_ddm_init();
-			fml_nu103x_config(_1030_CFG_ALL_RST);
-			fml_nu103x_config(_1030_CFG_OCP_08A);
-			fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
-			fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
+	/*
+		dmo1_phase     0->dig ping 1->low power 2->high power
+		DMO1_DDM_SRC   0->iavg     1->vdm
+		DDM_GAIN_MODE  0->auto     1->fixed
+		DDM_GAIN_FIX   0->36       1->60
+	*/
+	printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
+			gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
+	printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+		gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
 
-			fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);
-			fml_nu103x_config(_1030_CFG_VDM_PIN_EVDM_IN_);
+	gd->pid_volt = gd->dig_ping_volt;
+	gd->pid_perd = gd->dig_ping_perd;
+	gd->pid_duty = 50;
+	gd->pid_phas = gd->dig_ping_phas;
 
-			fml_nu103x_config(_1030_CFG_DRVH1_TURN_OFF);
-			fml_nu103x_config(_1030_CFG_DRVH1_TURN_OFF);
+	gd->sys_infos.tim3_evnt |= 1; //duty ramp up
+	hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+	hal_timer_init(TMR3);//1ms
+}
 
-			fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
-			fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+void wpc_idle_dig_ping_init_360K(void)
+{
+//	wpc_idle_dping_select();
+	gd->dig_ping_volt = 11000;
+	gd->dig_ping_perd = 144000000/360000;
+	gd->dig_ping_duty = 500;
+	gd->dig_ping_phas =  40;
 
-			fml_nu103x_config(_1030_CFG_DMO1_DDM_SRC_EVDM);
-			fml_nu103x_config(_1030_CFG_DMO2_DDM_SRC_VCAP);
+	pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+	pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
+	pid_set_duty_limit(500, 500, 500);
+	pid_set_phas_limit( 60,  50,   0);
 
-			gd->pid_volt = gd->dig_ping_volt;
-			gd->pid_perd = gd->dig_ping_perd;
-			gd->pid_duty = gd->dig_ping_duty;
-			gd->pid_phas = 50;
+	fml_nu103x_por_rst();
 
-			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
-			hal_timer_init(TMR3);
-			if (ap->mpp_dither_en)
+	ctx_switch(2);
+	pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+
+	if (gd->pid_volt != gd->dig_ping_volt)
+	{
+		gd->pid_volt = gd->dig_ping_volt;
+		fml_adp_volt_set(gd->pid_volt);
+	}
+
+#ifdef _PRINT_REPING_MSG
+		printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
+				gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
+				gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
+				gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
+				gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
+#endif
+
+		printk(" [power mode:%d ctx:%d %d k:%d] ", gd->power_mode, gd->ctx_ind, gd->ctx, gd->k_est);
+
+		//config_1
+		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+//		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
+				gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
+		/*
+			dmo2_phase     0->dig ping 1->low power 2->high power
+			DMO2_DDM_SRC   0->vcap     1->phase
+			DDM_GAIN_MODE  0->auto     1->fixed
+			DDM_GAIN_FIX   0->36       1->60
+			VCAP_RATIO_K   0->k2       1->k3        2->k1
+		*/
+		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
+
+		gd->pid_perd = gd->dig_ping_perd;
+		gd->pid_duty = gd->dig_ping_duty;
+		gd->pid_phas = 180;
+
+//		gd->sys_infos.tim3_evnt = 2; //phase ramp up
+		while (gd->pid_phas > gd->dig_ping_phas)//phase ramp up, ~250us
+		{
+			if (gd->pid_phas > gd->dig_ping_phas + 10)
 			{
-				hal_epwm_afd_start(EPWM1, 4, 2);
+				gd->pid_phas -= 10;
 			}
-			fml_ask_enbale();
+			else
+			{
+				gd->pid_phas = gd->dig_ping_phas;
+			}
+			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+//			delay_1us(2);
+		}
+		if (ap->mpp_dither_en)
+		{
+			hal_epwm_afd_start(EPWM1, 4, 2);
+		}
 
 #if DIG_DDM_ENABLE
+		if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360)
+		{
 			hal_ddm_dig_ping();
 			hal_ecap_dig_ddm_init();
 			hal_eadc_ddm_init();
 			fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
 			fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
+			printk("\r\n ----- enable digital ddm");
+		}
 #endif
+}
+
+uint16_t cnt_cloak_dig_ping = 0;
+uint16_t cnt_cloak_det_ping = 0;
+void wpc_idle_cloak_phase_process(void)
+{
+	if (TRUE == gd->tx_infos.flg_mode_cloak)
+	{
+		printk("\r\n cloak_2: %d %d %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping, gd->tx_infos.cloak_dig_ping_delay, gd->tx_infos.cloak_det_ping_delay);
+		cnt_cloak_dig_ping++;
+		cnt_cloak_det_ping++;
+
+		if (cnt_cloak_dig_ping >= gd->tx_infos.cloak_dig_ping_delay)
+		{
+			//digital ping
+			cnt_cloak_dig_ping = 0;
+			cnt_cloak_det_ping = 0;
+
+			wpc_idle_dig_ping_init_360K();
+#ifdef	_PRINT_REPING_MSG
+			printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d] 360K?[%d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
+					gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas,gd->tx_infos.dig_ping_type);
+#endif
+			fml_ask_enbale();
+
 			gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
 			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
+			osal_stop_timerEx(WPC_PING_TIMER);
 		}
 		else if (cnt_cloak_det_ping >= gd->tx_infos.cloak_det_ping_delay)
 		{
+			fml_nu103x_por_rst();
+
+			fml_qdt_detect((uint32_t *)&gd->tx_infos.q_fact, (uint32_t *)&gd->tx_infos.f_self);
+
+			printk("\r\n sta:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
+					gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
+					gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre);
+
+			if ((0 == gd->tx_infos.q_fact_air) && (0 == gd->tx_infos.f_self_air))
+			{
+				gd->tx_infos.q_fact_air = gd->tx_infos.q_fact;
+				gd->tx_infos.f_self_air = gd->tx_infos.f_self;
+				printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
+			}
+
+			enter_buff(gd->tx_infos.q_fact, gd->tx_infos.f_self);
+
+			static uint8_t rx_may_still_be_remove_cnt = 0;
+			if (idle_qdt_back_to_normal())
+			{
+				if (++rx_may_still_be_remove_cnt > 3)
+				{
+					rx_may_still_be_flag = 0;
+					rx_may_still_be_remove_cnt = 0;
+					rx_may_still_be_remove_cnt = 0;
+					gd->tx_infos.fo_exist = 0;
+					gd->ptx_protocol_phase = WPC_PHASE_IDLE;
+					gd->tx_infos.flg_mode_cloak = FALSE;
+					osal_stop_timerEx(WPC_NEXT_TIMER);
+					osal_start_timerEx(WPC_PING_TIMER, gd->tx_infos.t_next_ping, ap->t_next_ping, WPC_TASK, WPC_EVT_DIG_PING);
+					return;
+				}
+			}
+			else
+			{
+				rx_may_still_be_remove_cnt = 0;
+			}
+
 			//short ping
 			cnt_cloak_det_ping = 0;
 
-			gd->dig_ping_volt = 11500;
+			gd->dig_ping_volt = 11000;
 			gd->dig_ping_perd = 144000000/360000;
 			gd->dig_ping_duty = 500;
 			gd->dig_ping_phas = 0;
@@ -391,6 +545,12 @@ void wpc_idle_phase_process(void)
 {
 	if (gd->ptx_protocol_phase != WPC_PHASE_IDLE)
 	{
+		return;
+	}
+
+	if(tcpm_qi_work_delay)
+	{
+		tcpm_qi_work_delay--;
 		return;
 	}
 
@@ -451,196 +611,21 @@ void wpc_idle_phase_process(void)
 
 		if (qfod_detect())
 		{
-			printk("q no object");
-			//return;
+			return;
 		}
 
-		//wpc_idle_dping_select();
-		gd->dig_ping_volt = 5000;
-		gd->dig_ping_perd = 1127;//127.77K
-		gd->dig_ping_duty = 500; // 250;
-		gd->dig_ping_phas = 0;
-
-		pid_init();
-		mpp_power_limit_init();
-//		fml_nu103x_ddm_init();
-
-		if (gd->pid_volt != gd->dig_ping_volt)
-		{
-			gd->pid_volt = gd->dig_ping_volt;
-			fml_adp_volt_set(gd->pid_volt);
-		}
-
-		fml_nu103x_por_rst();
-		ctx_switch(4);
-
-		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
-//		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
-
-		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
-		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
-
-		/*
-			dmo1_phase     0->dig ping 1->low power 2->high power
-			DMO1_DDM_SRC   0->iavg     1->vdm
-			DDM_GAIN_MODE  0->auto     1->fixed
-			DDM_GAIN_FIX   0->36       1->60
-		*/
-		printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
-				gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
-		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
-			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
-
-		gd->pid_volt = gd->dig_ping_volt;
-		gd->pid_perd = gd->dig_ping_perd;
-		gd->pid_duty = 50;
-		gd->pid_phas = gd->dig_ping_phas;
-
-		gd->sys_infos.tim3_evnt |= 1; //duty ramp up
-		hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
-		hal_timer_init(TMR3);//1ms
+		wpc_idle_dig_ping_init_128K();
 	}
 	else if (gd->tx_infos.dig_ping_type == _360K_FB)
 	{
-		gd->tx_infos.dig_ping_type = _128K_HB;//init ping_type
-
-//		wpc_idle_dping_select();
-//		gd->dig_ping_volt = 11000;
-		gd->dig_ping_perd = 144000000/360000;
-		gd->dig_ping_duty = 500;
-		gd->dig_ping_phas = 50;
-
-//		pid_init();
-		pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-		pid_set_freq_limit(144000000/360000, 144000000/360000, 144000000/360000);
-		pid_set_duty_limit(500, 500, 500);
-		pid_set_phas_limit(60, 40, 0);
-
-//		fml_nu103x_ddm_init();
-		fml_nu103x_por_rst();
-
-		if (gd->power_mode == high)
-		{
-#if MPP_25W_HPM_PING_ENALBE
-			if (gd->k_est< MPP_25W_LOW_K_VALUE)
-			{
-				ctx_switch(2);
-			}
-			else
-			{
-				ctx_switch(3);
-			}
-			gd->dig_ping_volt = 16000;
-			gd->dig_ping_phas = MPP_25W_360K_DIG_PING_PHASE;
-
-			pid_set_volt_limit(20100, 16000, 11000);
-#else
-			if (gd->k_est < MPP_25W_LOW_K_VALUE)
-			{
-				ctx_switch(1);
-			}
-			else
-			{
-				ctx_switch(2);
-			}
-			gd->dig_ping_volt = 11000;
-			gd->dig_ping_phas = MPP_25W_360K_DIG_PING_PHASE;
-
-			pid_set_volt_limit(20100, 11000, 16000);
-#endif
-		}
-		else
-		{
-			if (gd->k_est < MPP_25W_LOW_K_VALUE)
-			{
-				ctx_switch(1);
-			}
-			else
-			{
-				ctx_switch(2);
-			}
-			gd->dig_ping_volt = 11000;
-			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-		}
-
-		if (gd->pid_volt != gd->dig_ping_volt)
-		{
-			gd->pid_volt = gd->dig_ping_volt;
-			fml_adp_volt_set(gd->pid_volt);
-		}
-		
-#ifdef _PRINT_REPING_MSG
-		printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
-				gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
-				gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
-				gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
-				gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
-#endif
-
-		printk(" [power mode:%d ctx:%d %d k:%d] ", gd->power_mode, gd->ctx_ind, gd->ctx, gd->k_est);
-
-		//config_1
-		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
-//		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
-
-		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
-//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
-
-		printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
-				gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
-		/*
-			dmo2_phase     0->dig ping 1->low power 2->high power
-			DMO2_DDM_SRC   0->vcap     1->phase
-			DDM_GAIN_MODE  0->auto     1->fixed
-			DDM_GAIN_FIX   0->36       1->60
-			VCAP_RATIO_K   0->k2       1->k3        2->k1
-		*/
-		printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
-			gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
-
-
-		gd->pid_perd = gd->dig_ping_perd;
-		gd->pid_duty = gd->dig_ping_duty;
-		gd->pid_phas = 180;
-
-//		gd->sys_infos.tim3_evnt = 2; //phase ramp up
-		while (gd->pid_phas > gd->dig_ping_phas)//phase ramp up
-		{
-			gd->pid_phas--;
-			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
-			delay_1us(2);
-		}
-		if (ap->mpp_dither_en)
-		{
-			hal_epwm_afd_start(EPWM1, 4, 2);
-		}
+		gd->tx_infos.dig_ping_type = _128K_HB;
+		wpc_idle_dig_ping_init_360K();
 	}
-#ifdef	_PRINT_REPING_MSG
-	printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
-			gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
-#endif
+	printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d] 360K?[%d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
+			gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas,gd->tx_infos.dig_ping_type);
 	fml_ask_enbale();
-
-#if DIG_DDM_ENABLE
-	if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360)
-	{
-		hal_ddm_dig_ping();
-		hal_ecap_dig_ddm_init();
-		hal_eadc_ddm_init();
-		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
-		printk("\r\n ----- enable digital ddm");
-	}
-#endif
 
 	gd->ptx_protocol_phase = WPC_PHASE_PING;
 	osal_start_timerEx(WPC_NEXT_TIMER, T_PING, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
+	osal_stop_timerEx(WPC_PING_TIMER);
 }

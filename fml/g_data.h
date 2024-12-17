@@ -101,10 +101,10 @@ struct ap_t
 	uint16_t dig_ping_duty_9v;
 	uint16_t dig_ping_phas_9v;
 
-	uint16_t dig_ping_volt_12v;
-	uint32_t dig_ping_perd_12v;
-	uint16_t dig_ping_duty_12v;
-	uint16_t dig_ping_phas_12v;
+	uint16_t dig_ping_volt_11v;
+	uint32_t dig_ping_perd_11v;
+	uint16_t dig_ping_duty_11v;
+	uint16_t dig_ping_phas_11v;
 
 	 uint8_t pin_max_cnt;
 	 uint8_t pin_fod_dis;
@@ -197,8 +197,8 @@ struct gd_t
 		 uint8_t pfod_event; //ioc_event
 		 uint8_t pfod_trig_cnt;
 		 int32_t pfod_margin;
-		 uint16_t cloak_ping_delay;
-		 uint8_t cloak_det_ping_delay;
+		 uint16_t cloak_dig_ping_delay;
+		 uint8_t  cloak_det_ping_delay;
 		 uint8_t cloak_reason;
 		 uint8_t flg_mode_cloak;
 		 uint8_t state_exit_cloak;
@@ -295,6 +295,7 @@ struct gd_t
 
 	 uint8_t ptx_idle_phase_status;
 	 uint8_t ptx_protocol_phase;
+	 uint8_t ptx_end_nego_event;
 	 uint8_t sys_err_code;
 
 	 struct {

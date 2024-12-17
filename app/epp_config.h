@@ -2,7 +2,6 @@
 #define __EPP_CONFIG_H__
 
 //启用合同数量检测
-#define NEGO_ERR_PROTECT 1
 
 //启用EPP FOD 在线Calibration功能
 #define EPP_FUNC_ONLINE_CALIB_ENABLE 0

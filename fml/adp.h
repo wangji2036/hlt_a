@@ -21,6 +21,11 @@ enum adp_type_t {
 	EADP_TYPE_DCSRC_05V = 0x30,
 	EADP_TYPE_DCSRC_09V = 0x31,
 	EADP_TYPE_DCSRC_12V = 0x32,
+
+	EADP_TYPE_POWERBANK_05V = 0x40,// wireless and C discharge
+	EADP_TYPE_POWERBANK_09V = 0x41,// wireless and C charge (no-PPS)
+	EADP_TYPE_POWERBANK_PPS = 0x42,// wireless only
+	EADP_TYPE_POWERBANK_WIRELESS_ONLY = 0x43, // wireless and C charge (PPS)
 };
 
 struct adp_t {

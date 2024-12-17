@@ -28,6 +28,7 @@ typedef enum {
 	ESYS_ERR_CODE_CALI_PHASE_CALIBRATION_TIMEOUT    = 0x17,
 	ESYS_ERR_CODE_CALI_PHASE_BIT24RPP_MODE_ERR      = 0x18,
 	ESYS_ERR_CODE_XFER_PHASE_FODS_PP_REF_QVALUE_ERR = 0x19,
+	ESYS_ERR_CODE_RENOGO_PHASE_TIMEOUT_ERR          = 0x1A,
 	ESYS_ERR_CODE_PING_PHASE_REPING                 = 0x1E,
 	ESYS_ERR_CODE_PING_PHASE_OCP                    = 0x1F,
 	ESYS_ERR_CODE_NTC_OTP                           = 0x20,
@@ -89,6 +90,7 @@ enum EPT_CODE {
 #define T_MAX_LIMIT                   (  170)
 #define T_NEGOTIATE       400
 #define T_RENEGOTIATE       814
+#define T_RENEGO_TO        1900
 #define T_TERMINATE        10
 #define T_RESPONSE          3
 #define T_WINDOW            4
@@ -97,7 +99,7 @@ enum EPT_CODE {
 #define T_COM_CE_TO    1600
 #define T_MPP_CE_TO    2050
 #define T_COM_RP_TO   20000
-#define T_MPP_RP_TO    7600
+#define T_MPP_RP_TO    7900
 
 #define T_PCH_TIME_MIN      5
 #define T_PCH_TIME_MAX    100
@@ -182,6 +184,9 @@ enum
 	power_limit_reason_oc = 6,
 	power_limit_reason_map = 7,
 };
+
+#define EPP_END_NEGO_FLAG    0x01
+#define MPP_END_NEGO_FLAG    0x02
 
 uint8_t wpc_msg_size_get(uint8_t hdr);
 void wpc_task_init(void);

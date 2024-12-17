@@ -27,7 +27,7 @@
 #undef CONFIG_TC_TRY_SOURCE_SUPPORT_EN
 #endif
 
-//#define SUPPORT_USBPD_LOG
+#define SUPPORT_USBPD_LOG
 
 #ifdef SUPPORT_USBPD_LOG
 	#define usbpd_printk 	printk

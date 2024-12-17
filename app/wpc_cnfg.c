@@ -142,59 +142,59 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				{
 					gd->rx_infos.rx_type = EPRX_TYPE_APPLE_MAG;
 				}
-
-				if (com_ask->msg.xid.selector == 0xFE)
+				if(gd->adp.pwr_high >= 30)
 				{
-					gd->rx_infos.power_profile_mode = MPP;
-
-					if (gd->pid_perd != 144000/360)
+					if (com_ask->msg.xid.selector == 0xFE)
 					{
-						int32_t temp = 0;
+						gd->rx_infos.power_profile_mode = MPP;
 
-						uint32_t alpha0 = com_ask->msg.xid.alpha0_rx;
-						uint32_t alpha1 = com_ask->msg.xid.alpha0_rx;
-						uint32_t vrect = 20 * (com_ask->msg.xid.vrect_msb << 8 | com_ask->msg.xid.vrect_lsb);
-
-						gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);
-						uint8_t last_k = gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K;
-						fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
-						fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K3);
-						hal_eadc_meas(_EADC_CH_INR_VCAP);
-						switch (last_k)
+						if (gd->pid_perd != 144000/360)
 						{
-							case _NU1030_DMO2_VCAP_RATIO_K1:
-								fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K1);
-								break;
-							case _NU1030_DMO2_VCAP_RATIO_K2:
-								fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K2);
-								break;
-							case _NU1030_DMO2_VCAP_RATIO_K3:
-								fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K3);
-								break;
-							default:
-								break;
+							int32_t temp = 0;
+
+							uint32_t alpha0 = com_ask->msg.xid.alpha0_rx;
+							uint32_t alpha1 = com_ask->msg.xid.alpha0_rx;
+							uint32_t vrect = 20 * (com_ask->msg.xid.vrect_msb << 8 | com_ask->msg.xid.vrect_lsb);
+
+							//gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);
+							gd->vpwr = g_buckboost.adc_vbus;
+							uint8_t last_k = gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K;
+							fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
+							fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K3);
+							hal_eadc_meas(_EADC_CH_INR_VCAP);
+							switch (last_k)
+							{
+								case _NU1030_DMO2_VCAP_RATIO_K1:
+									fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K1);
+									break;
+								case _NU1030_DMO2_VCAP_RATIO_K2:
+									fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K2);
+									break;
+								case _NU1030_DMO2_VCAP_RATIO_K3:
+									fml_nu103x_config(_1030_CFG_DMO2_VCAP_RATIO_K3);
+									break;
+								default:
+									break;
+							}
+							fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+
+							temp = vrect * alpha0;
+							temp /= (gd->vctx_pp + gd->vpwr);
+							temp *= 15926;
+							temp += (1043 * alpha1);
+							temp /= 100;
+
+							gd->k_est = temp*107/100;
+
+							printk(" {%d,%d,%d,%d,%d,k=%d}", alpha0, alpha1, vrect, gd->vpwr, gd->vctx_pp, gd->k_est);
+
+							gd->tx_infos._128_nego_gd = 1;
 						}
-						fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
-
-						temp = vrect * alpha0;
-						temp /= (gd->vctx_pp + gd->vpwr);
-						temp *= 15926;
-						temp += (1043 * alpha1);
-						temp /= 100;
-
-						gd->k_est = temp*107/100;
-
-						printk(" {%d,%d,%d,%d,%d,k=%d}", alpha0, alpha1, vrect, gd->vpwr, gd->vctx_pp, gd->k_est);
-
-						gd->tx_infos._128_nego_gd = 1;
+						else
+						{
+							gd->tx_infos._128_nego_gd = 0;
+						}
 					}
-					else
-					{
-						gd->tx_infos._128_nego_gd = 0;
-					}
-
-					gd->rx_infos.mpp_restricted_mode = com_ask->msg.xid.resticted;
-
 					if (gd->rx_infos.mpp_restricted_mode)
 					{
 						if (gd->pid_perd != 144000/360)
@@ -202,10 +202,12 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 							gd->tx_infos.dig_ping_type = _360K_FB;//OK, restricted mode reping
 							gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 							wpc_stop_to_idle(ESYS_ERR_CODE_IDCFG_PHASE_MPP_RESTRICTED_REP);
+							printk("\r\n 360k-1");
 							goto __CNFG_PHASE_ERR__;
 						}
 					}
 				}
+				gd->rx_infos.mpp_restricted_mode = com_ask->msg.xid.resticted;
 			}
 			else
 			{
@@ -256,7 +258,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->fsk_cfg.prmbl = FSK_PRMBL_NONE;
 			fml_fsk_param_set(EPWM1, gd->fsk_cfg.polar, gd->fsk_cfg.depth, gd->fsk_cfg.cycle, gd->fsk_cfg.prmbl);
 			printk("\r\n --------------> %d %d %d", gd->rx_infos.power_profile_mode, gd->adp.pwr_high, gd->rx_infos.mpp_restricted_mode);
-			if (gd->rx_infos.power_profile_mode == MPP &&/* gd->adp.pwr_high >= 20 && */0 == gd->rx_infos.mpp_restricted_mode)
+			if (gd->rx_infos.power_profile_mode == MPP && gd->adp.pwr_high >= 20 && 0 == gd->rx_infos.mpp_restricted_mode)
 			{
 				gd->rx_infos.opt_cnt = 0;
 				gd->rx_infos.phase_state = 0;
@@ -328,16 +330,30 @@ goto __CNFG_PHASE_ERR__;
 					fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_MPP);
 					osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 					osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
+
+#if DIG_DDM_ENABLE
+					if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360 && gd->nu103x_sts_curr.BITS.DMO2_OUT_MODE == _NU1030_DMO2_OUT_MODE_CAP)
+					{
+//						hal_ecap_dig_ddm_init();
+//						hal_eadc_ddm_init();
+						hal_ecap_init(ECAP2, _ECAP_FUNC_MODE_DDM);
+						hal_ecap_open(ECAP2);
+						hal_ecap_close(ECAP4);
+						fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+
+						printk("\r\n ----- disable digital ddm");
+					}
+#endif
 				}
 				else
 				{
 //					if (gd->rx_infos.rx_type != EPRX_TYPE_APPLE_STD && gd->rx_infos.rx_type != EPRX_TYPE_APPLE_MAG)
 					{
-						pid_set_freq_limit(144000000/90000, 144000000/147000, 144000000/147000);
+						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
 					}
 					if (gd->rx_infos.ssp_value > 180 && gd->rx_infos.qi_version >= 0x20) //for IOC test
 					{
-						pid_set_freq_limit(144000000/90000, 144000000/147000, 144000000/180000);
+						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/180000);
 					}
 
 					//even MPP/EPP, but input power is limit, enter BPP

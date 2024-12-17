@@ -103,8 +103,8 @@ void apl_task_event_handler(uint32_t event)
 			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
 			gd->sys_infos.die_temp = fml_die_temp_get();
 //			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
-			fml_tntc_otp_limit_power(gd->sys_infos.ntc_temp);
-			fml_tntc_utp_check(gd->sys_infos.ntc_temp);
+		//	fml_tntc_otp_limit_power(gd->sys_infos.ntc_temp);
+		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
 			fml_tdie_otp_check(gd->sys_infos.die_temp);
 			fml_tdie_utp_check(gd->sys_infos.die_temp);
 			break;
@@ -155,21 +155,21 @@ void apl_task_event_handler(uint32_t event)
 //				gd->pid_volt = 11000;
 //				fml_adp_volt_set(gd->pid_volt);
 
-				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_CEP_TIMEOUT);
+//				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_CEP_TIMEOUT);
 
 				printk("\r\n------>!!!!!%d,%d",Tmp_max,gd->isns);
 			}
-
-			gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);
+			gd->vpwr = g_buckboost.adc_vbus;
+			//gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);
 			//gd->tx_power = gd->isns * gd->vpwr / 1000;//TODO
-			gd->vbus = hal_badc_meas(_BADC_CH_PB6_ADC7);
+			gd->vbus = 9000;//hal_badc_meas(_BADC_CH_PB6_ADC7);
 			fml_isns_ocp_check(gd->isns);
 			fml_vpwr_ovp_check(gd->vpwr);
 			fml_vbus_ovp_check(gd->vbus);
 			fml_vbus_uvp_check(gd->vbus);
 			fml_vbus_dpl_check(gd->vbus);
 			fml_pout_opp_check(gd->vpwr, gd->isns);
-			if (gd->ptx_protocol_phase >= WPC_PHASE_XFER)
+			if (gd->ptx_protocol_phase == WPC_PHASE_XFER)
 			{
 				fml_ask_decode_check();
 			}

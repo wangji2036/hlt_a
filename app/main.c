@@ -84,7 +84,7 @@ int main(void)
 
 
 	fml_task_init();
-	//wpc_task_init();
+	wpc_task_init();
 
 
 

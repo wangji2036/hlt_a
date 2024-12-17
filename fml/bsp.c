@@ -31,8 +31,8 @@ void fml_bsp_init(void)
 	{
 		hal_bpwm_start(BPWM8,  900,  720); //boost control, 40KHz, y = -12.63.18x + 20091
 	}
-
+	printk("\r\n chip reset!");
 	printk("\r\n ------SOC-> NU%d-A%d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
-	printk("\r\n ------DAT-> %d-%02d-%02d %s", __COMPILE_DATE_YAR, __COMPILE_DATE_MTH, __COMPILE_DATE_DAY, __TIME__);
+	//printk("\r\n ------DAT-> %d-%02d-%02d %s", __COMPILE_DATE_YAR, __COMPILE_DATE_MTH, __COMPILE_DATE_DAY, __TIME__);
 	printk("\r\n ------VER-> %x.%02x.%02x.%02x", CUST_CODE, PROJ_CODE, PHAS_CODE, TX_FW_VER);
 }

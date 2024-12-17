@@ -113,8 +113,9 @@ void update_scp_reg(void)
 {
 	SCP_REG[SCP_REG_READ_VOUT_H] = (uint8_t)(g_buckboost.buckboost_out_voltage >> 8);
 	SCP_REG[SCP_REG_READ_VOUT_L] = (uint8_t)g_buckboost.buckboost_out_voltage;
-	SCP_REG[SCP_REG_SREAD_IOUT] = g_buckboost.adc_ibus / 50;
+	SCP_REG[SCP_REG_SREAD_IOUT] = ( - g_buckboost.adc_ibus) / 50;
 	SCP_REG[SCP_REG_SREAD_VOUT] = (g_buckboost.buckboost_out_voltage - 3000) / 10;
+
 }
 
 

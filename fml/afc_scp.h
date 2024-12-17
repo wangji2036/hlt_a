@@ -163,7 +163,7 @@ union scp_packet_t
 #define SCP_TEST_S_REG_SS                   (0xFF)
 
 extern union scp_packet_t scp_packet;
-
+void dpdm_src_afc_handle(void);
 extern uint16_t scp_vout;
 extern uint16_t scp_iout;
 

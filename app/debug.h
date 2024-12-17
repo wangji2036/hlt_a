@@ -30,7 +30,7 @@
 #define MPP_25W_LOW_K_VALUE         (8100)//0mm 8000, 2mm 7600, times 1.07
 #define MPP_25W_360K_DIG_PING_PHASE (50)//spec is 50 (goodd for iphone), lower to 20 for DDM (good for GRL)
 
-#define MPP_25W_FOD_ENABLE          (1)
+#define MPP_25W_FOD_ENABLE          (0)
 #define MPP_25W_FOD_LOOSE_PFO       (0)//loose some pfo if false report FOD during MPLA
 
 #define MPP_25W_MATE_Q_ENABLE       (0)
