@@ -230,9 +230,11 @@ bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 
 bool hal_tcpc_vbus_is_vsafe5v(void)
 {
-	if(gd->vbus <= 6000) return true;
+	//if(gd->vbus <= 6000) return true;
 
-	return false;
+	//return false;
+
+	return true;
 }
 
 enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)

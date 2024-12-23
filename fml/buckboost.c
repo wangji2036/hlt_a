@@ -65,7 +65,11 @@ void buckboost_task_init(void)
 	osal_mem_set(&g_buckboost,0,sizeof(struct buckboost_s));
 	osal_task_handler_reg(BUCKBOOST_TASK, buckboost_task_event_handler);
 	osal_start_timerEx(BUCKBOOST_PERIOD_TIMER, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_TIME_PERIOD);
+	osal_start_timerEx(BUCKBOOST_VBUS_TIMER, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_TIME_PERIOD);
+
 	buckboost_ops.init();
+
+
 
 	g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 	g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
@@ -92,7 +96,6 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 			g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
-			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 			if(g_buckboost.adc_vbat < 6000)
 			{
 				g_tc[TYPEC_PORT_A].is_deadbattery = 1;
@@ -105,6 +108,9 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 		//	printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
+			break;
+		case BUCKBOOST_VBUS_PERIOD:
+			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
 			buckboost_ops.set_work_mode(g_buckboost.woke_mode);

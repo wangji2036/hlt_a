@@ -1958,10 +1958,10 @@ void usb_pd_run(void)
 	if(g_usb_pd_s.pe_prl_busy)
 	{
 		prl_busy_cnt++;
-		if(prl_busy_cnt >= 200)
+		if(prl_busy_cnt >= 30)
 		{
 			prl_busy_cnt = 0;
-			transmit_timeout_cb();
+			//transmit_timeout_cb();
 			usbpd_printk("tx timeout !\n");
 		}
 		return;

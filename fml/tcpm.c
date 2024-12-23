@@ -165,6 +165,8 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 				if(g_tc[1].usb_tc_state == TC_SRC_Attached)
 				{
 					usb_tc_set_state(&g_tc[1],TC_SRC_AttachWait,enter_state);
+					tcpm_stop_wpc(WPC_DELAY);
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				}
 
 				if(g_tc[1].usb_tc_state == TC_SNK_Attached)
@@ -228,6 +230,8 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 					if(g_tc[0].usb_tc_state == TC_SRC_Attached)
 					{
 						usb_tc_set_state(&g_tc[0],TC_SRC_AttachWait,enter_state);
+						tcpm_stop_wpc(WPC_DELAY);
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 					}
 
 					if(g_tc[0].usb_tc_state == TC_SNK_Attached)
@@ -441,11 +445,8 @@ uint8_t temp_port_state_change_handle(struct tc_s *tc)
 		    {
 		    	updata_pdo_of_source((uint32_t *)source_pdo_level_0,SIZEOF_SOURCE_PDO_LEVEL0);
 		    }
-			if(qi_state == 1)
-			{
-				//wpc stop
-				tcpm_stop_wpc(WPC_DELAY);
-			}
+
+			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 			break;
 		case TC_SRC_Attached:
@@ -559,7 +560,7 @@ void tcpm_task_event_handler(uint32_t event)
 //		case TCPM_EVT_WPC_ATTACHED:
 //			break;
 		case TCPM_EVT_SNK_START_CHARGER:
-			usb_pd_snk_dump_pdoinfo();
+			//usb_pd_snk_dump_pdoinfo();
 
 			if(g_tc[g_tcpc.tc_port_map].usb_tc_state == TC_SNK_Attached )
 			{
@@ -572,7 +573,8 @@ void tcpm_task_event_handler(uint32_t event)
 				{
 					ibus_limit = 500;
 					ibat_limit = 500;
-				}//ibus_limit * pdo_fixed_voltage(g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) -1])/ 4000;
+				}
+				//ibus_limit * pdo_fixed_voltage(g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) -1])/ 4000;
 				//if(ibat_limit > 1500) ibat_limit = 1500;
 			}
 			else
@@ -629,7 +631,10 @@ void tcpm_task_event_handler(uint32_t event)
 			else
 			{
 				tcpm_stop_wpc(WPC_DELAY);
-				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				if(g_buckboost.buckboost_out_voltage >= 8000 && g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 			}
 			break;
 
@@ -672,6 +677,7 @@ void tcpm_task_event_handler(uint32_t event)
 			else
 				qi_cnt = 0;
 			//
+
 
 			printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			break;
@@ -763,11 +769,14 @@ void tcpm_task_event_handler(uint32_t event)
 			break;
 		case TCPM_EVT_QI_SET_VOLT:
 			if(wpc_mode == TCPM_WPC_WORK_BOOST)
+			{
 				hal_tcpc_pd_set_bus_iv(WPC_INDEX,qi_volt,3500,0,0);
+			}
 			else if(wpc_mode == TCPM_WPC_WORK_PD_PPS)
 			{
 				uint32_t source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
 				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,qi_volt,pdo_pps_apdo_max_current(source_pdo));
+				printk("pd set volt = %d\n",qi_volt);
 			}
 			break;
 #endif

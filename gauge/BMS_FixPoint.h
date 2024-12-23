@@ -139,7 +139,7 @@ extern int32_T P_AtRateCurrent_mA;     /* Variable: P_AtRateCurrent_mA
 extern int32_T P_EmptyVoltage_mV;      /* Variable: P_EmptyVoltage_mV
                                         * Referenced by: '<S4>/Empty_Voltage_mV'
                                         */
-extern int32_T P_OcvSOCDsg_mpct[96];   /* Variable: P_OcvSOCDsg_mpct
+extern const  int32_T P_OcvSOCDsg_mpct[96];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
                                         *   '<S33>/OCV_DSG'
                                         *   '<S12>/OCV_DSG'
@@ -172,10 +172,10 @@ extern uint32_T P_CurrentThresRelaxJudge_mA;/* Variable: P_CurrentThresRelaxJudg
                                              *   '<S11>/Constant1'
                                              *   '<S13>/Constant1'
                                              */
-extern uint32_T P_DcirDsg_mOhm[96];    /* Variable: P_DcirDsg_mOhm
+extern const  uint32_T P_DcirDsg_mOhm[96];    /* Variable: P_DcirDsg_mOhm
                                         * Referenced by: '<S23>/DCIR_Discharge'
                                         */
-extern uint32_T P_R0Dsg_mOhm[96];      /* Variable: P_R0Dsg_mOhm
+extern const  uint32_T P_R0Dsg_mOhm[96];      /* Variable: P_R0Dsg_mOhm
                                         * Referenced by: '<S23>/R0_Discharge'
                                         */
 extern uint32_T P_RelaxDurationExtremeLowTemp_s;
@@ -212,7 +212,7 @@ extern uint16_T P_Capacity_mAh;        /* Variable: P_Capacity_mAh
 extern uint16_T P_OCVAxis_mV[32];      /* Variable: P_OCVAxis_mV
                                         * Referenced by: '<S12>/OCV_DSG'
                                         */
-extern uint16_T P_OCVDsg_mV[96];       /* Variable: P_OCVDsg_mV
+extern const  uint16_T P_OCVDsg_mV[96];       /* Variable: P_OCVDsg_mV
                                         * Referenced by: '<S23>/OCV_Discharge'
                                         */
 extern uint16_T P_SampleTime_ms;       /* Variable: P_SampleTime_ms

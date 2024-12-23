@@ -66,7 +66,8 @@ struct buckboost_operations
 };
 
 
-#define BUCKBOOST_TIME_PERIOD							500
+#define BUCKBOOST_TIME_PERIOD							100
+#define BUCKBOOST_VBUS_PERIOD							5
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    				osal_event_declare(0)
 #define BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT    			osal_event_declare(1)
@@ -81,6 +82,7 @@ struct buckboost_operations
 #define BUCKBOOST_EVT_REGULATOR_WAITDONE    				osal_event_declare(8)
 #define BUCKBOOST_EVT_REGULATOR_DELAYDONE    				osal_event_declare(9)
 
+#define BUCKBOOST_EVT_VBUS_PERIOD    					osal_event_declare(30)
 #define BUCKBOOST_EVT_TIME_PERIOD    					osal_event_declare(31)
 
 

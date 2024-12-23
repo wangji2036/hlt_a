@@ -100,13 +100,13 @@ void apl_task_event_handler(uint32_t event)
 			break;
 		case APL_EVT_100ms_POLL:
 //			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
-			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
-			gd->sys_infos.die_temp = fml_die_temp_get();
-//			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
-		//	fml_tntc_otp_limit_power(gd->sys_infos.ntc_temp);
-		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
-			fml_tdie_otp_check(gd->sys_infos.die_temp);
-			fml_tdie_utp_check(gd->sys_infos.die_temp);
+//			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
+//			gd->sys_infos.die_temp = fml_die_temp_get();
+////			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
+//		//	fml_tntc_otp_limit_power(gd->sys_infos.ntc_temp);
+//		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
+//			fml_tdie_otp_check(gd->sys_infos.die_temp);
+//			fml_tdie_utp_check(gd->sys_infos.die_temp);
 			break;
 		case APL_EVT_010ms_POLL:
 			gd->isns = hal_badc_meas(_BADC_CH_PD6_ADC3);

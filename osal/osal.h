@@ -30,6 +30,8 @@ enum {
 	TCPM_USB_A_TIMER = 20,
 	
 	GAUGE_TIMER   = 21,
+
+	BUCKBOOST_VBUS_TIMER = 22,
 	/////////////
 	MAX_TIMER,
 };

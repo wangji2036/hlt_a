@@ -52,7 +52,7 @@ int32_T P_AtRateCurrent_mA = 1000;     /* Variable: P_AtRateCurrent_mA
 int32_T P_EmptyVoltage_mV = 6000;      /* Variable: P_EmptyVoltage_mV
                                         * Referenced by: '<S4>/Empty_Voltage_mV'
                                         */
-int32_T P_OcvSOCDsg_mpct[96] = { 0, 0, 0, 2385, 2385, 2385, 4771, 4771, 4771,
+const int32_T P_OcvSOCDsg_mpct[96] = { 0, 0, 0, 2385, 2385, 2385, 4771, 4771, 4771,
   7157, 7157, 7157, 9542, 9542, 9542, 11928, 11928, 11928, 14314, 14314, 14314,
   16700, 16700, 16700, 19085, 19085, 19085, 21470, 21470, 21470, 23856, 23856,
   23856, 28623, 28623, 28623, 33389, 33389, 33389, 38156, 38156, 38156, 42924,
@@ -107,7 +107,7 @@ uint32_T P_CurrentThresRelaxJudge_mA = 40U;/* Variable: P_CurrentThresRelaxJudge
                                             *   '<S11>/Constant1'
                                             *   '<S13>/Constant1'
                                             */
-uint32_T P_DcirDsg_mOhm[96] = { 138U, 138U, 138U, 108U, 108U, 108U, 95U, 95U,
+const uint32_T P_DcirDsg_mOhm[96] = { 138U, 138U, 138U, 108U, 108U, 108U, 95U, 95U,
   95U, 90U, 90U, 90U, 79U, 79U, 79U, 73U, 73U, 73U, 69U, 69U, 69U, 65U, 65U, 65U,
   64U, 64U, 64U, 64U, 64U, 64U, 60U, 60U, 60U, 58U, 58U, 58U, 60U, 60U, 60U, 60U,
   60U, 60U, 62U, 62U, 62U, 63U, 63U, 63U, 63U, 63U, 63U, 64U, 64U, 64U, 54U, 54U,
@@ -117,7 +117,7 @@ uint32_T P_DcirDsg_mOhm[96] = { 138U, 138U, 138U, 108U, 108U, 108U, 95U, 95U,
                                                 * Referenced by: '<S23>/DCIR_Discharge'
                                                 */
 
-uint32_T P_R0Dsg_mOhm[96] = { 46U, 46U, 46U, 46U, 46U, 46U, 47U, 47U, 47U, 45U,
+const uint32_T P_R0Dsg_mOhm[96] = { 46U, 46U, 46U, 46U, 46U, 46U, 47U, 47U, 47U, 45U,
   45U, 45U, 45U, 45U, 45U, 47U, 47U, 47U, 44U, 44U, 44U, 44U, 44U, 44U, 43U, 43U,
   43U, 43U, 43U, 43U, 43U, 43U, 43U, 41U, 41U, 41U, 40U, 40U, 40U, 40U, 40U, 40U,
   40U, 40U, 40U, 40U, 40U, 40U, 39U, 39U, 39U, 40U, 40U, 40U, 40U, 40U, 40U, 39U,
@@ -166,7 +166,7 @@ uint16_T P_OCVAxis_mV[32] = { 6083U, 6498U, 6726U, 6811U, 6854U, 6903U, 6961U,
                                         * Referenced by: '<S12>/OCV_DSG'
                                         */
 
-uint16_T P_OCVDsg_mV[96] = { 6083U, 6083U, 6083U, 6498U, 6498U, 6498U, 6726U,
+const uint16_T P_OCVDsg_mV[96] = { 6083U, 6083U, 6083U, 6498U, 6498U, 6498U, 6726U,
   6726U, 6726U, 6811U, 6811U, 6811U, 6854U, 6854U, 6854U, 6903U, 6903U, 6903U,
   6961U, 6961U, 6961U, 7018U, 7018U, 7018U, 7069U, 7069U, 7069U, 7114U, 7114U,
   7114U, 7156U, 7156U, 7156U, 7212U, 7212U, 7212U, 7257U, 7257U, 7257U, 7304U,
