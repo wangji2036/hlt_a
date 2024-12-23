@@ -650,7 +650,7 @@ void tcpm_task_event_handler(uint32_t event)
 				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
 				{
 					usba_cnt++;
-					if(usba_cnt >= 10)
+					if(usba_cnt >= 100)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
@@ -665,7 +665,7 @@ void tcpm_task_event_handler(uint32_t event)
 			if(qi_state == 1 && gd->ptx_protocol_phase <= WPC_PHASE_PING)
 			{
 				qi_cnt++;
-				if(qi_cnt >= 20)
+				if(qi_cnt >= 100)
 				{
 					qi_state = 0;
 					qi_cnt = 0;
