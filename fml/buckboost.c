@@ -65,7 +65,7 @@ void buckboost_task_init(void)
 	osal_mem_set(&g_buckboost,0,sizeof(struct buckboost_s));
 	osal_task_handler_reg(BUCKBOOST_TASK, buckboost_task_event_handler);
 	osal_start_timerEx(BUCKBOOST_PERIOD_TIMER, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_TIME_PERIOD);
-	osal_start_timerEx(BUCKBOOST_VBUS_TIMER, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_TIME_PERIOD);
+	osal_start_timerEx(BUCKBOOST_VBUS_TIMER, BUCKBOOST_VBUS_PERIOD, BUCKBOOST_VBUS_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_VBUS_PERIOD);
 
 	buckboost_ops.init();
 
@@ -106,10 +106,10 @@ void buckboost_task_event_handler(uint32_t event)
 				g_tc[TYPEC_PORT_A].is_deadbattery = 0;
 				g_tc[TYPEC_PORT_B].is_deadbattery = 0;
 			}
-		//	printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
+			printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 			break;
-		case BUCKBOOST_VBUS_PERIOD:
+		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
