@@ -7,7 +7,7 @@
  *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
@@ -1341,7 +1341,7 @@ void SOH(void)
 {
   SOH_Resistance_mOhm = 0;
   SOHC();
-  Switch_s = 1;
+  Switch_s = 100;
 }
 static boolean_T Soc_Initialed = false;
 /* Model step function */

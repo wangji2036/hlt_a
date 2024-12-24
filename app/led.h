@@ -19,7 +19,8 @@ enum led_state_t {
 	ELED_STS_CHARGED  = 4,
 	ELED_STS_ERROR    = 5,
 };
-
+void ui_update(void);
+void ui_display (void);
 void led_init(void);
 void led_display(void);
 

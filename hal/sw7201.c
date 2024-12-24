@@ -16,10 +16,12 @@ void hal_sw7201_buckboost_init(void)
 		hal_sw7201_buckboost_dis_indetb();
 		hal_sw7201_buckboost_charge_target_volt(BAT_CELL_FULL_VOLT*BAT_CELL_NUM);
 		hal_sw7201_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
+
 		hal_sw7201_buckboost_set_busiv(5000,3000);  //5v3a
 		hal_sw7201_buckboost_write_reset_check();
 		hal_sw7201_buckboost_typeca_gate_en(false);
 		hal_sw7201_buckboost_typecb_gate_en(false);
+		hal_sw7201_buckboost_usb_a_gate_en(false);
 		hal_sw7201_buckboost_charge_vbus_uv(4000);
 		hal_sw7201_buckboost_charge_ibus_limit(1000);
 		hal_sw7201_buckboost_charge_ibat_limit(500);
@@ -125,7 +127,8 @@ void hal_sw7201_buckboost_typeca_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x02));
 }
 
-void hal_sw7201_buckboost_typecb_gate_en(bool en)
+void hal_sw7201_buckboost_usb_a_gate_en(bool en)
+//void hal_sw7201_buckboost_typecb_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
@@ -136,7 +139,8 @@ void hal_sw7201_buckboost_typecb_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
 }
 
-void hal_sw7201_buckboost_usb_a_gate_en(bool en)
+void hal_sw7201_buckboost_typecb_gate_en(bool en)
+//void hal_sw7201_buckboost_usb_a_gate_en(bool en)
 {
 	printk("%s :%d\n",__func__,en);
 	uint8_t read;
@@ -297,6 +301,7 @@ void hal_sw7201_buckboost_charge_set_trickle_volt(uint16_t volt)
 	volt = (volt -2500) / 100;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Trickle_Vol,volt);
 }
+
 void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 {
 	if(volt < 3000) volt = 3000;

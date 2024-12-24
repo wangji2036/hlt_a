@@ -2,7 +2,7 @@
  * Code generation for system system '<S1>/SOCPack'
  *
  * Model                      : BMS_FixPoint
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  * Note that the functions contained in this file are part of a Simulink
@@ -42,7 +42,7 @@ void Pack_Empty(void)
   SOCPack_EmptyU_mV = div_nde_s32_floor(P_AtRateCurrent_mA *
     SOCPack_EmptyDcr_mOhm, 1000) + P_EmptyVoltage_mV;
   SOCPack_PreEmptySOC_mpct = look2_is16s32lu32n32ts_WwgFj0xk(SigPr_CellTemps_C,
-    SOCPack_EmptyU_mV, P_TAxis_degC, ConstP_s.pooled7, P_OcvSOCDsg_mpct,
+    SOCPack_EmptyU_mV, P_TAxis_degC, ConstP_s.pooled8, P_OcvSOCDsg_mpct,
     (uint32_T *)&h_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
   if (SOCPack_PreEmptySOC_mpct > 30000) {
     SOCPack_PreEmptySOC_mpct = 30000;
@@ -80,7 +80,7 @@ void SOC_Filter(void)
   SOCPack_DispUsableSocdeviation_pct = SOCPack_UsableSOC_pct -
     SOCPack_UdDisplaySOC_pct;
   if (SigPr_PackCurr_mA > 0) {
-    Lowerlimit = 100;
+    Lowerlimit = 10;
   } else {
     Lowerlimit = 0;
   }
@@ -135,11 +135,11 @@ void SOCPack(void)
 
   if (SOCPack_RealSOC_mpct <= SOCPack_EmptySOC_mpct + 2000) {
     SOCPack_UsableSOC_pct = 0;
-  } else if (SOCPack_RealSOC_mpct >= 95000) {
+  } else if (SOCPack_RealSOC_mpct >= 98000) {
     SOCPack_UsableSOC_pct = 100000;
   } else {
     SOCPack_UsableSOC_pct = ((SOCPack_RealSOC_mpct - SOCPack_EmptySOC_mpct) -
-      2000) * div_nde_s32_floor(100000, 93000 - SOCPack_EmptySOC_mpct);
+      2000) * div_nde_s32_floor(100000, 96000 - SOCPack_EmptySOC_mpct);
   }
 
   SOCPack_UsableSOC_pct_s = div_nde_s32_floor(SOCPack_UsableSOC_pct, 1000);

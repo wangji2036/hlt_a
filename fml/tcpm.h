@@ -47,5 +47,6 @@ enum wpc_work_mode
 	TCPM_WPC_WORK_PD_PPS,
 };
 
-extern uint8_t wpc_work_mode;
+extern uint8_t wpc_mode;
+extern uint8_t wpc_mode_pre;
 #endif /* FML_H_ */

@@ -243,7 +243,8 @@ uint8_t qfod_detect(void)
 			break;
 	}
 
-	if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
+	//if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
+	if (qdt_have_obj_count > 1)
 	{
 		no_obj = 0;
 		qdt_try_ping_count = 0;
@@ -319,10 +320,11 @@ void wpc_idle_dig_ping_init_128K(void)
 	pid_init();
 	mpp_power_limit_init();
 
-	if (gd->pid_volt != gd->dig_ping_volt)
+	if (gd->pid_volt != gd->dig_ping_volt || wpc_mode != wpc_mode_pre)
 	{
 		gd->pid_volt = gd->dig_ping_volt;
 		fml_adp_volt_set(gd->pid_volt);
+		wpc_mode_pre = wpc_mode;
 	}
 
 	fml_nu103x_por_rst();
@@ -377,10 +379,11 @@ void wpc_idle_dig_ping_init_360K(void)
 	ctx_switch(2);
 	pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 
-	if (gd->pid_volt != gd->dig_ping_volt)
+	if (gd->pid_volt != gd->dig_ping_volt || wpc_mode != wpc_mode_pre)
 	{
 		gd->pid_volt = gd->dig_ping_volt;
 		fml_adp_volt_set(gd->pid_volt);
+		wpc_mode_pre = wpc_mode;
 	}
 
 #ifdef _PRINT_REPING_MSG

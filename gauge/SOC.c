@@ -2,7 +2,7 @@
  * Code generation for system system '<S1>/SOC'
  *
  * Model                      : BMS_FixPoint
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  * Note that the functions contained in this file are part of a Simulink
@@ -313,7 +313,7 @@ void SOC_Correction(void)
   CellVoltsDelay = div_nde_s32_floor(ConstB_s.Add5_b * CellVoltsDelay +
     SigPr_CellVolts_mV, 10);
   SOC_VirtOCVSOC_mpct = look2_is16s32lu32n32ts_WwgFj0xk(SigPr_CellTemps_C,
-    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled7, P_OcvSOCDsg_mpct,
+    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled8, P_OcvSOCDsg_mpct,
     (uint32_T *)&hj_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
   if (SOC_VirtOCVSOC_mpct > 100000) {
     SOC_VirtOCVSOC_mpct = 100000;
@@ -329,7 +329,7 @@ void SOC_Correction(void)
        (uint32_T *)&hjj_m_bpIndex_s, 4U);
     VSOCRawSOCmpct = SOC_VirtOCVSOC_mpct - SOC_RawSOC_mpct;
     SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
-      ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
+      ConstP_s.pooled8, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
     SOC_CorrEachStep_upct = div_nde_s32_floor(SigPr_PackCurr_mA * (int32_T)
       SOC_ModelR0_mOhm, 1000);
     SOC_CorrEachStep_mpct = mul_s32_loSR(1288490189, (CellVoltsDelay -

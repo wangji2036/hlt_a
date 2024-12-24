@@ -7,7 +7,7 @@
  *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
@@ -17,7 +17,7 @@
 /* Invariant block signals (default storage) */
 const ConstB ConstB_s = {
   55000,                               /* '<S39>/Add2' */
-  -100,                                /* '<S36>/Divide1' */
+  -10,                                 /* '<S36>/Divide1' */
   9,                                   /* '<S22>/Math Function1' */
   9,                                   /* '<S32>/Add5' */
   1,                                   /* '<S20>/Minus' */

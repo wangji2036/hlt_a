@@ -7,7 +7,7 @@
  *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */

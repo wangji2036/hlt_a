@@ -7,7 +7,7 @@
  *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 7.88
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
@@ -55,7 +55,7 @@ typedef struct {
    *   '<S19>/OCV_DSG'
    *   '<S22>/SOC_Slope'
    */
-  int32_T pooled7[32];
+  int32_T pooled8[32];
 
   /* Computed Parameter: DCIR_Discharge_tableData
    * Referenced by: '<S33>/DCIR_Discharge'

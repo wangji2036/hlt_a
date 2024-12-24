@@ -49,6 +49,7 @@ extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *dat
 void hal_sw7201_buckboost_init(void);
 void hal_sw7201_buckboost_set_mode(enum buckboost_mode woke_mode);
 void hal_sw7201_buckboost_set_busiv(uint16_t vbus,uint16_t ibus);
+void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt);
 void hal_sw7201_buckboost_typeca_gate_en(bool en);
 void hal_sw7201_buckboost_typecb_gate_en(bool en);
 void hal_sw7201_buckboost_charge_ibus_limit(uint16_t ibus_limit);

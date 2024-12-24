@@ -15,6 +15,7 @@ uint16_t port_vbus = 5000;
 uint16_t qi_volt = 5000;
 uint16_t port_defualt_voltage = 5000;
 uint8_t wpc_mode = TCPM_WPC_WORK_BOOST;
+uint8_t wpc_mode_pre = TCPM_WPC_WORK_BOOST;
 uint8_t tcpm_qi_work_delay = 0;
 
 static uint8_t usba_state = 0;
@@ -90,38 +91,39 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 	switch(mode)
 	{
 		case TCPM_WPC_WORK_FIX5V:
-			gd->dig_ping_volt = 5000;
-			gd->dig_ping_perd = 144000000/127772;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 0;
+//			gd->dig_ping_volt = 5000;
+//			gd->dig_ping_perd = 144000000/127772;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 0;
 			fml_adp_type_set(EADP_TYPE_POWERBANK_05V,  5000, 5000, 5 * 2);
 		    pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/111000, 144000000/127772, 144000000/147000);
-			pid_set_duty_limit(500, 350, 150);
-			pid_set_phas_limit(0, 0, 0);
+//			pid_set_freq_limit(144000000/111000, 144000000/127772, 144000000/147000);
+//			pid_set_duty_limit(500, 350, 150);
+//			pid_set_phas_limit(0, 0, 0);
 			break;
 		case TCPM_WPC_WORK_ADP_FIX:
-			gd->dig_ping_volt = 9000;
-			gd->dig_ping_perd = 144000000/127772;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 20;
-			fml_adp_type_set(EADP_TYPE_POWERBANK_09V,  5000, 5000, 10 * 2);
+//			gd->dig_ping_volt = 9000;
+//			gd->dig_ping_perd = 144000000/127772;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 20;
+			fml_adp_type_set(EADP_TYPE_POWERBANK_09V,  9000, 9000, 10 * 2);
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_duty_limit(500, 500, 500);
-			pid_set_phas_limit( 50,  40,   0);
+//			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+//			pid_set_duty_limit(500, 500, 500);
+//			pid_set_phas_limit( 50,  40,   0);
 			break;
 		case TCPM_WPC_WORK_BOOST:
 		case TCPM_WPC_WORK_PD_PPS:
-			gd->dig_ping_volt = 9000;
-			gd->dig_ping_perd = 144000000/127772;
-			gd->dig_ping_duty = 500;
-			gd->dig_ping_phas = 20;
+//			gd->dig_ping_volt = 9000;
+//			gd->dig_ping_perd = 144000000/127772;
+//			gd->dig_ping_duty = 500;
+//			gd->dig_ping_phas = 20;
 			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
-			pid_set_duty_limit(500, 500, 500);
-			pid_set_phas_limit( 50,  40,   0);
+//			pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+//			pid_set_duty_limit(500, 500, 500);
+//			pid_set_phas_limit( 50,  40,   0);
+			printk("\r\n adapter updated! PPS");
 			break;
 	}
 
@@ -642,6 +644,7 @@ void tcpm_task_event_handler(uint32_t event)
 			if(g_buckboost.usba_state)
 			{
 				usba_state = 1;
+				usba_cnt = 0;
 				osal_set_event(USB_TASK,TCPM_EVT_USBA_PLUG);
 			}
 
@@ -650,7 +653,7 @@ void tcpm_task_event_handler(uint32_t event)
 				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
 				{
 					usba_cnt++;
-					if(usba_cnt >= 100)
+					if(usba_cnt >= 50)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
@@ -678,7 +681,7 @@ void tcpm_task_event_handler(uint32_t event)
 				qi_cnt = 0;
 			//
 
-
+			//printk("usba_state= %d usba_cnt =%d g_buckboost.usba_state=%d \n",usba_state,usba_cnt,g_buckboost.usba_state);
 			printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			break;
 
