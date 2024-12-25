@@ -66,24 +66,29 @@ struct buckboost_operations
 };
 
 
-#define BUCKBOOST_TIME_PERIOD							100
-#define BUCKBOOST_VBUS_PERIOD							5
+#define BUCKBOOST_TIME_PERIOD									100
+#define BUCKBOOST_VBUS_PERIOD									5
 
-#define BUCKBOOST_EVT_SWITCH_WORK_MODE    				osal_event_declare(0)
-#define BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT    			osal_event_declare(1)
-#define BUCKBOOST_EVT_SET_CHARGER_CURRENT    			osal_event_declare(2)
-#define BUCKBOOST_EVT_SET_DISCHG_IBUS_LIMIT    			osal_event_declare(3)
-#define BUCKBOOST_EVT_SET_CHAGER_IBUS_LIMIT    			osal_event_declare(4)
-#define BUCKBOOST_EVT_SET_CHAGER_IBAT_LIMIT    			osal_event_declare(5)
-#define BUCKBOOST_EVT_SET_VBUS_DUMMYLOAD_DISCHG    		osal_event_declare(6)
+#define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)
+#define BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT    					osal_event_declare(1)
+#define BUCKBOOST_EVT_SET_CHARGER_CURRENT    					osal_event_declare(2)
+#define BUCKBOOST_EVT_SET_DISCHG_IBUS_LIMIT    					osal_event_declare(3)
+#define BUCKBOOST_EVT_SET_CHAGER_IBUS_LIMIT    					osal_event_declare(4)
+#define BUCKBOOST_EVT_SET_CHAGER_IBAT_LIMIT    					osal_event_declare(5)
+#define BUCKBOOST_EVT_SET_VBUS_DUMMYLOAD_DISCHG    				osal_event_declare(6)
 #define BUCKBOOST_EVT_SET_TYPECA_GATE_EN    					osal_event_declare(7)
+#define BUCKBOOST_EVT_REGULATOR_WAITDONE    					osal_event_declare(8)
+#define BUCKBOOST_EVT_REGULATOR_DELAYDONE    					osal_event_declare(9)
 #define BUCKBOOST_EVT_SET_TYPECB_GATE_EN    					osal_event_declare(10)
-#define BUCKBOOST_EVT_SET_USB_A_GATE_EN    					osal_event_declare(11)
-#define BUCKBOOST_EVT_REGULATOR_WAITDONE    				osal_event_declare(8)
-#define BUCKBOOST_EVT_REGULATOR_DELAYDONE    				osal_event_declare(9)
+#define BUCKBOOST_EVT_SET_USB_A_GATE_EN    						osal_event_declare(11)
 
-#define BUCKBOOST_EVT_VBUS_PERIOD    					osal_event_declare(30)
-#define BUCKBOOST_EVT_TIME_PERIOD    					osal_event_declare(31)
+#define BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_EN    				osal_event_declare(12)
+#define BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_EN    				osal_event_declare(13)
+#define BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS    				osal_event_declare(14)
+#define BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS    				osal_event_declare(15)
+
+#define BUCKBOOST_EVT_VBUS_PERIOD    							osal_event_declare(30)
+#define BUCKBOOST_EVT_TIME_PERIOD    							osal_event_declare(31)
 
 
 void buckboost_task_init(void);

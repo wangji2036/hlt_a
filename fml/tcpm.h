@@ -4,7 +4,7 @@
 #include "typdef.h"
 #include "osal.h"
 
-
+#define DPDM_PHY_OFF						0xFF
 #define MULTI_PORT_ALT_MODE
 
 #define TCPM_EVT_TIME_PERIOD    			osal_event_declare(0)

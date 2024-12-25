@@ -15,7 +15,7 @@ void dpdm_init(void);
 
 uint16_t qc_volt = 5000;
 
-
+uint8_t dpdm_map = 0xff;
 
 //static enum dpdm_state_e dpdm_state = DPDM_OFF_STATE;
 
@@ -40,8 +40,12 @@ void usb_dpdm_select(uint8_t tc_index)
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
 	else if(tc_index == 1)
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;  //
-	else
+	else if(tc_index == 2)
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
+	else
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+
+	dpdm_map = tc_index;
 }
 
 void usb_dpdm_autodcp_en(void)

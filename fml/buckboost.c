@@ -150,6 +150,18 @@ void buckboost_task_event_handler(uint32_t event)
 		case BUCKBOOST_EVT_SET_USB_A_GATE_EN:
 			buckboost_ops.usb_a_gate_en(g_buckboost.set_usb_a_gate_en);
 			break;
+		case BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_EN:
+			buckboost_ops.typca_dischg_en(true);
+			break;
+		case BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_EN:
+			buckboost_ops.typcb_dischg_en(true);
+			break;
+		case BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS:
+			buckboost_ops.typca_dischg_en(false);
+			break;
+		case BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS:
+			buckboost_ops.typcb_dischg_en(false);
+			break;
 		default:
 			break;
 	}

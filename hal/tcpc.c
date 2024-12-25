@@ -230,11 +230,27 @@ bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 
 bool hal_tcpc_vbus_is_vsafe5v(void)
 {
-	//if(gd->vbus <= 6000) return true;
+	if(g_buckboost.adc_vbus <= 5500) return true;
+	return false;
+}
 
-	//return false;
+void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
+{
+	if(tc_index == 0)
+	{
+		if(en)
+			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_EN);
+		else
+			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS);
+	}
 
-	return true;
+	if(tc_index == 1)
+	{
+		if(en)
+			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_EN);
+		else
+			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS);
+	}
 }
 
 enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)

@@ -22,6 +22,7 @@ extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *dat
 #define REG_ADC_Data_Low						0x12
 #define REG_Indt_Control						0x18
 #define REG_Powerpath_Control 					0x19
+#define REG_RESEVERD							0x1E
 #define REG_Discharge_Setting1 					0x20
 #define REG_Discharge_Setting2 					0x21
 #define REG_Discharge_Setting3 					0x22
@@ -72,5 +73,6 @@ void hal_sw7201_buckboost_typecb_dischg(bool en);
 void hal_sw7201_buckboost_usb_a_dischg(bool en);
 void hal_sw7201_buckboost_vbus_dischg(bool en);
 uint16_t hal_sw7201_buckboost_get_bat_temperature(void);
+void hal_sw7201_buckboost_set_cv(void);
 
 #endif /* SW7201_H_ */

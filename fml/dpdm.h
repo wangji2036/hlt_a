@@ -281,7 +281,7 @@ void usb_dpdm_select(uint8_t tc_index);
 
 #define DPDM_EVT_TIMER_PERIOD    	osal_event_declare(31)
 
-
+extern uint8_t dpdm_map;
 
 
 #endif /* DPDM_H_ */
