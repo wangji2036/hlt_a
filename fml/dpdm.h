@@ -275,13 +275,24 @@ void usb_dpdm_select(uint8_t tc_index);
 #define DPDM_EVT_SNK_HVDCP_START    	osal_event_declare(17)
 #define DPDM_EVT_SNK_HVDCP_DONE    		osal_event_declare(18)
 #define DPDM_EVT_SNK_QC_START    		osal_event_declare(19)
-#define DPDM_EVT_AFC_SCP_OUT    		osal_event_declare(20)
+#define DPDM_EVT_SNK_QC_DONE    		osal_event_declare(20)
+#define DPDM_EVT_AFC_SCP_OUT    		osal_event_declare(21)
+#define DPDM_EVT_SNK_HVDCP_FAIL    		osal_event_declare(22)
 
 
 
 #define DPDM_EVT_TIMER_PERIOD    	osal_event_declare(31)
 
+enum dpdm_snk_type
+{
+	BC1P2_SDP = 0,
+	BC1P2_CDP,
+	BC1P2_DCP,
+	BC1P2_HVDCP,
+	BC1P2_QC9V,
+};
+
 extern uint8_t dpdm_map;
-
-
+extern uint8_t bc12_type;
+extern uint8_t dpdm_snk_support;
 #endif /* DPDM_H_ */

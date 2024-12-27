@@ -13,9 +13,14 @@
 #include "usb_pd.h"
 void dpdm_init(void);
 
-uint16_t qc_volt = 5000;
 
+
+uint16_t qc_volt = 5000;
+uint8_t bc12_type = 0;
 uint8_t dpdm_map = 0xff;
+uint8_t dpdm_snk_support = 0;
+
+uint8_t dpdm_snk_qc_volt = 0;
 
 //static enum dpdm_state_e dpdm_state = DPDM_OFF_STATE;
 
@@ -36,16 +41,73 @@ void dpdm_init(void)
 
 void usb_dpdm_select(uint8_t tc_index)
 {
-	if(tc_index == 0)
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
-	else if(tc_index == 1)
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;  //
-	else if(tc_index == 2)
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
-	else
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
 
+//	if(tc_index == 0)
+//	{
+//		GPA->I_EN.BITS.PIN0 = 0;
+//		GPA->O_EN.BITS.PIN0 = 0;
+//		GPA->DOUT.BITS.PIN0 = 0;
+//		GPA->ODEN.BITS.PIN0 = 0;
+//		GPA->PUEN.BITS.PIN0 = 0;
+//		GPA->PDEN.BITS.PIN0 = 0;
+//		GPA->MODE.BITS.PIN0 = 3; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
+//
+//		/* PA1 */
+//		GPA->I_EN.BITS.PIN1 = 0;
+//		GPA->O_EN.BITS.PIN1 = 0;
+//		GPA->DOUT.BITS.PIN1 = 0;
+//		GPA->ODEN.BITS.PIN1 = 0;
+//		GPA->PUEN.BITS.PIN1 = 0;
+//		GPA->PDEN.BITS.PIN1 = 0;
+//		GPA->MODE.BITS.PIN1 = 3; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
+//		GPA->ITEN.BITS.PIN1 = 0;
+//		GPA->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
+//	}
+//	else
+//	{
+//		GPA->I_EN.BITS.PIN0 = 1;
+//		GPA->O_EN.BITS.PIN0 = 0;
+//		GPA->DOUT.BITS.PIN0 = 0;
+//		GPA->ODEN.BITS.PIN0 = 1;
+//		GPA->PUEN.BITS.PIN0 = 0;
+//		GPA->PDEN.BITS.PIN0 = 0;
+//		GPA->MODE.BITS.PIN0 = 0; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
+//
+//		/* PA1 */
+//		GPA->I_EN.BITS.PIN1 = 1;
+//		GPA->O_EN.BITS.PIN1 = 0;
+//		GPA->DOUT.BITS.PIN1 = 0;
+//		GPA->ODEN.BITS.PIN1 = 1;
+//		GPA->PUEN.BITS.PIN1 = 0;
+//		GPA->PDEN.BITS.PIN1 = 0;
+//		GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
+//		GPA->ITEN.BITS.PIN1 = 0;
+//		GPA->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
+//	}
+
+	if(tc_index == 0)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
+	}
+	else if(tc_index == 1)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;  //
+	}
+	else if(tc_index == 2)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
+	}
+	else
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+	}
+
+
+	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	dpdm_map = tc_index;
+	printk("dpdm_map=%d\n",dpdm_map);
 }
 
 void usb_dpdm_autodcp_en(void)
@@ -58,7 +120,7 @@ void usb_dpdm_autodcp_en(void)
 	DPDM->SOURCE_CTRL.BITS.EN_AFC_SRC_DET = 1;
 	DPDM->SOURCE_CTRL.BITS.EN_SCP_SRC_DET = 1;
 	DPDM->SOURCE_CTRL.BITS.EN_900K_PD = 1;
-	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 1;
+
 	//
 
 	DPDM->HVDCP_CTRL.BITS.DP_FAIL_DEG = 3;
@@ -185,8 +247,16 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			qc_deinit();
 			break;
 		case DPDM_EVT_SNK_BC12DONE:
-			osal_start_timerEx(DPDM_SINK_TIMER, 25, 25, USB_DPDM_TASK, DPDM_EVT_SNK_HVDCP_START);
-			printk("bc12_type = %d\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE);
+			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x02)
+				bc12_type = BC1P2_CDP;
+			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
+				bc12_type = BC1P2_DCP;
+			else
+				bc12_type = BC1P2_SDP;
+			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03) //DCP
+				osal_start_timerEx(DPDM_SINK_TIMER, 25, 0, USB_DPDM_TASK, DPDM_EVT_SNK_HVDCP_START);
+			else
+
 			break;
 		case DPDM_EVT_SNK_HVDCP_START:
 			osal_stop_timerEx(DPDM_SINK_TIMER);
@@ -197,12 +267,43 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 		case DPDM_EVT_SNK_HVDCP_DONE:
 			printk("hvdcp done\n");
-			osal_start_timerEx(DPDM_SINK_TIMER, 50, 50, USB_DPDM_TASK, DPDM_EVT_SNK_QC_START);
+			//osal_set_event(USB_TASK,TCPM_EVT_HVDCP_DONE);
+
+			if(dpdm_snk_support == 1 && g_usb_pd_s.explicit_contract == 0)
+			{
+				osal_start_timerEx(DPDM_SINK_TIMER, 50, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_START);
+			}
+			else
+			{
+				bc12_type = BC1P2_HVDCP;
+				osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
+			}
+			break;
+		case DPDM_EVT_SNK_HVDCP_FAIL:
+			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
-			printk("Set Qc 9V\n");
-			osal_stop_timerEx(DPDM_SINK_TIMER);
-			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x01;
+			//printk("Set Qc 9V\n");
+			//osal_stop_timerEx(DPDM_SINK_TIMER);
+			//DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x01;
+			qc2_set_volt(9000);
+			bc12_type = BC1P2_QC9V;
+			osal_start_timerEx(DPDM_SINK_TIMER, 100, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_DONE);
+			break;
+
+		case DPDM_EVT_SNK_QC_DONE:
+			printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
+			if(g_buckboost.adc_vbus >= 8000)
+			{
+				bc12_type = BC1P2_QC9V;
+				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+			}
+			else
+			{
+				qc2_set_volt(5000);
+				bc12_type = BC1P2_HVDCP;
+			}
+			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		default:
 			break;

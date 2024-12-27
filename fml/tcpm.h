@@ -4,6 +4,10 @@
 #include "typdef.h"
 #include "osal.h"
 
+#define VOLTAGE_5V 	 	5000
+#define VOLTAGE_9V  	9000
+#define VOLTAGE_12V  	12000
+
 #define DPDM_PHY_OFF						0xFF
 #define MULTI_PORT_ALT_MODE
 
@@ -31,6 +35,8 @@
 
 #define TCPM_EVT_PD_READY			   		osal_event_declare(16)
 #define TCPM_EVT_QI_SET_VOLT			   	osal_event_declare(17)
+#define TCPM_EVT_HVDCP_DONE					osal_event_declare(18)
+#define TCPM_EVT_DPDM_DONE					osal_event_declare(19)
 
 void tcpm_task_init(void);
 void tcpm_task_event_handler(uint32_t event);
@@ -45,6 +51,7 @@ enum wpc_work_mode
 	TCPM_WPC_WORK_BOOST,
 	TCPM_WPC_WORK_ADP_FIX,
 	TCPM_WPC_WORK_PD_PPS,
+	TCPM_WPC_WORK_DISABLE,
 };
 
 extern uint8_t wpc_mode;

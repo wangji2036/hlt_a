@@ -3,10 +3,10 @@
 #include "dpdm.h"
 #include "delay.h"
 #include "printk.h"
+#include "tcpm.h"
 
 void qc_init(void)
 {
-	DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.DPDM_EN = 1;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.BC1P2_EN = 1;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.BC1P2_DET_DONE_INT_MASK = 0;
@@ -18,7 +18,6 @@ void qc_init(void)
 
 void qc_deinit(void)
 {
-	DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.DPDM_EN = 0;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.BC1P2_EN = 0;
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.BC1P2_DET_DONE_INT_MASK = 1;
@@ -28,10 +27,23 @@ void qc_deinit(void)
 	printk("bc12_deinit\n");
 }
 
-void qc2_set_volt(void)
+void qc2_set_volt(uint16_t qc_volt)
 {
-
+	switch(qc_volt)
+	{
+		case VOLTAGE_5V:
+			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x03;
+			break;
+		case VOLTAGE_9V:
+			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x01;
+			break;
+		case VOLTAGE_12V:
+			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x00;
+			break;
+	}
+	printk("qc set =%d\n",qc_volt);
 }
+
 
 void qc3_set_volt(void)
 {
@@ -57,11 +69,11 @@ void __attribute__((isr)) DPDM_SINK_IRQHandler(void)
 		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_HVDCP_DONE);
 	}
 
-	if(DPDM_QC_SINK->QC_INT_FLAG.BITS.HVDCP_DET_OK_INT_FLAG)
+	if(DPDM_QC_SINK->QC_INT_FLAG.BITS.HVDCP_DET_FAIL_INT_FLAG)
 	{
-		DPDM_QC_SINK->QC_INT_FLAG.BITS.HVDCP_DET_OK_INT_FLAG = 1;
+		DPDM_QC_SINK->QC_INT_FLAG.BITS.HVDCP_DET_FAIL_INT_FLAG = 1;
+		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_HVDCP_FAIL);
 	}
-
 }
 
 

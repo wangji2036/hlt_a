@@ -158,6 +158,7 @@ typedef struct {
 
 void qc_init(void);
 void qc_deinit(void);
+void qc2_set_volt(uint16_t qc_volt);
 
 
 #endif /* USB_QC_H_ */

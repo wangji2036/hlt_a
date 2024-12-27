@@ -87,7 +87,7 @@ void hal_vic_init(void)
 //	VIC_vEnableIRQ(IRQn_I2CM  ); VIC_vSetPriority(IRQn_I2CM,   1);
 	VIC_vEnableIRQ(IRQn_USBPD ); VIC_vSetPriority(IRQn_USBPD,  0);
 //	VIC_vEnableIRQ(IRQn_UFCS  ); VIC_vSetPriority(IRQn_UFCS,   2);
-//	VIC_vEnableIRQ(IRQn_DPDM_SINK); VIC_vSetPriority(IRQn_DPDM_SINK, 1);
+	VIC_vEnableIRQ(IRQn_DPDM_SINK); VIC_vSetPriority(IRQn_DPDM_SINK, 1);
 	VIC_vEnableIRQ(IRQn_DCP_HVDCP); VIC_vSetPriority(IRQn_DCP_HVDCP, 1);
 	VIC_vEnableIRQ(IRQn_QC_SRC); VIC_vSetPriority(IRQn_QC_SRC, 1);
 	VIC_vEnableIRQ(IRQn_AFC_SCP_SRC); VIC_vSetPriority(IRQn_AFC_SCP_SRC, 1);

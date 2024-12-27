@@ -11,7 +11,7 @@
 #define SINK_PDO_MATCH_MODE_VOLTAGE					0
 #define SINK_PDO_MATCH_MODE_VOLTAGE_CURRENT			1
 
-
+extern const struct usb_pd_state_task_t usb_pd_tasks_table[];
 
 static uint32_t usb_pd_event = 0;
 static uint8_t usb_pd_state = 0;
@@ -427,7 +427,8 @@ static void PE_SNK_Ready_Entry(void)
 		printk("snk port_vbus = %d\n",port_vbus);
 	}
 
-	osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
+	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
+	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
 }
 
 static void PE_SNK_Ready_Exit(void)
@@ -706,7 +707,8 @@ static void PE_SRC_Ready_Entry(void)
 	usb_pd_timer_start(SourcePPSCommTimer,tSinkPPSPeriodicTime);
 	usb_pd_set_state(PE_SRC_Ready,exit_state);
 	g_usb_pd_s.pe_timer_cnt = 0;
-	osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
+	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
+	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
 	//usbpd_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
 }
 
@@ -1184,73 +1186,6 @@ static void PE_PRS_SNK_SRC_Send_Swap_Exit(void)
 }
 #endif
 
-//this table must map to usb_pd_enum one by one
-const static struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
-{
-	//for snk
-
-	{PE_SNK_RSC_Disable_Entry,PE_SNK_RSC_Disable_Exit},									//PE_SNK_RSC_Disable
-#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
-	{PE_SNK_Startup_Entry,PE_SNK_Startup_Exit},											//PE_SNK_Startup,
-	{PE_SNK_Discovery_Entry,PE_SNK_Discovery_Exit},										//PE_SNK_Discovery,
-	{PE_SNK_Wait_for_Capabilities_Entry,PE_SNK_Wait_for_Capabilities_Exit},				//PE_SNK_Wait_for_Capabilities,
-	{PE_SNK_Evaluate_Capability_Entry,PE_SNK_Evaluate_Capability_Exit},					//PE_SNK_Evaluate_Capability,
-	{PE_SNK_Select_Capability_Entry,PE_SNK_Select_Capability_Exit},						//PE_SNK_Select_Capability,
-	{PE_SNK_Transition_Sink_Entry,PE_SNK_Transition_Sink_Exit},							//PE_SNK_Transition_Sink,
-	{PE_SNK_Ready_Entry,PE_SNK_Ready_Exit},												//PE_SNK_Ready,
-	{PE_SNK_Hard_Reset_Entry,PE_SNK_Hard_Reset_Exit},									//PE_SNK_Hard_Reset,
-	{PE_SNK_Transition_to_default_Entry,PE_SNK_Transition_to_default_Exit},				//PE_SNK_Transition_to_default,
-	{PE_SNK_Give_Sink_Cap_Entry,PE_SNK_Give_Sink_Cap_Exit},								//PE_SNK_Give_Sink_Cap,
-	{PE_SNK_Send_Soft_Reset_Entry,PE_SNK_Send_Soft_Reset_Exit},							//PE_SNK_Send_Soft_Reset,
-	{PE_SNK_Soft_Reset_Entry,PE_SNK_Soft_Reset_Exit},									//PE_SNK_Soft_Reset,
-	{PE_SNK_Not_Supported_Received_Entry,PE_SNK_Not_Supported_Received_Exit},			//PE_SNK_Not_Supported_Received,
-	{PE_SNK_Send_Not_Supported_Entry,PE_SNK_Send_Not_Supported_Exit},					//PE_SNK_Send_Not_Supported,
-	{PE_SNK_Give_Sink_Cap_Ext_Entry,PE_SNK_Give_Sink_Cap_Ext_Exit},						//PE_SNK_Give_Sink_Cap_Ext
-#endif
-
-	//for source
-#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
-	{PE_SRC_Startup_Entry,PE_SRC_Startup_Exit},											//PE_SRC_Startup,
-	{PE_SRC_Discovery_Entry,PE_SRC_Discovery_Exit},										//PE_SRC_Discovery,
-	{PE_SRC_Send_Capabilities_Entry,PE_SRC_Send_Capabilities_Exit},						//PE_SRC_Send_Capabilities,
-	{PE_SRC_Negotiate_Capability_Entry,PE_SRC_Negotiate_Capability_Exit},				//PE_SRC_Negotiate_Capability,
-	{PE_SRC_Transition_Supply_Entry,PE_SRC_Transition_Supply_Exit},						//PE_SRC_Transition_Supply,
-	{PE_SRC_Ready_Entry,PE_SRC_Ready_Exit},												//PE_SRC_Ready,
-	{PE_SRC_Disabled_Entry,PE_SRC_Disabled_Exit},										//PE_SRC_Disabled,
-	{PE_SRC_Capability_Response_Entry,PE_SRC_Capability_Response_Exit},					//PE_SRC_Capability_Response,
-	{PE_SRC_Hard_Reset_Entry,PE_SRC_Hard_Reset_Exit},									//PE_SRC_Hard_Reset,
-	{PE_SRC_Hard_Reset_Received_Entry,PE_SRC_Hard_Reset_Received_Exit},					//PE_SRC_Hard_Reset_Received,
-	{PE_SRC_Transition_to_default_Entry,PE_SRC_Transition_to_default_Exit},				//PE_SRC_Transition_to_default,
-	{PE_SRC_Give_Source_Cap_Entry,PE_SRC_Give_Source_Cap_Exit},							//PE_SRC_Give_Source_Cap,
-	{PE_SRC_Wait_New_Capabilities_Entry,PE_SRC_Wait_New_Capabilities_Exit},				//PE_SRC_Wait_New_Capabilities,
-	{PE_SRC_Send_Soft_Reset_Entry,PE_SRC_Send_Soft_Reset_Exit},							//PE_SRC_Send_Soft_Reset,//28
-	{PE_SRC_Soft_Reset_Entry,PE_SRC_Soft_Reset_Exit},									//PE_SRC_Soft_Reset,
-	{PE_SRC_Not_Supported_Received_Entry,PE_SRC_Not_Supported_Received_Exit},			//PE_SRC_Not_Supported_Received,
-	{PE_SRC_Send_Not_Supported_Entry,PE_SRC_Send_Not_Supported_Exit},					//PE_SRC_Send_Not_Supported,
-#endif
-	{PE_Give_Revision_Entry,PE_Give_Revision_Exit},										//PE_Get_Revision,
-	{PE_SRC_SNK_Chunk_Received_Entry,PE_SRC_SNK_Chunk_Received_Exit},					//PE_SRC_SNK_Chunk_Received
-	{PE_BIST_Carrier_Mode_Entry,PE_BIST_Carrier_Mode_Exit},								//PE_BIST_Carrier_Mode,
-	{PE_BIST_Test_Mode_Entry,PE_BIST_Test_Mode_Exit},									//PE_BIST_Test_Mode,
-	//for drp
-#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
-	{PE_PRS_SRC_SNK_Evaluate_Swap_Entry,PE_PRS_SRC_SNK_Evaluate_Swap_Exit},				//PE_PRS_SRC_SNK_Evaluate_Swap,
-	{PE_PRS_SRC_SNK_Accept_Swap_Entry,PE_PRS_SRC_SNK_Accept_Swap_Exit},					//PE_PRS_SRC_SNK_Accept_Swap,
-	{PE_PRS_SRC_SNK_Transition_to_off_Entry,PE_PRS_SRC_SNK_Transition_to_off_Exit},		//PE_PRS_SRC_SNK_Transition_to_off,
-	{PE_PRS_SRC_SNK_Assert_Rd_Entry,PE_PRS_SRC_SNK_Assert_Rd_Exit},						//PE_PRS_SRC_SNK_Assert_Rd,
-	{PE_PRS_SRC_SNK_Wait_Source_on_Entry,PE_PRS_SRC_SNK_Wait_Source_on_Exit},			//PE_PRS_SRC_SNK_Wait_Source_on,
-	{PE_PRS_SRC_SNK_Send_Swap_Entry,PE_PRS_SRC_SNK_Send_Swap_Exit},						//PE_PRS_SRC_SNK_Send_Swap,
-	{PE_PRS_SRC_SNK_Reject_PR_Swap_Entry,PE_PRS_SRC_SNK_Reject_PR_Swap_Exit},			//PE_PRS_SRC_SNK_Reject_PR_Swap,
-	{PE_PRS_SNK_SRC_Evaluate_Swap_Entry,PE_PRS_SNK_SRC_Evaluate_Swap_Exit},				//PE_PRS_SNK_SRC_Evaluate_Swap,
-	{PE_PRS_SNK_SRC_Accept_Swap_Entry,PE_PRS_SNK_SRC_Accept_Swap_Exit},					//PE_PRS_SNK_SRC_Accept_Swap,
-	{PE_PRS_SNK_SRC_Transition_to_off_Entry,PE_PRS_SNK_SRC_Transition_to_off_Exit},		//PE_PRS_SNK_SRC_Transition_to_off,
-	{PE_PRS_SNK_SRC_Assert_Rp_Entry,PE_PRS_SNK_SRC_Assert_Rp_Exit},						//PE_PRS_SNK_SRC_Assert_Rp,
-	{PE_PRS_SNK_SRC_Source_on_Entry,PE_PRS_SNK_SRC_Source_on_Exit},						//PE_PRS_SNK_SRC_Source_on,
-	{PE_PRS_SNK_SRC_Reject_Swap_Entry,PE_PRS_SNK_SRC_Reject_Swap_Exit},					//PE_PRS_SNK_SRC_Reject_Swap,
-	{PE_PRS_SNK_SRC_Send_Swap_Entry,PE_PRS_SNK_SRC_Send_Swap_Exit},						//PE_PRS_SNK_SRC_Send_Swap,
-#endif
-	//other
-};
 
 
 
@@ -2455,3 +2390,72 @@ void __attribute__((isr)) USBPD_IRQHandler(void)
     } while(int_flag & int_ctrl);
 
 }
+
+//this table must map to usb_pd_enum one by one
+const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
+{
+	//for snk
+
+	{PE_SNK_RSC_Disable_Entry,PE_SNK_RSC_Disable_Exit},									//PE_SNK_RSC_Disable
+#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
+	{PE_SNK_Startup_Entry,PE_SNK_Startup_Exit},											//PE_SNK_Startup,
+	{PE_SNK_Discovery_Entry,PE_SNK_Discovery_Exit},										//PE_SNK_Discovery,
+	{PE_SNK_Wait_for_Capabilities_Entry,PE_SNK_Wait_for_Capabilities_Exit},				//PE_SNK_Wait_for_Capabilities,
+	{PE_SNK_Evaluate_Capability_Entry,PE_SNK_Evaluate_Capability_Exit},					//PE_SNK_Evaluate_Capability,
+	{PE_SNK_Select_Capability_Entry,PE_SNK_Select_Capability_Exit},						//PE_SNK_Select_Capability,
+	{PE_SNK_Transition_Sink_Entry,PE_SNK_Transition_Sink_Exit},							//PE_SNK_Transition_Sink,
+	{PE_SNK_Ready_Entry,PE_SNK_Ready_Exit},												//PE_SNK_Ready,
+	{PE_SNK_Hard_Reset_Entry,PE_SNK_Hard_Reset_Exit},									//PE_SNK_Hard_Reset,
+	{PE_SNK_Transition_to_default_Entry,PE_SNK_Transition_to_default_Exit},				//PE_SNK_Transition_to_default,
+	{PE_SNK_Give_Sink_Cap_Entry,PE_SNK_Give_Sink_Cap_Exit},								//PE_SNK_Give_Sink_Cap,
+	{PE_SNK_Send_Soft_Reset_Entry,PE_SNK_Send_Soft_Reset_Exit},							//PE_SNK_Send_Soft_Reset,
+	{PE_SNK_Soft_Reset_Entry,PE_SNK_Soft_Reset_Exit},									//PE_SNK_Soft_Reset,
+	{PE_SNK_Not_Supported_Received_Entry,PE_SNK_Not_Supported_Received_Exit},			//PE_SNK_Not_Supported_Received,
+	{PE_SNK_Send_Not_Supported_Entry,PE_SNK_Send_Not_Supported_Exit},					//PE_SNK_Send_Not_Supported,
+	{PE_SNK_Give_Sink_Cap_Ext_Entry,PE_SNK_Give_Sink_Cap_Ext_Exit},						//PE_SNK_Give_Sink_Cap_Ext
+#endif
+
+	//for source
+#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
+	{PE_SRC_Startup_Entry,PE_SRC_Startup_Exit},											//PE_SRC_Startup,
+	{PE_SRC_Discovery_Entry,PE_SRC_Discovery_Exit},										//PE_SRC_Discovery,
+	{PE_SRC_Send_Capabilities_Entry,PE_SRC_Send_Capabilities_Exit},						//PE_SRC_Send_Capabilities,
+	{PE_SRC_Negotiate_Capability_Entry,PE_SRC_Negotiate_Capability_Exit},				//PE_SRC_Negotiate_Capability,
+	{PE_SRC_Transition_Supply_Entry,PE_SRC_Transition_Supply_Exit},						//PE_SRC_Transition_Supply,
+	{PE_SRC_Ready_Entry,PE_SRC_Ready_Exit},												//PE_SRC_Ready,
+	{PE_SRC_Disabled_Entry,PE_SRC_Disabled_Exit},										//PE_SRC_Disabled,
+	{PE_SRC_Capability_Response_Entry,PE_SRC_Capability_Response_Exit},					//PE_SRC_Capability_Response,
+	{PE_SRC_Hard_Reset_Entry,PE_SRC_Hard_Reset_Exit},									//PE_SRC_Hard_Reset,
+	{PE_SRC_Hard_Reset_Received_Entry,PE_SRC_Hard_Reset_Received_Exit},					//PE_SRC_Hard_Reset_Received,
+	{PE_SRC_Transition_to_default_Entry,PE_SRC_Transition_to_default_Exit},				//PE_SRC_Transition_to_default,
+	{PE_SRC_Give_Source_Cap_Entry,PE_SRC_Give_Source_Cap_Exit},							//PE_SRC_Give_Source_Cap,
+	{PE_SRC_Wait_New_Capabilities_Entry,PE_SRC_Wait_New_Capabilities_Exit},				//PE_SRC_Wait_New_Capabilities,
+	{PE_SRC_Send_Soft_Reset_Entry,PE_SRC_Send_Soft_Reset_Exit},							//PE_SRC_Send_Soft_Reset,//28
+	{PE_SRC_Soft_Reset_Entry,PE_SRC_Soft_Reset_Exit},									//PE_SRC_Soft_Reset,
+	{PE_SRC_Not_Supported_Received_Entry,PE_SRC_Not_Supported_Received_Exit},			//PE_SRC_Not_Supported_Received,
+	{PE_SRC_Send_Not_Supported_Entry,PE_SRC_Send_Not_Supported_Exit},					//PE_SRC_Send_Not_Supported,
+#endif
+	{PE_Give_Revision_Entry,PE_Give_Revision_Exit},										//PE_Get_Revision,
+	{PE_SRC_SNK_Chunk_Received_Entry,PE_SRC_SNK_Chunk_Received_Exit},					//PE_SRC_SNK_Chunk_Received
+	{PE_BIST_Carrier_Mode_Entry,PE_BIST_Carrier_Mode_Exit},								//PE_BIST_Carrier_Mode,
+	{PE_BIST_Test_Mode_Entry,PE_BIST_Test_Mode_Exit},									//PE_BIST_Test_Mode,
+	//for drp
+#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
+	{PE_PRS_SRC_SNK_Evaluate_Swap_Entry,PE_PRS_SRC_SNK_Evaluate_Swap_Exit},				//PE_PRS_SRC_SNK_Evaluate_Swap,
+	{PE_PRS_SRC_SNK_Accept_Swap_Entry,PE_PRS_SRC_SNK_Accept_Swap_Exit},					//PE_PRS_SRC_SNK_Accept_Swap,
+	{PE_PRS_SRC_SNK_Transition_to_off_Entry,PE_PRS_SRC_SNK_Transition_to_off_Exit},		//PE_PRS_SRC_SNK_Transition_to_off,
+	{PE_PRS_SRC_SNK_Assert_Rd_Entry,PE_PRS_SRC_SNK_Assert_Rd_Exit},						//PE_PRS_SRC_SNK_Assert_Rd,
+	{PE_PRS_SRC_SNK_Wait_Source_on_Entry,PE_PRS_SRC_SNK_Wait_Source_on_Exit},			//PE_PRS_SRC_SNK_Wait_Source_on,
+	{PE_PRS_SRC_SNK_Send_Swap_Entry,PE_PRS_SRC_SNK_Send_Swap_Exit},						//PE_PRS_SRC_SNK_Send_Swap,
+	{PE_PRS_SRC_SNK_Reject_PR_Swap_Entry,PE_PRS_SRC_SNK_Reject_PR_Swap_Exit},			//PE_PRS_SRC_SNK_Reject_PR_Swap,
+	{PE_PRS_SNK_SRC_Evaluate_Swap_Entry,PE_PRS_SNK_SRC_Evaluate_Swap_Exit},				//PE_PRS_SNK_SRC_Evaluate_Swap,
+	{PE_PRS_SNK_SRC_Accept_Swap_Entry,PE_PRS_SNK_SRC_Accept_Swap_Exit},					//PE_PRS_SNK_SRC_Accept_Swap,
+	{PE_PRS_SNK_SRC_Transition_to_off_Entry,PE_PRS_SNK_SRC_Transition_to_off_Exit},		//PE_PRS_SNK_SRC_Transition_to_off,
+	{PE_PRS_SNK_SRC_Assert_Rp_Entry,PE_PRS_SNK_SRC_Assert_Rp_Exit},						//PE_PRS_SNK_SRC_Assert_Rp,
+	{PE_PRS_SNK_SRC_Source_on_Entry,PE_PRS_SNK_SRC_Source_on_Exit},						//PE_PRS_SNK_SRC_Source_on,
+	{PE_PRS_SNK_SRC_Reject_Swap_Entry,PE_PRS_SNK_SRC_Reject_Swap_Exit},					//PE_PRS_SNK_SRC_Reject_Swap,
+	{PE_PRS_SNK_SRC_Send_Swap_Entry,PE_PRS_SNK_SRC_Send_Swap_Exit},						//PE_PRS_SNK_SRC_Send_Swap,
+#endif
+	//other
+};
+
