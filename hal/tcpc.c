@@ -230,7 +230,7 @@ bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 
 bool hal_tcpc_vbus_is_vsafe5v(void)
 {
-	if(g_buckboost.adc_vbus <= 5500) return true;
+	if(g_buckboost.adc_vbus <= 5500 && g_buckboost.adc_vbus >= 4000) return true;
 	return false;
 }
 
@@ -255,15 +255,6 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 
 enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)
 {
-	/*
-	printk("CCA_STAT = 0x%x\n",TCPC->CCA_STAT.WORD);
-	if(TCPC->CCA_STAT.BITS.DRP_STATUS == 0) return TYPEC_DRP_NO_CONNECT;
-	if(TCPC->CCA_STAT.BITS.DRP_RESULT)
-		return TYPEC_DRP_SRC_CONNECT;
-	else
-		return TYPEC_DRP_SNK_CONNECT;
-	*/
-	//printk("FSM_STAT = 0x%x\n",TCPC->FSM_STAT.WORD);
 
 	uint32_t  cc_stat = 0;
 
@@ -304,7 +295,7 @@ void hal_tcpc_set_pwr_role(uint8_t tc_index,enum pwr_role_e role)
 
 void hal_tcpc_set_gate_en(uint8_t tc_index,bool en)
 {
-	printk("%s [%d]:%d\n",__func__,tc_index,en);
+	printk("gate[%d]:%d\n",tc_index,en);
 	if(tc_index == 0)
 		buckboost_set_typeca_gate_en(en);
 	else if(tc_index == 1)

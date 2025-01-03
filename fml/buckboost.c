@@ -4,6 +4,7 @@
 #include "printk.h"
 #include "tcpm.h"
 #include "typec.h"
+#include "port_manager.h"
 
 struct buckboost_s  g_buckboost;
 
@@ -76,6 +77,7 @@ void buckboost_task_init(void)
 	g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 
+
 //	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 //	buckboost_set_bus_iv(5000,3000,0,0);
 }
@@ -101,10 +103,14 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 			else if(g_buckboost.adc_vbat > 6500)
 			{
-				g_tc[TYPEC_PORT_A].is_deadbattery = 0;
-				g_tc[TYPEC_PORT_B].is_deadbattery = 0;
+				if(g_tc[TYPEC_PORT_A].is_deadbattery)
+				{
+					g_tc[TYPEC_PORT_A].is_deadbattery = 0;
+					g_tc[TYPEC_PORT_B].is_deadbattery = 0;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
 			}
-			printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
+			//printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:

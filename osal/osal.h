@@ -32,6 +32,9 @@ enum {
 	GAUGE_TIMER   = 22,
 
 	BUCKBOOST_VBUS_TIMER = 23,
+
+	PORT_ENUM_TIMER = 24,
+	PORT_CONNECT_TIMER = 25,
 	/////////////
 	MAX_TIMER,
 };
@@ -44,6 +47,8 @@ enum {
 	APL_TASK = 4,
 	BUCKBOOST_TASK = 5,
 	USB_DPDM_TASK = 6,
+
+	PORT_MANAGER_TASK = 7,
 	/////////////
 	MAX_TASK,
 };

@@ -8,9 +8,9 @@
 #define USBPD_POWER_ROLR_SRC						0x02
 #define USBPD_POWER_ROLR_DRP						(USBPD_POWER_ROLR_SRC | USBPD_POWER_ROLR_SNK)
 
-#define TYPEC_PORT_A							0
-#define TYPEC_PORT_B							1
-#define TYPEC_PORT_MAX_N						2
+#define TYPEC_PORT_A								0
+#define TYPEC_PORT_B								1
+#define TYPEC_PORT_MAX_N							2
 #define TC_PORT_CCA									0x01
 #define TC_PORT_CCB									0x02
 #define TC_PORT_CCA_CCB								(TC_PORT_CCA | TC_PORT_CCB)

@@ -414,7 +414,7 @@ void wpc_task_event_handler(uint32_t event)
 			gd->isns_avg = (gd->isns_avg + hal_badc_meas(_BADC_CH_PD6_ADC3)) >> 1;
 			gd->vpwr_avg = (gd->vpwr_avg + g_buckboost.adc_vbus) >> 1;//; hal_badc_meas(_BADC_CH_PB6_ADC7)
 			gd->tx_power = gd->isns_avg * gd->vpwr_avg / 1000;
-			printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp);
+			//printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp);
 			break;
 		case WPC_EVT_FSK_RESP_DONE:
 //			if (gd->tx_infos.fsk_done_event & 1)

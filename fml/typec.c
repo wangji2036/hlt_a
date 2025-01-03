@@ -7,7 +7,7 @@
 #include "osal.h"
 #include "usbpd_config.h"
 #include "_wpc.h"
-
+#include "port_manager.h"
 
 struct tc_s g_tc[TYPEC_PORT_MAX_N] = {};
 
@@ -78,17 +78,13 @@ void usb_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_
 	tc->usb_tc_state = tc_state;
 	tc->usb_tc_substate = tc_substate;
 
-	if(tc->tc_index == 0 && tc_substate == enter_state)
-		osal_set_event(USB_TASK,TCPM_EVT_TYPECA_PORT_STATE_CHANGE);
-
-	if(tc->tc_index == 1 && tc_substate == enter_state)
-		osal_set_event(USB_TASK,TCPM_EVT_TYPECB_PORT_STATE_CHANGE);
 	usbpd_printk("tc[%d]_state = %d,%d\n",tc->tc_index, tc_state,tc_substate);
 }
 
 static void TC_Disable_Entry(struct tc_s * tc)
 {
-
+	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_OPEN);
+	usb_tc_set_state(tc,TC_Disable,exit_state);
 }
 static void TC_Disable_Exit(struct tc_s * tc)
 {
@@ -123,6 +119,10 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
         else
         	tc->polarity = TYPEC_POLARITY_CC2;
         usb_tc_set_state(tc,TC_SNK_AttachWait,enter_state);
+        if(tc->tc_index == 0)
+        	port_manager_set_event(PORT0_EVENT_TRY_CONNECT);
+        else
+        	port_manager_set_event(PORT1_EVENT_TRY_CONNECT);
     }
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
     else
@@ -170,7 +170,7 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
         if(hal_tcpc_vbus_is_present(tc->tc_index))
         {
 			#if(CONFIG_TC_TRY_SOURCE_SUPPORT_EN)
-				if(tc->try_src_cnt >= 5)
+				if(tc->try_src_cnt >= 5 || tc->is_deadbattery)
 					usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
 				else
 				{
@@ -194,18 +194,17 @@ static void TC_SNK_Attached_Entry(struct tc_s * tc)
 #ifndef MULTI_PORT_ALT_MODE
     hal_tcpc_set_gate_en(tc->tc_index,true);
 #endif
-	usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_ATTACHED);
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
     usb_tc_set_state(tc,TC_SNK_Attached,exit_state);
 
-    //osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
-    //osal_start_timerEx(DPDM_SINK_TIMER, 200, 200, USB_DPDM_TASK, DPDM_EVT_SNK_ATTACHED);
-    //usbpd_printk("PHY_CTRL= 0x%x\n", TCPC->PHY_CTRL.WORD);
-    //usbpd_printk("CCA_ROLE= 0x%x\n", TCPC->CCA_ROLE.WORD);
-    //usbpd_printk("RXD_CTRL= 0x%x\n", TCPC->RXD_CTRL.WORD);
-
+    if(tc->tc_index == PORT0_INDEX)
+    	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
+    else
+    	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS);
 }
+
+
 static void TC_SNK_Attached_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
@@ -223,6 +222,10 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 			usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 			osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
+            if(tc->tc_index == 0)
+            	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+            else
+            	port_manager_set_event(PORT1_EVENT_UNCONNECT);
 		}
 	}
 	else
@@ -263,7 +266,10 @@ static void TC_SRC_Unattached_Exit(struct tc_s * tc)
             tc->polarity = TYPEC_POLARITY_CC1;
         else
         	tc->polarity = TYPEC_POLARITY_CC2;
-
+        if(tc->tc_index == 0)
+        	port_manager_set_event(PORT0_EVENT_TRY_CONNECT);
+        else
+        	port_manager_set_event(PORT1_EVENT_TRY_CONNECT);
         usb_tc_set_state(tc,TC_SRC_AttachWait,enter_state);
     }
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -328,8 +334,6 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 }
 static void TC_SRC_Attached_Entry(struct tc_s * tc)
 {
-
-    usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_ATTACHED);
 	tc->tc_timer_cnt = 0;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 #ifndef MULTI_PORT_ALT_MODE
@@ -337,6 +341,11 @@ static void TC_SRC_Attached_Entry(struct tc_s * tc)
 	osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 #endif
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
+
+    if(tc->tc_index == PORT0_INDEX)
+    	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
+    else
+    	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS);
 }
 static void TC_SRC_Attached_Exit(struct tc_s * tc)
 {
@@ -352,6 +361,10 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_UNATTACH);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 			usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+            if(tc->tc_index == 0)
+            	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+            else
+            	port_manager_set_event(PORT1_EVENT_UNCONNECT);
 		}
 	}
 	else
@@ -401,6 +414,14 @@ static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
     hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_TOGGLE);
     usb_tc_set_state(tc,TC_DRP_TOGGLE,exit_state);
+
+    if(g_port.inhandle_port == tc->tc_index && g_port.state == PORT_INHANDLING)
+    {
+    	if(tc->tc_index == 0)
+    		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_CLOSED);
+    	else
+    		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_CLOSED);
+    }
 }
 
 static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)

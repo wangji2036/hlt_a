@@ -138,6 +138,7 @@ void usb_pd_requsrt_voltage(uint32_t pdo_position,uint16_t voltage,uint16_t curr
 		uint16_t max_current = pdo_max_current(source_pdo);
 		max_current = current < max_current ? current : max_current;
 		g_usb_pd_s.snk_rdo = RDO_FIXED(pdo_position, max_current, max_current, 0);
+		g_usb_pd_s.is_in_pps = 0;
 	}
 	usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SNK_SET_VOLTAGE);
 }

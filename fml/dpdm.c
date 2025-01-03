@@ -11,10 +11,9 @@
 #include "afc_scp.h"
 #include "usb_qc.h"
 #include "usb_pd.h"
+#include "port_manager.h"
+
 void dpdm_init(void);
-
-
-
 uint16_t qc_volt = 5000;
 uint8_t bc12_type = 0;
 uint8_t dpdm_map = 0xff;
@@ -41,50 +40,6 @@ void dpdm_init(void)
 
 void usb_dpdm_select(uint8_t tc_index)
 {
-
-//	if(tc_index == 0)
-//	{
-//		GPA->I_EN.BITS.PIN0 = 0;
-//		GPA->O_EN.BITS.PIN0 = 0;
-//		GPA->DOUT.BITS.PIN0 = 0;
-//		GPA->ODEN.BITS.PIN0 = 0;
-//		GPA->PUEN.BITS.PIN0 = 0;
-//		GPA->PDEN.BITS.PIN0 = 0;
-//		GPA->MODE.BITS.PIN0 = 3; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
-//
-//		/* PA1 */
-//		GPA->I_EN.BITS.PIN1 = 0;
-//		GPA->O_EN.BITS.PIN1 = 0;
-//		GPA->DOUT.BITS.PIN1 = 0;
-//		GPA->ODEN.BITS.PIN1 = 0;
-//		GPA->PUEN.BITS.PIN1 = 0;
-//		GPA->PDEN.BITS.PIN1 = 0;
-//		GPA->MODE.BITS.PIN1 = 3; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
-//		GPA->ITEN.BITS.PIN1 = 0;
-//		GPA->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
-//	}
-//	else
-//	{
-//		GPA->I_EN.BITS.PIN0 = 1;
-//		GPA->O_EN.BITS.PIN0 = 0;
-//		GPA->DOUT.BITS.PIN0 = 0;
-//		GPA->ODEN.BITS.PIN0 = 1;
-//		GPA->PUEN.BITS.PIN0 = 0;
-//		GPA->PDEN.BITS.PIN0 = 0;
-//		GPA->MODE.BITS.PIN0 = 0; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
-//
-//		/* PA1 */
-//		GPA->I_EN.BITS.PIN1 = 1;
-//		GPA->O_EN.BITS.PIN1 = 0;
-//		GPA->DOUT.BITS.PIN1 = 0;
-//		GPA->ODEN.BITS.PIN1 = 1;
-//		GPA->PUEN.BITS.PIN1 = 0;
-//		GPA->PDEN.BITS.PIN1 = 0;
-//		GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
-//		GPA->ITEN.BITS.PIN1 = 0;
-//		GPA->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
-//	}
-
 	if(tc_index == 0)
 	{
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
@@ -106,6 +61,7 @@ void usb_dpdm_select(uint8_t tc_index)
 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	bc12_type = 0;
 	dpdm_map = tc_index;
 	printk("dpdm_map=%d\n",dpdm_map);
 }
@@ -269,7 +225,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			printk("hvdcp done\n");
 			//osal_set_event(USB_TASK,TCPM_EVT_HVDCP_DONE);
 
-			if(dpdm_snk_support == 1 && g_usb_pd_s.explicit_contract == 0)
+			if(g_port.snk_5v_only == 0 && g_usb_pd_s.explicit_contract == 0)
 			{
 				osal_start_timerEx(DPDM_SINK_TIMER, 50, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_START);
 			}

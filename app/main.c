@@ -19,6 +19,7 @@
 #include "fm1210.h"
 #include "usb_pd.h"
 #include "tcpm.h"
+#include "port_manager.h"
 #include "usb_qc.h"
 
 uint16_t rrlen;
@@ -82,10 +83,10 @@ int main(void)
 	usb_dpdm_task_init();
 	buckboost_task_init();
 
-
 	fml_task_init();
 	wpc_task_init();
 
+	port_manager_task_init();
 
 
 	osal_start_system();

@@ -153,7 +153,7 @@ void hal_sw7201_buckboost_usb_a_gate_en(bool en)
 void hal_sw7201_buckboost_typecb_gate_en(bool en)
 //void hal_sw7201_buckboost_usb_a_gate_en(bool en)
 {
-	printk("%s :%d\n",__func__,en);
+	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
 	if(en)
