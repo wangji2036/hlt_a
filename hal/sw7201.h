@@ -61,7 +61,7 @@ void hal_sw7201_buckboost_charge_vbus_uv(uint16_t vbus_uv);
 void hal_sw7201_buckboost_charge_target_volt(uint16_t volt);
 void hal_sw7201_buckboost_charge_set_trickle_volt(uint16_t volt);
 uint8_t hal_sw7201_buckboost_get_verision(void);
-uint16_t hal_sw7201_buckboost_get_bus_current(void);
+int16_t hal_sw7201_buckboost_get_bus_current(void);
 int16_t hal_sw7201_buckboost_get_bat_current(void);
 void hal_sw7201_buckboost_usb_a_gate_en(bool en);
 uint16_t hal_sw7201_buckboost_get_bat_voltage(void);

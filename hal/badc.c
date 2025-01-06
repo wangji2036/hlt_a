@@ -270,6 +270,7 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			}
 			break;
 		case _BADC_CH_PD3_ADC9:
+			rst = tmp;
 			break;
 		case _BADC_CH_INR_V055:
 			break;

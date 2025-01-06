@@ -2,7 +2,7 @@
 #include "printk.h"
 #include "delay.h"
 #include "i2cm.h"
-
+#include "nu6801.h"
 #include "sw7201.h"
 //#define HW_I2CM_
 
@@ -766,9 +766,9 @@ int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data)
 
 	hal_i2cm_stop();
 
-//	if(devAddr == SW7201_I2C_DEV_ADDR )
+//	if(devAddr == NU6801_I2C_DEV_ADDR )
 //	{
-//		printk("sw7201 R [0x%x] = 0x%x\n",regAddr,(uint8_t)*data);
+//		printk("NU6801 R [0x%x] = 0x%x\n",regAddr,(uint8_t)*data);
 //	}
 
 	return rst;
@@ -803,14 +803,14 @@ int hal_i2cm_wirte_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t data)
 
 	hal_i2cm_stop();
 
-//	if(devAddr == SW7201_I2C_DEV_ADDR )
-//		printk("sw7201 W [0x%x] = 0x%x\n",regAddr,data);
-//
-//	if(devAddr == SW7201_I2C_DEV_ADDR )
-//	{
-//		uint8_t read_data;
-//		hal_i2cm_read_one_byte(devAddr, regAddr, &read_data);
-//	}
+//	if(devAddr == NU6801_I2C_DEV_ADDR )
+//		printk("NU6801 W [0x%x] = 0x%x\n",regAddr,data);
+
+	if(devAddr == NU6801_I2C_DEV_ADDR )
+	{
+		uint8_t read_data;
+		hal_i2cm_read_one_byte(devAddr, regAddr, &read_data);
+	}
 
 	return rst;
 }

@@ -408,7 +408,7 @@ void hal_gpio_init(void)
 
 	/* PD3 */
 	GPD->I_EN.BITS.PIN3 = 0;
-	GPD->MODE.BITS.PIN3 = 0; //00:PD3 01:BADC9 10:RESERVED 11:RESERVED
+	GPD->MODE.BITS.PIN3 = 1; //00:PD3 01:BADC9 10:RESERVED 11:RESERVED
 	GPD->ITEN.BITS.PIN3 = 0;
 	GPD->ITTP.BITS.PIN3 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
 

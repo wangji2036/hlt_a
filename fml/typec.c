@@ -25,7 +25,7 @@ void usb_tc_init(void)
 
 	printk("typec vbat =%d\n",g_buckboost.adc_vbat);
 
-	if(g_buckboost.adc_vbat < 6000)
+	if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
 	{
 		g_tc[TYPEC_PORT_A].is_deadbattery = 1;
 		g_tc[TYPEC_PORT_B].is_deadbattery = 1;

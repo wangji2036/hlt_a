@@ -2,6 +2,8 @@
 #include "eadc.h"
 #include "sw7201.h"
 #include "printk.h"
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 #define BAT_CELL_FULL_VOLT   4200
 #define BAT_CELL_EMPTY_VOLT   3000
 
@@ -176,7 +178,7 @@ void hal_sw7201_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_Ibat_Limit,ibat_limit);
 }
 
-uint16_t hal_sw7201_buckboost_get_bus_current(void)
+int16_t hal_sw7201_buckboost_get_bus_current(void)
 {
 	uint16_t ibus = 0;
 	uint8_t read = 0;
@@ -320,6 +322,7 @@ void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Vin_Uvlo,volt);
 }
 
+#endif
 
 
 

@@ -1,0 +1,1121 @@
+#include "regdef.h"
+#include "printk.h"
+#include "delay.h"
+#include "osal.h"
+#include "port_manager.h"
+#include "pd.h"
+#include "typec.h"
+#include "buckboost.h"
+#include "usb_pd.h"
+#include "adp.h"
+#include "_wpc.h"
+#include "g_data.h"
+#include "pid.h"
+#include "usb_qc.h"
+
+
+
+extern void tcpm_stop_wpc(uint8_t delay_ping_unit);
+extern void tcpm_update_wpc_work_mode(enum wpc_work_mode mode);
+
+#define WPC_DELAY				10
+
+
+void port_manager_set_event(uint32_t event)
+{
+	g_port.port_event |= event;
+}
+
+
+void port_manager_set_state(enum port_state_e state)
+{
+	g_port.state = state;
+}
+
+void port_manager_task_init(void)
+{
+	osal_mem_clear(&g_port,sizeof(struct port_infos));
+	osal_task_handler_reg(PORT_MANAGER_TASK, port_manager_event_handle);
+	osal_start_timerEx(PORT_ENUM_TIMER, PORT_ENUM_PERIOD, PORT_ENUM_PERIOD, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT_SCAN);
+
+	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+}
+
+
+void port_enum_port0_connect_closed(void)
+{
+	printk("%s!\n",__func__);
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.incharge_port == PORT0_INDEX)
+		{
+			if(g_port.port_state[PORT1_INDEX] != PORT_STATE_NONE )
+			{
+				hal_tcpc_set_gate_en(PORT1_INDEX,false);
+				usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+				usb_dpdm_select(DPDM_PHY_OFF);
+				g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+			}
+
+			if(g_port.port_state[PORT2_INDEX] != PORT_STATE_NONE )
+			{
+				hal_tcpc_set_gate_en(PORT2_INDEX,false);
+				usb_dpdm_select(DPDM_PHY_OFF);
+				port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+				g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			}
+
+			port_manager_set_state(PORT_IDLE_OR_READY);
+		}
+		else
+		{
+			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK &&  g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+				g_port.inhandle_port = 1;
+			}
+			else
+			{
+				port_manager_set_state(PORT_IDLE_OR_READY);
+			}
+		}
+
+	}
+	else
+	{
+		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
+		{
+			hal_tcpc_set_gate_en(PORT1_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_SRC_Unattached,enter_state);
+			usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+			usb_dpdm_select(DPDM_PHY_OFF);
+		}
+
+		if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+		{
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+			port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+			usb_dpdm_select(DPDM_PHY_OFF);
+		}
+
+		port_manager_set_state(PORT_IDLE_OR_READY);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
+	{
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+	{
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	}
+
+	tcpm_stop_wpc(WPC_DELAY);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+				&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+
+		{
+			if(g_usb_pd_s.explicit_contract)
+			{
+				if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+			}
+			else
+			{
+				if(bc12_type == BC1P2_QC9V)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if(bc12_type >= BC1P2_SDP)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				else
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			}
+
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+		}
+
+	}
+	else
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
+				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+		}
+	}
+}
+
+void port_enum_port1_connect_closed(void)
+{
+	printk("%s!\n",__func__);
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.incharge_port == PORT1_INDEX)
+		{
+			if(g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE )
+			{
+				hal_tcpc_set_gate_en(PORT0_INDEX,false);
+				usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+				usb_dpdm_select(DPDM_PHY_OFF);
+				g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+			}
+
+			if(g_port.port_state[PORT2_INDEX] != PORT_STATE_NONE )
+			{
+				hal_tcpc_set_gate_en(PORT2_INDEX,false);
+				usb_dpdm_select(DPDM_PHY_OFF);
+				port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+				g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			}
+			port_manager_set_state(PORT_IDLE_OR_READY);
+		}
+		else
+		{
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK &&  g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+				g_port.inhandle_port = 0;
+			}
+			else
+			{
+				port_manager_set_state(PORT_IDLE_OR_READY);
+			}
+		}
+	}
+	else
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+		{
+			hal_tcpc_set_gate_en(PORT0_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_SRC_Unattached,enter_state);
+			usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+			usb_dpdm_select(DPDM_PHY_OFF);
+		}
+
+		if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+		{
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+			port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+			usb_dpdm_select(DPDM_PHY_OFF);
+		}
+		port_manager_set_state(PORT_IDLE_OR_READY);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
+	{
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	}
+
+	tcpm_stop_wpc(WPC_DELAY);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+				&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+
+		{
+			if(g_usb_pd_s.explicit_contract)
+			{
+				if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+			}
+			else
+			{
+				if(bc12_type == BC1P2_QC9V)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if(bc12_type >= BC1P2_SDP)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				else
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			}
+
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+		}
+
+	}
+	else
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
+				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+		}
+	}
+}
+
+void port_enum_port2_connect_closed(void)
+{
+	printk("%s!\n",__func__);
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
+	{
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE &&  g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+	{
+		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+		{
+			if(g_port.incharge_port == PORT0_INDEX)
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+			}
+			else
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+			}
+			g_port.inhandle_port = g_port.incharge_port;
+		}
+	}
+
+
+
+	tcpm_stop_wpc(WPC_DELAY);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+				&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+
+		{
+			if(g_usb_pd_s.explicit_contract)
+			{
+				if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+			}
+			else
+			{
+				if(bc12_type == BC1P2_QC9V)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if(bc12_type >= BC1P2_SDP)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				else
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			}
+
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+		}
+
+	}
+	else
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
+				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+		}
+	}
+
+	port_manager_set_state(PORT_IDLE_OR_READY);
+}
+
+void port_enum_port3_connect_closed(void)
+{
+	printk("%s!\n",__func__);
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
+	{
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE &&  g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+	{
+		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+		{
+			if(g_port.incharge_port == PORT0_INDEX)
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+			}
+			else
+			{
+				osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+			}
+			g_port.inhandle_port = g_port.incharge_port;
+		}
+	}
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+				&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+		{
+			if(g_usb_pd_s.explicit_contract)
+			{
+				if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+			}
+			else
+			{
+				if(bc12_type == BC1P2_QC9V)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else if(bc12_type >= BC1P2_SDP)
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				else
+					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			}
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+		}
+
+	}
+	else
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
+				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+		}
+		else
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+		}
+	}
+
+
+	port_manager_set_state(PORT_IDLE_OR_READY);
+}
+
+void port_enum_port_enum_done(void)
+{
+	printk("%s!\n",__func__);
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+	{
+		hal_tcpc_set_gate_en(PORT0_INDEX,true);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
+	{
+		hal_tcpc_set_gate_en(PORT1_INDEX,true);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+	{
+		hal_tcpc_set_gate_en(PORT2_INDEX,true);
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	{
+		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+	}
+
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启A口检测
+	{
+		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+	}
+
+	if(g_port.inhandle_port == USBA_INDEX && g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE &&
+			g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+	{
+		usb_dpdm_select(USBA_INDEX);
+		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
+	}
+
+	if(g_port.inhandle_port != WPC_INDEX)
+	{
+		tcpm_stop_wpc(WPC_DELAY);
+
+		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+		{
+			if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+					&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+
+			{
+				if(g_usb_pd_s.explicit_contract)
+				{
+					if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+					if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+					else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+				}
+				else
+				{
+					if(bc12_type == BC1P2_QC9V)
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+					else if(bc12_type >= BC1P2_SDP)
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+					else
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+				}
+
+			}
+			else
+			{
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			}
+
+		}
+		else
+		{
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
+					&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+			{
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+			}
+			else
+			{
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+			}
+		}
+	}
+
+	port_manager_set_state(PORT_IDLE_OR_READY);
+}
+
+void port_enum_port_snk_setcharge(void)
+{
+	printk("%s!\n",__func__);
+
+	hal_tcpc_set_gate_en(g_port.incharge_port,true);
+
+	g_port.ibat_limit = g_port.ibat_limit* 95 / 100;
+	g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
+
+	if(g_port.inhandle_port == PORT0_INDEX)
+		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
+	else if(g_port.inhandle_port == PORT1_INDEX)
+		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+
+	printk("Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
+}
+
+void port_enum_port_snk_setvolt(void)
+{
+
+	uint32_t source_pdo;
+
+	printk("%s!\n",__func__);
+
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
+			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (g_buckboost.adc_vbat >= BAT_DEAD_BATTER_V))
+	{
+
+		if(g_usb_pd_s.explicit_contract)
+		{
+			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
+			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2000)
+			{
+				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,VOLTAGE_PPS,pdo_pps_apdo_max_current(source_pdo));
+				g_port.ibus_limit =  pdo_pps_apdo_max_current(source_pdo);
+
+				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * 16000 / 1000;
+			}
+			else if(g_usb_pd_s.snk_rx_pdo_n >= 2)
+			{
+				source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[1];
+				if(pdo_type(source_pdo) == PDO_TYPE_FIXED && pdo_fixed_voltage(source_pdo) == VOLTAGE_9V)
+				{
+					usb_pd_requsrt_voltage(PDO_INDEX_2,VOLTAGE_9V,pdo_max_current(source_pdo));
+					g_port.ibus_limit = pdo_max_current(source_pdo);
+
+					g_port.adpater_power =  (uint32_t)g_port.ibus_limit * VOLTAGE_9V / 1000;
+				}
+			}
+			else
+			{
+				source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[0];
+				g_port.ibus_limit = pdo_max_current(source_pdo);
+				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * VOLTAGE_5V / 1000;
+			}
+
+			g_port.ibat_limit = 5000;
+		}
+		else if(bc12_type == BC1P2_QC9V)
+		{
+			qc2_set_volt(VOLTAGE_9V);
+			g_port.ibus_limit = 1500;
+			g_port.ibat_limit = 3000;
+			g_port.adpater_power =  (uint32_t)2000 * VOLTAGE_9V / 1000;
+		}
+		else
+		{
+			if(bc12_type >= BC1P2_SDP)
+				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
+			else
+				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
+		}
+	}
+	else
+	{
+		if(g_usb_pd_s.explicit_contract)
+		{
+			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[0];
+			g_port.adpater_power =  pdo_max_current(source_pdo) * VOLTAGE_5V / 1000;
+		}
+		else
+		{
+			if(bc12_type >= BC1P2_SDP)
+				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
+			else
+				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
+		}
+		g_port.ibus_limit = 500;
+		g_port.ibat_limit = 300;
+	}
+
+	if(g_port.inhandle_port == PORT0_INDEX)
+		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETCHARGE);
+	else if(g_port.inhandle_port == PORT1_INDEX)
+		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETCHARGE);
+}
+
+void port_enum_port0_connect_success(void)
+{
+	printk("%s!\n",__func__);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_tc[PORT0_INDEX].usb_tc_state == TC_SNK_Attached)
+		{
+			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+				g_port.snk_5v_only = 1;
+			else
+				g_port.snk_5v_only = 0;
+
+			if(!g_usb_pd_s.explicit_contract && bc12_type != BC1P2_QC9V)
+			{
+				usb_dpdm_select(PORT0_INDEX);
+				hal_tcpc_set_phy_port(PORT0_INDEX);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
+				usb_pd_set_event(PORT0_INDEX,USB_PD_EVT_SNK_ATTACHED);
+
+				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT1_INDEX,false);
+				hal_tcpc_set_gate_en(PORT0_INDEX,true);
+				g_port.incharge_port = PORT0_INDEX;
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+		}
+		else  //TC_SRC_Attached
+		{
+			osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
+		}
+	}
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	{
+		if(g_tc[PORT0_INDEX].usb_tc_state == TC_SNK_Attached)
+		{
+			hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+
+			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+				g_port.snk_5v_only = 1;
+			else
+				g_port.snk_5v_only = 0;
+
+			if(!g_usb_pd_s.explicit_contract && bc12_type != BC1P2_QC9V)
+			{
+				usb_dpdm_select(PORT0_INDEX);
+				hal_tcpc_set_phy_port(PORT0_INDEX);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
+				usb_pd_set_event(PORT0_INDEX,USB_PD_EVT_SNK_ATTACHED);
+				hal_tcpc_set_gate_en(PORT0_INDEX,true);
+				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT1_INDEX,false);
+				g_port.incharge_port = PORT0_INDEX;
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+		}
+		else  //TC_SRC_Attached
+		{
+			hal_tcpc_set_gate_en(PORT0_INDEX,true);
+			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+			{
+				usb_dpdm_select(PORT0_INDEX);
+				hal_tcpc_set_phy_port(PORT0_INDEX);
+				usb_pd_set_event(PORT0_INDEX,USB_PD_EVT_SRC_ATTACHED);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+		}
+	}
+
+	if(g_tc[PORT0_INDEX].usb_tc_state == TC_SNK_Attached) g_port.port_state[PORT0_INDEX] = PORT_STATE_SINK;
+	if(g_tc[PORT0_INDEX].usb_tc_state == TC_SRC_Attached) g_port.port_state[PORT0_INDEX] = PORT_STATE_SOURCE;
+}
+
+void port_enum_port1_connect_success(void)
+{
+	printk("%s!\n",__func__);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_tc[PORT1_INDEX].usb_tc_state == TC_SNK_Attached)
+		{
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+				g_port.snk_5v_only = 1;
+			else
+				g_port.snk_5v_only = 0;
+
+			if(!g_usb_pd_s.explicit_contract && bc12_type != BC1P2_QC9V)
+			{
+				usb_dpdm_select(PORT1_INDEX);
+				hal_tcpc_set_phy_port(PORT1_INDEX);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
+				usb_pd_set_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
+
+				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT0_INDEX,false);
+				hal_tcpc_set_gate_en(PORT1_INDEX,true);
+				g_port.incharge_port = PORT1_INDEX;
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+		}
+		else  //TC_SRC_Attached
+		{
+			osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+		}
+	}
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	{
+		if(g_tc[PORT1_INDEX].usb_tc_state == TC_SNK_Attached)
+		{
+			hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+				g_port.snk_5v_only = 1;
+			else
+				g_port.snk_5v_only = 0;
+
+			if(!g_usb_pd_s.explicit_contract && bc12_type != BC1P2_QC9V)
+			{
+				usb_dpdm_select(PORT1_INDEX);
+				hal_tcpc_set_phy_port(PORT1_INDEX);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
+				usb_pd_set_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
+				hal_tcpc_set_gate_en(PORT1_INDEX,true);
+				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT0_INDEX,false);
+				g_port.incharge_port = PORT1_INDEX;
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+		}
+		else  //TC_SRC_Attached
+		{
+			hal_tcpc_set_gate_en(PORT1_INDEX,true);
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+			{
+				usb_dpdm_select(PORT1_INDEX);
+				hal_tcpc_set_phy_port(PORT1_INDEX);
+				usb_pd_set_event(PORT1_INDEX,USB_PD_EVT_SRC_ATTACHED);
+				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
+			}
+			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+		}
+	}
+
+	if(g_tc[PORT1_INDEX].usb_tc_state == TC_SNK_Attached) g_port.port_state[PORT1_INDEX] = PORT_STATE_SINK;
+	if(g_tc[PORT1_INDEX].usb_tc_state == TC_SRC_Attached) g_port.port_state[PORT1_INDEX] = PORT_STATE_SOURCE;
+}
+
+void port_enum_port2_connect_success(void)
+{
+	printk("%s!\n",__func__);
+	osal_start_timerEx(PORT_CONNECT_TIMER, 200, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT2_ENUM_DONE);
+	g_port.port_state[PORT2_INDEX] = PORT_STATE_SOURCE;
+}
+
+void port_enum_port3_connect_success(void)
+{
+	printk("%s!\n",__func__);
+	osal_start_timerEx(PORT_CONNECT_TIMER, 200, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT3_ENUM_DONE);
+	g_port.port_state[PORT3_INDEX] = PORT_STATE_SOURCE;
+}
+
+
+
+void port_enum_port0_connect_start(void)
+{
+	printk("%s!\n",__func__);
+
+	uint32_t source_pdo = 0;
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT1_INDEX,false);
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[0];
+		if(g_usb_pd_s.explicit_contract) usb_pd_requsrt_voltage(1,VOLTAGE_5V,pdo_max_current(source_pdo));
+		if(bc12_type == BC1P2_QC9V) qc2_set_volt(VOLTAGE_5V);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_snk_charge_current(CHG_IBUS_MIN,CHG_IBAT_MIN);    //设置充电电流到最小
+	}
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没有snk
+	{
+		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+		usb_dpdm_select(DPDM_PHY_OFF);
+		hal_tcpc_set_gate_en(PORT1_INDEX,false);
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	}
+
+}
+
+
+void port_enum_port1_connect_start(void)
+{
+	printk("%s!\n",__func__);
+
+	uint32_t source_pdo = 0;
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT0_INDEX,false);
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[0];
+		if(g_usb_pd_s.explicit_contract) usb_pd_requsrt_voltage(1,VOLTAGE_5V,pdo_max_current(source_pdo));
+		if(bc12_type == BC1P2_QC9V) qc2_set_volt(VOLTAGE_5V);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_snk_charge_current(CHG_IBUS_MIN,CHG_IBAT_MIN);    //设置充电电流到最小
+	}
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没有snk
+	{
+		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+		usb_dpdm_select(DPDM_PHY_OFF);
+		hal_tcpc_set_gate_en(PORT1_INDEX,false);
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	}
+}
+
+void port_enum_port2_connect_start(void)
+{
+	printk("%s!\n",__func__);
+
+	uint32_t source_pdo = 0;
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[0];
+		if(g_usb_pd_s.explicit_contract) usb_pd_requsrt_voltage(1,VOLTAGE_5V,pdo_max_current(source_pdo));
+		if(bc12_type == BC1P2_QC9V) qc2_set_volt(VOLTAGE_5V);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+		hal_tcpc_set_snk_charge_current(CHG_IBUS_MIN,CHG_IBAT_MIN);    //设置充电电流到最小
+	}
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没有snk
+	{
+		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+		usb_dpdm_select(DPDM_PHY_OFF);
+		hal_tcpc_set_gate_en(PORT1_INDEX,false);
+		hal_tcpc_set_gate_en(PORT2_INDEX,false);
+		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	}
+
+	osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT2_CONNECT_SUCCESS);
+}
+
+void port_enum_port3_connect_start(void)
+{
+
+	//uint32_t source_pdo = 0;
+
+	printk("%s!\n",__func__);
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		hal_tcpc_set_snk_charge_current(CHG_IBUS_MIN,CHG_IBAT_MIN);    //设置充电电流到最小
+	}
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT0_INDEX,false);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT1_INDEX,false);
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT2_INDEX,false);
+
+	osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS);
+}
+
+
+void port_enum_scan_handle(void)
+{
+
+	if(g_port.state != PORT_IDLE_OR_READY)  return;
+
+	if(g_port.port_event & PORT0_EVENT_UNCONNECT)				//TTPEC0
+	{
+		g_port.inhandle_port = 0;
+		g_port.port_event &= ~PORT0_EVENT_UNCONNECT;
+		port_manager_set_state(PORT_INHANDLING);
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_CLOSED);
+	}
+	else if(g_port.port_event & PORT1_EVENT_UNCONNECT) 			//TYPEC1
+	{
+		g_port.inhandle_port = 1;
+		g_port.port_event &= ~PORT1_EVENT_UNCONNECT;
+		port_manager_set_state(PORT_INHANDLING);
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_CLOSED);
+	}
+	else if(g_port.port_event & PORT2_EVENT_UNCONNECT) 			//TYPEC1
+	{
+		g_port.inhandle_port = 2;
+		port_manager_set_state(PORT_INHANDLING);
+		g_port.port_event &= ~PORT2_EVENT_UNCONNECT;
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT2_CONNECT_CLOSED);
+	}
+	else if(g_port.port_event & PORT3_EVENT_UNCONNECT) 			//TYPEC1
+	{
+		g_port.inhandle_port = 3;
+		port_manager_set_state(PORT_INHANDLING);
+		g_port.port_event &= ~PORT3_EVENT_UNCONNECT;
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT3_CONNECT_CLOSED);
+	}
+
+
+	else if(g_port.port_event & PORT0_EVENT_TRY_CONNECT)				//TTPEC0
+	{
+		g_port.port_event &= ~PORT0_EVENT_TRY_CONNECT;
+		port_manager_set_state(PORT_INHANDLING);
+		g_port.inhandle_port = 0;
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_START);
+	}
+	else if(g_port.port_event & PORT1_EVENT_TRY_CONNECT) 			//TYPEC1
+	{
+		g_port.port_event &= ~PORT1_EVENT_TRY_CONNECT;
+		port_manager_set_state(PORT_INHANDLING);
+		g_port.inhandle_port = 1;
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_START);
+	}
+	else if(g_port.port_event & PORT2_EVENT_TRY_CONNECT)			//USB-A
+	{
+		g_port.port_event &= ~PORT2_EVENT_TRY_CONNECT;
+		port_manager_set_state(PORT_INHANDLING);
+		g_port.inhandle_port = 2;
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT2_CONNECT_START);
+	}
+	else if(g_port.port_event & PORT3_EVENT_TRY_CONNECT)  			//WPC
+	{
+		g_port.port_event &= ~PORT3_EVENT_TRY_CONNECT;
+		g_port.inhandle_port = 3;
+		port_manager_set_state(PORT_INHANDLING);
+		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT3_CONNECT_START);
+	}
+	else if(g_port.port_event & PORT_EVENT_RESET_CHARGE)
+	{
+		g_port.port_event &= ~PORT_EVENT_RESET_CHARGE;
+
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE &&  g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+		{
+			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+			{
+				if(g_port.incharge_port == PORT0_INDEX)
+				{
+					osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+				}
+				else
+				{
+					osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+				}
+				g_port.inhandle_port = g_port.incharge_port;
+			}
+		}
+
+	}
+
+}
+
+void port_manager_event_handle(uint32_t event)
+{
+	switch (event)
+	{
+		case PORT_ENUM_EVT_PORT_SCAN:
+			port_enum_scan_handle();
+			break;
+		case PORT_ENUM_EVT_PORT0_CONNECT_START:
+			port_enum_port0_connect_start();
+			break;
+		case PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS:
+			port_enum_port0_connect_success();
+			break;
+		case PORT_ENUM_EVT_PORT0_CONNECT_CLOSED:
+			port_enum_port0_connect_closed();
+			break;
+		case PORT_ENUM_EVT_PORT0_SINK_SETVOLT:
+			port_enum_port_snk_setvolt();
+			break;
+		case PORT_ENUM_EVT_PORT0_SINK_SETCHARGE:
+			port_enum_port_snk_setcharge();
+			break;
+		case PORT_ENUM_EVT_PORT0_ENUM_DONE:
+			port_enum_port_enum_done();
+			break;
+
+		case PORT_ENUM_EVT_PORT1_CONNECT_START:
+			port_enum_port1_connect_start();
+			break;
+		case PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS:
+			port_enum_port1_connect_success();
+			break;
+		case PORT_ENUM_EVT_PORT1_CONNECT_CLOSED:
+			port_enum_port1_connect_closed();
+			break;
+		case PORT_ENUM_EVT_PORT1_SINK_SETVOLT:
+			port_enum_port_snk_setvolt();
+			break;
+		case PORT_ENUM_EVT_PORT1_SINK_SETCHARGE:
+			port_enum_port_snk_setcharge();
+			break;
+		case PORT_ENUM_EVT_PORT1_ENUM_DONE:
+			port_enum_port_enum_done();
+			break;
+
+		case PORT_ENUM_EVT_PORT2_CONNECT_START:
+			port_enum_port2_connect_start();
+			break;
+		case PORT_ENUM_EVT_PORT2_CONNECT_SUCCESS:
+			port_enum_port2_connect_success();
+			break;
+		case PORT_ENUM_EVT_PORT2_CONNECT_CLOSED:
+			port_enum_port2_connect_closed();
+			break;
+		case PORT_ENUM_EVT_PORT2_ENUM_DONE:
+			port_enum_port_enum_done();
+			break;
+		case PORT_ENUM_EVT_PORT3_CONNECT_START:
+			port_enum_port3_connect_start();
+			break;
+		case PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS:
+			port_enum_port3_connect_success();
+			break;
+		case PORT_ENUM_EVT_PORT3_CONNECT_CLOSED:
+			port_enum_port3_connect_closed();
+			break;
+		case PORT_ENUM_EVT_PORT3_ENUM_DONE:
+			port_enum_port_enum_done();
+			break;
+		default:
+			break;
+	}
+}
+
+
+
+
+

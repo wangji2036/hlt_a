@@ -4,6 +4,17 @@
 #include "typdef.h"
 #include "osal.h"
 
+#define BUCKBOOST_USED_SW7201		0
+#define BUCKBOOST_USED_NU6801		1
+
+#if(BUCKBOOST_USED_SW7201 == 1)
+	#define BAT_DEAD_BATTER_V   	6000
+	#define BAT_ACTIVE_RBATTER_V   	6500
+#elif(BUCKBOOST_USED_NU6801 == 1)
+	#define BAT_DEAD_BATTER_V   	3000
+	#define BAT_ACTIVE_RBATTER_V   	3250
+#endif
+
 enum buckboost_mode
 {
 	BUCKBOOST_SHUTDOWM_MODE = 0,
@@ -56,7 +67,7 @@ struct buckboost_operations
 	void (*set_chager_current)(uint16_t current);
 	void (*set_chager_ibus_limit)(uint16_t current);
 	void (*set_chager_ibat_limit)(uint16_t current);
-	uint16_t (*get_bus_current)(void);
+	int16_t (*get_bus_current)(void);
 	int16_t (*get_bat_current)(void);
 	uint16_t (*get_bat_voltage)(void);
 	uint16_t (*get_bus_voltage)(void);
