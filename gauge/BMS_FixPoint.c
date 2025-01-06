@@ -1341,7 +1341,7 @@ void SOH(void)
 {
   SOH_Resistance_mOhm = 0;
   SOHC();
-  Switch_s = 100;
+  Switch_s = 1;
 }
 static boolean_T Soc_Initialed = false;
 /* Model step function */

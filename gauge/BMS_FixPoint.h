@@ -55,7 +55,7 @@ typedef struct {
    *   '<S19>/OCV_DSG'
    *   '<S22>/SOC_Slope'
    */
-  int32_T pooled8[32];
+  int32_T pooled7[32];
 
   /* Computed Parameter: DCIR_Discharge_tableData
    * Referenced by: '<S33>/DCIR_Discharge'
@@ -72,7 +72,7 @@ typedef struct {
    *   '<S23>/OCV_Discharge'
    *   '<S23>/R0_Discharge'
    */
-  uint32_T pooled9[2];
+  uint32_T pooled8[2];
 } ConstP;
 
 /* Real-time Model Data Structure */

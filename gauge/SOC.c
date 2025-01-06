@@ -119,7 +119,7 @@ void Lookup_OCVSOC(void)
 {
   SOC_OCVSOC_mpct = look2_is16u16lu32n32ts_lElusMKZ(SigPr_CellTemps_C,
     SigPr_CellVolts_mV, P_TAxis_degC, P_OCVAxis_mV, P_OcvSOCDsg_mpct, (uint32_T *)
-    &hjjparneo_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
+    &hjjparneo_m_bpIndex_s[0], ConstP_s.pooled8, 3U);
   if (SOC_OCVSOC_mpct > 100000) {
     SOC_OCVSOC_mpct = 100000;
   } else if (SOC_OCVSOC_mpct < 0) {
@@ -277,7 +277,7 @@ void SOC_Correction(void)
   SOC_VirtualOCV_mV = VirtualOCV_Delay;
   SOC_ModelR0_mOhm = look2_is16s32lu32n32tu_bvHCJPGn(SigPr_CellTemps_C,
     SOC_RawSOC_mpct, P_TAxis_degC, P_SOCAxis_mpct, P_R0Dsg_mOhm, (uint32_T *)
-    &hjjpar_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
+    &hjjpar_m_bpIndex_s[0], ConstP_s.pooled8, 3U);
   SOH_VDCR_uV = d_Delay_DSTATE_s * (int32_T)SOC_ModelR0_mOhm * Switch_s;
   if (DiscreteTimeIntegrator_SYSTEM_s == 0) {
     if ((SOC_OCVUpd_flg && (DiscreteTimeIntegrator_PrevRe_s <= 0)) ||
@@ -291,10 +291,10 @@ void SOC_Correction(void)
 
   SOC_ModelDCIR_mOhm = look2_is16s32lu32n32tu_bvHCJPGn(SigPr_CellTemps_C,
     SOC_RawSOC_mpct, P_TAxis_degC, P_SOCAxis_mpct, P_DcirDsg_mOhm, (uint32_T *)
-    &hjjparn_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
+    &hjjparn_m_bpIndex_s[0], ConstP_s.pooled8, 3U);
   SOC_ModelOCV_mV = look2_is16s32lu16n16tu_EvbysC3W(SigPr_CellTemps_C,
     SOC_RawSOC_mpct, P_TAxis_degC, P_SOCAxis_mpct, P_OCVDsg_mV, (uint32_T *)
-    &hjjparne_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
+    &hjjparne_m_bpIndex_s[0], ConstP_s.pooled8, 3U);
   k3_icLoad_s = false;
   k34_icLoad_s = false;
   k34f_icLoad_s = false;
@@ -313,8 +313,8 @@ void SOC_Correction(void)
   CellVoltsDelay = div_nde_s32_floor(ConstB_s.Add5_b * CellVoltsDelay +
     SigPr_CellVolts_mV, 10);
   SOC_VirtOCVSOC_mpct = look2_is16s32lu32n32ts_WwgFj0xk(SigPr_CellTemps_C,
-    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled8, P_OcvSOCDsg_mpct,
-    (uint32_T *)&hj_m_bpIndex_s[0], ConstP_s.pooled9, 3U);
+    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled7, P_OcvSOCDsg_mpct,
+    (uint32_T *)&hj_m_bpIndex_s[0], ConstP_s.pooled8, 3U);
   if (SOC_VirtOCVSOC_mpct > 100000) {
     SOC_VirtOCVSOC_mpct = 100000;
   } else if (SOC_VirtOCVSOC_mpct < 0) {
@@ -329,7 +329,7 @@ void SOC_Correction(void)
        (uint32_T *)&hjj_m_bpIndex_s, 4U);
     VSOCRawSOCmpct = SOC_VirtOCVSOC_mpct - SOC_RawSOC_mpct;
     SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
-      ConstP_s.pooled8, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
+      ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
     SOC_CorrEachStep_upct = div_nde_s32_floor(SigPr_PackCurr_mA * (int32_T)
       SOC_ModelR0_mOhm, 1000);
     SOC_CorrEachStep_mpct = mul_s32_loSR(1288490189, (CellVoltsDelay -
