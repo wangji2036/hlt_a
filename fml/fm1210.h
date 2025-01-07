@@ -24,8 +24,8 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 
 int fm1210_get_qi_id(uint8_t *rbuf);
 int fm1210_read_cert_hash(uint8_t *rbuf);
-int fm1210_read_se_cert(uint8_t *rbuf, uint16_t *rlen);
-int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, uint16_t manufacturer_cert_len, uint8_t *rbuf, uint16_t *rlen);
+int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen);
+int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, uint16_t manufacturer_cert_len, uint8_t *rbuf, uint32_t *rlen);
 int fm1210_get_tbs_auth(uint8_t *rbuf);
 
 #endif /* FM1210_H_ */

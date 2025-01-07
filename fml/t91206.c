@@ -28,14 +28,17 @@ unsigned char apduBuf[TMC_SEND_MAX];
 unsigned char RecvBuf[TMC_RECE_MAX];
 
 /* CRC8 table */
-static  const unsigned char  crc8Table1[16] = {
-      0x00,0x64,0xC8,0xAC,0xE1,0x85,0x29,0x4D,
-      0xB3,0xD7,0X7B,0x1F,0x52,0x36,0x9A,0xFE,
+static const unsigned char crc8Table1[16] =
+{
+	0x00, 0x64, 0xC8, 0xAC, 0xE1, 0x85, 0x29, 0x4D,
+	0xB3, 0xD7, 0X7B, 0x1F, 0x52, 0x36, 0x9A, 0xFE,
 };
+
 /* CRC table */
-static  const unsigned char  crc8Table2[16] = {
-      0x00,0x17,0x2E,0x39,0x5C,0x4B,0x72,0x65,
-      0xB8,0xAF,0X96,0x81,0xE4,0xF3,0xCA,0xDD,
+static const unsigned char crc8Table2[16] =
+{
+	0x00, 0x17, 0x2E, 0x39, 0x5C, 0x4B, 0x72, 0x65,
+	0xB8, 0xAF, 0X96, 0x81, 0xE4, 0xF3, 0xCA, 0xDD,
 };
 
 /*
@@ -48,10 +51,13 @@ static void i2c_PowerUp(void)
     delay_1us(SWI_DELAY_POWERUP_5MS);
 
     GPA->DOUT.BITS.PIN7 = 0;
-    delay_1us(SWI_DELAY_POWERUP_1MS);
+    delay_1us(SWI_DELAY_POWERUP_5MS);
 
     GPA->DOUT.BITS.PIN7 = 1;
     delay_1us(SWI_DELAY_POWERUP_8MS);
+
+    GPA->ODEN.BITS.PIN6 = 1;
+    GPA->ODEN.BITS.PIN7 = 1;
 }
 
 void t91206_init(void)
@@ -63,21 +69,18 @@ void t91206_init(void)
 
 int t91206_get_qi_id(uint8_t *rbuf)
 {
-    if (rbuf == NULL)
-    {
-        return -1;
-    }
     /* Get Qi ID */
     /* Set 0 to indicate slot 0 */
     uint8_t slotNumReq = 0;
     /* length of Qi ID buffer >= 6 */
     rbuf[0] = 6;
     int ret = TMC_GetQiID(rbuf, slotNumReq);
-    printk("\r\n GetQiID ret->%X \r\n", ret);
-    for (int i = 0; i < 6; i++)
-    {
-        printk("%02X ", rbuf[i]);
-    }
+
+	printk("\r\n t91206_qi_id: ");
+	for (int i=0; i<6; i++)
+	{
+		printk("%c", *(rbuf + i));
+	}
 
     return ret;
 }
@@ -87,6 +90,7 @@ int t91206_read_cert_hash(uint8_t *rbuf)
     {
         return -1;
     }
+
     /* Get digests from slot 0 */
     /* Set bit0 to indicate slot 0 */
     unsigned char slotMaskRet = 0x00;
@@ -94,15 +98,17 @@ int t91206_read_cert_hash(uint8_t *rbuf)
     unsigned int read_digest_len = 32;
     int ret = TMC_ReadDigests(&slotMaskRet, rbuf, &read_digest_len, slotMaskReq);
 
-    printk("\r\n ReadDigests ret->%X \r\n", ret);
+//	printk("\r\n ReadDigests ret->%X %x %x %x\r\n", ret, slotMaskRet, slotMaskReq, read_digest_len);
+    printk("\r\n DIGEST:");
     for (int i = 0; i < read_digest_len; i++)
     {
-        printk("%02X,",rbuf[i]);
+        printk(" %02X",rbuf[i]);
     }
+
     return ret;
 }
 
-int t91206_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
+int t91206_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
 {
     /* prepare Get Digests response: (slots populated mask | slots returned mask) + digestsbuf */
     /* Read Certificate Chain from slot 0 */
@@ -110,13 +116,64 @@ int t91206_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
     uint8_t slotNumReq = 0;
 
     rbuf[0] = DIGESTS_RESPONSE;
+
     /* Read out the whole certificate chain in one time */
     int ret = TMC_ReadCertification(rbuf, 0, (unsigned int *)rlen, slotNumReq);
-    printk("\r\n ReadCertificationret->%X len: %d \r\n", ret, *rlen);
-    for (int i = 0; i < *rlen; i++)
+
+//    printk("\r\n ReadCertificationret->%X len: %d \r\n", ret, *rlen);
+
+    int i = 0;
+
+    printk("\r\n CERT_LEN:");
+    printk("\r\n");
+    for (i=0; i<2; i++)
     {
-        printk("%02X,", rbuf[i]);
+    	printk(" %02X", rbuf[i]);
     }
+
+    printk("\r\n Root CA Hash");
+    printk("\r\n");
+    for (i=2; i<2+32; i++)
+    {
+    	printk(" %02X", rbuf[i]);
+    }
+
+    printk("\r\n Manufacturer CA Certificate");
+    printk("\r\n");
+    for (i=2+32; i<2+32+4; i++)
+    {
+    	printk(" %02X", rbuf[i]);
+    }
+
+    for (i=2+32+4; i<2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1]); i++)
+    {
+    	if ((i-(2+32+4)) % 32 == 0)
+    	{
+    		printk("\r\n");
+    	}
+    	printk(" %02X", rbuf[i]);
+    }
+
+    printk("\r\n Product Unit Certificate");
+    printk("\r\n");
+    for (i=2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1]); i<2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4; i++)
+    {
+    	printk(" %02X", rbuf[i]);
+    }
+
+    for (i=2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4; i<*rlen; i++)
+    {
+    	if ((i-(2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4)) % 32 == 0)
+    	{
+    		printk("\r\n");
+    	}
+    	printk(" %02X", rbuf[i]);
+    }
+
+
+//    printk("\r\n");
+//    printk("\r\n");
+//    printk("\r\n");
 
     return ret;
 }
@@ -138,10 +195,15 @@ int t91206_get_tbs_auth(uint8_t *signature , uint8_t *array_random)
     // signature[0] = CERTIFICATE_RESPONSE;
     int ret = TMC_SignChallenge(array_random, LEN_OF_CHALLENGE, slotNumReq, signature, &len_Resp);
 
-    printk("\r\n TMC_SignChallenge ret- ret->%X \r\n", ret);
+    printk("\r\n CHALL_AUTH");
+
     for (int i = 0; i < len_Resp; i++)
     {
-        printk("%02X ", signature[i]);
+    	if (i % 32 == 0)
+    	{
+    		printk("\r\n");
+    	}
+        printk(" %02X", signature[i]);
     }
 
     return 0;
@@ -860,8 +922,8 @@ int transmit_apdu(TRANSMIT_DATA *pAPDU)
 
             /* Execution delay, try receiving SE response after that */
             delay_1us(pAPDU->execution_time);
-
-            /* Receive incoming data with pacakge format: AA + 2 bytes length + (data + CRC), length = data length + CRC length */
+            delay_1us(8000);
+            /* Receive incoming data with package format: AA + 2 bytes length + (data + CRC), length = data length + CRC length */
             ret = I2C_Read(pAPDU->rx + 1, &len, pAPDU->max_wait_time);
 
             /* Verify package format, check execution status word befor return response data */
@@ -1015,10 +1077,22 @@ int tmc_read_data(unsigned char *data, unsigned int data_off, unsigned int data_
         apdu.tx = apduBuf;
         apdu.rx = RecvBuf;
         apdu.rx_len = sizeof(RecvBuf);
+//        printk("\r\n apdu-> %d %d %d %d", readlen, data_len, len, apdu.rx_len);
+
+        delay_1ms(200);
         rv = transmit_apdu(&apdu);
+
+        while (rv != SUCCEED)
+        {
+//        	printk("\r\n T91-retry");
+            delay_1ms(200);
+            rv = transmit_apdu(&apdu);
+        }
+
         if (rv != SUCCEED)
         {
-            // rv = FAILED;
+//        	printk("\r\n yyy");
+            rv = FAILED;
             goto end;
         }
 

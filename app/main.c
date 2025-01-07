@@ -17,12 +17,13 @@
 #include "_wpc.h"
 #include "wpc_ping.h"
 #include "fm1210.h"
+#include "t91206.h"
 #include "usb_pd.h"
 #include "tcpm.h"
 #include "port_manager.h"
 #include "usb_qc.h"
 
-uint16_t rrlen;
+uint32_t rrlen;
 
 extern uint8_t array_digest[];
 extern uint8_t adt_data_recv_buf[18];
@@ -30,7 +31,7 @@ extern uint8_t cert_chain[];
 
 extern void tc_init(void);
 extern void tcpm_init(void);
-
+#include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
 	ap_data_init();
@@ -63,17 +64,28 @@ int main(void)
 	printk("\r\n base_q [%d]", ap->q_factor_base_value);
 	printk("\r\n base_fre [%d]", ap->fs_base_value);
 	printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
-	fm1210_init();
+	printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
 
-	printk("\r\n -->NU%d-%02d UID->%08X", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER, SYS->UID_INFO.BITS.UID);
+	if (ap->auth_seic_type == 1)
+	{
+		t91206_init();
+		delay_1ms(100);
+//		t91206_get_qi_id(adt_data_recv_buf);
+		t91206_read_cert_hash(array_digest + 1);
+		t91206_read_se_cert(cert_chain, &rrlen);
+		t91206_get_qi_id(adt_data_recv_buf);
+	}
+	else
+	{
+		fm1210_init();
+		delay_1ms(100);
+		fm1210_get_qi_id(adt_data_recv_buf);
+		fm1210_read_cert_hash(array_digest + 1);
+		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 328 need outside config, using sizeof arr
+	}
 
-	delay_1ms(100);
-	fm1210_get_qi_id(adt_data_recv_buf);
-	fm1210_read_cert_hash(array_digest + 1);
-	fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 328 need outside config, using sizeof arr
-
-//	fm1210_get_cert_chain((uint8_t *)wpc_cert_hash, (uint8_t *)manufacturer_cert, sizeof(manufacturer_cert), rrbuf, &rrlen);
-//	fm1210_get_tbs_auth(rrbuf);
+//	tc_init();
+//	tcpm_init();
 
 	fml_adp_init();
 

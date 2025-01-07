@@ -37,7 +37,7 @@
 
 void tcpm_task_init(void);
 void tcpm_task_event_handler(uint32_t event);
-
+void tcpm_set_port_sdp(uint8_t tc_index);
 extern uint16_t port_vbus;
 extern uint8_t tcpm_qi_work_delay;
 extern uint16_t qi_volt;

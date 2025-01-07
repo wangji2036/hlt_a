@@ -51,6 +51,16 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit)
 	printk("wpc stop = %d\n",delay_ping_unit);
 }
 
+void tcpm_set_port_sdp(uint8_t tc_index)
+{
+	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+	hal_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
+
+	printk("PORT[%d] set sdp\n",tc_index);
+}
+
 
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 {
@@ -74,8 +84,6 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 		case TCPM_WPC_WORK_DISABLE:
 			break;
 	}
-
-
 	printk("wpc_mode= %d\n",mode);
 }
 

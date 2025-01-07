@@ -183,6 +183,10 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
 						if (cep > 24) cep = 24;
 						gd->pid_volt += 20 * ((cep >> 0) + 1);
+						if (gd->atl_test_ldstp_bpp_P60 == 1)
+						{
+							gd->pid_volt += 1000;
+						}
 						break;
 					default:
 						break;
@@ -220,6 +224,10 @@ void pid_cep_handler(int8_t cep)
 						if (cep < -24) cep = -24;
 						cep *= -1;
 						gd->pid_volt -= 20 * ((cep >> 0) + 1);
+						if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1)
+						{
+							gd->pid_volt -= 1000; 
+						}
 						break;
 					default:
 						break;
@@ -229,7 +237,39 @@ void pid_cep_handler(int8_t cep)
 					gd->pid_volt = gd->pid_limit.volt_lim_lo;
 				}
 			}
-			fml_adp_volt_set(gd->pid_volt);
+
+			if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1 || gd->atl_test_ldstp_bpp_P60 == 1)
+			{
+				uint16_t tmp_duty, tmp;
+				tmp_duty = (20091 - gd->pid_volt) * 100 / 1263;
+				if (tmp_duty > 900) tmp_duty = 900;
+				if (tmp_duty <   1) tmp_duty =   1;
+
+				tmp = BPWM8->PWM_CTRL.BITS.DUTY;
+
+				printk("\r\n tmp_duty,tmp: %d %d", tmp_duty, BPWM8->PWM_CTRL.BITS.DUTY);
+
+				if (tmp < tmp_duty)
+				{
+					for (int i=tmp; i<tmp_duty; i++)
+					{
+						hal_bpwm_update(BPWM8, BPWM8->PWM_CTRL.BITS.PERD + 1, i);
+						delay_1us(10);
+					}
+				}
+				else
+				{
+					for (int i=tmp; i>tmp_duty; i--)
+					{
+						hal_bpwm_update(BPWM8, BPWM8->PWM_CTRL.BITS.PERD + 1, i);
+						delay_1us(10);
+					}
+				}
+			}
+			else
+			{
+				fml_adp_volt_set(gd->pid_volt);
+			}
 			break;
 		case EPID_CTRL_MODE_FREQ:
 			if (cep > 0)
@@ -296,7 +336,20 @@ void pid_cep_handler(int8_t cep)
 					}
 				}
 			}
-			hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+
+//			if (gd->atl_test_ldstp_bpp_P60 == 1)
+//			{
+//				printk("\r\n xxxxxx-> %d %d", tmp_duty, gd->pid_duty);
+//				for (int i=tmp_duty; i<=gd->pid_duty; i++)
+//				{
+//					hal_epwm_pwm_update(EPWM1, gd->pid_perd, i, gd->pid_phas);
+//					delay_1us(50);
+//				}
+//			}
+//			else
+			{
+				hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+			}
 			break;
 		case EPID_CTRL_MODE_PHAS:
 			if (cep > 0)
@@ -323,6 +376,10 @@ void pid_cep_handler(int8_t cep)
 		default:
 			break;
 	}
+
+	gd->atl_test_ldstp_epp_N60 = 0;
+	gd->atl_test_ldstp_bpp_N60 = 0;
+	gd->atl_test_ldstp_bpp_P60 = 0;
 
 #ifdef _PRINT_PID_MSG
 	printk(" #:[%02x] %5d %6d %3d %2d", (m_pid_ctrl_evnt << 4) | m_pid_ctrl_mode, gd->pid_volt, 144000000/gd->pid_perd, gd->pid_duty, gd->pid_phas);
@@ -475,6 +532,22 @@ static void pid_ctrl_mode_sel(int8_t cep)
 			m_pid_ctrl_mode = EPID_CTRL_MODE_DUTY;
 		}
 	}
+
+	if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1 || gd->atl_test_ldstp_bpp_P60 == 1)
+	{
+		if (gd->pid_volt > gd->pid_limit.volt_lim_lo)
+		{
+			m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
+		}
+	}
+
+//	if (gd->atl_test_ldstp_bpp_P60 == 1)
+//	{
+//		if (gd->pid_duty < gd->pid_limit.duty_lim_hi)
+//		{
+//			m_pid_ctrl_mode = EPID_CTRL_MODE_DUTY;
+//		}
+//	}
 }
 
 void PID_vCtrlAccuracyCheck(int8_t cep)

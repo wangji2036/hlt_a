@@ -21,6 +21,8 @@
 #include "g_data.h"
 #include "_wpc.h"
 #include "osal.h"
+#include "algo.h"
+#include "qfod.h"
 
 static uint8_t cali_cep_flag;
 // Negotiation Power Transfer Contract --- PTC
@@ -44,7 +46,7 @@ uint8_t rec_challenge_data[100];
 /// @return
 static uint8_t is_epp_neg_illegal_pkt(uint8_t hdr)
 {
-    if (hdr == 0x01 || hdr == 0x05 || hdr == 0x06 || hdr == 0x15 ||
+    if (hdr == 0x01 || hdr == 0x05 || hdr == 0x06 || hdr == 0x09 || hdr == 0x15 ||
         hdr == 0x26 || hdr == 0x51 || hdr == 0x71 || hdr == 0x81 || 
         /*hdr == 0x03 ||*/ hdr == 0x16 || hdr == 0x17 || hdr == 0x25 || hdr == 0x27 ||
         hdr == 0x36 || hdr == 0x37 || hdr == 0x46 || hdr == 0x47 || hdr == 0x56 || hdr == 0x57 ||
@@ -60,15 +62,6 @@ static uint8_t is_epp_neg_proprietary_pkt(uint8_t hdr)
     if(hdr == 0x18 || hdr == 0x19 || hdr == 0x28 || hdr == 0x29 || hdr == 0x38 || hdr == 0x48 ||
        hdr == 0x58 || hdr == 0x68 || hdr == 0x78 || hdr == 0x84 || hdr == 0xA4 || hdr == 0xC4 ||
        hdr == 0xE2)
-    {
-        return 1;
-    }
-    return 0;
-}
-
-static uint8_t is_epp_neg_reserved_pkt(uint8_t hdr)
-{
-    if(hdr == 0xE9 || hdr == 0x72 || hdr == 0x99 || hdr == 0x9A || hdr == 0xDF )
     {
         return 1;
     }
@@ -106,10 +99,6 @@ uint8_t is_ADT_valid_packet_type(int value)
     return 0; // Invalid packet type
 }
 
-
-/// @brief         Initialize PTC
-/// @param[in]      void
-/// @param  
 void initializePTC(void)
 {
     contract.nego_mask = 0;
@@ -123,14 +112,11 @@ void initializePTC(void)
 
     contract.re_ping_delay = 0;
 
-    // EPP_Debug("\r\n PTC init");
-    // EPP_Debug("\r\n PTC init ref_power:%d", contract.ref_power);
-    // EPP_Debug("\r\n PTC init guaranteed_power:%d", contract.guaranteed_power);
-    // EPP_Debug("\r\n PTC init wait_update:%d", contract.wait_update);
-    // EPP_Debug("\r\n PTC init fsk_params.pola:%d", contract.fsk_params.pola);
-    // EPP_Debug("\r\n PTC init fsk_params.depth:%d", contract.fsk_params.depth);
-
     epp_fod.epp_fod_mode = 0;
+
+    contract.nego_fod_mask = 0;
+
+    osal_mem_clear(&epp_auth, sizeof(epp_auth));
 }
 
 /**
@@ -181,11 +167,11 @@ void wpc_epp_GRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         fml_fsk_data_send(EPWM1, T_RESPONSE, data_empty, wpc_msg_size_get(data_empty[0]) + 1);
         break;
     }
-    osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE + 100, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //480 ms
+//    osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE + 100, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //480 ms
+    //超时应该从发完FSK再开始计算
+//    osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE + 100, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //480 ms
+		gd->tx_infos.fsk_done_event |= 0x10;
 }
-
-
-
 
 /**
  * @brief          SRQ packet process
@@ -194,13 +180,13 @@ void wpc_epp_GRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
  */
 void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 {
-//    struct epp_ptx_fsk_pkt_t fsk_pkt = {};
     uint8_t i, cnt = 0, data = 0; // Verify contract quantity
 
     if (epp_ask == NULL) // if epp_ask is NULL, return directly
     {
         return;
     }
+
     switch (epp_ask->msg.srq.request)
     {
     case EPP_SRQ_en_00:            // End negotiation
@@ -213,7 +199,27 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
             }
             data >>= 1;
         }
+
+        if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_gp_01))
+        {
+        	printk("\r\n contract.guaranteed_power= %d gd->rx_infos.gant_power=%d", contract.guaranteed_power, gd->rx_infos.guaranteed_power);
+        	if (contract.guaranteed_power == gd->rx_infos.guaranteed_power)
+        	{
+        		cnt--;
+        	}
+        }
+
+        if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_rp_04))
+        {
+        	printk("\r\n contract.ref_power= %d gd->rx_infos.max_power=%d", contract.ref_power, gd->rx_infos.max_power);
+        	if (contract.ref_power == gd->rx_infos.max_power)
+        	{
+        		cnt--;
+        	}
+        }
+
         EPP_Debug("\r\n NGE Cnt:%x %d", contract.nego_mask, cnt);
+
         if (epp_ask->msg.srq.parameter != cnt)
         {
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
@@ -221,24 +227,60 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         }
         else
         {
-            if (gd->rx_infos.qi_version > 0x12 && contract.nego_fod_mask != 0x03) // Qi > 1.3 must send FOD/qf and FOD/rf
-            {
-                printk("\r\n enter bpp xfer");
-                EPP_Debug("\r\n No Send FOD/rq or FOD/rf"); // for IEC 8.3.48
-                EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
+        	if (gd->rx_infos.qi_version > 0x12)
+        	{
+        		if (gd->nego_flag == 1) //nego
+        		{
+        			if (contract.nego_fod_mask != 0x03)// Qi > 1.3 must send FOD/qf and FOD/rf
+        			{
+                        printk("\r\n enter bpp xfer");
+                        EPP_Debug("\r\n No Send FOD/rq or FOD/rf"); // for IEC 8.3.48
+                        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
 
-            	gd->rx_infos.power_profile_mode = BPP;
-                osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
-                osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
-            }
-            else
-            {
+                    	gd->rx_infos.power_profile_mode = BPP;
+                        osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
+                        osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
+        			}
+        			else
+        			{
+        				if (qfod_nego(gd->rx_infos.ref_q, gd->rx_infos.ref_f) > 0)
+        				{
+        	                gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
+        					wpc_stop_to_idle(ESYS_ERR_CODE_NEGO_PHASE_FODS_REF_QVALUE_ERR);
+        					return;
+        				}
+        				else
+        				{
+                            if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_fsk_03))
+                            {
+                                contract.wait_update = 1; // Update the content in PTC only after Nego Done
+                            }
+                            gd->rx_infos.max_power = contract.ref_power;
+                            EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+        				}
+        			}
+        		}
+        		else if (gd->nego_flag == 2) //renego
+        		{
+                    if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_fsk_03))
+                    {
+                        contract.wait_update = 1; // Update the content in PTC only after Nego Done
+                    }
+                    gd->rx_infos.max_power = contract.ref_power;
+                    EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+        		}
+        	}
+        	else
+        	{
                 if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_fsk_03))
                 {
                     contract.wait_update = 1; // Update the content in PTC only after Nego Done
                 }
+                gd->rx_infos.max_power = contract.ref_power;
                 EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
-            }
+        	}
+
+            gd->nego_flag = 0;
         }
 
         osal_stop_timerEx(WPC_NEXT_TIMER);
@@ -247,13 +289,26 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         gd->ptx_protocol_phase = WPC_PHASE_XFER;
         gd->ptx_end_nego_event |= EPP_END_NEGO_FLAG;
 
+
+        //TODO: 优化，根据协商的功率决定切到多少duty。
         if (gd->rx_infos.power_profile_mode == EPP)
         {
-    		if (gd->pid_duty < 350)
-    		{
-    			gd->pid_duty = 350;
-    			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
-    		}
+        	if (gd->rx_infos.qi_version == 0x13)
+        	{
+        		if (gd->pid_duty < 350)
+        		{
+        			gd->pid_duty = 350;
+        			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+        		}
+        	}
+        	else
+        	{
+        		if (gd->pid_duty < 250)
+        		{
+        			gd->pid_duty = 250;
+        			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+        		}
+        	}
         }
         else
         {
@@ -267,7 +322,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         break;
     case EPP_SRQ_gp_01: // Received Power reporting
 
-        if (epp_ask->msg.srq.parameter > 0x1E)
+        if ((epp_ask->msg.srq.parameter & 0x3F) > 0x1E)
         {
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
             BIT_CLEAR(&contract.nego_mask, EPP_SRQ_gp_01);
@@ -277,7 +332,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         if (contract.guaranteed_power != epp_ask->msg.srq.parameter)
         {
             contract.guaranteed_power = epp_ask->msg.srq.parameter;
-            gd->rx_infos.gant_power = epp_ask->msg.srq.parameter;
+//            gd->rx_infos.gant_power = epp_ask->msg.srq.parameter;
             BIT_SET(&contract.nego_mask, EPP_SRQ_gp_01);
             EPP_Debug("\r\n MASK gp");
         }
@@ -298,14 +353,22 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 
         if(IS_BIT_SET(contract.nego_mask, EPP_SRQ_rpr_02))
         {
-            EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
+        	if (gd->nego_flag == 2) //renego
+        	{
+        		EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
+        	}
+        	else
+        	{
+                EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+                BIT_SET(&contract.nego_mask, EPP_SRQ_rpr_02);
+        	}
         }
         else
         {
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+            BIT_SET(&contract.nego_mask, EPP_SRQ_rpr_02);
         }
         
-        BIT_SET(&contract.nego_mask, EPP_SRQ_rpr_02);
         EPP_Debug("\r\n MASK rpr");
         break;
     case EPP_SRQ_fsk_03: // FSK configuration
@@ -345,7 +408,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         if (contract.ref_power != epp_ask->msg.srq.parameter)
         {
             contract.ref_power = epp_ask->msg.srq.parameter;
-            gd->rx_infos.max_power = epp_ask->msg.srq.parameter;
+//            gd->rx_infos.max_power = epp_ask->msg.srq.parameter;
             BIT_SET(&contract.nego_mask, EPP_SRQ_rp_04);
             EPP_Debug("\r\n MASK ref power");
         }
@@ -359,8 +422,10 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
     case EPP_SRQ_rep_05: // Re-ping delay
         gd->tx_infos.t_re_ping = (epp_ask->msg.srq.parameter & 0x3F) * 200;
         EPP_Debug("\r\n re_ping_delay:%d", gd->tx_infos.t_re_ping);
+        gd->tx_infos.reping_cnt = (epp_ask->msg.srq.parameter & 0x3F) * 200 / 100;
         if(gd->tx_infos.t_re_ping == 0 || gd->tx_infos.t_re_ping >= 12600) //re_ping_delay 0~12600ms
         {
+        	gd->tx_infos.reping_cnt = 2;
             BIT_CLEAR(&contract.nego_mask, EPP_SRQ_rep_05);
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
         }
@@ -369,7 +434,6 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
             BIT_SET(&contract.nego_mask, EPP_SRQ_rep_05);
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         }
-
         break;
     case EPP_SRQ_rcs_06: // Recalibration support
         BIT_SET(&contract.nego_mask, EPP_SRQ_rcs_06);
@@ -396,14 +460,46 @@ void wpc_epp_FOD_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
     switch (epp_ask->msg.fod.type)
     {
     case FOD_TYPE_qf:
-        gd->tx_infos.q_fact = epp_ask->msg.fod.data; // qfod需要写一下
+        gd->rx_infos.ref_q = epp_ask->msg.fod.data;
         BIT_SET(&contract.nego_fod_mask, FOD_TYPE_qf);
-        EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_ACK);
+
+        if (contract.nego_fod_mask == 0x03)
+        {
+            if (qfod_nego(gd->rx_infos.ref_q, gd->rx_infos.ref_f) > 0)
+            {
+            	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_NAK);
+            	gd->tx_infos.fsk_done_event |= 0x20;
+            }
+            else
+            {
+            	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_ACK);
+            }
+        }
+        else
+        {
+        	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_ACK);
+        }
         break;
     case FOD_TYPE_rf:
-        gd->tx_infos.f_self = epp_ask->msg.fod.data;
+        gd->rx_infos.ref_f = epp_ask->msg.fod.data;
         BIT_SET(&contract.nego_fod_mask, FOD_TYPE_rf);
-        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+
+        if (contract.nego_fod_mask == 0x03)
+        {
+            if (qfod_nego(gd->rx_infos.ref_q, gd->rx_infos.ref_f) > 0)
+            {
+            	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_NAK);
+            	gd->tx_infos.fsk_done_event |= 0x20;
+            }
+            else
+            {
+            	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_ACK);
+            }
+        }
+        else
+        {
+        	EPP_FSK_Transmit(EPWM1, T_RESPONSE , _FSK_ACK);
+        }
         break;
     default:
         EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
@@ -443,9 +539,9 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
     case EPP_PRx_PKT_TYP_GRQ: // 0x07
         wpc_epp_GRQ_pkt_process(com_ask);
         break;
-    case EPP_PRx_PKT_TYP_NEGO: // 0x09
-        EPP_Debug("\r\n EPP Negotiation phase process NEGO packet");
-        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+//    case EPP_PRx_PKT_TYP_NEGO: // 0x09
+//        EPP_Debug("\r\n EPP Negotiation phase process NEGO packet");
+//        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         break;
     case EPP_PRx_PKT_TYP_SRQ: // 0x20
         wpc_epp_SRQ_pkt_process(com_ask);
@@ -458,19 +554,47 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
         EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
         break;
     case EPP_PRx_PKT_TYP_CE:
-    case EPP_PRx_PKT_TYPE_RPP_8bit: // 在nego阶段时如果收到CEP/RP8bit包，则认为Rx NEGO Fail
-    	gd->rx_infos.power_profile_mode = BPP;
+    	if (gd->nego_flag == 1)
+    	{
+        	gd->rx_infos.power_profile_mode = BPP;
+        	printk("\r\n enter bpp xfer");
+    	}
         gd->ptx_protocol_phase = WPC_PHASE_XFER;
         osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
         osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
         osal_stop_timerEx(WPC_NEXT_TIMER);
-        printk("\r\n enter bpp xfer");
+        break;
+    case EPP_PRx_PKT_TYPE_RPP_8bit: // 在nego阶段时如果收到CEP/RP8bit包，则认为Rx NEGO Fail
+    	if (gd->nego_flag == 1)
+    	{
+        	gd->rx_infos.power_profile_mode = BPP;
+        	printk("\r\n enter bpp xfer");
+            gd->ptx_protocol_phase = WPC_PHASE_XFER;
+            osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
+            osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
+            osal_stop_timerEx(WPC_NEXT_TIMER);
+    	}
+    	else
+    	{
+            gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+            wpc_stop_to_idle(ESYS_ERR_CODE_NEG_PHASE_NO_THIS_PKT);
+            goto __NEGO_PHASE_ERR__;
+    	}
         break;
     case EPP_PRx_PKT_TYPE_RPP_24bit:
-        wpc_epp_RPP_24bit_pkt_process(com_ask);
-        gd->ptx_protocol_phase = WPC_PHASE_XFER;
-        osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
-        osal_start_timerEx(WPC_RPP_TIMER, EPP_RP1_TIMEOUT, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //// Enter RP1 first when entering EPP mode
+    	if (gd->nego_flag == 1)
+    	{
+            gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+            wpc_stop_to_idle(ESYS_ERR_CODE_NEG_PHASE_NO_THIS_PKT);
+            goto __NEGO_PHASE_ERR__;
+    	}
+    	else //renego and no end
+    	{
+            wpc_epp_RPP_24bit_pkt_process(com_ask);
+            gd->ptx_protocol_phase = WPC_PHASE_XFER;
+            osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
+            osal_start_timerEx(WPC_RPP_TIMER, EPP_RP1_TIMEOUT, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //// Enter RP1 first when entering EPP mode
+    	}
         break;
     default:
         if (is_epp_neg_illegal_pkt(com_ask->hdr))
@@ -486,7 +610,7 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
             EPP_Debug("\r\nEPP Negotiation phase process proprietary packet");
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
         }
-        else if(is_epp_neg_reserved_pkt(com_ask->hdr))
+        else/* if(is_epp_neg_reserved_pkt(com_ask->hdr))*/
         {
             EPP_Debug("\r\nEPP Negotiation phase process reserved packet");
             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
@@ -494,7 +618,7 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
         break;
     }
 
-    if (gd->ptx_protocol_phase != WPC_PHASE_NEGO)
+    if (gd->ptx_protocol_phase == WPC_PHASE_NEGO)
     {
     	osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
     }
@@ -682,6 +806,7 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
     if(contract.wait_update == 1)
     {
         contract.wait_update = 0;
+//        gd->rx_infos.max_power = contract.ref_power;
         fml_fsk_param_set(EPWM1, gd->fsk_cfg.polar, gd->fsk_cfg.depth, gd->fsk_cfg.cycle, gd->fsk_cfg.prmbl);
     }
     
@@ -718,23 +843,14 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_infos.cep_val = 0;
 		}
 
+		if (gd->rx_infos.cep_val == -60 && gd->rx_infos.pch_t_delay == 0x32)
+		{
+			printk("\r\n LDSTP_EPP");
+			gd->atl_test_ldstp_epp_N60 = 1;
+		}
+
 		osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 		osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
-
-//        gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
-//        if(gd->rx_infos.cep_val < -20) //IEC: 6.2.05
-//        {
-//            gd->rx_infos.cep_val += 10;
-//        }
-//
-//        if (gd->rx_infos.cep_val > 0 || gd->rx_infos.cep_val < 0)
-//        {
-//            osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
-//        }
-//        else
-//        {
-//            osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.wnd_size, 0, WPC_TASK, WPC_EVT_1ST_WND);
-//        }
         break;
     case EPP_PRx_PKT_TYPE_RPP_24bit: // 0x31
         wpc_epp_RPP_24bit_pkt_process((struct com_prx_ask_pkt_t *)com_ask);
@@ -743,9 +859,8 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 //        hal_epwm_pwm_stop(EPWM1); //need to < 28ms for IOC test
 //        wpc_epp_xfer_phase_error();
 //        gd->sys_err_code = ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT;
-//        wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT);
-//        gd->ptx_protocol_phase = WPC_PHASE_IDLE;
-
+    	gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
+        wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_NO_THIS_PKT);
         EPP_Debug("\r\n error: bpp_rp8");
         break;
     case EPP_PRx_PKT_TYP_CHS:
@@ -764,34 +879,28 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
         // clear PTC
         // contract.nego_mask = 0;
         // Send ACK
-        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
-        // goto nego phase
-        // osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE + 2000, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
-        gd->ptx_protocol_phase = WPC_PHASE_NEGO;
+    	EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
+        osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE + 2000, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+        gd->ptx_protocol_phase = WPC_PHASE_NEGO; // goto nego phase
+        gd->nego_flag = 2;
         EPP_Debug("goto nego phase");
-        return;
         break;
-    case EPP_PRx_PKT_TYP_PCH:
-        // off time == 0
-        if (gd->rx_infos.pch_t_delay == 0)
-            break;
-    case EPP_PRx_PKT_TYP_SRQ:
-        gd->ptx_protocol_phase = WPC_PHASE_NEGO;   // 这么写不好，但是呢，先这样吧
-        wpc_epp_nego_phase_process(com_ask);
-        break;
-
+//    case EPP_PRx_PKT_TYP_PCH:
+//        // off time == 0
+//        if (gd->rx_infos.pch_t_delay == 0)
+//            break;
+//    case EPP_PRx_PKT_TYP_SRQ:
+//        gd->ptx_protocol_phase = WPC_PHASE_NEGO;   // 这么写不好，但是呢，先这样吧
+//        wpc_epp_nego_phase_process(com_ask);
+//        break;
     case 0x28:
-//		if (0x5C == gd->rx_infos.prmc)
-//		{//ERX_TYPE_NUVOLTA CALIBRATION
-//			jig_store_Q_value_process(com_ask);
-//		}
 		break;
-
     case EPP_PRx_PKT_TYP_SIG:
     case EPP_PRx_PKT_TYP_ID:
     case EPP_PRx_PKT_TYP_CFG:
+    case EPP_PRx_PKT_TYP_PCH:
+    case EPP_PRx_PKT_TYP_SRQ:
         wpc_epp_xfer_phase_error();
-
     default:
         is_epp_xfer_illegal_pkt(com_ask->hdr);
         break;
@@ -890,10 +999,11 @@ void wpc_epp_ADC_pkt_process(struct com_prx_ask_pkt_t *com_ask)
     case ADC_rst:
         EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         break;
-    case ADC_prop0:
-        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
-        break;
+//    case ADC_prop0:
+//        EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
+//        break;
     default:
+    	EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
         break;
     }
 
@@ -943,6 +1053,7 @@ void wpc_epp_ADT_pkt_process(struct com_prx_ask_pkt_t *com_ask)
             EPP_Debug("\r\n ---> slot:%d", com_ask->msg.adt.data[1] & 0x0F);
 
             epp_auth.send_digest_slot = com_ask->msg.adt.data[1] & 0x0F;
+            printk("\r\n epp_auth.send_digest_slot: %d", epp_auth.send_digest_slot);
             epp_auth.EPP_auth_status = EPP_Auth_GET_DIGEST;
 
             epp_auth.fsk_adt_is_odd = 1;        //initial the odd bit
@@ -971,7 +1082,7 @@ void wpc_epp_ADT_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 
             if (epp_auth.EPP_ADC_offset >= 0x600)
             {
-                epp_auth.EPP_ADC_offset = PU_CERT_LEN_OFS + epp_auth.EPP_ADC_offset - 0x600; // cali the read cert offset
+                epp_auth.EPP_ADC_offset = 2 + 32 + 4 + (cert_chain[36] << 8) + cert_chain[37] + epp_auth.EPP_ADC_offset - 0x600; // cali the read cert offset
                 EPP_Debug("\r\n ---> >= 0x600:%X", epp_auth.EPP_ADC_offset);
             }
 
@@ -1088,7 +1199,8 @@ void wpc_epp_DSR_pkt_handler(struct com_prx_ask_pkt_t *com_ask)
         {
             EPP_Debug("\r\n --->GET_DIGEST DSR_poll");
             epp_auth.EPP_DataStream_Tx_mode = TX_DataStream_OPEN;
-            if(epp_auth.send_digest_slot == 0x01)
+
+            if (epp_auth.send_digest_slot & 0x01)
             {
                 epp_send_adc_start(0x02, 0x00, 0x22);
             }
@@ -1197,7 +1309,7 @@ void wpc_epp_DSR_ack_handler(void)
             EPP_Debug("\r\n DIGEST:");
             EPP_Debug(" Persent: [%d %%] \r\n", (send_digest_index * 100) / send_digest_size);
 
-            if(epp_auth.send_digest_slot == 0x01)
+            if(epp_auth.send_digest_slot & 0x01)
             {
                 // Load 7 bits of data into ADT_pkt. data
                 for (uint8_t i = 0; i < 7; i++)
@@ -1255,7 +1367,7 @@ void wpc_epp_DSR_ack_handler(void)
                 else
                 {
                     fsk_pkt.epp_fsk.ADT_pkt.data[i] = cert_chain[epp_auth.send_cert_offset];
-                    epp_auth.send_cert_offset ++;
+                    epp_auth.send_cert_offset++;
                 }
 
                 if(epp_auth.send_cert_offset > epp_auth.send_cert_total_len) //It's over the total size. we need to send other head.
@@ -1265,13 +1377,28 @@ void wpc_epp_DSR_ack_handler(void)
                     epp_auth.EPP_auth_status  = EPP_Auth_IDLE; //The entire Certificate has been sent.
                     epp_auth.EPP_DataStream_Tx_mode = TX_DataStream_CLOSE;
                     
-                    //Subtract the total number of heads from the total number of heads 1 to get the remaining quantity, 
+                    //Subtract the total number of heads from the total number of heads 1 to get the remaining quantity,
                     //and publish the remaining portion using small heads.
-                    fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10U;  
+                    fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
+
+                    printk("\r\n send end1: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
 
                     // fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.epp_fsk.data[0], wpc_msg_size_get(fsk_pkt.epp_fsk.data[0]) + 1);
                     break;
                 }
+//                else if (epp_auth.send_cert_offset == epp_auth.send_cert_total_len)
+//                {
+//                    epp_auth.send_cert_offset = 0; //Initialize for next transmission
+//
+//                    epp_auth.EPP_auth_status  = EPP_Auth_IDLE; //The entire Certificate has been sent.
+//                    epp_auth.EPP_DataStream_Tx_mode = TX_DataStream_CLOSE;
+//
+//                    fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
+//
+//                    printk("\r\n send end2: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
+//
+//                    break;
+//                }
             }
 
             for(uint8_t i = 0; i < 8; i++)
@@ -1280,6 +1407,20 @@ void wpc_epp_DSR_ack_handler(void)
             }
 
             fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.epp_fsk.data[0], wpc_msg_size_get(fsk_pkt.epp_fsk.data[0]) + 1);
+
+			if (epp_auth.send_cert_offset == epp_auth.send_cert_total_len)
+			{
+				epp_auth.send_cert_offset = 0; //Initialize for next transmission
+
+				epp_auth.EPP_auth_status  = EPP_Auth_IDLE; //The entire Certificate has been sent.
+				epp_auth.EPP_DataStream_Tx_mode = TX_DataStream_CLOSE;
+
+//				fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
+
+				printk("\r\n send end2");
+
+				break;
+			}
             break;
         case EPP_Auth_GET_CHALLENGE:
             EPP_Debug("\r\n CHALLENGE:");

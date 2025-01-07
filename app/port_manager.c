@@ -43,6 +43,7 @@ void port_manager_task_init(void)
 
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+
 }
 
 
@@ -169,6 +170,20 @@ void port_enum_port0_connect_closed(void)
 	}
 	else
 	{
+		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT1_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
+		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+			port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+		}
+
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
 				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
@@ -295,6 +310,20 @@ void port_enum_port1_connect_closed(void)
 	}
 	else
 	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT0_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+			port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+		}
+
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
 				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 		{
@@ -387,6 +416,21 @@ void port_enum_port2_connect_closed(void)
 	}
 	else
 	{
+
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT0_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT1_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
 				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 		{
@@ -475,6 +519,27 @@ void port_enum_port3_connect_closed(void)
 	}
 	else
 	{
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT0_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
+		{
+			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT1_INDEX,false);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+		}
+
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+		{
+			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+			port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+		}
+
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
 				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 		{
@@ -496,16 +561,19 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
 	{
+		if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA放电
 		hal_tcpc_set_gate_en(PORT0_INDEX,true);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
 	{
+		if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA放电
 		hal_tcpc_set_gate_en(PORT1_INDEX,true);
 	}
 
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
 	{
+		if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA放电s
 		hal_tcpc_set_gate_en(PORT2_INDEX,true);
 	}
 
@@ -841,7 +909,7 @@ void port_enum_port3_connect_success(void)
 
 void port_enum_port0_connect_start(void)
 {
-	printk("%s!\n",__func__);
+	printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n",g_port.port_state[1],g_port.port_state[2],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
@@ -871,7 +939,7 @@ void port_enum_port0_connect_start(void)
 
 void port_enum_port1_connect_start(void)
 {
-	printk("%s!\n",__func__);
+	printk("PORT1 START! PORT0=[%d] PORT2=[%d] PORT3=[%d]\n",g_port.port_state[0],g_port.port_state[2],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
@@ -899,7 +967,7 @@ void port_enum_port1_connect_start(void)
 
 void port_enum_port2_connect_start(void)
 {
-	printk("%s!\n",__func__);
+	printk("PORT2 START! PORT0=[%d] PORT1=[%d] PORT3=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
@@ -932,7 +1000,7 @@ void port_enum_port3_connect_start(void)
 
 	//uint32_t source_pdo = 0;
 
-	printk("%s!\n",__func__);
+	printk("PORT3 START! PORT0=[%d] PORT1=[%d] PORT2=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[2]);
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
@@ -940,6 +1008,11 @@ void port_enum_port3_connect_start(void)
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		hal_tcpc_set_snk_charge_current(CHG_IBUS_MIN,CHG_IBAT_MIN);    //设置充电电流到最小
+	}
+	else
+	{
+		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+		usb_dpdm_select(DPDM_PHY_OFF);
 	}
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);

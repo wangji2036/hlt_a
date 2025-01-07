@@ -125,18 +125,20 @@ void ds_init(void)
 
 static void ds_record_ptx_fsk_data(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 {
-	for (int i=0; i<sizeof(adt_buff_send_cpy); i++)
-	{
-		 adt_buff_send_cpy[i] = fsk_pkt->mpp_fsk.data[i];
-	}
+//	for (int i=0; i<sizeof(adt_buff_send_cpy); i++)
+//	{
+//		 adt_buff_send_cpy[i] = fsk_pkt->mpp_fsk.data[i];
+//	}
+	osal_mem_copy(&adt_buff_send_cpy[0], &fsk_pkt->mpp_fsk.data[0], sizeof(adt_buff_send_cpy));
 }
 
 static void ds_resend_ptx_fsk_data(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 {
-	for(int i=0; i <sizeof(adt_buff_send_cpy); i++)
-	{
-		fsk_pkt->mpp_fsk.data[i] = adt_buff_send_cpy[i];
-	}
+//	for(int i=0; i <sizeof(adt_buff_send_cpy); i++)
+//	{
+//		fsk_pkt->mpp_fsk.data[i] = adt_buff_send_cpy[i];
+//	}
+	osal_mem_copy(&fsk_pkt->mpp_fsk.data[0], &adt_buff_send_cpy[0], sizeof(adt_buff_send_cpy));
 	fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt->mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt->mpp_fsk.data[0]) + 1);
 }
 
@@ -285,18 +287,20 @@ static void ds_mpp_ptx_sadt_xfer(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 				break;
 		}
 
-		for(int i=0; i <adt_last_send_len; i++)
-		{
-			fsk_pkt->mpp_fsk.sadt.data[i] = tmp_buff[i];
-		}
+//		for(int i=0; i <adt_last_send_len; i++)
+//		{
+//			fsk_pkt->mpp_fsk.sadt.data[i] = tmp_buff[i];
+//		}
+		osal_mem_copy(&fsk_pkt->mpp_fsk.sadt.data[0], &tmp_buff[0], adt_last_send_len);
 	}
 	else
 	{
 		adt_last_send_len = (adt_need_send_len - adt_have_send_len > 6) ? 6 : adt_need_send_len - adt_have_send_len;
-		for(int i=0; i <adt_last_send_len; i++)
-		{
-			fsk_pkt->mpp_fsk.sadt.data[i] = *(adt_buff_send_ptr + adt_have_send_len - adt_buff_send_ofs + i);
-		}
+//		for(int i=0; i <adt_last_send_len; i++)
+//		{
+//			fsk_pkt->mpp_fsk.sadt.data[i] = *(adt_buff_send_ptr + adt_have_send_len - adt_buff_send_ofs + i);
+//		}
+		osal_mem_copy(&fsk_pkt->mpp_fsk.sadt.data[0], adt_buff_send_ptr + adt_have_send_len - adt_buff_send_ofs, adt_last_send_len);
 	}
 
 	fsk_pkt->mpp_fsk.sadt.hdr = (ds_outgoing_parity[1] == DS_EVEN) ? (adt_last_send_len + 1) << 4 | 0x06 : (adt_last_send_len + 1) << 4 | 0x07;

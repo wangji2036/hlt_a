@@ -58,7 +58,8 @@ void ap_data_init(void)
 
 
 	ap->ptmc = 0x005c;
-	ap->mpp_dither_en = 0;
+	ap->mpp_dither_en = 1;
+	ap->auth_seic_type = 0; //0-fm1210, 1-t91206, 2-ciu98
 
 	ap->pin_max_cnt = 10;
 	ap->pin_fod_cnt = 250;//10;//0xff;
@@ -89,25 +90,25 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 30000))
 	{
-		ap->q_factor_base_value = 170; // 390;
+		ap->q_factor_base_value = 144;
 	}
 	else
 	{
 		ap->q_factor_base_value = *pdest0;
 	}
-	ap->q_factor_reco_value =  20;
+	ap->q_factor_reco_value =  30;
 	ap->q_factor_limH_value = 500;
 	ap->q_factor_limL_value =  	0;
 
 	if ((*pdest0 < 0) || (*pdest0 > 30000))
 	{
-		ap->fs_base_value = 800; // 2190;
+		ap->fs_base_value = 818;
 	}
 	else
 	{
 		ap->fs_base_value = *pdest1;
 	}
-	ap->fs_reco_value = 20;
+	ap->fs_reco_value = 30;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
 
@@ -116,7 +117,7 @@ void ap_data_init(void)
 	ap->fs_obj_value = 30;//50
 	ap->fs_stable_value = 30;
 
-	ap->t_next_ping = 200;
+	ap->t_next_ping = 100;
 
 	printk("\r\n base_q [%d]", ap->q_factor_base_value);
 	printk("\r\n base_fre [%d]", ap->fs_base_value);
@@ -132,4 +133,5 @@ void gd_data_init(void)
 	}
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
+	gd->tx_infos.fo_exist = 1;
 }

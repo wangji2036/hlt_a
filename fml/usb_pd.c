@@ -425,7 +425,7 @@ static void PE_SNK_Ready_Entry(void)
 			port_vbus = rdo_pps_output_voltage(g_usb_pd_s.snk_rdo);
 		}
 
-		printk("snk port_vbus = %d\n",port_vbus);
+		//printk("snk port_vbus = %d\n",port_vbus);
 	}
 
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);

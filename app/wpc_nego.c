@@ -106,6 +106,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			break;
 		case SRQ_REP_05:
 			gd->tx_infos.t_re_ping = (mpp_ask->msg.srq.parameter & 0x3F) * 200;
+			gd->tx_infos.reping_cnt = (mpp_ask->msg.srq.parameter & 0x3F) * 200 / 100;
 //			gd->tx_infos.dig_ping_type = _360K_FB;//TODO: I think it's not appropriate to set dig_ping_type here
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
@@ -114,7 +115,6 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			{
 				gd->tx_infos.dig_ping_type = _360K_FB;
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-				printk("\r\n 360k-2");
 			}
 			else
 			{
@@ -211,8 +211,9 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			fsk_pkt.mpp_fsk.ecap.cal_support = 0;
 			if (gd->tx_infos.fo_exist)
 			{
-				gd->tx_infos.tar_cap_fod = 250;
-				gd->tx_infos.nego_cap = 150;
+				printk("\r\n xxxx");
+				gd->tx_infos.tar_cap_fod = 100;
+				gd->tx_infos.nego_cap = 100;
 				gd->tx_infos.power_limit_reason = 2;
 			}
 			else if (gd->dploss_cal.success == 1)
@@ -268,15 +269,8 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			fsk_pkt.mpp_fsk.mode_info.active_aux = 0;//active aux mode ID is 0:default 1:Auxiliary mode
 
 			fsk_pkt.mpp_fsk.mode_info.active_main_mode = gd->power_mode;
-#if 0
-			if (gd->power_mode == high)
-				fsk_pkt.mpp_fsk.mode_info.active_main_mode = 3;//active main mode ID: 1 nominal, 2 light load, 3 high power
-			else
-				fsk_pkt.mpp_fsk.mode_info.active_main_mode = 1;//NOK9 power mode trans re-ping
-#endif
 			printk(" active mode: %d", gd->power_mode);
 
-#if (MPP_25W_POWER_MODE_CPM_ENABLE || (!MPP_25W_POWER_MODE_TRANS_W_EPTR && !MPP_25W_POWER_MODE_TRANS_W_EPTR))
 			fsk_pkt.mpp_fsk.mode_info.cpm = 1;
 			fsk_pkt.mpp_fsk.mode_info.cpm_aux = 1;
 
@@ -285,16 +279,7 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			fsk_pkt.mpp_fsk.mode_info.llpm = 0;//1 //light mode is support
 			fsk_pkt.mpp_fsk.mode_info.hpm = 0;//0 //high power mode is support
 			fsk_pkt.mpp_fsk.mode_info.hpm_aux = 0;//high power GianM is support
-#else
-			fsk_pkt.mpp_fsk.mode_info.cpm = 0;
-			fsk_pkt.mpp_fsk.mode_info.cpm_aux = 0;
 
-			fsk_pkt.mpp_fsk.mode_info.npm = 1;//nominal mode is support
-			fsk_pkt.mpp_fsk.mode_info.npm_aux = 0;//nominal GainM (auxiliary mode) is support
-			fsk_pkt.mpp_fsk.mode_info.llpm = 1;//light mode is support
-			fsk_pkt.mpp_fsk.mode_info.hpm = 1;//high power mode is support
-			fsk_pkt.mpp_fsk.mode_info.hpm_aux = 0;//high power GianM is support
-#endif
 			fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 			break;
 		case GET_MATED_Q_RESULT:
@@ -475,9 +460,13 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 
 			fsk_pkt.mpp_fsk.mss.hdr_0x23 = MPP_PTx_PKT_TYP_MSS_23;
 			fsk_pkt.mpp_fsk.mss.error_code = 0;
-			if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360) {
+
+			if (144000 / (EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 360)
+			{
 				fsk_pkt.mpp_fsk.mss.status = 0;
-			} else {
+			}
+			else
+			{
 				if (gd->power_mode == high)
 					fsk_pkt.mpp_fsk.mss.status = 1;//pending
 				else

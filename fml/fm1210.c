@@ -257,7 +257,7 @@ int fm1210_read_cert_hash(uint8_t *rbuf)
     return (ret);
 }
 
-int fm1210_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
+int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
 {
     uint16_t slen = 0;
     uint16_t read_len;
@@ -357,7 +357,7 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint16_t *rlen)
     return (ret);
 }
 
-int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, uint16_t manufacturer_cert_len, uint8_t *rbuf, uint16_t *rlen)
+int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, uint16_t manufacturer_cert_len, uint8_t *rbuf, uint32_t *rlen)
 {
     unsigned char ret = 0;
 

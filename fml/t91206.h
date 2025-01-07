@@ -10,15 +10,16 @@
 #define FAILED (-1)
 #endif
 
-#define T91206_I2C_ADDRESS    0xA0   
-typedef struct _TRANSMIT_DATA {
-    unsigned char               *tx;
-    int                         tx_len;
-    unsigned char               *rx;
-    int                         rx_len;
-    int                         max_wait_time;
-    int                         execution_time;
-}TRANSMIT_DATA;
+#define T91206_I2C_ADDRESS    0xA0
+typedef struct _TRANSMIT_DATA
+{
+    unsigned char *tx;
+    int            tx_len;
+    unsigned char  *rx;
+    int            rx_len;
+    int            max_wait_time;
+    int            execution_time;
+} TRANSMIT_DATA;
 
 
 #define FRAME_TAG               0xAA
@@ -132,8 +133,10 @@ int I2C_Write(unsigned char *TxBuf, int len);
 int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned long Timeout);
 unsigned char tmc_i2c_crc(unsigned char byAccum, unsigned char * pbyBuf, unsigned short wLen);
 
+
+int t91206_get_qi_id(uint8_t *rbuf);
 int t91206_read_cert_hash(uint8_t *rbuf);
-int t91206_read_se_cert(uint8_t *rbuf, uint16_t *rlen);
+int t91206_read_se_cert(uint8_t *rbuf, uint32_t *rlen);
 int t91206_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, uint16_t manufacturer_cert_len, uint8_t *rbuf, uint16_t *rlen);
 int t91206_get_tbs_auth(uint8_t *rbuf , uint8_t *array_random);
 

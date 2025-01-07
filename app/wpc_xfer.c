@@ -53,7 +53,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 				    (com_ask->msg.prop.data[0] == 0x43 && com_ask->msg.prop.data[1] == 0x21))
 				{
 					qfod_qdt_cali_init();
-					gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_CAL;
+					gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_CALI;
 					wpc_stop_to_idle(ESYS_ERR_CODE_NEED_QDT_CALIBRATION);
 				}
 			}
@@ -99,11 +99,11 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case WPC_PRx_PKT_TYP_CE_03:
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-			if (gd->rx_power > 6500 && gd->rx_infos.power_profile_mode == MPP)
+			if (gd->tx_power > 8000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 1;
 			}
-			else if (gd->rx_power < 6200)
+			else if (gd->tx_power < 7000)
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 0;
 			}
@@ -114,6 +114,20 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				printk("#");
 			}
 
+			if (gd->rx_infos.pch_t_delay == 0x32)
+			{
+				if (gd->rx_infos.cep_val == -60)
+				{
+					printk("\r\n LDSTP_BPP -60");
+					gd->atl_test_ldstp_bpp_N60 = 1;
+				}
+				else if (gd->rx_infos.cep_val == 60)
+				{
+					printk("\r\n LDSTP_BPP +60");
+					gd->atl_test_ldstp_bpp_P60 = 1;
+				}
+			}
+
 			osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 			break;
@@ -121,6 +135,34 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_power = (com_ask->msg.rp8.rp_value * (uint32_t)gd->rx_infos.max_power * 1000) >> 8;
 			osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
+
+			if (++gd->alt_test_resv_rp8_cnt > 200)
+			{
+				gd->alt_test_resv_rp8_cnt = 200;
+			}
+
+			if (gd->alt_test_resv_rp8_cnt == 1)
+			{
+				gd->alt_test_1st_rp8_value = com_ask->msg.rp8.rp_value;
+			}
+
+			if (gd->alt_test_resv_rp8_cnt < 50)
+			{
+				if (gd->alt_test_1st_rp8_value <= 0x10 && com_ask->msg.rp8.rp_value + 2 >= gd->alt_test_last_rp8_value && com_ask->msg.rp8.rp_value <= gd->alt_test_last_rp8_value + 8)
+				{
+					if (++gd->alt_test_continous_cnt >= 3)
+					{
+						gd->rx_infos.rx_type = EPRX_TYPE_NOK9_BPP_FOD_TPR_5;
+						gd->alt_test_continous_cnt = 3;
+						printk(" [BPP_TPR#5_FOD]");
+					}
+				}
+				else
+				{
+					gd->alt_test_continous_cnt = 0;
+				}
+			}
+			gd->alt_test_last_rp8_value = com_ask->msg.rp8.rp_value;
 			break;
 		case WPC_PRx_PKT_TYP_CHS_05:
 			gd->rx_infos.chr_status = com_ask->msg.chs.chs_value;
@@ -148,7 +190,7 @@ __XFER_PHASE_ERR__:
 
 void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 {
-	uint8_t res = 0;
+	uint8_t res;
 	if (mpp_ask->msg.report_pla.select == 1)//TODO: add fod func here, add a timer print log to avoid the FSK window
 	{
 		gd->rx_power = mpp_ask->msg.report_pla.rcvd_power_msb << 8 | mpp_ask->msg.report_pla.rcvd_power_lsb;
@@ -157,7 +199,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 		gd->tx_infos.fsk_done_event |= 8;//set reported event print long log
 
-		//res = pfod_mpla();
+		res = pfod_mpla();
 		printk("\r\n ---> res-> %d", res);
 		if (res == 0)
 		{
@@ -182,14 +224,13 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		{
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_NAK);
 
-			gd->rx_infos.cep_val = -5;
+			gd->rx_infos.cep_val = -8;
 			osal_start_timerEx(WPC_NEXT_TIMER, T_XCE_RESP_TO + gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 		}
 		else
 		{
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ATN);
 		}
-
 	}
 	else if (mpp_ask->msg.report_pla.select == 0)
 	{
@@ -203,7 +244,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 void mpp_pla2_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 {
-	uint8_t res = 0;
+	uint8_t res;
 
 	gd->rx_infos.pla_type = 2;
 	//gd->rx_infos.rpp_tick++;
@@ -216,10 +257,10 @@ void mpp_pla2_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 	gd->tx_infos.fsk_done_event |= 8;//set reported event print long log
 
-	//if (gd->dploss_cal.success == 1)
-	//	res = pfod_dploss();
-	//else
-	//	res = pfod_mpla();
+	if (gd->dploss_cal.success == 1)
+		res = pfod_dploss();
+	else
+		res = pfod_mpla();
 
 	if (res == 0)
 	{
@@ -251,11 +292,11 @@ void mpp_dsr_poll_handler(void)
 
 		fsk_pkt.mpp_fsk.ecap.hdr_8F = MPP_PTx_PKT_TYP_ECAP_8F;
 		fsk_pkt.mpp_fsk.ecap.selector = 0x01;
-		fsk_pkt.mpp_fsk.ecap.potential_power_bit0_1 = (gd->tx_infos.max_cap>>8)&0b11;//100mW/bit
-		fsk_pkt.mpp_fsk.ecap.potential_power_bit2_9 = gd->tx_infos.max_cap&0xFF;
-		fsk_pkt.mpp_fsk.ecap.nego_power_bit0_1 = (gd->tx_infos.nego_cap>>8)&0b11;
-		fsk_pkt.mpp_fsk.ecap.nego_power_bit2_9 =  gd->tx_infos.nego_cap&0xFF;
-		fsk_pkt.mpp_fsk.ecap.pow_limit_reason = gd->tx_infos.power_limit_reason;//fo presence
+		fsk_pkt.mpp_fsk.ecap.potential_power_bit0_1 = (gd->tx_infos.max_cap >> 8) & 0b11;//100mW/bit
+		fsk_pkt.mpp_fsk.ecap.potential_power_bit2_9 = gd->tx_infos.max_cap & 0xFF;
+		fsk_pkt.mpp_fsk.ecap.nego_power_bit0_1      = (gd->tx_infos.nego_cap >> 8) & 0b11;
+		fsk_pkt.mpp_fsk.ecap.nego_power_bit2_9      =  gd->tx_infos.nego_cap & 0xFF;
+		fsk_pkt.mpp_fsk.ecap.pow_limit_reason = gd->tx_infos.power_limit_reason; //fo presence
 		fsk_pkt.mpp_fsk.ecap.concurrent_data_stream = 2;//TODO:
 		fsk_pkt.mpp_fsk.ecap.buffer_size = 3;
 		fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
@@ -386,7 +427,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 
 			osal_start_timerEx(WPC_CEP_TIMER, T_MPP_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 
-			if ((need_atn_cnt != 0) || (TRUE == gd->tx_infos.flg_cloak_tx_enter) || (gd->tx_infos.need_renego_cap == 1) || \
+			if ((need_atn_cnt != 0) || (TRUE == gd->tx_infos.flg_cloak_tx_enter) /*|| (gd->tx_infos.need_renego_cap == 1)*/ || \
 				(gd->tx_infos.power_mode_trans_atn == 1) || (gd->tx_infos.power_mode_trans_cloak == 1))
 			{
 				if (need_atn_cnt > 0) need_atn_cnt--;
@@ -421,8 +462,9 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 				}
 
-				osal_start_timerEx(WPC_NEXT_TIMER, T_XCE_RESP_TO + gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
+//				osal_start_timerEx(WPC_NEXT_TIMER, T_XCE_RESP_TO + gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 			}
+			osal_start_timerEx(WPC_NEXT_TIMER, T_XCE_RESP_TO + gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 			break;
 		case WPC_PRx_PKT_TYP_NEGO_09:
 			osal_stop_timerEx(WPC_CEP_TIMER);
@@ -467,18 +509,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->power_mode = mpp_ask->msg.msr.main_mode; //high;
 				printk(" [MSR trans:%d aux:%d]",mpp_ask->msg.msr.main_mode, mpp_ask->msg.msr.aux);
-
-#if MPP_25W_POWER_MODE_TRANS_W_EPTR
-				fsk_pkt.mpp_fsk.mss.status = 1;//pending, power mode trans with intteruption
-				gd->tx_infos.power_mode_trans_atn = 1;
-				gd->tx_infos.power_mode_trans_eptr = 1;
-#elif MPP_25W_POWER_MODE_TRANS_W_CLOAK
-				fsk_pkt.mpp_fsk.mss.status = 1;//pending, power mode trans with intteruption
-				gd->tx_infos.power_mode_trans_atn = 1;
-				gd->tx_infos.power_mode_trans_cloak = 1;
-#else
 				fsk_pkt.mpp_fsk.mss.status = 0;//success, power mode trans without break
-#endif
 			}
 			else
 			{
@@ -603,7 +634,6 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 	switch (mpp->hdr)
 	{
 		case MPP_PRx_PKT_TYP_CLOAK_18:
-
 			if (TRUE == gd->tx_infos.flg_cloak_tx_init)
 			{
 				if (cnt_cloak_pkt++ > 5)
@@ -633,8 +663,6 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 		case MPP_PRx_PKT_TYP_REPORT_58:
 			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT_EX, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 			gd->tx_infos.flg_cloak_tx_exit = FALSE;
-
-
 			uint32_t tmp_id = 0;
 			uint32_t tmp_base_id = 0;
 			tmp_id = ((mpp->msg.report_xid.prx_byteid0 << 16 | mpp->msg.report_xid.prx_byteid1 << 8 | mpp->msg.report_xid.prx_byteid2)>>3) & 0xFFFFF;
@@ -651,7 +679,6 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT_EX, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 			}
 			break;
-
 		case MPP_PRx_PKT_TYP_GET_28:
 			mpp_get_pkt_process(mpp);
 			osal_stop_timerEx(WPC_NEXT_TIMER);
@@ -660,13 +687,11 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 			osal_start_timerEx(WPC_CEP_TIMER, T_MPP_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 			osal_start_timerEx(WPC_RPP_TIMER, T_MPP_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
 			break;
-
 		default:
 			if (is_cloak_phase_illegal_pkt(com_pkt->hdr))
 			{
 _CLOAK_PHASE_ERR_:
 				gd->tx_infos.flg_mode_cloak = FALSE;
-
 				gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 				wpc_stop_to_idle(ESYS_ERR_CODE_CLOAK_PHASE_NO_THIS_PKT);
 			}

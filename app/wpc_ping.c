@@ -28,9 +28,39 @@ void wpc_ping_phase_process(struct com_prx_ask_pkt_t *com_ask)
 		gd->rx_infos.mpp_restricted_mode = 0;
 		gd->tx_infos.rx_status = 1;
 
+		gd->nego_flag = 0;
+
 		auth_init();
 		pfod_init();
 		idle_qfod_init();
+
+		gd->alt_test_resv_rp8_cnt = 0;
+
+		/*+++++++++++++++++++++ ATL TPR#1C 6.2.09 Test#23 workaround +++++++++++++++++++++*/
+		if (gd->rx_infos.ssp_value < 200)
+		{
+			if (gd->pid_perd == PLL_CLK / 144000)
+			{
+				wpc_stop_to_idle(ESYS_ERR_CODE_DIGITAL_REPING);
+			}
+		}
+		else
+		{
+			if (gd->pid_perd != PLL_CLK / 360000)
+			{
+				gd->pid_perd = 144000/144;
+				hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+
+				fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
+				fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X36);
+				gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
+
+				fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
+				fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X36, _1030_CFG_DMO2_VCAP_RATIO_K1);
+				gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
+			}
+		}
+		/*--------------------- ATL TPR#1C 6.2.09 Test#23 workaround ---------------------*/
 	}
 	else
 	{

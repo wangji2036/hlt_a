@@ -54,6 +54,7 @@ typedef enum {
 	ESYS_ERR_CODE_CLOAK_PHASE_NO_THIS_PKT           = 0x43,
 	ESYS_ERR_CODE_MPP_ILLEGAL_PKT                   = 0x55,
 	ESYS_ERR_CODE_NEED_QDT_CALIBRATION              = 0x60,
+	ESYS_ERR_CODE_DIGITAL_REPING                    = 0x61,
 	ESYS_ERR_CODE_TYPEC_CHANGE                   	= 0x70,
 } TE_SYS_ERR_CODE;
 
@@ -162,8 +163,8 @@ enum ptx_idle_phase_state_t {
 	WPC_IDLE_STAT_EPT_ERR = 5,
 	WPC_IDLE_STAT_EPT_RES = 6,
 	WPC_IDLE_STAT_EPT_REP = 7,
-	WPC_IDLE_STAT_CLOAK_DET_PING = 8,
-	WPC_IDLE_STAT_QDT_CAL = 9,
+	WPC_IDLE_STAT_CLOAKING = 8,
+	WPC_IDLE_STAT_QDT_CALI = 9,
 };
 
 enum

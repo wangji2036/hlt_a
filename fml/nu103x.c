@@ -185,8 +185,8 @@ void fml_nu103x_dmo1_ping_param_chose(void)
 
 void fml_nu103x_dmo1_xfer_param_chose(void)
 {
-	// if (gd->ptx_protocol_phase != WPC_PHASE_XFER)
-	// 	return;
+	 if (gd->ptx_protocol_phase != WPC_PHASE_XFER || gd->atl_test_tpr1c_coil_flag == 1)
+	 	return;
 
 	if (gd->dmo1_phase != _NU103x_DM_PHASE_DIG_PING)
 	{
@@ -229,7 +229,7 @@ void fml_nu103x_dmo2_ping_param_chose(void)
 
 void fml_nu103x_dmo2_xfer_param_chose(void)
 {
-	 if (gd->ptx_protocol_phase != WPC_PHASE_XFER)
+	 if (gd->ptx_protocol_phase != WPC_PHASE_XFER || gd->atl_test_tpr1c_coil_flag == 1)
 	 	return;
 
 	if (gd->dmo2_phase != _NU103x_DM_PHASE_DIG_PING)

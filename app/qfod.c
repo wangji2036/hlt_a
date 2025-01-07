@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "_wpc.h"
 #include "app.h"
+#include "pfod.h"
 #include "qfod.h"
 
 static uint8_t cali_max_cnt;
@@ -61,4 +62,60 @@ void qfod_qdt_cali_process(void)
 			hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
 		}
 	}
+}
+
+uint8_t qfod_nego(uint8_t ref_q, uint8_t ref_f)
+{
+	uint8_t result = 0;
+
+	///MP.TPR#MP3
+	if (ref_q >= 0x7C && ref_q <= 0x8F && ref_f >= 0x79 && ref_f <= 0x85)
+	{
+		gd->rx_infos.rx_type = EPRX_TYPE_NOK9_EPP_FOD_TPR_MP3;
+		if (gd->tx_infos.q_fact + 110 < ap->q_factor_base_value && gd->tx_infos.f_self + 50 > ap->fs_base_value)
+		{
+			result = 1;
+		}
+		printk("\r\n TPR.MP3");
+	}
+	///MP.TPR#7
+//	else if (ref_q == 0x81)
+//	{
+//		if (gd->tx_infos.q_fact + 80 < ap->q_factor_base_value)
+//		{
+//			result = 1;
+//		}
+//	}
+	///MP.TPR#MP4
+	else if (ref_q >= 0x25 && ref_q <= 0x28 && ref_f >= 0x73 && ref_f <= 0x75)
+	{
+		gd->rx_infos.rx_type = EPRX_TYPE_NOK9_EPP_FOD_TPR_MP4;
+		if (gd->tx_infos.q_fact + 110 < ap->q_factor_base_value && gd->tx_infos.f_self + 50 > ap->fs_base_value)
+		{
+			result = 1;
+		}
+		printk("\r\n TPR.MP4");
+	}
+	///MP.TPR#MP1B
+	else if (ref_q >= 0x85 && ref_q <= 0x8C && ref_f >= 0x6B && ref_f <= 0x6F)
+	{
+		gd->rx_infos.rx_type = EPRX_TYPE_NOK9_EPP_FOD_TPR_MP1B;
+		if (gd->tx_infos.q_fact + 110 < ap->q_factor_base_value && gd->tx_infos.f_self > ap->fs_base_value + 50)
+		{
+			result = 1;
+		}
+		printk("\r\n TPR.MP1B");
+	}
+	///MP.TPR#1F
+	else if (ref_q >= 0x7C && ref_q <= 0x83 && ref_f >= 0x70 && ref_f <= 0x74)
+	{
+		gd->rx_infos.rx_type = EPRX_TYPE_NOK9_EPP_FOD_TPR_1F;
+		if (gd->tx_infos.q_fact + 100 < ap->q_factor_base_value && gd->tx_infos.f_self > ap->fs_base_value + 10)
+		{
+			result = 1;
+		}
+		printk("\r\n TPR.#1F");
+	}
+
+	return result;
 }

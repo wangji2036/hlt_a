@@ -135,7 +135,8 @@ void wpc_stop_power(void)
 			}
 			else if (gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP) //should set the ping type
 			{
-				gd->tx_infos.t_next_ping = gd->tx_infos.t_re_ping;
+//				gd->tx_infos.t_next_ping = gd->tx_infos.t_re_ping;
+				gd->tx_infos.t_next_ping = 100;
 			}
 			else if (gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_RES && gd->tx_infos.power_mode_trans_eptr == 1)
 			{
@@ -174,13 +175,21 @@ void wpc_stop_power(void)
 
 	gd->rx_power = 0;
 	gd->tx_power = 0;
+	gd->atl_test_tpr1c_coil_flag = 0;
+	gd->atl_test_ldstp_epp_N60 = 0;
+	gd->atl_test_ldstp_bpp_N60 = 0;
+	gd->atl_test_ldstp_bpp_P60 = 0;
+	gd->alt_test_resv_rp8_cnt = 0;
+	gd->alt_test_last_rp8_value = 0;
+	gd->alt_test_1st_rp8_value = 0;
+	gd->alt_test_continous_cnt = 0;
+
 	special_cep_cnt = 0;
 
 	osal_stop_timerEx(WPC_CEP_TIMER);
 	osal_stop_timerEx(WPC_RPP_TIMER);
-#ifdef	_PRINT_REPING_MSG
+
 	printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
-#endif
 }
 
 static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
@@ -191,6 +200,8 @@ static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 	switch (com_ask->msg.ept.ept_code)
 	{
 		case EPT_CODE_00_Unknown:
+			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_RES;
+			break;
 		case EPT_CODE_02_InternalFault:
 		case EPT_CODE_01_ChargeComplete:
 		case EPT_CODE_03_OverTemperature:
@@ -205,13 +216,16 @@ static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case EPT_CODE_08_NoResponse:
 		case EPT_CODE_0A_NegotiationFailure:
-			gd->tx_infos.ept_attempt_cnt++;
+			gd->tx_infos.ept_attempt_cnt++; //EPT_NR3
+			gd->tx_infos.reping_cnt = 2;
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_RES;
 			break;
 		case EPT_CODE_0B_RestartPowerTransfer:
+			gd->tx_infos.reping_cnt = 2;
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_RES;
 			break;
 		case EPT_CODE_0C_RePing:
+			printk("\r\n re_ping_cnt: %d", gd->tx_infos.reping_cnt);
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_REP;
 			break;
 		default:
@@ -232,6 +246,14 @@ static void wpc_ptx_end_nego_check(struct com_prx_ask_pkt_t *ask_pkt)
 			if (gd->ptx_end_nego_event & EPP_END_NEGO_FLAG)
 			{
 				gd->rx_infos.power_profile_mode = EPP;
+				if (gd->ptx_protocol_phase == WPC_PHASE_XFER)
+				{
+					gd->nego_flag = 2;
+				}
+				else
+				{
+					gd->nego_flag = 1;
+				}
 			}
 			if (gd->ptx_end_nego_event & MPP_END_NEGO_FLAG)
 			{
@@ -414,7 +436,7 @@ void wpc_task_event_handler(uint32_t event)
 			gd->isns_avg = (gd->isns_avg + hal_badc_meas(_BADC_CH_PD6_ADC3)) >> 1;
 			gd->vpwr_avg = (gd->vpwr_avg + g_buckboost.adc_vbus) >> 1;//; hal_badc_meas(_BADC_CH_PB6_ADC7)
 			gd->tx_power = gd->isns_avg * gd->vpwr_avg / 1000;
-			//printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp);
+			printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d fo_exist:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp,gd->tx_infos.fo_exist);
 			break;
 		case WPC_EVT_FSK_RESP_DONE:
 //			if (gd->tx_infos.fsk_done_event & 1)
@@ -463,7 +485,20 @@ void wpc_task_event_handler(uint32_t event)
 			if (gd->tx_infos.fsk_done_event & 8)
 			{
 				gd->tx_infos.fsk_done_event &= ~8;
-			//	osal_set_event(WPC_TASK, WPC_EVT_FOD_REPORTED);
+				osal_set_event(WPC_TASK, WPC_EVT_FOD_REPORTED);
+			}
+
+			if (gd->tx_infos.fsk_done_event & 0x10)
+			{
+				gd->tx_infos.fsk_done_event &= ~0x10;
+				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO); //480 ms
+			}
+
+			if (gd->tx_infos.fsk_done_event & 0x20)
+			{
+				gd->tx_infos.fsk_done_event &= ~0x20;
+				gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_FOD;
+				osal_start_timerEx(WPC_NEXT_TIMER, T_TERMINATE, 0, WPC_TASK, WPC_EVT_STOP_AFTER_FSK);
 			}
 			break;
 		case WPC_EVT_STOP_AFTER_FSK:
@@ -482,6 +517,11 @@ void wpc_task_event_handler(uint32_t event)
 			//	wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_POWER_LOSS_FOD);
 			//	printk("\r\n FOD happen");
 			//}
+			if (pfod_common())
+			{
+                gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
+				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_POWER_LOSS_FOD);
+			}
 			break;
 		case WPC_EVT_HDR_START:
 			break;
@@ -497,13 +537,20 @@ void wpc_task_event_handler(uint32_t event)
 			break;
 		case WPC_EVT_SE_IC_TBS_AUTH:
 			need_atn_cnt = 100;
-			fm1210_get_tbs_auth(array_chall);
-			printk("\r\n tbs_hash:");
-			for (int i=0; i<64; i++)
+			if (ap->auth_seic_type == 1)
 			{
-				printk(" %02X", array_chall[i]);
+				t91206_get_tbs_auth(array_chall, adt_data_recv_buf + 2);
 			}
-			printk("\r\n");
+			else
+			{
+				fm1210_get_tbs_auth(array_chall);
+			}
+//			printk("\r\n tbs_hash:");
+//			for (int i=0; i<64; i++)
+//			{
+//				printk(" %02X", array_chall[i]);
+//			}
+//			printk("\r\n");
 			break;
 		case WPC_EVT_FOD_REPORTED:
 			pfod_log_print();

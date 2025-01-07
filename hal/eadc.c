@@ -54,15 +54,25 @@
 #define EADC_VCAP_CHAN_FIXD_GAIN    (      1385)
 #define EADC_VCAP_CHAN_FIXD_BIAS    (         0)
 
-#define ICAP_MAX_VAULE_360K_GAIN    (       129)
-#define ICAP_MAX_VAULE_360K_BIAS    (       -48)
-#define ICAP_MAX_VAULE_128K_GAIN    (        68)
-#define ICAP_MAX_VAULE_128K_BIAS    (       448)
+#define IRMS_360K_GAIN_NU17112A0    (       127)
+#define IRMS_360K_BIAS_NU17112A0    (      -100)
+#define IMAX_360K_GAIN_NU17112A0    (       136)
+#define IMAX_360K_BIAS_NU17112A0    (         0)
 
-#define ICAP_RMS_VAULE_360K_GAIN    (       127)
-#define ICAP_RMS_VAULE_360K_BIAS    (      -100)
-#define ICAP_RMS_VAULE_128K_GAIN    (       129)
-#define ICAP_RMS_VAULE_128K_BIAS    (      -368)
+#define IRMS_1XXK_GAIN_NU17112A0    (       101)
+#define IRMS_1XXK_BIAS_NU17112A0    (       430)
+#define IMAX_1XXK_GAIN_NU17112A0    (       136)
+#define IMAX_1XXK_BIAS_NU17112A0    (         0)
+
+#define IRMS_360K_GAIN_NU17111A0    (       130)
+#define IRMS_360K_BIAS_NU17111A0    (       -20)
+#define IRMS_1XXK_GAIN_NU17111A0    (        83)
+#define IRMS_1XXK_BIAS_NU17111A0    (       440)
+
+#define IMAX_360K_GAIN_NU17111A0    (       136)
+#define IMAX_360K_BIAS_NU17111A0    (         0)
+#define IMAX_1XXK_GAIN_NU17111A0    (       136)
+#define IMAX_1XXK_BIAS_NU17111A0    (         0)
 
 static uint16_t eadc_vref_gain;
 static  int16_t eadc_vref_bias;
@@ -100,7 +110,12 @@ void hal_eadc_init(void)
 
 static uint16_t hal_eadc_vref_update(void)
 {
-	uint32_t tmp;
+	if (EPWM1->PWM_CTRL.BITS.EPWM_EN == 0)
+	{
+		return 3300;
+	}
+
+	uint32_t tmp, timeout;
 
 	EADC->CTRL.WORD = (_EADC_MODE_DIG_DDM << EADC_CTRL_ADC_MODE_Pos) | (_EADC_CH_INR_V1P2 << EADC_CTRL_CHAN_SEL_Pos) | (_EADC_VREF_V3P3 << EADC_CTRL_VREF_SEL_Pos) |
 			(_EADC_DIG_DDM_LPF_RC_200ns << EADC_CTRL_VCAP_LPF_RC_SEL_Pos) | (_EADC_SAMPLE_DLY_3 << EADC_CTRL_SAMPLE_DLY_SEL_Pos) | EADC_CTRL_ADC_EN_Msk;
@@ -118,7 +133,12 @@ static uint16_t hal_eadc_vref_update(void)
 	delay_1us(20); //for channel stable
 	EADC->FLAG.WORD = EADC_FLAG_DONE_FLAG_Msk;
 	EADC->CTRL.WORD |= EADC_CTRL_VCAP_DETECT_EN_Msk | EADC_CTRL_CONV_START_Msk;
-	while ((EADC->FLAG.WORD & EADC_FLAG_DONE_FLAG_Msk) == 0);
+	timeout = 0;
+	while ((EADC->FLAG.WORD & EADC_FLAG_DONE_FLAG_Msk) == 0)
+	{
+		delay_1us(1);
+		if (++timeout > 1000) break;
+	}
 
 	tmp = 0;
 	for (int i=0; i<20; i++)
@@ -140,6 +160,7 @@ uint16_t hal_eadc_meas(enum eadc_chan_t channel)
 	}
 
 	int32_t tmp[20], vctx_max, vctx_min;
+	uint32_t timeout;
 	uint32_t delta_abs[20], delta_max, delta_sum;
 	uint16_t icol_max_buff[4], icol_rms_buff[4], vctx_p2p_buff[4];
 
@@ -165,7 +186,12 @@ uint16_t hal_eadc_meas(enum eadc_chan_t channel)
 	{
 		EADC->FLAG.WORD = EADC_FLAG_DONE_FLAG_Msk;
 		EADC->CTRL.WORD |= EADC_CTRL_VCAP_DETECT_EN_Msk | EADC_CTRL_CONV_START_Msk;
-		while ((EADC->FLAG.WORD & EADC_FLAG_DONE_FLAG_Msk) == 0);
+		timeout = 0;
+		while ((EADC->FLAG.WORD & EADC_FLAG_DONE_FLAG_Msk) == 0)
+		{
+			delay_1us(1);
+			if (++timeout > 1000) break;
+		}
 
 		for(int i=0; i<20; i++)
 		{
@@ -198,14 +224,30 @@ uint16_t hal_eadc_meas(enum eadc_chan_t channel)
 
 		if ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) == 400) //360K MPP
 		{
-			icol_max_buff[times] = ICAP_MAX_VAULE_360K_GAIN * (gd->ctx * 9 * delta_max) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + ICAP_MAX_VAULE_360K_BIAS;
-			icol_rms_buff[times] = ICAP_RMS_VAULE_360K_GAIN * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + ICAP_RMS_VAULE_360K_BIAS;
+			if (SYS->PID_INFO.BITS.PID == NU17111)
+			{
+				icol_rms_buff[times] = IRMS_360K_GAIN_NU17111A0 * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + IRMS_360K_BIAS_NU17111A0;
+				icol_max_buff[times] = IMAX_360K_GAIN_NU17111A0 * icol_rms_buff[times] / 100 + IMAX_360K_BIAS_NU17111A0;
+			}
+			else
+			{
+				icol_rms_buff[times] = IRMS_360K_GAIN_NU17112A0 * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + IRMS_360K_BIAS_NU17112A0;
+				icol_max_buff[times] = IMAX_360K_GAIN_NU17112A0 * icol_rms_buff[times] / 100 + IMAX_360K_BIAS_NU17112A0;
+			}
 			vctx_p2p_buff[times] = vctx_max - vctx_min;
 		}
 		else
 		{
-			icol_max_buff[times] = ICAP_MAX_VAULE_128K_GAIN * (gd->ctx * 9 * delta_max) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + ICAP_MAX_VAULE_128K_BIAS;
-			icol_rms_buff[times] = ICAP_RMS_VAULE_128K_GAIN * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + ICAP_RMS_VAULE_128K_BIAS;
+			if (SYS->PID_INFO.BITS.PID == NU17111)
+			{
+				icol_rms_buff[times] = IRMS_1XXK_GAIN_NU17111A0 * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + IRMS_1XXK_BIAS_NU17111A0;
+				icol_max_buff[times] = IMAX_1XXK_GAIN_NU17111A0 * icol_rms_buff[times] / 100 + IMAX_1XXK_BIAS_NU17111A0;
+			}
+			else
+			{
+				icol_rms_buff[times] = IRMS_1XXK_GAIN_NU17112A0 * (gd->ctx * 9 * delta_sum) / ((EPWM1->PWM_PERD.BITS.PWM_PERD + 1) * 625) + IRMS_1XXK_BIAS_NU17112A0;
+				icol_max_buff[times] = IMAX_1XXK_GAIN_NU17112A0 * icol_rms_buff[times] / 100 + IMAX_1XXK_BIAS_NU17112A0;
+			}
 			vctx_p2p_buff[times] = vctx_max - vctx_min;
 		}
 	}
@@ -241,8 +283,4 @@ void hal_eadc_ddm_init(void)
 void hal_eadc_stop(void)
 {
 	EADC->CTRL.WORD = 0;
-}
-
-void __attribute__((isr)) EADC_IRQHandler(void)
-{
 }

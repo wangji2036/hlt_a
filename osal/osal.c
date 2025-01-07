@@ -10,7 +10,7 @@ static volatile uint16_t old_ticks;
 
 static const unsigned char bit_map[] =
 {
-	0xff, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
+	0xFF, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
 	   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
 	   5, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
 	   4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0,
@@ -73,7 +73,7 @@ void osal_set_event(uint8_t task_id, uint32_t event)
 {
 	if (task_id >= MAX_TASK)
 	{
-		printk("\r\n invalid event set");
+		printk("\r\n osal: invalid event set");
 		return;
 	}
 
@@ -84,7 +84,7 @@ void osal_clear_event(uint8_t task_id, uint32_t event)
 {
 	if (task_id >= MAX_TASK)
 	{
-		printk("\r\n invalid event clear");
+		printk("\r\n osal: invalid event clear");
 		return;
 	}
 
@@ -95,7 +95,7 @@ void osal_task_handler_reg(uint8_t task_id, void (*handler)(uint32_t))
 {
 	if (task_id >= MAX_TASK)
 	{
-		printk("\r\n invalid event handler register");
+		printk("\r\n osal: invalid event handler register");
 		return;
 	}
 

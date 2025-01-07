@@ -76,6 +76,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "regdef.h"
+#include "printk.h"
 #include "epwm.h"
 
 /* Function Definitions -----------------------------------------------------*/
@@ -137,6 +138,7 @@ void hal_epwm_pwm_update(TS_EPWM *epwm, uint16_t perd_cycle, uint16_t duty_ratio
     	if (duty_ctrl.BITS.CH0_DUTY > duty_min && duty_ctrl.BITS.CH0_DUTY < duty_max)
     	{
     		duty_ctrl.BITS.CH0_DUTY = (perd_ctrl.BITS.PWM_PERD < epwm->PWM_PERD.BITS.PWM_PERD) ? duty_min : duty_max;
+    		printk("\r\n xxxxxxxxxxxxxxxxxxxxxxxxx");
     	}
     }
     /*--------------------- EPWM design issue workaround ---------------------*/
@@ -156,6 +158,7 @@ void hal_epwm_pwm_stop(TS_EPWM *epwm)
     epwm->FSK_CTRL.WORD &= ~EPWM_FSK_CTRL_FSK_EN_Msk;
     epwm->PWM_CTRL.WORD = 0;
     epwm->PWM_PERD.WORD = 0;
+    epwm->PWM_DUTY.WORD = 0;
 }
 
 /**

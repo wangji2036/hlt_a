@@ -194,6 +194,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 						{
 							gd->tx_infos._128_nego_gd = 0;
 						}
+						gd->rx_infos.mpp_restricted_mode = com_ask->msg.xid.resticted;
 					}
 					if (gd->rx_infos.mpp_restricted_mode)
 					{
@@ -207,7 +208,6 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 						}
 					}
 				}
-				gd->rx_infos.mpp_restricted_mode = com_ask->msg.xid.resticted;
 			}
 			else
 			{
@@ -248,6 +248,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 
 			gd->rx_infos.neg = com_ask->msg.cfg.is_nego;
 			gd->rx_infos.max_power = com_ask->msg.cfg.max_power;
+			gd->rx_infos.guaranteed_power = gd->rx_infos.max_power;
 			gd->rx_infos.wnd_size = com_ask->msg.cfg.wind_size << 2;
 			gd->rx_infos.wnd_size = 16;
 			gd->rx_infos.fsk_param = com_ask->msg.cfg.fsk_pol << 2 | com_ask->msg.cfg.fsk_dep;
@@ -304,6 +305,7 @@ goto __CNFG_PHASE_ERR__;
 
 				gd->rx_infos.power_profile_mode = EPP; 
 				gd->ptx_protocol_phase = WPC_PHASE_NEGO; 	//negotiate
+				gd->nego_flag = 1;
 
 				gd->fsk_cfg.cycle = _FSK_BIT_CYCLES_512;
 				gd->fsk_cfg.prmbl = FSK_PRMBL_NONE;
@@ -314,6 +316,7 @@ goto __CNFG_PHASE_ERR__;
 
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
+				pid_set_freq_limit(144000000/112000, 144000000/127772, 144000000/147000);
 goto __CNFG_PHASE_ERR__;
 			}
 			else
@@ -351,10 +354,19 @@ goto __CNFG_PHASE_ERR__;
 					{
 						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
 					}
-					if (gd->rx_infos.ssp_value > 180 && gd->rx_infos.qi_version >= 0x20) //for IOC test
+
+					/*+++++++++++++++++++++ ATL TPR#1C 6.2.09 Test#23 workaround +++++++++++++++++++++*/
+					if (gd->rx_infos.ssp_value > 200) //for IOC test, TPR#1C, 6.2.09 Test#23
 					{
-						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/180000);
+						gd->atl_test_tpr1c_coil_flag = 1;
+						gd->pid_volt = 9000;
+						fml_adp_volt_set(gd->pid_volt);
+						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/204000);
+						pid_set_duty_limit(500, 350, 50);
+						fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+						printk("\r\n IOC_Test,TPR#1C,6.2.09,#23");
 					}
+					/*--------------------- ATL TPR#1C 6.2.09 Test#23 workaround ---------------------*/
 
 					//even MPP/EPP, but input power is limit, enter BPP
 					//BPP
@@ -393,7 +405,8 @@ goto __CNFG_PHASE_ERR__;
 			break;
 	}
 
-	osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT + 50, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
+//	osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT + 50, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
+	osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
 
 __CNFG_PHASE_ERR__:
 	return;

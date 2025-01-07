@@ -19,6 +19,8 @@ static uint16_t u16Isns[5] = {0};
 static uint16_t u16IsnsTmp[5] = {0};
 static uint8_t indexIsns = 0;
 
+uint16_t pre_isns;
+
 void apl_task_init(void)
 {
 //	fml_tntc_otp_init();
@@ -49,50 +51,53 @@ void apl_task_event_handler(uint32_t event)
 
 
 #if 1
-			if (gd->ptx_protocol_phase >= WPC_PHASE_XFER)
+			if (gd->atl_test_tpr1c_coil_flag != 1)
 			{
-				if (gd->dmo1_phase == _NU103x_DM_PHASE_DIG_PING || gd->dmo2_phase == _NU103x_DM_PHASE_DIG_PING)
+				if (gd->ptx_protocol_phase >= WPC_PHASE_XFER)
 				{
-					if (gd->vpwr * gd->isns / 1000 > 1500)
+					if (gd->dmo1_phase == _NU103x_DM_PHASE_DIG_PING || gd->dmo2_phase == _NU103x_DM_PHASE_DIG_PING)
 					{
-						if (gd->dmo1_phase != _NU103x_DM_PHASE_HI_POWER)
+						if (gd->vpwr * gd->isns / 1000 > 1500)
 						{
-							fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-							gd->dmo1_phase = _NU103x_DM_PHASE_HI_POWER;
-						}
+							if (gd->dmo1_phase != _NU103x_DM_PHASE_HI_POWER)
+							{
+								fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+								gd->dmo1_phase = _NU103x_DM_PHASE_HI_POWER;
+							}
 
-						if (gd->dmo2_phase != _NU103x_DM_PHASE_HI_POWER)
+							if (gd->dmo2_phase != _NU103x_DM_PHASE_HI_POWER)
+							{
+								fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K3);
+								gd->dmo2_phase = _NU103x_DM_PHASE_HI_POWER;
+							}
+						}
+						else
 						{
-							fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K3);
+							if (gd->dmo1_phase != _NU103x_DM_PHASE_LO_POWER)
+							{
+								fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+								gd->dmo1_phase = _NU103x_DM_PHASE_LO_POWER;
+							}
+
+							if (gd->dmo2_phase != _NU103x_DM_PHASE_LO_POWER)
+							{
+								fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K2);
+								gd->dmo2_phase = _NU103x_DM_PHASE_LO_POWER;
+							}
+						}
+					}
+					else
+					{
+						if (gd->vpwr * gd->isns / 1000 > 1500)
+						{
+							gd->dmo1_phase = _NU103x_DM_PHASE_HI_POWER;
 							gd->dmo2_phase = _NU103x_DM_PHASE_HI_POWER;
 						}
-					}
-					else
-					{
-						if (gd->dmo1_phase != _NU103x_DM_PHASE_LO_POWER)
+						else
 						{
-							fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
 							gd->dmo1_phase = _NU103x_DM_PHASE_LO_POWER;
-						}
-
-						if (gd->dmo2_phase != _NU103x_DM_PHASE_LO_POWER)
-						{
-							fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K2);
 							gd->dmo2_phase = _NU103x_DM_PHASE_LO_POWER;
 						}
-					}
-				}
-				else
-				{
-					if (gd->vpwr * gd->isns / 1000 > 1500)
-					{
-						gd->dmo1_phase = _NU103x_DM_PHASE_HI_POWER;
-						gd->dmo2_phase = _NU103x_DM_PHASE_HI_POWER;
-					}
-					else
-					{
-						gd->dmo1_phase = _NU103x_DM_PHASE_LO_POWER;
-						gd->dmo2_phase = _NU103x_DM_PHASE_LO_POWER;
 					}
 				}
 			}
@@ -110,6 +115,21 @@ void apl_task_event_handler(uint32_t event)
 			break;
 		case APL_EVT_010ms_POLL:
 			gd->isns = hal_badc_meas(_BADC_CH_PD6_ADC3);
+
+			if (gd->isns < 150 && pre_isns > 500)
+			{
+				if (gd->ptx_protocol_phase == WPC_PHASE_XFER && gd->rx_infos.power_profile_mode == EPP)
+				{
+					gd->pid_perd = gd->pid_limit.perd_lim_lo;
+					gd->pid_duty = gd->pid_limit.duty_lim_lo;
+					hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+					gd->pid_volt = gd->pid_limit.volt_lim_lo;
+					fml_adp_volt_set(gd->pid_volt);
+					printk(" [EPP_OVP_TEST:%d,%d] ", pre_isns, gd->isns);
+				}
+			}
+			pre_isns = gd->isns;
+
 
 			u16Isns[indexIsns++] = gd->isns;
 			if (indexIsns >= 5)

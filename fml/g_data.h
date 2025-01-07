@@ -31,6 +31,7 @@ struct ap_t
 	} led_ctrl;
 
 	uint8_t mpp_dither_en;
+	uint8_t auth_seic_type; //0-fm1210, 1-t91206, 2-ciu98
 
 	uint16_t ptmc;
 	uint16_t t_next_ping;
@@ -188,6 +189,7 @@ struct gd_t
 		 uint8_t fsk_done_event; //1->xce_pid 2->update_fsk_param 3->stop_power
 		uint16_t t_next_ping;
 		uint16_t t_re_ping;
+		uint16_t reping_cnt;
 		uint32_t q_fact;
 		uint32_t f_self;
 		uint32_t q_fact_air;
@@ -305,6 +307,7 @@ struct gd_t
 		  uint8_t ssp_value;
 		  uint8_t qi_version;
 		  uint8_t ref_q;
+		  uint8_t ref_f;
 		  uint8_t opt_cnt;
 		  uint8_t neg;
 		  uint8_t phase_state;
@@ -353,6 +356,19 @@ struct gd_t
 
 	 uint8_t dmo1_phase; //0-dig_ping, 1-lo_power, 2-hi_power
 	 uint8_t dmo2_phase; //0-dig_ping, 1-lo_power, 2-hi_power
+
+	 uint8_t nego_flag;
+
+	 uint8_t dig_ping_continuous_cnt;
+	 uint8_t atl_test_tpr1c_coil_flag;
+	 uint8_t atl_test_ldstp_epp_N60;
+	 uint8_t atl_test_ldstp_bpp_N60;
+	 uint8_t atl_test_ldstp_bpp_P60;
+
+	 uint8_t alt_test_resv_rp8_cnt;
+	 uint8_t alt_test_continous_cnt;
+	 uint8_t alt_test_last_rp8_value;
+	 uint8_t alt_test_1st_rp8_value;
 };
 
 extern volatile struct ap_t *ap;
