@@ -51,11 +51,17 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit)
 	printk("wpc stop = %d\n",delay_ping_unit);
 }
 
+void tcpm_disable_usba_detect(void)
+{
+	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
+}
+
 void tcpm_set_port_sdp(uint8_t tc_index)
 {
 	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+
 	hal_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
 
 	printk("PORT[%d] set sdp\n",tc_index);
@@ -99,11 +105,10 @@ void tcpm_task_event_handler(uint32_t event)
 			usb_tc_run();
 			break;
 		case TCPM_EVT_USBA_SCAN:
-			if(g_buckboost.usba_state)
+			if(g_buckboost.usba_state && g_buckboost.usba_dectet_en)
 			{
 				usba_state = 1;
 				usba_cnt = 0;
-				//osal_set_event(USB_TASK,TCPM_EVT_USBA_PLUG);
 				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 				port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
 			}
@@ -123,6 +128,8 @@ void tcpm_task_event_handler(uint32_t event)
 				}
 				else
 					usba_cnt = 0;
+
+				//printk("usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
 
 			if(qi_state == 1 && gd->ptx_protocol_phase <= WPC_PHASE_PING)
@@ -138,16 +145,19 @@ void tcpm_task_event_handler(uint32_t event)
 			}
 			else
 				qi_cnt = 0;
-
+			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			break;
 
 		case TCPM_EVT_USBA_REDETECT:
-			osal_start_timerEx(TCPM_USB_A_TIMER, 300, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
-			buckboost_ops.usb_a_dischg_en(true);
+			if(usba_state == 0)
+			{
+				osal_start_timerEx(TCPM_USB_A_TIMER, 300, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
+				buckboost_ops.usb_a_dischg_en(true);
+			}
 			break;
 		case TCPM_EVT_USBA_DETEN:
 			buckboost_ops.usb_a_dischg_en(false);
-			buckboost_ops.en_a2_detect();
+			g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 			buckboost_ops.vbus_dischg_en(true);
 			buckboost_ops.vbus_dischg_en(false);
 			printk("enable A det\n");

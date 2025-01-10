@@ -24,13 +24,15 @@ void hal_tcpc_init(void)
 	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
 	TCPC->CCA_CTRL.BITS.CC_DCSRC_DRP = 1; // 50%
 	TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // dead battary off
-	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1;
+	TCPC->CCA_CTRL.BITS.CC_LPMODE_RP = 0;
+	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
 #endif
 
 #if(CONFIG_USBTC_PORT_SELECT & TC_PORT_CCB)
 	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
 	TCPC->CCB_CTRL.BITS.CC_DCSRC_DRP = 1; // 50%
 	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // dead battary off
+	TCPC->CCB_CTRL.BITS.CC_LPMODE_RP = 0;
 	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
 #endif
 	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x01;
@@ -127,7 +129,7 @@ void hal_tcpc_set_cc(uint8_t tc_index,enum tc_cc_status cc)
 	    //printk("CCA_ROLE = 0x%x\n",TCPC->CCA_ROLE.WORD);
 	    //printk("CCA_CTRL = 0x%x\n",TCPC->CCA_CTRL.WORD);
 	}
-	else
+	else if(tc_index == 1)
 	{
 	    switch (cc)
 	    {
@@ -469,7 +471,7 @@ void hal_tcpc_pd_set_bus_iv(uint8_t tc_index,uint16_t voltage,uint16_t current,u
  */
 bool hal_tcpc_pd_bus_ready(uint8_t tc_index)
 {
-	if(tc_index != 0) return true;
+	//if(tc_index != 0) return true;
 	return buckboost_regulator_done();
 }
 

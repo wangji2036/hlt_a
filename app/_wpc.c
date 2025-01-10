@@ -189,7 +189,7 @@ void wpc_stop_power(void)
 	osal_stop_timerEx(WPC_CEP_TIMER);
 	osal_stop_timerEx(WPC_RPP_TIMER);
 
-	printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
+	//printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
 }
 
 static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)

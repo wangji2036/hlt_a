@@ -156,8 +156,8 @@ typedef struct {
 #define  DPDM_QC_SINK                       	((TS_DPDM_QC_SINK *) DPDM_QC_SINK_BASE)
 
 
-void qc_init(void);
-void qc_deinit(void);
+void dpdm_sink_init(void);
+void dpdm_sink_deinit(void);
 void qc2_set_volt(uint16_t qc_volt);
 
 

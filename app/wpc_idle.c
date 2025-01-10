@@ -251,7 +251,8 @@ uint8_t qfod_detect(void)
 			break;
 	}
 
-	if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
+	//if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
+	if (qdt_have_obj_count > 1)
 	{
 		no_obj = 0;
 		qdt_try_ping_count = 0;

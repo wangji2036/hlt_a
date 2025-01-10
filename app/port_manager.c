@@ -12,11 +12,9 @@
 #include "g_data.h"
 #include "pid.h"
 #include "usb_qc.h"
+#include "tcpm.h"
 
 
-
-extern void tcpm_stop_wpc(uint8_t delay_ping_unit);
-extern void tcpm_update_wpc_work_mode(enum wpc_work_mode mode);
 
 #define WPC_DELAY				10
 
@@ -155,7 +153,7 @@ void port_enum_port0_connect_closed(void)
 			{
 				if(bc12_type == BC1P2_QC9V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-				else if(bc12_type >= BC1P2_SDP)
+				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				else
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -295,7 +293,7 @@ void port_enum_port1_connect_closed(void)
 			{
 				if(bc12_type == BC1P2_QC9V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-				else if(bc12_type >= BC1P2_SDP)
+				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				else
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -401,7 +399,7 @@ void port_enum_port2_connect_closed(void)
 			{
 				if(bc12_type == BC1P2_QC9V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-				else if(bc12_type >= BC1P2_SDP)
+				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				else
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -505,7 +503,7 @@ void port_enum_port3_connect_closed(void)
 			{
 				if(bc12_type == BC1P2_QC9V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-				else if(bc12_type >= BC1P2_SDP)
+				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 				else
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -559,22 +557,23 @@ void port_enum_port_enum_done(void)
 {
 	printk("%s!\n",__func__);
 
+
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
 	{
 		if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA放电
-		hal_tcpc_set_gate_en(PORT0_INDEX,true);
+		if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)) hal_tcpc_set_gate_en(PORT0_INDEX,true);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
 	{
 		if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA放电
-		hal_tcpc_set_gate_en(PORT1_INDEX,true);
+		if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))  hal_tcpc_set_gate_en(PORT1_INDEX,true);
 	}
 
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
 	{
 		if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA放电s
-		hal_tcpc_set_gate_en(PORT2_INDEX,true);
+		if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))  hal_tcpc_set_gate_en(PORT2_INDEX,true);
 	}
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
@@ -619,7 +618,7 @@ void port_enum_port_enum_done(void)
 				{
 					if(bc12_type == BC1P2_QC9V)
 						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-					else if(bc12_type >= BC1P2_SDP)
+					else if(bc12_type > BC1P2_CDP)
 						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 					else
 						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -664,7 +663,9 @@ void port_enum_port_snk_setcharge(void)
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
 
-	printk("Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
+	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
+
+
 }
 
 void port_enum_port_snk_setvolt(void)
@@ -672,10 +673,13 @@ void port_enum_port_snk_setvolt(void)
 
 	uint32_t source_pdo;
 
-	printk("%s!\n",__func__);
+	printk("[%d]%s!\n",g_port.inhandle_port,__func__);
+
+	g_port.ibus_limit = 500;
+	g_port.ibat_limit = 300;
 
 	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
-			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (g_buckboost.adc_vbat >= BAT_DEAD_BATTER_V))
+			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (!g_tc[TYPEC_PORT_A].is_deadbattery))
 	{
 
 		if(g_usb_pd_s.explicit_contract)
@@ -695,7 +699,6 @@ void port_enum_port_snk_setvolt(void)
 				{
 					usb_pd_requsrt_voltage(PDO_INDEX_2,VOLTAGE_9V,pdo_max_current(source_pdo));
 					g_port.ibus_limit = pdo_max_current(source_pdo);
-
 					g_port.adpater_power =  (uint32_t)g_port.ibus_limit * VOLTAGE_9V / 1000;
 				}
 			}
@@ -717,7 +720,7 @@ void port_enum_port_snk_setvolt(void)
 		}
 		else
 		{
-			if(bc12_type >= BC1P2_SDP)
+			if(bc12_type > BC1P2_CDP)
 				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
@@ -732,7 +735,7 @@ void port_enum_port_snk_setvolt(void)
 		}
 		else
 		{
-			if(bc12_type >= BC1P2_SDP)
+			if(bc12_type > BC1P2_CDP)
 				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
@@ -743,8 +746,11 @@ void port_enum_port_snk_setvolt(void)
 
 	if(g_port.inhandle_port == PORT0_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETCHARGE);
-	else if(g_port.inhandle_port == PORT1_INDEX)
+	else
 		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETCHARGE);
+
+	printk("bc12_type = %d\n",bc12_type);
+	printk("I[bat]=%dmA I[bus]=%dmA!\n",g_port.ibat_limit,g_port.ibus_limit);
 }
 
 void port_enum_port0_connect_success(void)
@@ -914,6 +920,7 @@ void port_enum_port0_connect_start(void)
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	tcpm_disable_usba_detect();
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -943,6 +950,7 @@ void port_enum_port1_connect_start(void)
 
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_disable_usba_detect();
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -971,6 +979,7 @@ void port_enum_port2_connect_start(void)
 
 	uint32_t source_pdo = 0;
 	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_disable_usba_detect();
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
@@ -1001,7 +1010,7 @@ void port_enum_port3_connect_start(void)
 	//uint32_t source_pdo = 0;
 
 	printk("PORT3 START! PORT0=[%d] PORT1=[%d] PORT2=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[2]);
-
+	tcpm_disable_usba_detect();
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
 
@@ -1030,7 +1039,10 @@ void port_enum_port3_connect_start(void)
 void port_enum_scan_handle(void)
 {
 
-	if(g_port.state != PORT_IDLE_OR_READY)  return;
+	if(g_port.state != PORT_IDLE_OR_READY)
+	{
+		return;
+	}
 
 	if(g_port.port_event & PORT0_EVENT_UNCONNECT)				//TTPEC0
 	{
@@ -1125,10 +1137,12 @@ void port_manager_event_handle(uint32_t event)
 			port_enum_port0_connect_start();
 			break;
 		case PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS:
+			g_port.port_event &= ~PORT0_EVENT_UNCONNECT;
 			port_enum_port0_connect_success();
 			break;
 		case PORT_ENUM_EVT_PORT0_CONNECT_CLOSED:
 			port_enum_port0_connect_closed();
+			buckboost_ops.typca_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT0_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();
@@ -1144,10 +1158,12 @@ void port_manager_event_handle(uint32_t event)
 			port_enum_port1_connect_start();
 			break;
 		case PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS:
+			g_port.port_event &= ~PORT1_EVENT_UNCONNECT;
 			port_enum_port1_connect_success();
 			break;
 		case PORT_ENUM_EVT_PORT1_CONNECT_CLOSED:
 			port_enum_port1_connect_closed();
+			buckboost_ops.typcb_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT1_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();

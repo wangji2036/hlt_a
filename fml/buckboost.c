@@ -81,7 +81,7 @@ void buckboost_task_init(void)
 	g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 
-
+	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 //	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 //	buckboost_set_bus_iv(5000,3000,0,0);
 }
@@ -100,14 +100,12 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 			g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
-//			if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
-//			{
-//				g_tc[TYPEC_PORT_A].is_deadbattery = 1;
-//				g_tc[TYPEC_PORT_B].is_deadbattery = 1;
-//			}
-//			else
-
-			if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
+			if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
+			{
+				g_tc[TYPEC_PORT_A].is_deadbattery = 1;
+				g_tc[TYPEC_PORT_B].is_deadbattery = 1;
+			}
+			else if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
 			{
 				if(g_tc[TYPEC_PORT_A].is_deadbattery)
 				{

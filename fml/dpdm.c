@@ -13,7 +13,7 @@
 #include "usb_pd.h"
 #include "port_manager.h"
 
-void dpdm_init(void);
+void dpdm_source_init(void);
 uint16_t qc_volt = 5000;
 uint8_t bc12_type = 0;
 uint8_t dpdm_map = 0xff;
@@ -28,10 +28,10 @@ void usb_dpdm_task_init(void)
 	osal_task_handler_reg(USB_DPDM_TASK, usb_dpdm_task_event_handler);
 	osal_start_timerEx(USB_BC12_TIMER, 100, 100, USB_DPDM_TASK, DPDM_EVT_TIMER_PERIOD);
 
-	dpdm_init();
+	dpdm_source_init();
 }
 
-void dpdm_init(void)
+void dpdm_source_init(void)
 {
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	DPDM->HVDCP_CTRL.BITS.ENTER_DCP_INT_MASK = 1;
@@ -57,6 +57,7 @@ void usb_dpdm_select(uint8_t tc_index)
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
 	}
 
+	dpdm_sink_deinit();
 
 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
@@ -80,6 +81,7 @@ void usb_dpdm_autodcp_en(void)
 	//
 
 	DPDM->HVDCP_CTRL.BITS.DP_FAIL_DEG = 3;
+
 	DPDM->HVDCP_CTRL.BITS.ENTER_DCP_INT_MASK = 0;
 	DPDM->HVDCP_CTRL.BITS.ENTER_HVDCP_INT_MASK = 0;
 
@@ -93,8 +95,8 @@ void usb_dpdm_autodcp_en(void)
 
 	DPDM->AFC_CTRL.BITS.AFC_RX_DATA_MASK = 0;
 	DPDM->AFC_CTRL.BITS.SCP_RX_DATA_MASK = 0;
-	printk("AFC_CTRL=0x%x\n",(uint32_t)(&DPDM->AFC_CTRL));
-	printk("AFC_CTRL=0x%x\n",DPDM->AFC_CTRL.WORD);
+	//printk("AFC_CTRL=0x%x\n",(uint32_t)(&DPDM->AFC_CTRL));
+	//printk("AFC_CTRL=0x%x\n",DPDM->AFC_CTRL.WORD);
 }
 
 extern union scp_packet_t scp_tx;
@@ -105,14 +107,15 @@ void usb_dpdm_task_event_handler(uint32_t event)
 	{
 		case DPDM_EVT_SRC_ATTACHED:
 			usb_dpdm_autodcp_en();
-			printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
+			//printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
 			break;
 		case DPDM_EVT_SRC_UNATTCHED:
-			dpdm_init();
+			dpdm_source_init();
 			break;
 		case DPDM_EVT_ENTER_DCP:
+			hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 			printk("enter dcp\n");
-			usb_dpdm_autodcp_en();
+			//usb_dpdm_autodcp_en();
 			break;
 		case DPDM_EVT_ENTER_HVDCP://if enter dpdm,buck to 5v
 			printk("hvdcp\n");
@@ -197,12 +200,13 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 		case DPDM_EVT_SNK_ATTACHED:
 			osal_stop_timerEx(DPDM_SINK_TIMER);
-			qc_init();
+			dpdm_sink_init();
 			break;
 		case DPDM_EVT_SNK_UNATTCHED:
-			qc_deinit();
+			dpdm_sink_deinit();
 			break;
 		case DPDM_EVT_SNK_BC12DONE:
+			printk("bc12_type=0x%x\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE);
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x02)
 				bc12_type = BC1P2_CDP;
 			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
@@ -211,8 +215,6 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				bc12_type = BC1P2_SDP;
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03) //DCP
 				osal_start_timerEx(DPDM_SINK_TIMER, 25, 0, USB_DPDM_TASK, DPDM_EVT_SNK_HVDCP_START);
-			else
-
 			break;
 		case DPDM_EVT_SNK_HVDCP_START:
 			osal_stop_timerEx(DPDM_SINK_TIMER);
@@ -244,7 +246,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			//DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x01;
 			qc2_set_volt(9000);
 			bc12_type = BC1P2_QC9V;
-			osal_start_timerEx(DPDM_SINK_TIMER, 100, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_DONE);
+			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_DONE);
 			break;
 
 		case DPDM_EVT_SNK_QC_DONE:
@@ -256,9 +258,9 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			}
 			else
 			{
-				qc2_set_volt(5000);
 				bc12_type = BC1P2_HVDCP;
 			}
+			qc2_set_volt(5000);
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		default:
@@ -270,7 +272,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 {
-    uint32_t int_flag = (DPDM->HVDCP_FLAG.WORD) & 0x0300;
+    uint32_t int_flag = (DPDM->HVDCP_FLAG.WORD);
     do
     {
 		if(int_flag & (0x01<<2))
@@ -285,7 +287,7 @@ void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_ENTER_HVDCP);
 		}
 
-		int_flag = (DPDM->HVDCP_FLAG.WORD) & 0x0300;
+		int_flag = (DPDM->HVDCP_FLAG.WORD);
 
     } while(int_flag);
 }

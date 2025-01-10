@@ -1949,6 +1949,7 @@ void usb_pd_pkts_transmit_accept_callback(void)
 	#endif
 	#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 		case PE_SRC_Transition_Supply:
+			g_buckboost.regulator_state = 0;
 			usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_PS_TRANST);
 			usb_pd_set_state(PE_SRC_Transition_Supply,exit_state);
 			break;

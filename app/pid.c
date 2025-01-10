@@ -139,11 +139,11 @@ void pid_init(void)
 	}
 
 #ifdef _PRINT_PID_MSG
-	printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
-			gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
-			gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
-			gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
-			gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
+//	printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
+//			gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
+//			gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
+//			gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
+//			gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
 #endif
 }
 

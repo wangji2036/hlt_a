@@ -37,7 +37,6 @@ enum port_state_e
 {
 	PORT_IDLE_OR_READY = 0,
 	PORT_INHANDLING,
-	PORT_WAIT_STABLE,
 };
 
 #define PORT_ENUM_PERIOD		1

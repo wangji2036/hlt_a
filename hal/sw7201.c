@@ -28,7 +28,7 @@ void hal_sw7201_buckboost_init(void)
 		hal_sw7201_buckboost_charge_ibus_limit(1000);
 		hal_sw7201_buckboost_charge_ibat_limit(500);
 		hal_sw7201_buckboost_charge_set_trickle_volt(3000);
-		hal_sw7201_buckboost_a2_detect_enable();
+		//hal_sw7201_buckboost_a2_detect_enable(true);
 		hal_sw7201_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
 		hal_sw7201_buckboost_set_cv();
 
@@ -83,11 +83,14 @@ void hal_sw7201_buckboost_vbus_dischg(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x08));
 }
 
-void hal_sw7201_buckboost_a2_detect_enable(void)
+bool hal_sw7201_buckboost_a2_detect_enable(bool en)
 {
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,0x00);
+	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event1,0x02);
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x00);
-	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x01);
+	if(en)
+		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x01);
+	return en;
 }
 
 bool hal_sw7201_buckboost_get_a2_state(void)

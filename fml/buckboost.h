@@ -29,6 +29,7 @@ struct buckboost_s
 	bool set_typecb_gate_en;
 	bool set_usb_a_gate_en;
 
+	bool usba_dectet_en;
 	bool usba_state;
 
 	uint16_t buckboost_out_voltage;
@@ -50,6 +51,7 @@ struct buckboost_s
 
 struct buckboost_operations
 {
+
 	void (*init)(void);
 	void (*set_work_mode)(enum buckboost_mode woke_mode);
 	void (*set_out)(uint16_t out_voltage,uint16_t out_current);
@@ -61,7 +63,7 @@ struct buckboost_operations
 	void (*typcb_dischg_en)(bool en);
 	void (*usb_a_dischg_en)(bool en);
 	void (*vbus_dischg_en)(bool en);
-	void (*en_a2_detect)(void);
+	bool (*en_a2_detect)(bool en);
 
 
 	void (*set_chager_current)(uint16_t current);

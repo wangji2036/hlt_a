@@ -221,7 +221,9 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		#endif
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 			usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
-			osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
+
+
+			//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
             if(tc->tc_index == 0)
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);
             else
