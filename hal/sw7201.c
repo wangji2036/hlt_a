@@ -83,6 +83,14 @@ void hal_sw7201_buckboost_vbus_dischg(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x08));
 }
 
+uint8_t hal_sw7201_buckboost_get_protect(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event2,&read);
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event2,read);
+	return read;
+}
+
 bool hal_sw7201_buckboost_a2_detect_enable(bool en)
 {
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,0x00);

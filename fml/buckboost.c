@@ -6,9 +6,7 @@
 #include "tcpm.h"
 #include "typec.h"
 #include "port_manager.h"
-
-
-
+#include "tcpm.h"
 
 struct buckboost_s  g_buckboost;
 
@@ -88,6 +86,57 @@ void buckboost_task_init(void)
 
 
 
+void buckboost_protection_handle(void)
+{
+	#define VBUS_FUALT_VBUS_OCP			BIT(1)
+	#define VBUS_FUALT_VBUS_SCP			BIT(2)
+	#define VBUS_FUALT_VBAT_UVP			BIT(3)
+	#define VBUS_FUALT_VBAT_OVP			BIT(4)
+	#define VBUS_FUALT_VBUS_OVP			BIT(5)
+
+	static uint8_t buckboost_protection_flag = false;
+
+	uint8_t status = 0;
+
+	status = buckboost_ops.get_protect_status();
+
+	if(status != 0)
+	{
+		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP))
+		{
+			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+			g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
+			hal_tcpc_set_gate_en(PORT0_INDEX,false);
+			hal_tcpc_set_gate_en(PORT1_INDEX,false);
+			hal_tcpc_set_gate_en(PORT2_INDEX,false);
+
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+			tcpm_stop_wpc(WPC_DELAY);
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			tcpm_disable_usba_detect();
+			buckboost_protection_flag = 1;
+			printk("protect lock =%d\n",status);
+		}
+	}
+	else
+	{
+		if(buckboost_protection_flag)
+		{
+			buckboost_protection_flag = 0;
+			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+			osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+			tcpm_stop_wpc(WPC_DELAY);
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+			printk("protect unlock\n");
+		}
+	}
+
+	g_buckboost.protect_status = status;
+}
+
 void buckboost_task_event_handler(uint32_t event)
 {
 	switch (event)
@@ -117,6 +166,8 @@ void buckboost_task_event_handler(uint32_t event)
 			//printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
 			//printk("voltage: bat=%d bus=%d\n",g_buckboost.adc_vbat,g_buckboost.adc_vbus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
+
+			buckboost_protection_handle();
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
@@ -206,6 +257,7 @@ const struct buckboost_operations buckboost_ops =
 	.typcb_dischg_en = 			hal_sw7201_buckboost_typecb_dischg,
 	.usb_a_dischg_en = 			hal_sw7201_buckboost_usb_a_dischg,
 	.vbus_dischg_en = 			hal_sw7201_buckboost_vbus_dischg,
+	.get_protect_status = 		hal_sw7201_buckboost_get_protect,
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 

@@ -16,7 +16,7 @@
 
 
 
-#define WPC_DELAY				10
+
 
 
 void port_manager_set_event(uint32_t event)

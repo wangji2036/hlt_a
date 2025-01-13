@@ -18,6 +18,8 @@
 #define PDO_INDEX_6		6
 #define PDO_INDEX_7		7
 
+#define WPC_DELAY				10
+
 #define MULTI_PORT_ALT_MODE
 
 #define TCPM_EVT_TIME_PERIOD    			osal_event_declare(0)

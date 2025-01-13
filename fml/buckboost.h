@@ -47,6 +47,8 @@ struct buckboost_s
 	uint16_t adc_vbat;
 	uint16_t adc_tbat;
 	uint16_t adc_vbus;
+
+	uint8_t protect_status;
 };
 
 struct buckboost_operations
@@ -75,6 +77,7 @@ struct buckboost_operations
 	uint16_t (*get_bus_voltage)(void);
 	bool (*get_a2_state)(void);
 	uint16_t (*get_bat_temperature)(void);
+	uint8_t (*get_protect_status)(void);
 
 };
 
