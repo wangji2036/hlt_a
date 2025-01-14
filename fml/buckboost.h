@@ -47,7 +47,7 @@ struct buckboost_s
 	uint16_t adc_vbat;
 	uint16_t adc_tbat;
 	uint16_t adc_vbus;
-
+	uint16_t ir_drop;
 	uint8_t protect_status;
 };
 

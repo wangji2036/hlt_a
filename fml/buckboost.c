@@ -137,6 +137,38 @@ void buckboost_protection_handle(void)
 	g_buckboost.protect_status = status;
 }
 
+void buckboost_ir_drop_handle(void)
+{
+
+	uint16_t ir_drop = 0;
+	static uint8_t cnt_delay = 0;
+	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	{
+		ir_drop = -g_buckboost.adc_ibus * 100 / 1000 ;    //1A +100mV
+		ir_drop = ir_drop / 20 * 20;
+		if(ir_drop >= 300) ir_drop = 300;
+		if(ir_drop != g_buckboost.ir_drop)
+		{
+			cnt_delay++;
+			if(cnt_delay >= 5)
+			{
+				g_buckboost.ir_drop = ir_drop;
+				printk("ir drop = %d\n",g_buckboost.ir_drop);
+				buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current);
+			}
+		}
+		else
+		{
+			cnt_delay = 0;
+		}
+	}
+	else
+	{
+		cnt_delay = 0;
+		g_buckboost.ir_drop = 0;;
+	}
+}
+
 void buckboost_task_event_handler(uint32_t event)
 {
 	switch (event)
@@ -168,6 +200,7 @@ void buckboost_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 
 			buckboost_protection_handle();
+			buckboost_ir_drop_handle();
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
@@ -188,7 +221,8 @@ void buckboost_task_event_handler(uint32_t event)
 			break;
 		case BUCKBOOST_EVT_REGULATOR_WAITDONE:
 			//printk("%s\n","BUCKBOOST_EVT_REGULATOR_WAITDONE");
-			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
+			//buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
+			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current);
 			if(g_buckboost.out_voltage_delay != 0)
 				osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_delay, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_DELAYDONE);
 			break;
