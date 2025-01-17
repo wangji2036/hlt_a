@@ -37,6 +37,9 @@ void usb_set_enable(void)
 }
 
 
+
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
@@ -46,6 +49,15 @@ const uint32_t source_pdo[] =
 	[3] = PDO_FIXED(15000, 3000, 0),
 	[4] = PDO_PPS_APDO(5000,16000,3000),
 };
+#elif(BUCKBOOST_USED_NU6801 == 1)
+const uint32_t source_pdo[] =
+{
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
+	[1] = PDO_FIXED(9000, 3000, 0),
+	[2] = PDO_PPS_APDO(5000,11000,3000),
+};
+#endif
 
 const uint32_t sink_pdo[] =
 {

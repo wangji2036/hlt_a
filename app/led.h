@@ -23,5 +23,6 @@ void ui_update(void);
 void ui_display (void);
 void led_init(void);
 void led_display(void);
-
+void detectSingleKey(void);
+void initKey(void);
 #endif /* LED_H_ */

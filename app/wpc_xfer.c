@@ -55,6 +55,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 					qfod_qdt_cali_init();
 					gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_CALI;
 					wpc_stop_to_idle(ESYS_ERR_CODE_NEED_QDT_CALIBRATION);
+					printk("\r\n stop for cali");
 				}
 			}
 			break;
@@ -99,11 +100,11 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case WPC_PRx_PKT_TYP_CE_03:
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-			if (gd->tx_power > 8000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+			if (gd->tx_power > 10000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 1;
 			}
-			else if (gd->tx_power < 7000)
+			else if (gd->tx_power < 8000)
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 0;
 			}

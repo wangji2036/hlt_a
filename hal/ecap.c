@@ -213,7 +213,7 @@ void __attribute__((isr)) ECAP2_IRQHandler(void)
 {
 	if (ECAP2->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
 	{
-		GPC->DOUT.BITS.PIN6 ^= 1;//debug toggle SCL pin
+	//	GPC->DOUT.BITS.PIN6 ^= 1;//debug toggle SCL pin
 		if (ecap_callback != NULL)
 		{
 			ecap_callback(1, ECAP2->EDGE_CNT.BITS.EDGE_DET_CNT);

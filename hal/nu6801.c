@@ -19,7 +19,7 @@ void hal_nu6801_buckboost_init(void)
 		hal_nu6801_buckboost_typeca_gate_en(false);
 		hal_nu6801_buckboost_typecb_gate_en(false);
 		hal_nu6801_buckboost_usb_a_gate_en(false);
-		hal_nu6801_buckboost_usba_detect_enable();
+		hal_nu6801_buckboost_usba_detect_enable(true);
 		hal_nu6801_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
 	}
 	printk("nu6801 revision =0x%x\n",revision);
@@ -57,9 +57,15 @@ void hal_nu6801_buckboost_vbus_dischg(bool en)
 
 }
 
-void hal_nu6801_buckboost_usba_detect_enable(void)
+uint8_t hal_nu6801_buckboost_get_protect(void)
+{
+	return 0;
+}
+
+bool hal_nu6801_buckboost_usba_detect_enable(bool en)
 {
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AC_DET_CTRL,0x02);
+	return en;
 }
 
 bool hal_nu6801_buckboost_get_usba_state(void)
@@ -84,8 +90,7 @@ void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode)
 		read = (read & 0xF3) | 0x08;
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(0x05 << 5));
 	}
-	else if(woke_mode == BUCKBOOST_CHAGER_MODE)
-		read = (read & 0xF3);
+	else if(woke_mode == BUCKBOOST_CHAGER_MODE) read = (read & 0xF3);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,read | 0x04);
 }

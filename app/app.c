@@ -35,7 +35,7 @@ void apl_task_init(void)
 	fml_pout_opp_init();
 
 	led_init();
-
+	initKey();
 	osal_task_handler_reg(APL_TASK, apl_task_event_handler);
 	osal_start_timerEx(APP_250ms_TIMER, 0, T_APP_250ms_POLL, APL_TASK, APL_EVT_250ms_POLL);
 	osal_start_timerEx(APP_100ms_TIMER, 0, T_APP_100ms_POLL, APL_TASK, APL_EVT_100ms_POLL);
@@ -114,6 +114,7 @@ void apl_task_event_handler(uint32_t event)
 //			fml_tdie_utp_check(gd->sys_infos.die_temp);
 			break;
 		case APL_EVT_010ms_POLL:
+			detectSingleKey();
 			gd->isns = hal_badc_meas(_BADC_CH_PD6_ADC3);
 
 			if (gd->isns < 150 && pre_isns > 500)

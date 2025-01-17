@@ -35,7 +35,7 @@ void hal_nu6801_buckboost_typeca_dischg(bool en);
 void hal_nu6801_buckboost_typecb_dischg(bool en);
 void hal_nu6801_buckboost_usb_a_dischg(bool en);
 void hal_nu6801_buckboost_vbus_dischg(bool en);
-void hal_nu6801_buckboost_usba_detect_enable(void);
+bool hal_nu6801_buckboost_usba_detect_enable(bool en);
 bool hal_nu6801_buckboost_get_usba_state(void);
 void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode);
 void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus);
@@ -57,5 +57,6 @@ void hal_nu6801_buckboost_charge_target_volt(uint16_t volt);
 void hal_nu6801_buckboost_charge_set_trickle_volt(uint16_t volt);
 void hal_nu6801_buckboost_discharge_set_bat_uv_volt(uint16_t volt);
 void hal_nu6801_buckboost_wake_up(void);
+uint8_t hal_nu6801_buckboost_get_protect(void);
 
 #endif /* SW7201_H_ */

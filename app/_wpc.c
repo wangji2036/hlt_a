@@ -189,7 +189,7 @@ void wpc_stop_power(void)
 	osal_stop_timerEx(WPC_CEP_TIMER);
 	osal_stop_timerEx(WPC_RPP_TIMER);
 
-	//printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
+	printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
 }
 
 static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
@@ -545,12 +545,12 @@ void wpc_task_event_handler(uint32_t event)
 			{
 				fm1210_get_tbs_auth(array_chall);
 			}
-//			printk("\r\n tbs_hash:");
-//			for (int i=0; i<64; i++)
-//			{
-//				printk(" %02X", array_chall[i]);
-//			}
-//			printk("\r\n");
+			printk("\r\n tbs_hash:");
+			for (int i=0; i<64; i++)
+			{
+				printk(" %02X", array_chall[i]);
+			}
+			printk("\r\n");
 			break;
 		case WPC_EVT_FOD_REPORTED:
 			pfod_log_print();

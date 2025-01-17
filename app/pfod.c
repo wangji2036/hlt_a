@@ -56,7 +56,7 @@ void pfod_init(void)
 	gd->power_limit_sts.fop_flag = 0;
 	gd->rx_prect = 0;
 
-	fod_enable = MPP_25W_FOD_ENABLE;
+	fod_enable = MPP_25W_FOD_LOOSE_PFO;
 	fod_count_filter = 0;
 	fod_count = 0;
 	mpla_count = 0;
@@ -705,5 +705,6 @@ uint8_t pfod_common(void)
 
 	pfod_log_print();
 
-	return res;
+//	return res;
+	return 0;
 }

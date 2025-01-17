@@ -200,7 +200,7 @@ void buckboost_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 
 			buckboost_protection_handle();
-			buckboost_ir_drop_handle();
+			//buckboost_ir_drop_handle();
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
@@ -316,6 +316,7 @@ const struct buckboost_operations buckboost_ops =
 	.typcb_dischg_en = 			hal_nu6801_buckboost_typecb_dischg,
 	.usb_a_dischg_en = 			hal_nu6801_buckboost_usb_a_dischg,
 	.vbus_dischg_en = 			hal_nu6801_buckboost_vbus_dischg,
+	.get_protect_status = 		hal_nu6801_buckboost_get_protect,
 };
 
 #endif

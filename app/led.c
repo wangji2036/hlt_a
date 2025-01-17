@@ -5,23 +5,19 @@
 #include "led.h"
 #include"_wpc.h"
 #include"BMS_FixPoint.h"
+extern volatile uint16_t sys_ticks;
+#define LED_DISPLAY
 
-//#define LED_DISPLAY
-#define LED_HIGH_LIGHT
-// tese use
-//static uint8_t ui_wait_cnt;
-//static uint8_t ui_initialed;
-//test use end
 // following variable will be update to be GB data.
-uint8_t soc_show = 0;// SOC鐨勬暟鍊硷紝鐢ㄤ簬鏈�粓鐨勬樉绀�
-static uint8_t flash_flag;//1:鍏呯數闂紝2锛氬紓甯搁棯--鍏ㄩ棯銆�
-static uint8_t flash_light_on;//鐢ㄤ簬闂儊鎺у埗锛岀疆浣嶇殑鏃跺�锛岃鏄庨棯鐑佷负浜殑鐘舵�锛屽惁鍒欎负鍏抽棴鐘舵�銆�
-static uint8_t ui_scan_index;//鐢ㄤ簬鎵弿鏌ヨ鐩綍銆�
+uint8_t soc_show = 0;// SOC value, for display
+static uint8_t flash_flag;//1:charging flashing,2, Error - all flashing
+static uint8_t flash_light_on;//flash control, 1 means on state when flash, 0 means off state.
+static uint8_t ui_scan_index;// for scan index
 #ifdef LED_DISPLAY
-static uint8_t soc_show_ram_led = 0;//涓存椂鍙橀噺锛岀敤浜庤〃寰丩ED鐏樉锛屽悇涓狶ED鏄惁闇�鐐逛寒銆�
-static uint8_t flash_flag_wls;//鏃犵嚎鍐茬殑LED鎸囩ず锛屾槸鍚﹂棯鐑�
+static uint8_t soc_show_ram_led = 0;//Temporary variable,represents the display of LED lights, indicating whether each LED needs to be illuminated.
+static uint8_t flash_flag_wls;//wireless LED flag, indicating flashing or not
 #else
-static uint32_t soc_show_ram = 0;//涓�釜涓存椂鍙橀噺锛屽悇涓猙it鐢ㄤ簬琛ㄥ緛鏁扮爜绠″悇涓爜娈碉紝
+static uint32_t soc_show_ram = 0;//temporary variable, where each bit is used to represent each segment of the 188 digital display.
 #endif
 
 #define WAIT_IN_250MS 20
@@ -42,6 +38,15 @@ void led_init(void)
 #define _UI_PIN3_PINx     PIN6
 #define _UI_PIN4_PINx     PIN7
 #define _UI_PIN5_PINx     PIN7
+
+#define _KEY_PORT     GPC
+#define _KEY_PINx    PIN6
+#define _PIN_LEVEL_HI     (1)
+#define _PIN_LEVEL_LO     (0)
+#define _KEY_LEVEL    (_KEY_PORT->D_IN.BITS._KEY_PINx)
+// for long press and click time definition, can update according to real application
+#define LONG_PRESS_TIME_MS 2000
+#define DOUBLE_CLICK_TIME_MS 1000
 
 static void drv_IO_control(uint8_t pinx, bool status)
 {
@@ -89,7 +94,7 @@ static void drv_IO_control(uint8_t pinx, bool status)
 #define LED_FLOW_4          (0x0F)
 //#define LED_FLOW_5          (0x1F)
 
-//set which LED should be on according to the battery level銆�
+//set which LED should be on,according to the battery level.
 static uint8_t batt_level_table[6]=
 {
     LED_FLOW_0,             //!< level 0        //
@@ -109,7 +114,7 @@ typedef enum
  //   LEVEL_5,
 }batt_level_t;
 
-//鐢垫睜鐢甸噺妗ｄ綅銆佺櫨鍒嗘瘮瀵瑰簲鍏崇郴
+//Battery Power Level and Percentage Correspondence
 #define BATT_ENERGY_LEVEL1              (25)
 #define BATT_ENERGY_LEVEL2              (50)
 #define BATT_ENERGY_LEVEL3              (75)
@@ -155,7 +160,6 @@ static void ui_update_led(void)
 	 soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
 
 
-	 gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
 	 {
 	     flash_flag_wls = 1;
@@ -195,7 +199,7 @@ static void ui_update_led(void)
 		 }
      }
 
-     printk("\r\n LED ram-> %d SOC %d",soc_show_ram_led,soc_show);
+   //  printk("\r\n LED ram-> %d SOC %d",soc_show_ram_led,soc_show);
 }
 #else
 
@@ -303,33 +307,33 @@ static void ui_update_digital(void)
 //		}
 	}
 	soc_show_ram = ((gram[LED_PRCNT].byte & 0x01) << 17) | ((gram[LED_FAST_CH].byte & 0x01) << 16) | \
-	            ((gram[LED_UNITS].byte & 0x7F) << 9) | ((gram[LED_TENS].byte & 0x7F) << 2) | ((gram[LED_HUNDREDS].byte & 0x03)) ; // 灏咷RAM鏁版嵁淇濆瓨鍒颁复鏃跺彉閲忎腑
+	            ((gram[LED_UNITS].byte & 0x7F) << 9) | ((gram[LED_TENS].byte & 0x7F) << 2) | ((gram[LED_HUNDREDS].byte & 0x03)) ; // Save the GRAM data into a temporary variable
 }
 #endif
 
 /**********************************************************************/
 // ui_display()
-// needs to be called with high frequency, to avoid the digital tube blinking.
+// needs to be called with high frequency, to avoid the digital 188 blinking.
 // recommend 1 ms period to call, so the function needs to be very simple.
 // scan the GPIOs according to the soc_show_ram_X,
 /*********************************************************************/
 void ui_display (void)
 {
 #ifdef LED_DISPLAY
-//	_SET_ALL_PINS_IN_PUT();//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
-    // led map scan,濡傛灉鐢ㄥ揩閫熸壂鎻忔柟寮�
-	 if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 澧炲姞UI鍒锋柊鐘舵�
+//	_SET_ALL_PINS_IN_PUT();// reserved for multi IO control method
+    // led map scan,如果用快速扫描方式
+	 if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0])))
 	 {
-		 ui_scan_index = 0; // 褰撳埛鏂扮姸鎬佽秴杩囨椂锛屽皢鍏堕噸缃负0
+		 ui_scan_index = 0;
 	 }
 	 bool _sw;
-	 _sw = (bool)((soc_show_ram_led >> ui_scan_index) & 0x01); // 鑾峰彇瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶇殑鍊�
+	 _sw = (bool)((soc_show_ram_led >> ui_scan_index) & 0x01); // obtain the bits to show
 
-	 if (_sw == true) // 濡傛灉瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶄负1
+	 if (_sw == true)
 	 {
 		 drv_IO_control(disp_map[ui_scan_index], false);
-		 //drv_IO_control(disp_map[ui_scan_index][0], true);//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
-		 //drv_IO_control(disp_map[ui_scan_index][1], false);//濡傛灉鏄涓狪O鑴氶珮浣庣數骞冲埛鏂扮殑鏂瑰紡
+		 //drv_IO_control(disp_map[ui_scan_index][0], true);// reserved for multi IO method
+		 //drv_IO_control(disp_map[ui_scan_index][1], false);// reserved for multi IO control
 	 }
 	 else
 	 {
@@ -338,15 +342,15 @@ void ui_display (void)
 
 #else
 		_SET_ALL_PINS_IN_PUT();
-		if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0]))) // 澧炲姞UI鍒锋柊鐘舵�
+		if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0])))
 		{
-			ui_scan_index = 0; // 褰撳埛鏂扮姸鎬佽秴杩囨椂锛屽皢鍏堕噸缃负0
+			ui_scan_index = 0;
 		}
 
 		bool _sw;
-		_sw = (bool)((soc_show_ram >> ui_scan_index) & 0x0001); // 鑾峰彇瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶇殑鍊�
+		_sw = (bool)((soc_show_ram >> ui_scan_index) & 0x0001);
 
-		if (_sw == true) // 濡傛灉瀵瑰簲绱㈠紩鐨凣RAM鏁版嵁浣嶄负1
+		if (_sw == true)
 		{
 			drv_IO_control(disp_map[ui_scan_index][0], true);
 			drv_IO_control(disp_map[ui_scan_index][1], false);
@@ -379,7 +383,7 @@ void ui_update(void)
     	flash_flag = 0;
     }
 
-    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);
+//    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);
     //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
     //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
 
@@ -392,3 +396,69 @@ void ui_update(void)
 #endif
 
 }
+
+// structure for key information
+typedef struct KeyInfo {
+    uint8_t press_status;  // 0 means release,1 means press down
+    uint8_t is_single_click;
+    uint8_t click_count;  // click count
+    uint8_t is_double_click_pending;
+    uint16_t last_release_time;
+    uint16_t press_start_time;
+}KeyInfo;
+KeyInfo key;
+
+void initKey(void) {
+    key.press_status = 0;
+    key.press_start_time = 0;
+    key.click_count = 0;
+    key.last_release_time = 0;
+    key.is_single_click = 0;
+}
+
+// double click, needs detect single click first.
+void detectSingleKey() {
+    int currentLevel = _KEY_LEVEL;
+
+    if (currentLevel == 0) {
+        if (key.press_status == 0) {
+            key.press_start_time = sys_ticks;
+            key.press_status = 1;
+            key.click_count++;
+        }
+    } else {
+        if (key.press_status == 1) {
+            uint16_t release_time = sys_ticks;
+            uint16_t press_duration = release_time - key.press_start_time;
+            if (press_duration < LONG_PRESS_TIME_MS) {
+                if (key.click_count == 1) {
+                    if (release_time - key.last_release_time < DOUBLE_CLICK_TIME_MS) {
+                        if (!key.is_single_click) {
+                            key.is_single_click = 1;
+                            printk("\r\n ----------------------------//-------key single click");
+                        }
+                        key.click_count = 0;
+                        key.is_single_click = 0;
+                        printk("\r\n --------------------------------//-------key double click");
+                    } else {
+                        key.click_count = 0;
+                        key.is_single_click = 0;
+                        printk("\r\n ---------------------------------//------key single click");
+                    }
+                }
+            } else {
+                key.click_count = 0;
+                key.is_single_click = 0;
+                printk("\r\n ------------------------//----------key long press");
+            }
+            key.last_release_time = release_time;
+        }
+        key.press_status = 0;
+    }
+}
+
+
+
+
+
+

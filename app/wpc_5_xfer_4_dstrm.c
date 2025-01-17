@@ -337,6 +337,7 @@ void ds_mpp_prx_sdsr_pkt_handler(struct mpp_prx_ask_pkt_t *mpp_ask)
 			switch (mpp_ask->msg.sdsr.type)
 			{
 				case SDSR_ACK:
+				case SDSR_UNEXPECTED:
 					adt_have_send_len += adt_last_send_len;
 					if (adt_have_send_len >= adt_need_send_len)
 					{

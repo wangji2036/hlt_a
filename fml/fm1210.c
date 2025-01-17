@@ -37,6 +37,8 @@ void fm1210_wakeup(void)
 	delay_1us(FM1210_I2C_WKUP_DELAY);
 	GPA->DOUT.BITS.PIN7 = 1;
 	delay_1us(FM1210_I2C_WKUP_DELAY);
+    GPA->ODEN.BITS.PIN6 = 1;
+    GPA->ODEN.BITS.PIN7 = 1;
 }
 
 uint8_t fm1210_device_select(uint8_t *rbuf)

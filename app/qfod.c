@@ -27,7 +27,7 @@ void qfod_qdt_cali_process(void)
 {
 	if (cali_ready == 0)
 	{
-		if (gd->tx_infos.q_fact + ap->q_factor_reco_value > ap->q_factor_base_value && gd->tx_infos.q_fact < ap->q_factor_limH_value &&
+		if (gd->tx_infos.q_fact + ap->q_factor_reco_value +20 > ap->q_factor_base_value && gd->tx_infos.q_fact < ap->q_factor_limH_value &&
 		    gd->tx_infos.f_self + ap->fs_reco_value > ap->fs_base_value && gd->tx_infos.f_self < ap->fs_limH_value)
 		{
 			if (++tool_remove_cnt >= 10)
