@@ -579,6 +579,7 @@ void pfod_log_print(void)// print long log and avoid the fsk window
 		   gd->rx_infos.pla_vrect, gd->rx_infos.pla_irect,
 		   pfo, fod_count);
 #endif
+
 }
 
 static const uint16_t u16_kp_tbl[][3] =

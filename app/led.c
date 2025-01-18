@@ -21,23 +21,20 @@ static uint32_t soc_show_ram = 0;//temporary variable, where each bit is used to
 #endif
 
 #define WAIT_IN_250MS 20
-void led_init(void)
-{
-}
-
 #define _UI_PIN1_PORT     GPA
 #define _UI_PIN2_PORT     GPC
 #define _UI_PIN3_PORT     GPB
 #define _UI_PIN4_PORT     GPB
-#define _UI_PIN5_PORT     GPC
+#define _UI_PIN5_PORT     GPB
+
 #define PORT_GPA          GPA
 #define PORT_GPB          GPB
 
 #define _UI_PIN1_PINx     PIN4
 #define _UI_PIN2_PINx     PIN5
-#define _UI_PIN3_PINx     PIN6
-#define _UI_PIN4_PINx     PIN7
-#define _UI_PIN5_PINx     PIN7
+#define _UI_PIN3_PINx     PIN3
+#define _UI_PIN4_PINx     PIN4
+#define _UI_PIN5_PINx     PIN6
 
 #define _KEY_PORT     GPC
 #define _KEY_PINx    PIN6
@@ -81,7 +78,18 @@ static void drv_IO_control(uint8_t pinx, bool status)
 		break;
 	}
 }
+#define _SET_ALL_PINS_IN_PUT() do{\
+        _UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 0; _UI_PIN1_PORT->I_EN.BITS._UI_PIN1_PINx = 1;\
+		_UI_PIN2_PORT-> O_EN.BITS._UI_PIN2_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN2_PINx = 1;\
+		_UI_PIN3_PORT-> O_EN.BITS._UI_PIN3_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN3_PINx = 1;\
+		_UI_PIN4_PORT-> O_EN.BITS._UI_PIN4_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN4_PINx = 1;\
+		_UI_PIN5_PORT-> O_EN.BITS._UI_PIN5_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN5_PINx = 1;\
+} while(0)
 
+void led_init(void)
+{
+	_SET_ALL_PINS_IN_PUT();
+}
 #ifdef LED_DISPLAY
 
 // LED 1~4for battery level , LED 5 for wireless charger.
@@ -159,8 +167,8 @@ static void ui_update_led(void)
 {
 	 soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
 
-
-	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
+//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
+	 if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
 	 {
 	     flash_flag_wls = 1;
 	 }
@@ -168,12 +176,10 @@ static void ui_update_led(void)
 	 {
 		 flash_flag_wls = 0;
 	 }
-	 if (gd->ptx_protocol_phase >= WPC_PHASE_IDLE)
+	 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
 	 {
 		 soc_show_ram_led |= 0x10;// wireless LED is on
 	 }
-
-
      uint8_t _index= 3;// to get the highest bit to blink.
      for(; _index> 0; _index--)
      {
@@ -231,13 +237,6 @@ typedef enum
 
 ui_data_t       gram[LED_END];
 
-#define _SET_ALL_PINS_IN_PUT() do{\
-        _UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 0; _UI_PIN1_PORT->I_EN.BITS._UI_PIN1_PINx = 1;\
-		_UI_PIN2_PORT-> O_EN.BITS._UI_PIN2_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN2_PINx = 1;\
-		_UI_PIN3_PORT-> O_EN.BITS._UI_PIN3_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN3_PINx = 1;\
-		_UI_PIN4_PORT-> O_EN.BITS._UI_PIN4_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN4_PINx = 1;\
-		_UI_PIN5_PORT-> O_EN.BITS._UI_PIN5_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN5_PINx = 1;\
-} while(0)
 volatile const uint8_t display_num_tab[10]={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f};
 static const uint8_t disp_map[18][2]=
 {

@@ -21,16 +21,17 @@ void fml_bsp_init(void)
 	hal_i2cs_init();
 	hal_i2cm_init(400000);
 	hal_wdt_init();
-
-	hal_bpwm_start(BPWM7, 1500, 1500); //led control, 24KHz
+// Nu17113, power bank application ,no needed.
+/*	hal_bpwm_start(BPWM7, 1500, 1500); //led control, 24KHz
 	if (SYS->PID_INFO.BITS.PID == NU17111)
 	{
 		hal_bpwm_start(BPWM3,  900,  720); //boost control, 40KHz, y = -12.63.18x + 20091
 	}
 	else
 	{
-		hal_bpwm_start(BPWM8,  900,  720); //boost control, 40KHz, y = -12.63.18x + 20091
-	}
+		/hal_bpwm_start(BPWM8,  900,  720); //boost control, 40KHz, y = -12.63.18x + 20091
+	}*/
+
 	printk("\r\n chip reset!");
 	printk("\r\n ------SOC-> NU%d-A%d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
 	//printk("\r\n ------DAT-> %d-%02d-%02d %s", __COMPILE_DATE_YAR, __COMPILE_DATE_MTH, __COMPILE_DATE_DAY, __TIME__);

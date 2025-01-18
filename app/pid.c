@@ -139,11 +139,11 @@ void pid_init(void)
 	}
 
 #ifdef _PRINT_PID_MSG
-//	printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
-//			gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
-//			gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
-//			gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
-//			gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
+	printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
+			gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
+			gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
+			gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
+			gd->pid_limit.phas_lim_hi, gd->pid_limit.phas_lim_mi, gd->pid_limit.phas_lim_lo);
 #endif
 }
 
@@ -240,7 +240,9 @@ void pid_cep_handler(int8_t cep)
 
 			if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1 || gd->atl_test_ldstp_bpp_P60 == 1)
 			{
-				uint16_t tmp_duty, tmp;
+
+				// power bank application,needs special process. for IOC.
+/*				uint16_t tmp_duty, tmp;
 				tmp_duty = (20091 - gd->pid_volt) * 100 / 1263;
 				if (tmp_duty > 900) tmp_duty = 900;
 				if (tmp_duty <   1) tmp_duty =   1;
@@ -264,7 +266,7 @@ void pid_cep_handler(int8_t cep)
 						hal_bpwm_update(BPWM8, BPWM8->PWM_CTRL.BITS.PERD + 1, i);
 						delay_1us(10);
 					}
-				}
+				}*/
 			}
 			else
 			{

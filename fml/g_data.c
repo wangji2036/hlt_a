@@ -62,7 +62,7 @@ void ap_data_init(void)
 	ap->auth_seic_type = 0; //0-fm1210, 1-t91206, 2-ciu98
 
 	ap->pin_max_cnt = 10;
-	ap->pin_fod_cnt = 250;//10;//0xff;
+	ap->pin_fod_cnt = 30;//250;//10;//0xff;
 	ap->pin_fod_dis = 0;
 
 	ap->rpp_fod_cnt = 5;
@@ -90,7 +90,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 30000))
 	{
-		ap->q_factor_base_value = 144;
+		ap->q_factor_base_value = 220;
 	}
 	else
 	{

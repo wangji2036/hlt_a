@@ -196,7 +196,7 @@ void __attribute__((isr)) ECAP1_IRQHandler(void)
 {
 	if (ECAP1->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
 	{
-		GPA->DOUT.BITS.PIN4 ^= 1;//debug toggle SDA pin
+	//	GPA->DOUT.BITS.PIN4 ^= 1;//debug toggle SDA pin
 		if (ecap_callback != NULL)
 		{
 			ecap_callback(0, ECAP1->EDGE_CNT.BITS.EDGE_DET_CNT);

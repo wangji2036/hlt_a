@@ -259,7 +259,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->fsk_cfg.prmbl = FSK_PRMBL_NONE;
 			fml_fsk_param_set(EPWM1, gd->fsk_cfg.polar, gd->fsk_cfg.depth, gd->fsk_cfg.cycle, gd->fsk_cfg.prmbl);
 			printk("\r\n --------------> %d %d %d", gd->rx_infos.power_profile_mode, gd->adp.pwr_high, gd->rx_infos.mpp_restricted_mode);
-			if (gd->rx_infos.power_profile_mode == MPP && gd->adp.pwr_high >= 20 && 0 == gd->rx_infos.mpp_restricted_mode)
+			if (gd->rx_infos.power_profile_mode == MPP && gd->adp.pwr_high >= 30 && 0 == gd->rx_infos.mpp_restricted_mode)
 			{
 				gd->rx_infos.opt_cnt = 0;
 				gd->rx_infos.phase_state = 0;
@@ -351,6 +351,7 @@ goto __CNFG_PHASE_ERR__;
 				else
 				{
 //					if (gd->rx_infos.rx_type != EPRX_TYPE_APPLE_STD && gd->rx_infos.rx_type != EPRX_TYPE_APPLE_MAG)
+					if (!(gd->adp.pwr_high >= 20 && (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG || gd->rx_infos.rx_type == EPRX_TYPE_APPLE_STD)))
 					{
 						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
 					}

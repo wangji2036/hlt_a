@@ -199,7 +199,7 @@ void buckboost_task_event_handler(uint32_t event)
 			//printk("voltage: bat=%d bus=%d\n",g_buckboost.adc_vbat,g_buckboost.adc_vbus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 
-			buckboost_protection_handle();
+			//buckboost_protection_handle();
 			//buckboost_ir_drop_handle();
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:

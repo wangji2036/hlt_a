@@ -17,6 +17,7 @@ void fml_adp_type_set(enum adp_type_t adp_type, uint16_t volt_min, uint16_t volt
 	gd->adp.volt_min = volt_min;
 	gd->adp.volt_max = volt_max;
 	gd->adp.pwr_high = pwr_high;
+	printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
 }
 
 void fml_adp_init(void)
