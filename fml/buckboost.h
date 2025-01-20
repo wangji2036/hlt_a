@@ -82,7 +82,7 @@ struct buckboost_operations
 };
 
 
-#define BUCKBOOST_TIME_PERIOD									100
+#define BUCKBOOST_TIME_PERIOD									33
 #define BUCKBOOST_VBUS_PERIOD									10
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)

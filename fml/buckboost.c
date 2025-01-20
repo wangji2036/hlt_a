@@ -146,7 +146,7 @@ void buckboost_ir_drop_handle(void)
 
 	uint16_t ir_drop = 0;
 	static uint8_t cnt_delay = 0;
-	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && wpc_mode != TCPM_WPC_WORK_BOOST && !g_usb_pd_s.is_in_pps)
 	{
 		ir_drop = -g_buckboost.adc_ibus * 100 / 1000 ;    //1A +100mV
 		ir_drop = ir_drop / 20 * 20;
@@ -175,36 +175,46 @@ void buckboost_ir_drop_handle(void)
 
 void buckboost_task_event_handler(uint32_t event)
 {
+	static uint8_t get_info_step = 0;
 	switch (event)
 	{
 		case BUCKBOOST_EVT_TIME_PERIOD:
 			//g_buckboost.adc_dischg_adc_ibus = buckboost_ops.get_bus_current();
 			//printk("DISCHG IBUS= %d\n",g_buckboost.adc_dischg_adc_ibus);
-			g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
-			g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
-			g_buckboost.usba_state =  buckboost_ops.get_a2_state();
-			g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
-			g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
-			if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
-			{
-				g_tc[TYPEC_PORT_A].is_deadbattery = 1;
-				g_tc[TYPEC_PORT_B].is_deadbattery = 1;
-			}
-			else if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
-			{
-				if(g_tc[TYPEC_PORT_A].is_deadbattery)
-				{
-					g_tc[TYPEC_PORT_A].is_deadbattery = 0;
-					g_tc[TYPEC_PORT_B].is_deadbattery = 0;
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-			}
-			//printk("current: bat=%d bus=%d\n",g_buckboost.adc_ibat,g_buckboost.adc_ibus);
-			//printk("voltage: bat=%d bus=%d\n",g_buckboost.adc_vbat,g_buckboost.adc_vbus);
-			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 
-			buckboost_protection_handle();
-			buckboost_ir_drop_handle();
+			if(get_info_step == 0)
+			{
+				g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
+				g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
+				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
+				g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+			}
+			else if(get_info_step == 1)
+			{
+				g_buckboost.usba_state =  buckboost_ops.get_a2_state();
+				if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
+				{
+					g_tc[TYPEC_PORT_A].is_deadbattery = 1;
+					g_tc[TYPEC_PORT_B].is_deadbattery = 1;
+				}
+				else if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
+				{
+					if(g_tc[TYPEC_PORT_A].is_deadbattery)
+					{
+						g_tc[TYPEC_PORT_A].is_deadbattery = 0;
+						g_tc[TYPEC_PORT_B].is_deadbattery = 0;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
+				buckboost_ir_drop_handle();
+			}
+			else if(get_info_step == 2)
+			{
+				buckboost_protection_handle();
+			}
+			get_info_step++;
+			if(get_info_step > 2) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();

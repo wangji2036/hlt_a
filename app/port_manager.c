@@ -610,9 +610,16 @@ void port_enum_port_enum_done(void)
 			{
 				if(g_usb_pd_s.explicit_contract)
 				{
-					if( g_usb_pd_s.is_in_pps)  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
-					if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
-					else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+					if( g_usb_pd_s.is_in_pps)
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+					else
+					{
+						if( rdo_index(g_usb_pd_s.snk_rdo) == PDO_INDEX_2 )
+							tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+						else if( rdo_op_current(g_usb_pd_s.snk_rdo) >= 1500 )
+							tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+					}
+
 				}
 				else
 				{
