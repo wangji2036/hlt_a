@@ -27,6 +27,25 @@ static uint8_t qi_state = 0;
 static uint8_t qi_cnt = 0;
 
 
+#define _UI_PIN1_PORT     GPA
+#define _UI_PIN2_PORT     GPC
+#define _UI_PIN1_PINx     PIN4
+#define _UI_PIN2_PINx     PIN5
+
+void test_pin2_out(bool status)
+{
+	_UI_PIN2_PORT->I_EN.BITS._UI_PIN2_PINx = 0;
+	_UI_PIN2_PORT->DOUT.BITS._UI_PIN2_PINx = status;
+	_UI_PIN2_PORT-> O_EN.BITS._UI_PIN2_PINx = 1;
+}
+
+void test_pin1_out(bool status)
+{
+	_UI_PIN1_PORT->I_EN.BITS._UI_PIN1_PINx = 0;
+	_UI_PIN1_PORT->DOUT.BITS._UI_PIN1_PINx = status;
+	_UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 1;
+}
+
 void tcpm_task_init(void)
 {
 	osal_task_handler_reg(USB_TASK, tcpm_task_event_handler);
@@ -34,6 +53,8 @@ void tcpm_task_init(void)
 	usb_tc_init();
 	usb_pd_init();
 
+	test_pin1_out(1);
+	test_pin2_out(0);
 	//fml_adp_type_set(EADP_TYPE_DCSRC_09V,  9000, 19500, 15 * 2);
 }
 
@@ -53,7 +74,12 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit)
 
 void tcpm_disable_usba_detect(void)
 {
-	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
+	if(usba_state == 0)
+	{
+		g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
+		test_pin1_out(0);
+		usba_cnt = 0;
+	}
 }
 
 void tcpm_set_port_sdp(uint8_t tc_index)
@@ -107,6 +133,7 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_USBA_SCAN:
 			if(g_buckboost.usba_state && g_buckboost.usba_dectet_en)
 			{
+				test_pin2_out(1);
 				usba_state = 1;
 				usba_cnt = 0;
 				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
@@ -122,6 +149,7 @@ void tcpm_task_event_handler(uint32_t event)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
+						test_pin2_out(0);
 						port_manager_set_event(PORT2_EVENT_UNCONNECT);
 						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					}
@@ -159,6 +187,7 @@ void tcpm_task_event_handler(uint32_t event)
 			buckboost_ops.usb_a_dischg_en(false);
 			g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 			buckboost_ops.vbus_dischg_en(true);
+			test_pin1_out(1);
 			buckboost_ops.vbus_dischg_en(false);
 			printk("enable A det\n");
 		case TCPM_EVT_QI_SET_VOLT:

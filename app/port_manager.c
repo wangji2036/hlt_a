@@ -15,10 +15,6 @@
 #include "tcpm.h"
 
 
-
-
-
-
 void port_manager_set_event(uint32_t event)
 {
 	g_port.port_event |= event;
@@ -50,6 +46,7 @@ void port_enum_port0_connect_closed(void)
 	printk("%s!\n",__func__);
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	tcpm_disable_usba_detect();
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
@@ -198,6 +195,7 @@ void port_enum_port1_connect_closed(void)
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	tcpm_disable_usba_detect();
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -339,6 +337,7 @@ void port_enum_port2_connect_closed(void)
 	printk("%s!\n",__func__);
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+	tcpm_disable_usba_detect();
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
@@ -449,6 +448,7 @@ void port_enum_port3_connect_closed(void)
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
+	tcpm_disable_usba_detect();
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
@@ -654,7 +654,7 @@ void port_enum_port_snk_setcharge(void)
 
 	hal_tcpc_set_gate_en(g_port.incharge_port,true);
 
-	g_port.ibat_limit = g_port.ibat_limit* 95 / 100;
+	g_port.ibat_limit = g_port.ibat_limit;
 	g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
 
@@ -709,7 +709,7 @@ void port_enum_port_snk_setvolt(void)
 				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * VOLTAGE_5V / 1000;
 			}
 
-			g_port.ibat_limit = 5000;
+			g_port.ibat_limit = 5500;
 		}
 		else if(bc12_type == BC1P2_QC9V)
 		{

@@ -167,7 +167,7 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
     else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
     {
     	hal_tcpc_port_dummyload_en(tc->tc_index,false);
-        if(hal_tcpc_vbus_is_present(tc->tc_index))
+        if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
         {
 			#if(CONFIG_TC_TRY_SOURCE_SUPPORT_EN)
 				if(tc->try_src_cnt >= 5 || tc->is_deadbattery)

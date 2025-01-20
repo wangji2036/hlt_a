@@ -94,11 +94,15 @@ void buckboost_protection_handle(void)
 	#define VBUS_FUALT_VBAT_OVP			BIT(4)
 	#define VBUS_FUALT_VBUS_OVP			BIT(5)
 
+	#define VBUS_OVP_TH					21500
+
 	static uint8_t buckboost_protection_flag = false;
 
 	uint8_t status = 0;
 
 	status = buckboost_ops.get_protect_status();
+
+	if(g_buckboost.adc_vbus > VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
 
 	if(status != 0)
 	{
@@ -199,8 +203,8 @@ void buckboost_task_event_handler(uint32_t event)
 			//printk("voltage: bat=%d bus=%d\n",g_buckboost.adc_vbat,g_buckboost.adc_vbus);
 			osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
 
-			//buckboost_protection_handle();
-			//buckboost_ir_drop_handle();
+			buckboost_protection_handle();
+			buckboost_ir_drop_handle();
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();

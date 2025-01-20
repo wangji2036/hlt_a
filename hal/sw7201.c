@@ -5,7 +5,7 @@
 
 #if(BUCKBOOST_USED_SW7201 == 1)
 #define BAT_CELL_FULL_VOLT   4200
-#define BAT_CELL_EMPTY_VOLT   3000
+#define BAT_CELL_EMPTY_VOLT   2900
 
 #define BAT_CELL_NUM 2
 
@@ -37,6 +37,7 @@ void hal_sw7201_buckboost_init(void)
 	}
 	printk("sw7201 revision =0x%x\n",revision);
 }
+
 
 void hal_sw7201_buckboost_set_cv(void)
 {
@@ -86,6 +87,10 @@ void hal_sw7201_buckboost_vbus_dischg(bool en)
 uint8_t hal_sw7201_buckboost_get_protect(void)
 {
 	uint8_t read;
+
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event1,&read);
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event1,read);
+
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event2,&read);
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event2,read);
 	return read;
@@ -328,9 +333,12 @@ void hal_sw7201_buckboost_charge_set_trickle_volt(uint16_t volt)
 
 void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 {
-	if(volt < 3000) volt = 3000;
+	if(volt < 2700) volt = 2700;
 	volt = (volt -2700) /100;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Vin_Uvlo,volt);
+
+
+	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_Setting3,0xC0);
 }
 
 #endif

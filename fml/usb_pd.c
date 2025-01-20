@@ -7,6 +7,7 @@
 #include "regdef.h"
 #include "usb_pd.h"
 #include "usbpd_config.h"
+#include "port_manager.h"
 
 #define SINK_PDO_MATCH_MODE_VOLTAGE					0
 #define SINK_PDO_MATCH_MODE_VOLTAGE_CURRENT			1
@@ -25,6 +26,8 @@ struct usb_pd_s g_usb_pd_s;
 struct usb_pd_pkt_t g_pd_packet;
 
 static uint8_t usb_pd_disable = 0;
+
+static uint8_t need_rechager = 0;
 
 void usb_set_disable(void)
 {
@@ -344,11 +347,15 @@ static void PE_SNK_Wait_for_Capabilities_Exit(void)
 	}
 }
 
+
+
 static void PE_SNK_Evaluate_Capability_Entry(void)
 {
 	g_usb_pd_s.hardreset_counter = 0;
 	g_usb_pd_s.sink_request_index = 2;
 	usb_pd_timer_stop(SinkWaitCapTimer);
+
+	if(g_usb_pd_s.explicit_contract)  need_rechager = 1;
 
 	for(uint8_t i= 0; i<7;i++)
 	{
@@ -425,22 +432,7 @@ static void PE_SNK_Ready_Entry(void)
 
 	usb_pd_set_state(PE_SNK_Ready,exit_state);
 
-	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-	{
-
-		uint32_t pdo = g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo)-1];
-		//printk("snk pdo = 0x%x\n",pdo);
-		if(pdo_type(pdo) == PDO_TYPE_FIXED)
-		{
-			port_vbus = pdo_fixed_voltage(pdo);
-		}
-		else
-		{
-			port_vbus = rdo_pps_output_voltage(g_usb_pd_s.snk_rdo);
-		}
-
-		//printk("snk port_vbus = %d\n",port_vbus);
-	}
+	if(need_rechager == 1) port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
@@ -481,6 +473,8 @@ static void PE_SNK_Transition_to_default_Entry(void)
 static void PE_SNK_Transition_to_default_Exit(void)
 {
 	usb_pd_set_state(PE_SNK_Wait_for_Capabilities,enter_state);
+
+	need_rechager = 1;
 }
 
 static void PE_SNK_Send_Soft_Reset_Entry(void)
@@ -724,6 +718,7 @@ static void PE_SRC_Ready_Entry(void)
 	g_usb_pd_s.pe_timer_cnt = 0;
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
+
 	//usbpd_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
 }
 
@@ -1763,6 +1758,7 @@ void usb_pdevt_run(void)
 		usb_pd_set_state(PE_SNK_Startup,enter_state);
 		usbpd_printk("usb_pd_EVT_SNK_ATTACHED\n");
 		g_usb_pd_s.pe_prl_busy = 0;
+		need_rechager = 0;
 		usb_pd_event = 0;
 	}
 	if(usb_pd_event & USB_PD_EVT_SNK_UNATTACH)
@@ -1771,6 +1767,7 @@ void usb_pdevt_run(void)
 		usbpd_printk("usb_pd_EVT_SNK_UNATTACH\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
+		need_rechager = 0;
 	}
 #endif
 
@@ -1781,6 +1778,7 @@ void usb_pdevt_run(void)
 		usbpd_printk("usb_pd_EVT_SRC_ATTACHED\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
+		need_rechager = 0;
 	}
 	if(usb_pd_event & USB_PD_EVT_SRC_UNATTACH)
 	{
@@ -1788,6 +1786,7 @@ void usb_pdevt_run(void)
 		usbpd_printk("usb_pd_EVT_SRC_UNATTACH\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
+		need_rechager = 0;
 	}
 #endif
 
