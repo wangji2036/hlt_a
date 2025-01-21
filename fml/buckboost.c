@@ -213,8 +213,7 @@ void buckboost_task_event_handler(uint32_t event)
 			{
 				buckboost_protection_handle();
 			}
-			get_info_step++;
-			if(get_info_step > 2) get_info_step = 0;
+			if(get_info_step ++ > 2) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
