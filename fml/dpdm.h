@@ -292,6 +292,8 @@ enum dpdm_snk_type
 	BC1P2_QC9V,
 };
 
+void usb_dpdm_port0_switch(bool en);
+
 extern uint8_t dpdm_map;
 extern uint8_t bc12_type;
 extern uint8_t dpdm_snk_support;

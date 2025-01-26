@@ -181,6 +181,7 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_PD2P0_09V:
 					case EADP_TYPE_PD2P0_12V:
 					case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
+					case EADP_TYPE_POWERBANK_PPS:
 						if (cep > 24) cep = 24;
 						gd->pid_volt += 20 * ((cep >> 0) + 1);
 						if (gd->atl_test_ldstp_bpp_P60 == 1)
@@ -221,6 +222,7 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_PD2P0_09V:
 					case EADP_TYPE_PD2P0_12V:
 					case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
+					case EADP_TYPE_POWERBANK_PPS:
 						if (cep < -24) cep = -24;
 						cep *= -1;
 						gd->pid_volt -= 20 * ((cep >> 0) + 1);

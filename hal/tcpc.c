@@ -227,12 +227,32 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
 
 bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 {
+	static uint8_t cnt = 0;
+#if(BUCKBOOST_USED_NU6801 == 1)
+	cnt++;
+	if(cnt >= 10)
+	{
+		cnt = 0;
+
+		if(tc_index == 0)
+		{
+			if(buckboost_ops.get_typeca_vbus_present() >= 3800 ) return true;
+		}
+		else if(tc_index == 1)
+		{
+			if(buckboost_ops.get_typecb_vbus_present() >= 3800 ) return true;
+		}
+	}
+
+	return false;
+#else
 	return true;
+#endif
 }
 
 bool hal_tcpc_vbus_is_vsafe5v(void)
 {
-	if(g_buckboost.adc_vbus <= 5500 && g_buckboost.adc_vbus >= 4000) return true;
+	if(g_buckboost.adc_vbus <= 5500) return true;
 	return false;
 }
 

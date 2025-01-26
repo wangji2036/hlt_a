@@ -82,7 +82,7 @@
  */
 void hal_gpio_init(void)
 {
-	/* PA0 */
+
 	GPA->I_EN.BITS.PIN0 = 1;
 	GPA->O_EN.BITS.PIN0 = 0;
 	GPA->DOUT.BITS.PIN0 = 0;
@@ -99,8 +99,7 @@ void hal_gpio_init(void)
 	GPA->PUEN.BITS.PIN1 = 0;
 	GPA->PDEN.BITS.PIN1 = 0;
 	GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
-	GPA->ITEN.BITS.PIN1 = 0;
-	GPA->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
+
 
 	/* PA4 */
 	if (SYS->PID_INFO.BITS.PID == NU17111)

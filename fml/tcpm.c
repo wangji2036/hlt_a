@@ -32,6 +32,8 @@ static uint8_t qi_cnt = 0;
 #define _UI_PIN1_PINx     PIN4
 #define _UI_PIN2_PINx     PIN5
 
+//#define TEST_PIN
+#ifdef TEST_PIN
 void test_pin2_out(bool status)
 {
 	_UI_PIN2_PORT->I_EN.BITS._UI_PIN2_PINx = 0;
@@ -45,6 +47,7 @@ void test_pin1_out(bool status)
 	_UI_PIN1_PORT->DOUT.BITS._UI_PIN1_PINx = status;
 	_UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 1;
 }
+#endif
 
 void tcpm_task_init(void)
 {
@@ -52,9 +55,10 @@ void tcpm_task_init(void)
 	osal_start_timerEx(USB_TC_PD_TIMER, 1, 1, USB_TASK, TCPM_EVT_TIME_PERIOD);
 	usb_tc_init();
 	usb_pd_init();
-
+#ifdef TEST_PIN
 	test_pin1_out(1);
 	test_pin2_out(0);
+#endif
 	//fml_adp_type_set(EADP_TYPE_DCSRC_09V,  9000, 19500, 15 * 2);
 }
 
@@ -77,7 +81,9 @@ void tcpm_disable_usba_detect(void)
 	if(usba_state == 0)
 	{
 		g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
+#ifdef TEST_PIN
 		test_pin1_out(0);
+#endif
 		usba_cnt = 0;
 	}
 }
@@ -96,6 +102,8 @@ void tcpm_set_port_sdp(uint8_t tc_index)
 
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 {
+	uint32_t source_pdo;
+
 	wpc_mode = mode;
 	switch(mode)
 	{
@@ -108,10 +116,15 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			break;
 		case TCPM_WPC_WORK_BOOST:
-		case TCPM_WPC_WORK_PD_PPS:
 			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			printk("\r\n adapter updated! PPS");
+			//printk("\r\n adapter updated! BOOST");
+			break;
+		case TCPM_WPC_WORK_PD_PPS:
+			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) - 1];
+			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  9000, pdo_pps_apdo_max_voltage(source_pdo), 15 * 2);
+			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
+			//printk("\r\n adapter updated! PPS");
 			break;
 		case TCPM_WPC_WORK_DISABLE:
 			break;
@@ -133,7 +146,9 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_USBA_SCAN:
 			if(g_buckboost.usba_state && g_buckboost.usba_dectet_en)
 			{
+#ifdef TEST_PIN
 				test_pin2_out(1);
+#endif
 				usba_state = 1;
 				usba_cnt = 0;
 				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
@@ -149,7 +164,9 @@ void tcpm_task_event_handler(uint32_t event)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
+#ifdef TEST_PIN
 						test_pin2_out(0);
+#endif
 						port_manager_set_event(PORT2_EVENT_UNCONNECT);
 						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					}
@@ -187,9 +204,12 @@ void tcpm_task_event_handler(uint32_t event)
 			buckboost_ops.usb_a_dischg_en(false);
 			g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 			buckboost_ops.vbus_dischg_en(true);
+#ifdef TEST_PIN
 			test_pin1_out(1);
+#endif
 			buckboost_ops.vbus_dischg_en(false);
 			printk("enable A det\n");
+			break;
 		case TCPM_EVT_QI_SET_VOLT:
 			if(wpc_mode == TCPM_WPC_WORK_BOOST)
 			{
@@ -209,6 +229,7 @@ void tcpm_task_event_handler(uint32_t event)
 				port_manager_set_event(PORT3_EVENT_TRY_CONNECT);
 				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
+			break;
 		default:
 			break;
 	}

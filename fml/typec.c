@@ -84,6 +84,7 @@ void usb_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_
 static void TC_Disable_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_OPEN);
+	if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
 	usb_tc_set_state(tc,TC_Disable,exit_state);
 }
 static void TC_Disable_Exit(struct tc_s * tc)
@@ -202,6 +203,8 @@ static void TC_SNK_Attached_Entry(struct tc_s * tc)
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
     else
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS);
+
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
 }
 
 
@@ -221,7 +224,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		#endif
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 			usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
-
+			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
 
 			//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
             if(tc->tc_index == 0)
@@ -343,7 +346,7 @@ static void TC_SRC_Attached_Entry(struct tc_s * tc)
 	osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 #endif
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
-
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
     if(tc->tc_index == PORT0_INDEX)
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
     else
@@ -363,6 +366,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_UNATTACH);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 			usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
             if(tc->tc_index == 0)
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);
             else
@@ -416,7 +420,7 @@ static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
     hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_TOGGLE);
     usb_tc_set_state(tc,TC_DRP_TOGGLE,exit_state);
-
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
     if(g_port.inhandle_port == tc->tc_index && g_port.state == PORT_INHANDLING)
     {
     	if(tc->tc_index == 0)
@@ -664,7 +668,5 @@ void usb_tc_run(void)
 			usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].exit_cb(&g_tc[TYPEC_PORT_B]);
 	}
 #endif
-
-
 }
 

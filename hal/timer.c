@@ -146,7 +146,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 
-	//ui_display();
+	ui_display();
 }
 
 /**

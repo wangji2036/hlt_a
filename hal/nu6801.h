@@ -58,5 +58,7 @@ void hal_nu6801_buckboost_charge_set_trickle_volt(uint16_t volt);
 void hal_nu6801_buckboost_discharge_set_bat_uv_volt(uint16_t volt);
 void hal_nu6801_buckboost_wake_up(void);
 uint8_t hal_nu6801_buckboost_get_protect(void);
+uint16_t hal_nu6801_buckboost_typeca_vbus_present(void);
+uint16_t hal_nu6801_buckboost_typecb_vbus_present(void);
 
 #endif /* SW7201_H_ */

@@ -651,6 +651,10 @@ void port_enum_port_enum_done(void)
 			}
 		}
 	}
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_port.inhandle_port == WPC_INDEX )
+	{
+	    port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+	}
 
 	port_manager_set_state(PORT_IDLE_OR_READY);
 }
@@ -661,8 +665,33 @@ void port_enum_port_snk_setcharge(void)
 
 	hal_tcpc_set_gate_en(g_port.incharge_port,true);
 
-	g_port.ibat_limit = g_port.ibat_limit;
-	g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+	if(g_port.port_state[PORT3_INDEX] == PORT_STATE_SOURCE)// wireless present.
+	{
+		if(g_buckboost.adc_vbus<5500)// 5v
+		{
+			g_port.ibat_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
+		}
+		else if (g_buckboost.adc_vbus<9500)// 9v
+		{
+			g_port.ibat_limit = (g_port.adpater_power > 11000)? (g_port.adpater_power - 11000)/9:500;
+		}
+		else//12v, reserved for future 12 use.
+		{
+			g_port.ibat_limit = (g_port.adpater_power > 12000)? (g_port.adpater_power - 12000)/12:500;
+		}
+		//g_port.ibat_limit = g_port.ibat_limit < 500 ? g_port.ibat_limit : 500;
+		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+	}
+	else
+	{
+		g_port.ibat_limit = g_port.ibat_limit;
+		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+	}
+
+#if(BUCKBOOST_USED_NU6801 == 1)
+	g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
+#endif
+
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
 
 	if(g_port.inhandle_port == PORT0_INDEX)
@@ -691,15 +720,18 @@ void port_enum_port_snk_setvolt(void)
 
 		if(g_usb_pd_s.explicit_contract)
 		{
+#if(BUCKBOOST_USED_SW7201 == 1)
 			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
 			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2000)
 			{
 				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,VOLTAGE_PPS,pdo_pps_apdo_max_current(source_pdo));
 				g_port.ibus_limit =  pdo_pps_apdo_max_current(source_pdo);
 
-				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * 16000 / 1000;
+				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage() / 1000;
 			}
-			else if(g_usb_pd_s.snk_rx_pdo_n >= 2)
+			else
+#endif
+			if(g_usb_pd_s.snk_rx_pdo_n >= 2)
 			{
 				source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[1];
 				if(pdo_type(source_pdo) == PDO_TYPE_FIXED && pdo_fixed_voltage(source_pdo) == VOLTAGE_9V)
@@ -756,8 +788,8 @@ void port_enum_port_snk_setvolt(void)
 	else
 		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETCHARGE);
 
-	printk("bc12_type = %d\n",bc12_type);
-	printk("I[bat]=%dmA I[bus]=%dmA!\n",g_port.ibat_limit,g_port.ibus_limit);
+	printk("sdp_type = %d\n",bc12_type);
+	//printk("I[bat]=%dmA I[bus]=%dmA!\n",g_port.ibat_limit,g_port.ibus_limit);
 }
 
 void port_enum_port0_connect_success(void)

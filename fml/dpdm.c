@@ -38,6 +38,20 @@ void dpdm_source_init(void)
 	DPDM->HVDCP_CTRL.BITS.ENTER_HVDCP_INT_MASK = 1;
 }
 
+void usb_dpdm_port0_switch(bool en)
+{
+	if(en)
+	{
+		GPA->MODE.BITS.PIN0 = 3; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
+		GPA->MODE.BITS.PIN1 = 3; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
+	}
+	else
+	{
+		GPA->MODE.BITS.PIN0 = 0; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
+		GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
+	}
+}
+
 void usb_dpdm_select(uint8_t tc_index)
 {
 	if(tc_index == 0)

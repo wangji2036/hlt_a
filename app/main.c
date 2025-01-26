@@ -36,7 +36,7 @@ int main(void)
 {
 	ap_data_init();
 	gd_data_init();
-
+	delay_1ms(1200);
 	fml_bsp_init();
 	apl_gui_init();
 

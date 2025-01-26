@@ -4,8 +4,8 @@
 #include "typdef.h"
 #include "osal.h"
 
-#define BUCKBOOST_USED_SW7201		1
-#define BUCKBOOST_USED_NU6801		0
+#define BUCKBOOST_USED_SW7201		0
+#define BUCKBOOST_USED_NU6801		1
 
 #if(BUCKBOOST_USED_SW7201 == 1)
 	#define BAT_DEAD_BATTER_V   	6000
@@ -79,10 +79,16 @@ struct buckboost_operations
 	uint16_t (*get_bat_temperature)(void);
 	uint8_t (*get_protect_status)(void);
 
+
+#if(BUCKBOOST_USED_NU6801 == 1)
+	uint16_t (*get_typeca_vbus_present)(void);
+	uint16_t (*get_typecb_vbus_present)(void);
+#endif
+
 };
 
 
-#define BUCKBOOST_TIME_PERIOD									33
+#define BUCKBOOST_TIME_PERIOD									23
 #define BUCKBOOST_VBUS_PERIOD									10
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)

@@ -115,13 +115,13 @@ void buckboost_protection_handle(void)
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
-
+			buckboost_set_bus_iv(5000,3000,0,0);
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_protection_flag = 1;
-			printk("protect lock =%d\n",status);
+			printk("protect lock =0x%x\n",status);
 		}
 	}
 	else
@@ -207,14 +207,17 @@ void buckboost_task_event_handler(uint32_t event)
 					}
 				}
 				osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
-				buckboost_ir_drop_handle();
+
 			}
 			else if(get_info_step == 2)
 			{
 				buckboost_protection_handle();
 			}
-			get_info_step++;
-			if(get_info_step > 2) get_info_step = 0;
+			else if(get_info_step == 3)
+			{
+				buckboost_ir_drop_handle();
+			}
+			if(get_info_step ++ > 3) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
@@ -331,6 +334,11 @@ const struct buckboost_operations buckboost_ops =
 	.usb_a_dischg_en = 			hal_nu6801_buckboost_usb_a_dischg,
 	.vbus_dischg_en = 			hal_nu6801_buckboost_vbus_dischg,
 	.get_protect_status = 		hal_nu6801_buckboost_get_protect,
+
+#if(BUCKBOOST_USED_NU6801 == 1)
+	.get_typeca_vbus_present = 	hal_nu6801_buckboost_typeca_vbus_present,
+	.get_typecb_vbus_present = 	hal_nu6801_buckboost_typecb_vbus_present,
+#endif
 };
 
 #endif
