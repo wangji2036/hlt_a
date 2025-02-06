@@ -727,7 +727,7 @@ void port_enum_port_snk_setvolt(void)
 				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,VOLTAGE_PPS,pdo_pps_apdo_max_current(source_pdo));
 				g_port.ibus_limit =  pdo_pps_apdo_max_current(source_pdo);
 
-				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage() / 1000;
+				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage(source_pdo) / 1000;
 			}
 			else
 #endif
