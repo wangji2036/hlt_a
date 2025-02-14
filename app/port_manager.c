@@ -724,7 +724,7 @@ void port_enum_port_snk_setvolt(void)
 
 		if(g_usb_pd_s.explicit_contract)
 		{
-#if(BUCKBOOST_USED_SW7201 == 1)
+//#if(BUCKBOOST_USED_SW7201 == 1)
 			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
 			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2000)
 			{
@@ -734,7 +734,7 @@ void port_enum_port_snk_setvolt(void)
 				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage(source_pdo) / 1000;
 			}
 			else
-#endif
+//#endif
 			if(g_usb_pd_s.snk_rx_pdo_n >= 2)
 			{
 				source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[1];

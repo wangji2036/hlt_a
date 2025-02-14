@@ -18,7 +18,6 @@ void fml_adp_type_set(enum adp_type_t adp_type, uint16_t volt_min, uint16_t volt
 	gd->adp.volt_max = volt_max;
 	gd->adp.pwr_high = pwr_high;
 	printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
-	osal_set_event(USB_TASK,TCPM_EVT_QI_SET_VOLT);
 }
 
 void fml_adp_init(void)
@@ -96,28 +95,6 @@ void fml_adp_volt_set(uint16_t volt)
 		case EADP_TYPE_POWERBANK_PPS:
 			qi_volt = volt;
 			osal_set_event(USB_TASK,TCPM_EVT_QI_SET_VOLT);
-			break;
-
-			//if(wpc_mode == TCPM_WPC_WORK_BOOST)
-			//	hal_tcpc_pd_set_bus_iv(3,volt,3000,0,0);
-
-			//else
-			//if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && g_tc[0].usb_tc_state ==  TC_DRP_TOGGLE && g_tc[1].usb_tc_state ==  TC_DRP_TOGGLE)
-			//	hal_tcpc_pd_set_bus_iv(3,volt,3000,0,0);
-//			{
-//				uint16_t tmp_duty;
-//				tmp_duty = (20091 - volt) * 100 / 1263;
-//				if (tmp_duty > 900) tmp_duty = 900;
-//				if (tmp_duty <   1) tmp_duty =   1;
-//				if (SYS->PID_INFO.BITS.PID == NU17111)
-//				{
-//					hal_bpwm_update(BPWM3, BPWM3->PWM_CTRL.BITS.PERD + 1, tmp_duty);
-//				}
-//				else
-//				{
-//					hal_bpwm_update(BPWM8, BPWM8->PWM_CTRL.BITS.PERD + 1, tmp_duty);//TODO:did the boost volt regulation test?
-//				}
-//			}
 			break;
 		default:
 			break;
