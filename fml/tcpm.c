@@ -116,7 +116,11 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			break;
 		case TCPM_WPC_WORK_BOOST:
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 16500, 15 * 2);
+		#else
 			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
+		#endif
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			//printk("\r\n adapter updated! BOOST");
 			break;
@@ -149,15 +153,18 @@ void tcpm_task_event_handler(uint32_t event)
 #ifdef TEST_PIN
 				test_pin2_out(1);
 #endif
-				usba_state = 1;
 				usba_cnt = 0;
 				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
-				port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+				if(usba_state == 0)
+				{
+					port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
+					usba_state = 1;
+				}
 			}
 
 			if(usba_state)
 			{
-				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
+				if(g_buckboost.adc_iac1  < 20 )
 				{
 					usba_cnt++;
 					if(usba_cnt >= 50)
@@ -214,13 +221,14 @@ void tcpm_task_event_handler(uint32_t event)
 			if(wpc_mode == TCPM_WPC_WORK_BOOST)
 			{
 				hal_tcpc_pd_set_bus_iv(WPC_INDEX,qi_volt,3500,0,0);
+
 			}
 			else if(wpc_mode == TCPM_WPC_WORK_PD_PPS)
 			{
 				uint32_t source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
 				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,qi_volt,pdo_pps_apdo_max_current(source_pdo));
-				printk("pd set volt = %d\n",qi_volt);
 			}
+			printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
 			break;
 		case TCPM_EVT_QI_WORK:
 			if(qi_state == 0)   //无线充接入事件发生

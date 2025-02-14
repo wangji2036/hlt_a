@@ -60,5 +60,6 @@ void hal_nu6801_buckboost_wake_up(void);
 uint8_t hal_nu6801_buckboost_get_protect(void);
 uint16_t hal_nu6801_buckboost_typeca_vbus_present(void);
 uint16_t hal_nu6801_buckboost_typecb_vbus_present(void);
-
+uint8_t hal_nu6801_buckboost_get_charge_flag(void);
+uint16_t hal_nu6801_buckboost_get_iac1(void);//iac1;
 #endif /* SW7201_H_ */

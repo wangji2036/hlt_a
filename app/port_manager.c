@@ -18,6 +18,8 @@
 void port_manager_set_event(uint32_t event)
 {
 	g_port.port_event |= event;
+
+	printk("%s=0x%x!\n",__func__,event);
 }
 
 
@@ -32,7 +34,7 @@ void port_manager_task_init(void)
 	osal_task_handler_reg(PORT_MANAGER_TASK, port_manager_event_handle);
 	osal_start_timerEx(PORT_ENUM_TIMER, PORT_ENUM_PERIOD, PORT_ENUM_PERIOD, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT_SCAN);
 
-	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,10,0);
 	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 
 	tcpm_stop_wpc(WPC_DELAY);
@@ -542,6 +544,7 @@ void port_enum_port3_connect_closed(void)
 				&& g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 		{
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+
 		}
 		else
 		{
@@ -654,6 +657,7 @@ void port_enum_port_enum_done(void)
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_port.inhandle_port == WPC_INDEX )
 	{
 	    port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+	    printk("%s\n",__func__);
 	}
 
 	port_manager_set_state(PORT_IDLE_OR_READY);
@@ -690,6 +694,7 @@ void port_enum_port_snk_setcharge(void)
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 	g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
+	g_port.ibat_limit = g_port.ibat_limit < 6000 ? g_port.ibat_limit : 6000;
 #endif
 
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
@@ -701,14 +706,13 @@ void port_enum_port_snk_setcharge(void)
 
 	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
 
-
 }
 
 void port_enum_port_snk_setvolt(void)
 {
 
 	uint32_t source_pdo;
-
+	hal_tcpc_set_gate_en(g_port.incharge_port,false);
 	printk("[%d]%s!\n",g_port.inhandle_port,__func__);
 
 	g_port.ibus_limit = 500;
@@ -813,7 +817,7 @@ void port_enum_port0_connect_success(void)
 				usb_pd_set_event(PORT0_INDEX,USB_PD_EVT_SNK_ATTACHED);
 
 				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT1_INDEX,false);
-				hal_tcpc_set_gate_en(PORT0_INDEX,true);
+				//hal_tcpc_set_gate_en(PORT0_INDEX,true);
 				g_port.incharge_port = PORT0_INDEX;
 			}
 			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
@@ -840,7 +844,7 @@ void port_enum_port0_connect_success(void)
 				hal_tcpc_set_phy_port(PORT0_INDEX);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
 				usb_pd_set_event(PORT0_INDEX,USB_PD_EVT_SNK_ATTACHED);
-				hal_tcpc_set_gate_en(PORT0_INDEX,true);
+				//hal_tcpc_set_gate_en(PORT0_INDEX,true);
 				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT1_INDEX,false);
 				g_port.incharge_port = PORT0_INDEX;
 			}
@@ -885,7 +889,7 @@ void port_enum_port1_connect_success(void)
 				usb_pd_set_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
 
 				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT0_INDEX,false);
-				hal_tcpc_set_gate_en(PORT1_INDEX,true);
+				//hal_tcpc_set_gate_en(PORT1_INDEX,true);
 				g_port.incharge_port = PORT1_INDEX;
 			}
 			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
@@ -912,7 +916,7 @@ void port_enum_port1_connect_success(void)
 				hal_tcpc_set_phy_port(PORT1_INDEX);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SNK_ATTACHED);
 				usb_pd_set_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
-				hal_tcpc_set_gate_en(PORT1_INDEX,true);
+				//hal_tcpc_set_gate_en(PORT1_INDEX,true);
 				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) hal_tcpc_set_gate_en(PORT0_INDEX,false);
 				g_port.incharge_port = PORT1_INDEX;
 			}
@@ -1144,8 +1148,10 @@ void port_enum_scan_handle(void)
 	else if(g_port.port_event & PORT_EVENT_RESET_CHARGE)
 	{
 		g_port.port_event &= ~PORT_EVENT_RESET_CHARGE;
-
-		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE &&  g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
+		g_port.inhandle_port = g_port.incharge_port;
+		tcpm_disable_usba_detect();
+		port_manager_set_state(PORT_INHANDLING);
+		//if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE &&  g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE)
 		{
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 			{
@@ -1157,10 +1163,9 @@ void port_enum_scan_handle(void)
 				{
 					osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
 				}
-				g_port.inhandle_port = g_port.incharge_port;
+				//g_port.inhandle_port = g_port.incharge_port;
 			}
 		}
-
 	}
 
 }

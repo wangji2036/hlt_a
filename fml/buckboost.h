@@ -4,8 +4,8 @@
 #include "typdef.h"
 #include "osal.h"
 
-#define BUCKBOOST_USED_SW7201		1
-#define BUCKBOOST_USED_NU6801		0
+#define BUCKBOOST_USED_SW7201		0
+#define BUCKBOOST_USED_NU6801		1
 
 #if(BUCKBOOST_USED_SW7201 == 1)
 	#define BAT_DEAD_BATTER_V   	6000
@@ -28,7 +28,7 @@ struct buckboost_s
 	bool set_typeca_gate_en;
 	bool set_typecb_gate_en;
 	bool set_usb_a_gate_en;
-
+	bool bat_full_flag;
 	bool usba_dectet_en;
 	bool usba_state;
 
@@ -48,6 +48,9 @@ struct buckboost_s
 	uint16_t adc_tbat;
 	uint16_t adc_vbus;
 	uint16_t ir_drop;
+#if(BUCKBOOST_USED_NU6801 == 1)
+	uint16_t adc_iac1;
+#endif
 	uint8_t protect_status;
 };
 
@@ -83,6 +86,8 @@ struct buckboost_operations
 #if(BUCKBOOST_USED_NU6801 == 1)
 	uint16_t (*get_typeca_vbus_present)(void);
 	uint16_t (*get_typecb_vbus_present)(void);
+	uint8_t (*get_charge_flag)(void);
+	uint16_t (*get_adc_iac1)(void);
 #endif
 
 };

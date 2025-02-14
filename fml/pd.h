@@ -167,6 +167,12 @@ enum pd_bist_mode
     PDO_PPS_APDO_MIN_VOLT(min_mv) | PDO_PPS_APDO_MAX_VOLT(max_mv) | \
     PDO_PPS_APDO_MAX_CURR(max_ma) | PDO_PPS_POWER_LIMITED)
 
+#define PD_PPS_FLAGS_OMF                      (1 << 3)
+#define PD_PPS_FLGAS_PTF(raw)                 ((raw & 0x06) >> 1)
+#define PD_PPS_FLAGS_SET_PTF(val)             ((val & 0x03) << 1)
+#define PD_PPS_SET_OUTPUT_MV(mv)              (((mv) / 20) & 0xFFFF)
+#define PD_PPS_SET_OUTPUT_MA(ma)              (((ma) / 50) & 0xFF)
+
 
 enum pd_ctrl_msg_type {
 /* Control Message type */

@@ -57,8 +57,8 @@ const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 3000, 0),
-	[2] = PDO_PPS_APDO(5000,11000,3000),
+	[1] = PDO_FIXED(9000, 2000, 0),
+	[2] = PDO_PPS_APDO(5000,11000,2000),
 };
 #endif
 
@@ -216,7 +216,6 @@ void usb_pd_reset_prl(void)
 	g_usb_pd_s.tx_sop_msgid = 0;
 	g_usb_pd_s.tx_sop1_msgid = 0;
 	g_usb_pd_s.communitcate_capable = 0;
-	g_usb_pd_s.explicit_contract = 0;
 	//g_usb_pd_s.hardreset_counter = 0;
 	g_usb_pd_s.sink_request_index = 1;
 	g_usb_pd_s.pe_prl_busy = 0;
@@ -284,6 +283,7 @@ void usb_pd_clear_event(uint32_t event)
 
 static void PE_SNK_RSC_Disable_Entry(void)
 {
+	g_usb_pd_s.explicit_contract = 0;
 	usb_pd_reset_prl();
 	hal_tcpc_reset_pd_phy();
 	hal_tcpc_pd_phy_disable();
@@ -306,6 +306,7 @@ static void PE_SNK_Startup_Entry(void)
 	hal_tcpc_set_phy_rx_vref(VREF_0P36);
 	//g_usb_pd_s.snk_rdo = RDO_FIXED(1, 500, 500,0);
 	g_usb_pd_s.nego_revision = PD_REV30;
+	g_usb_pd_s.explicit_contract = 0;
 	hal_tcpc_set_pd_rx(g_tcpc.tc_port_map,EN_SOP | EN_HARD_RESET ,false);
 	usb_pd_set_state(PE_SNK_Startup,exit_state);
 }
@@ -432,7 +433,13 @@ static void PE_SNK_Ready_Entry(void)
 
 	usb_pd_set_state(PE_SNK_Ready,exit_state);
 
-	if(need_rechager == 1) port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+	if(need_rechager == 1)
+	{
+		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+		need_rechager = 0;
+	}
+
+	printk("%s\n",__func__);
 
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
@@ -562,6 +569,17 @@ static void PE_SNK_Give_Sink_Cap_Ext_Exit(void)
 
 }
 
+static void PE_SRC_Give_PPS_Status_Entry(void)
+{
+	tcpc_pd_send_pps_status();
+	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_GIVEPPS_STA;
+	usb_pd_set_state(PE_SRC_Give_PPS_Status,exit_state);
+}
+
+static void PE_SRC_Give_PPS_Status_Exit(void)
+{
+
+}
 
 #endif
 
@@ -571,6 +589,7 @@ static void PE_SRC_Startup_Entry(void)
 {
 	usbpd_printk("%s\n",__func__);
 	g_usb_pd_s.caps_counter = 0;
+	g_usb_pd_s.explicit_contract = 0;
 	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
 	usb_pd_reset_prl();
 	hal_tcpc_reset_pd_phy();
@@ -1617,10 +1636,13 @@ void usb_pd_sop_ctrl_msg_handle(void)
 			usb_pd_set_state(PE_SNK_Give_Sink_Cap_Ext,enter_state);
 		#endif
 			break;
+		case PD_CTRL_GET_PPS_STATUS:
+			if(g_tcpc.pwr_role == TYPEC_SOURCE) usb_pd_set_state(PE_SRC_Give_PPS_Status,enter_state);
+			break;
 		case PD_CTRL_GET_SOURCE_CAP_EXT:
 		case PD_CTRL_GET_STATUS:
 		case PD_CTRL_FR_SWAP:
-		case PD_CTRL_GET_PPS_STATUS:
+
 		case PD_CTRL_GET_COUNTRY_CODES:
 		case PD_CTRL_GET_SOURCE_INFO:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -2156,6 +2178,11 @@ void usb_pd_pkts_transmit_givesnkcap_ext_callback(void)
 #endif
 }
 
+void usb_pd_pkts_transmit_givepps_sta_callback(void)
+{
+	usb_pd_set_state(PE_SRC_Ready,enter_state);
+}
+
 void usb_pd_pkts_transmit_prswap_callback(void)
 {
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -2329,6 +2356,7 @@ const static callback transmit_success_cb[TRANSMITE_TYPE_MAX]  =
 	usb_pd_pkts_transmit_prswap_callback,			//TRANSMITE_TYPE_PRSWAP
 	usb_pd_pkts_transmit_givesnkcap_callback,		//TRANSMITE_TYPE_GIVESNKCAP
 	usb_pd_pkts_transmit_givesnkcap_ext_callback,   //TRANSMITE_TYPE_GIVESNKCAP_EXT
+	usb_pd_pkts_transmit_givepps_sta_callback,		//TRANSMITE_TYPE_GIVEPPS_STA
 };
 
 void __attribute__((isr)) USBPD_IRQHandler(void)
@@ -2428,6 +2456,7 @@ const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
 	{PE_SNK_Not_Supported_Received_Entry,PE_SNK_Not_Supported_Received_Exit},			//PE_SNK_Not_Supported_Received,
 	{PE_SNK_Send_Not_Supported_Entry,PE_SNK_Send_Not_Supported_Exit},					//PE_SNK_Send_Not_Supported,
 	{PE_SNK_Give_Sink_Cap_Ext_Entry,PE_SNK_Give_Sink_Cap_Ext_Exit},						//PE_SNK_Give_Sink_Cap_Ext
+
 #endif
 
 	//for source
@@ -2449,6 +2478,7 @@ const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
 	{PE_SRC_Soft_Reset_Entry,PE_SRC_Soft_Reset_Exit},									//PE_SRC_Soft_Reset,
 	{PE_SRC_Not_Supported_Received_Entry,PE_SRC_Not_Supported_Received_Exit},			//PE_SRC_Not_Supported_Received,
 	{PE_SRC_Send_Not_Supported_Entry,PE_SRC_Send_Not_Supported_Exit},					//PE_SRC_Send_Not_Supported,
+	{PE_SRC_Give_PPS_Status_Entry,PE_SRC_Give_PPS_Status_Exit},							//PE_SRC_Give_PPS_Status
 #endif
 	{PE_Give_Revision_Entry,PE_Give_Revision_Exit},										//PE_Get_Revision,
 	{PE_SRC_SNK_Chunk_Received_Entry,PE_SRC_SNK_Chunk_Received_Exit},					//PE_SRC_SNK_Chunk_Received

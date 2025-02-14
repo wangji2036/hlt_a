@@ -78,6 +78,7 @@ enum usb_pd_state_e
 	PE_SRC_Soft_Reset,
 	PE_SRC_Not_Supported_Received,
 	PE_SRC_Send_Not_Supported,
+	PE_SRC_Give_PPS_Status,
 #endif
 	PE_Give_Revision,//32
 	PE_SRC_SNK_Chunk_Received,//33
@@ -100,6 +101,7 @@ enum usb_pd_state_e
 	PE_PRS_SNK_SRC_Reject_Swap,
 	PE_PRS_SNK_SRC_Send_Swap,
 #endif
+
 	PE_STATE_MAX,
 };
 
@@ -143,6 +145,7 @@ enum tcpc_pe_transmit_type
 	TRANSMITE_TYPE_PRSWAP,
 	TRANSMITE_TYPE_GIVESNKCAP,
 	TRANSMITE_TYPE_GIVESNKCAP_EXT,
+	TRANSMITE_TYPE_GIVEPPS_STA,
 	TRANSMITE_TYPE_MAX,
 };
 

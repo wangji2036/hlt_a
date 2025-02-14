@@ -22,6 +22,7 @@
 #include "tcpm.h"
 #include "port_manager.h"
 #include "usb_qc.h"
+#include "buckboost.h"
 
 uint32_t rrlen;
 
@@ -56,8 +57,9 @@ int main(void)
 //	fml_usbqc_init();
 
 	fml_nu103x_por_init();
-
+#if(BUCKBOOST_USED_SW7201 == 1)
 	delay_1ms(500);
+#endif
 //	WPC_vInit();
 
 	printk("\r\n ap_t size-> %d", sizeof(struct ap_t));
@@ -84,16 +86,15 @@ int main(void)
 		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 328 need outside config, using sizeof arr
 	}
 
-//	tc_init();
-//	tcpm_init();
-
 	fml_adp_init();
 
 	osal_init();
 	apl_task_init();
+
+	buckboost_task_init();
 	tcpm_task_init();
 	usb_dpdm_task_init();
-	buckboost_task_init();
+
 
 	fml_task_init();
 	wpc_task_init();
