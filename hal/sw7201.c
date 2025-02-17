@@ -31,6 +31,10 @@ void hal_sw7201_buckboost_init(void)
 		//hal_sw7201_buckboost_a2_detect_enable(true);
 		hal_sw7201_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
 		hal_sw7201_buckboost_set_cv();
+		// Disable NTC
+		uint8_t read;
+		hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
+		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Discharge_Setting1,read|0x04);
 
 
 		//return;

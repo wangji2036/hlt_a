@@ -374,10 +374,10 @@ void ui_update(void)
     {
     	flash_flag = 1;
     }
-    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (soc_show<15))
+/*    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (soc_show<15))
     {
     	flash_flag = 2;
-    }
+    }*/
     else{
     	flash_flag = 0;
     }
