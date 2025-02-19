@@ -75,5 +75,5 @@ void hal_sw7201_buckboost_vbus_dischg(bool en);
 uint16_t hal_sw7201_buckboost_get_bat_temperature(void);
 void hal_sw7201_buckboost_set_cv(void);
 uint8_t hal_sw7201_buckboost_get_protect(void);
-
+uint8_t hal_sw7201_buckboost_is_ibus_loop(void);
 #endif /* SW7201_H_ */

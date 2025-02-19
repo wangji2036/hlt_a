@@ -575,7 +575,7 @@ void hal_tcpc_send_sink_caps_ext(void)
 	transmit_pkt.msg.ext_msg.data[17] = 0x02;
 	transmit_pkt.msg.ext_msg.data[18] = 0;
 	transmit_pkt.msg.ext_msg.data[19] = 5;
-	transmit_pkt.msg.ext_msg.data[20] = 45;
+	transmit_pkt.msg.ext_msg.data[20] = 18;
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 
@@ -594,7 +594,7 @@ void tcpc_pd_send_pps_status(void)
 	transmit_pkt.msg.ext_msg.data[0] = PD_PPS_SET_OUTPUT_MV(g_buckboost.adc_vbus) & 0xFF;
 	transmit_pkt.msg.ext_msg.data[1] = PD_PPS_SET_OUTPUT_MV(g_buckboost.adc_vbus) >> 8;
 	transmit_pkt.msg.ext_msg.data[2] = 0xFF;
-	transmit_pkt.msg.ext_msg.data[3] =  0x1 << 1 ;//| ((POWER_STATUS & VIN_OP_MODE) ? (0x1 << 3) : 0x0);
+	transmit_pkt.msg.ext_msg.data[3] =  0x1 << 1 | ((g_buckboost.ibus_cc_flag) ? (0x1 << 3) : 0x0);
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 

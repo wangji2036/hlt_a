@@ -53,7 +53,7 @@ enum wpc_work_mode
 
 extern uint8_t wpc_mode;
 extern uint8_t wpc_mode_pre;
-
+extern uint8_t qi_state;
 void tcpm_task_init(void);
 void tcpm_task_event_handler(uint32_t event);
 void tcpm_set_port_sdp(uint8_t tc_index);

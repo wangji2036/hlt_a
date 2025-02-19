@@ -8,6 +8,7 @@
 #include "port_manager.h"
 #include "tcpm.h"
 
+static bool pps_vbus_uv = false;
 struct buckboost_s  g_buckboost;
 
 void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint16_t delay)
@@ -121,21 +122,52 @@ void buckboost_protection_handle(void)
 	#define VBUS_REL_LOW_FLAG			BIT(5)
 	#define VBUS_UV_FLAG				BIT(6)
 	#define HFET_OCP					BIT(7)
+
+	#define DIS_VBAT_LOW				BIT(8)
+	#define PPS_UV						BIT(9)
+
+	static uint8_t cnt = 0;
 #endif
 
-	#define VBUS_OVP_TH					21500
+	#define SW7201_VBUS_OVP_TH					21500
+	#define NU6801_VBUS_OVP_TH					18000
 
 	static uint8_t buckboost_protection_flag = false;
 
-	uint8_t status = 0;
+	uint16_t status = 0;
 
 	status = buckboost_ops.get_protect_status();
 
 #if(BUCKBOOST_USED_SW7201 == 1)
-	if(g_buckboost.adc_vbus > VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
+	if(g_buckboost.adc_vbus > SW7201_VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
 #elif(BUCKBOOST_USED_NU6801 == 1)
-	if(g_buckboost.adc_vbus > VBUS_OVP_TH) status |= VBUS_OV_FLAG;
+	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH) status |= VBUS_OV_FLAG;
+
+	if(g_buckboost.adc_vbat < 2900 && g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && !g_tc[TYPEC_PORT_A].is_deadbattery)
+	{
+		cnt++;
+		if(cnt >= 10)
+		{
+			g_tc[TYPEC_PORT_A].is_deadbattery = 1;
+			g_tc[TYPEC_PORT_B].is_deadbattery = 1;
+
+			status |= DIS_VBAT_LOW;
+			cnt = 0;
+		}
+	}
+	else
+	{
+		cnt = 0;
+	}
+
+	if(pps_vbus_uv)
+	{
+		pps_vbus_uv = false;
+		status |= PPS_UV;
+
+	}
 #endif
+
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_SW7201 == 1)
@@ -151,13 +183,15 @@ void buckboost_protection_handle(void)
 			buckboost_set_bus_iv(5000,3000,0,0);
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
+			qi_state = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_protection_flag = 1;
 			printk("protect lock =0x%x\n",status);
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
-		if(status & (URB_DET | BST_UV_FLAG | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG | VBUS_REL_LOW_FLAG ))
+
+		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG | VBUS_REL_LOW_FLAG | DIS_VBAT_LOW  | PPS_UV))
 		{
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
@@ -169,6 +203,7 @@ void buckboost_protection_handle(void)
 			buckboost_set_bus_iv(5000,3000,0,0);
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
+			qi_state = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_ops.init();
@@ -188,6 +223,9 @@ void buckboost_protection_handle(void)
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
 			printk("protect unlock\n");
+			buckboost_ops.init();
+			buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
+			buckboost_set_bus_iv(5000,3000,0,0);
 		}
 	}
 
@@ -229,6 +267,7 @@ void buckboost_ir_drop_handle(void)
 void buckboost_task_event_handler(uint32_t event)
 {
 	static uint8_t get_info_step = 0;
+	static uint8_t pps_uv_cnt = 0;
 	switch (event)
 	{
 		case BUCKBOOST_EVT_TIME_PERIOD:
@@ -237,15 +276,16 @@ void buckboost_task_event_handler(uint32_t event)
 
 			if(get_info_step == 0)
 			{
-				g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
-				g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
-				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 				g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+			#if(BUCKBOOST_USED_NU6801 == 1)
 				g_buckboost.adc_iac1 = buckboost_ops.get_adc_iac1();
+			#endif
 			}
 			else if(get_info_step == 1)
 			{
 				g_buckboost.usba_state =  buckboost_ops.get_a2_state();
+				g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
+
 			#if(BUCKBOOST_USED_SW7201 == 1)
 				if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
 				{
@@ -256,6 +296,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#endif
 				if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
 				{
+
 					if(g_tc[TYPEC_PORT_A].is_deadbattery)
 					{
 						g_tc[TYPEC_PORT_A].is_deadbattery = 0;
@@ -269,7 +310,10 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 			else if(get_info_step == 2)
 			{
+				g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
 				buckboost_protection_handle();
+
+			#if(BUCKBOOST_USED_NU6801 == 1)
 				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{
 					uint8_t flag = buckboost_ops.get_charge_flag();
@@ -288,9 +332,12 @@ void buckboost_task_event_handler(uint32_t event)
 				{
 					g_buckboost.bat_full_flag = 0;
 				}
+
+			#endif
 			}
 			else if(get_info_step == 3)
 			{
+				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			#if(BUCKBOOST_USED_SW7201 == 1)
 				buckboost_ir_drop_handle();
 			#endif
@@ -298,7 +345,31 @@ void buckboost_task_event_handler(uint32_t event)
 			if(get_info_step ++ > 3) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
+
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
+
+			if(g_usb_pd_s.is_in_pps && g_usb_pd_s.explicit_contract)
+			{
+				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
+				if(g_buckboost.adc_vbus < 4600)
+				{
+					pps_uv_cnt++;
+					if(pps_uv_cnt >= 5)
+					{
+						pps_uv_cnt = 0;
+						pps_vbus_uv = true;
+					}
+				}
+				else
+					pps_uv_cnt = 0;
+			}
+			else
+			{
+				pps_uv_cnt = 0;
+				pps_vbus_uv = false;
+			}
+
+
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
 //			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -389,6 +460,7 @@ const struct buckboost_operations buckboost_ops =
 	.usb_a_dischg_en = 			hal_sw7201_buckboost_usb_a_dischg,
 	.vbus_dischg_en = 			hal_sw7201_buckboost_vbus_dischg,
 	.get_protect_status = 		hal_sw7201_buckboost_get_protect,
+	.is_ibus_loop = 			hal_sw7201_buckboost_is_ibus_loop,
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 
@@ -414,12 +486,14 @@ const struct buckboost_operations buckboost_ops =
 	.usb_a_dischg_en = 			hal_nu6801_buckboost_usb_a_dischg,
 	.vbus_dischg_en = 			hal_nu6801_buckboost_vbus_dischg,
 	.get_protect_status = 		hal_nu6801_buckboost_get_protect,
+	.is_ibus_loop = 			hal_nu6801_buckboost_is_ibus_loop,
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 	.get_typeca_vbus_present = 	hal_nu6801_buckboost_typeca_vbus_present,
 	.get_typecb_vbus_present = 	hal_nu6801_buckboost_typecb_vbus_present,
 	.get_charge_flag = 			hal_nu6801_buckboost_get_charge_flag,
 	.get_adc_iac1 = 			hal_nu6801_buckboost_get_iac1,
+
 #endif
 };
 

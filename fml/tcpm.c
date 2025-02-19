@@ -23,7 +23,7 @@ uint8_t tcpm_qi_work_delay = 0;
 
 static uint8_t usba_state = 0;
 static uint8_t usba_cnt = 0;
-static uint8_t qi_state = 0;
+uint8_t qi_state = 0;
 static uint8_t qi_cnt = 0;
 
 
@@ -164,7 +164,8 @@ void tcpm_task_event_handler(uint32_t event)
 
 			if(usba_state)
 			{
-				if(g_buckboost.adc_iac1  < 20 )
+#if(BUCKBOOST_USED_SW7201 == 1)
+				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
 				{
 					usba_cnt++;
 					if(usba_cnt >= 50)
@@ -181,6 +182,24 @@ void tcpm_task_event_handler(uint32_t event)
 				else
 					usba_cnt = 0;
 
+#elif(BUCKBOOST_USED_NU6801 == 1)
+				if(g_buckboost.adc_iac1  < 20 )
+				{
+					usba_cnt++;
+					if(usba_cnt >= 50)
+					{
+						usba_cnt = 0;
+						usba_state = 0;
+#ifdef TEST_PIN
+						test_pin2_out(0);
+#endif
+						port_manager_set_event(PORT2_EVENT_UNCONNECT);
+						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+					}
+				}
+				else
+					usba_cnt = 0;
+#endif
 				//printk("usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
 

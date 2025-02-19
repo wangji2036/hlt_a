@@ -438,7 +438,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 	}
 	else if(hal_get_drp_toggle_result(tc->tc_index) == TYPEC_DRP_SRC_CONNECTED)
 	{
-		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+		if(!tc->is_deadbattery) usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
 	}
 }
 

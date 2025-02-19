@@ -680,6 +680,9 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
             voltage = rqt->request.PPS_BITS.output_voltage * 20;
             if ((voltage > pdo->source_pdo[index - 1].BITS.PPS_BITS.max_voltage * 100) || (voltage < pdo->source_pdo[index - 1].BITS.PPS_BITS.min_voltage * 100)) return check_pps_voltage_error;
 			current = rdo_op_current;
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			current = (voltage * current / 1000) > 18000 ? 18000 * 1000/voltage :current;
+		#endif
 			g_usb_pd_s.is_in_pps = 1;
             break;
     }
@@ -1426,8 +1429,13 @@ void usb_pd_sop_ctrl_msg_handle(void)
 			#endif
 				default:
 					#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
+//						if(g_tcpc.pwr_role == TYPEC_SINK)
+//							usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+//						else
+//							usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
+
 						if(g_tcpc.pwr_role == TYPEC_SINK)
-							usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
+							usb_pd_set_state(PE_SNK_Ready,enter_state);
 						else
 							usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 					#endif
@@ -1833,8 +1841,12 @@ void usb_pdevt_run(void)
 	}
 	else if(usb_pd_event & USB_PD_EVT_PS_TRANST)
 	{
+		#define abs(a,b) a>b?a-b:b-a
 		usb_pd_event &= ~USB_PD_EVT_PS_TRANST;
-		hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,30,180);
+		if(g_usb_pd_s.is_in_pps && (abs(g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage)<= 500))
+			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,0,24);
+		else
+			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,30,180);
 	}
 	else if(usb_pd_event & USB_PD_EVT_RX_SOP_PACKET)
 	{

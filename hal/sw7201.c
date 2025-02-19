@@ -345,6 +345,12 @@ void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_Setting3,0xC0);
 }
 
+
+uint8_t hal_sw7201_buckboost_is_ibus_loop(void)
+{
+	return 0;
+}
+
 #endif
 
 

@@ -3,6 +3,7 @@
 #include "nu6801.h"
 #include "printk.h"
 #include "delay.h"
+#include "usb_pd.h"
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 
@@ -18,6 +19,9 @@ void hal_nu6801_buckboost_init(void)
 	uint8_t revision = hal_nu6801_buckboost_get_verision();
 	{
 		hal_nu6801_buckboost_wake_up();
+
+
+
 		hal_nu6801_buckboost_set_busiv(5000,3000);  //5v3a
 		hal_nu6801_buckboost_bat_ivcfg();
 		hal_nu6801_buckboost_typeca_gate_en(false);
@@ -25,6 +29,24 @@ void hal_nu6801_buckboost_init(void)
 		hal_nu6801_buckboost_usb_a_gate_en(false);
 		hal_nu6801_buckboost_usba_detect_enable(true);
 		hal_nu6801_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
+
+		/*UNLOCK*/
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2d);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xf9);
+		uint8_t read;
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x50,&read);
+		printk("UNLOCK6801 =0x%x\n",read);
+
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x61,&read);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x61,read | 0x06);
+
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
+
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x50,&read);
+		printk("LOCK6801 =0x%x\n",read);
+
 	}
 	printk("nu6801 revision =0x%x\n",revision);
 }
@@ -37,7 +59,8 @@ void hal_nu6801_buckboost_wake_up(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x01);
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0xFC) | 0x01));  //设置nu6801的工作频率
+	//hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0x1C) | 0xC0 | 0x20| 0x03));  //设置nu6801的工作频率
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0x1C) | 0x00 | 0x00| 0x00));  //设置nu6801的工作频率
 }
 
 void hal_nu6801_buckboost_set_cv(void)
@@ -139,7 +162,7 @@ void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 {
 	//printk("%s= %d\n",__func__,vbus);
 	if(vbus < 4400 || vbus > 19000) return;
-	vbus = (vbus - 4400 + 300) / 20;
+	vbus = (vbus - 4400) / 20;
 	if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) return;
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x1C)|(vbus >> 8));
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,vbus & 0xFF);
@@ -149,7 +172,11 @@ void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 	ibus = (ibus - 150) / 50;
 	printk("ibus_limit = %d\n",ibus);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBUS_SET,ibus);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x00);
+
+	if(g_usb_pd_s.is_in_pps && g_usb_pd_s.explicit_contract)
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x00);
+	else
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x02);
 }
 
 void hal_nu6801_buckboost_typeca_gate_en(bool en)
@@ -229,6 +256,15 @@ int16_t hal_nu6801_buckboost_get_bus_current(void)
 		return -vbat;
 }
 
+uint8_t hal_nu6801_buckboost_is_ibus_loop(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MAIN_STAT,&read);
+
+	if((read & 0x03) == 0x02) return true;
+	return false;
+}
+
 int16_t hal_nu6801_buckboost_get_bat_current(void)
 {
 	uint8_t read;
@@ -295,12 +331,12 @@ uint16_t hal_nu6801_buckboost_get_bat_voltage(void)
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x0F);
-	delay_1us(300);
+	delay_1us(500);
 	nu6801_vref =  hal_badc_meas(_BADC_CH_PD3_ADC9);
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x00);
-	delay_1us(300);
+	delay_1us(500);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 
 	uint32_t vbat = row* 120  * 25 / nu6801_vref;

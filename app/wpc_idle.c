@@ -294,16 +294,69 @@ void wpc_idle_dping_select(void)
 			gd->dig_ping_phas = ap->dig_ping_phas_6v;
 			break;
 		case EADP_TYPE_POWERBANK_09V:
-			gd->dig_ping_volt = ap->dig_ping_volt_9v;
-			gd->dig_ping_perd = ap->dig_ping_perd_9v;
-			gd->dig_ping_duty = ap->dig_ping_duty_9v;
-			gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			if(gd->vpwr <7500)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_5v;
+				gd->dig_ping_perd = ap->dig_ping_perd_5v;
+				gd->dig_ping_duty = ap->dig_ping_duty_5v;
+				gd->dig_ping_phas = ap->dig_ping_phas_5v;
+			}
+			else if(gd->vpwr <10000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_9v;
+				gd->dig_ping_perd = ap->dig_ping_perd_9v;
+				gd->dig_ping_duty = ap->dig_ping_duty_9v;
+				gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			}
+			else if(gd->vpwr <13000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_11v;
+				gd->dig_ping_perd = ap->dig_ping_perd_11v;
+				gd->dig_ping_duty = ap->dig_ping_duty_11v;
+				gd->dig_ping_phas = ap->dig_ping_phas_11v;
+			}
+			else//<15v
+			{
+				gd->dig_ping_volt = gd->vpwr;//12000;
+				gd->dig_ping_perd = 144000000 / 147772;
+				gd->dig_ping_duty = 100;
+				gd->dig_ping_phas = 50;
+			}
 			break;
 		case EADP_TYPE_QC2P0_09V:
 		case EADP_TYPE_PD2P0_09V:
 		case EADP_TYPE_PD2P0_12V:
 		case EADP_TYPE_DCSRC_09V:
 		case EADP_TYPE_POWERBANK_PPS:
+			if(gd->vpwr <7500)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_5v;
+				gd->dig_ping_perd = ap->dig_ping_perd_5v;
+				gd->dig_ping_duty = ap->dig_ping_duty_5v;
+				gd->dig_ping_phas = ap->dig_ping_phas_5v;
+			}
+			else if(gd->vpwr <10000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_9v;
+				gd->dig_ping_perd = ap->dig_ping_perd_9v;
+				gd->dig_ping_duty = ap->dig_ping_duty_9v;
+				gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			}
+			else if(gd->vpwr <13000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_11v;
+				gd->dig_ping_perd = ap->dig_ping_perd_11v;
+				gd->dig_ping_duty = ap->dig_ping_duty_11v;
+				gd->dig_ping_phas = ap->dig_ping_phas_11v;
+			}
+			else//<15v
+			{
+				gd->dig_ping_volt = gd->vpwr;//12000;
+				gd->dig_ping_perd = 144000000 / 147772;
+				gd->dig_ping_duty = 100;
+				gd->dig_ping_phas = 50;
+			}
+			break;
 		case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
 			gd->dig_ping_volt = ap->dig_ping_volt_11v;
 			gd->dig_ping_perd = ap->dig_ping_perd_11v;
@@ -317,10 +370,34 @@ void wpc_idle_dping_select(void)
 //			gd->dig_ping_phas = ap->dig_ping_phas_12v;
 //			break;
 		default:
-			gd->dig_ping_volt = ap->dig_ping_volt_5v;
-			gd->dig_ping_perd = ap->dig_ping_perd_5v;
-			gd->dig_ping_duty = ap->dig_ping_duty_5v;
-			gd->dig_ping_phas = ap->dig_ping_phas_5v;
+			if(gd->vpwr <7500)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_5v;
+				gd->dig_ping_perd = ap->dig_ping_perd_5v;
+				gd->dig_ping_duty = ap->dig_ping_duty_5v;
+				gd->dig_ping_phas = ap->dig_ping_phas_5v;
+			}
+			else if(gd->vpwr <10000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_9v;
+				gd->dig_ping_perd = ap->dig_ping_perd_9v;
+				gd->dig_ping_duty = ap->dig_ping_duty_9v;
+				gd->dig_ping_phas = ap->dig_ping_phas_9v;
+			}
+			else if(gd->vpwr <13000)
+			{
+				gd->dig_ping_volt = ap->dig_ping_volt_11v;
+				gd->dig_ping_perd = ap->dig_ping_perd_11v;
+				gd->dig_ping_duty = ap->dig_ping_duty_11v;
+				gd->dig_ping_phas = ap->dig_ping_phas_11v;
+			}
+			else//<15v
+			{
+				gd->dig_ping_volt = gd->vpwr;//12000;
+				gd->dig_ping_perd = 144000000 / 147772;
+				gd->dig_ping_duty = 100;
+				gd->dig_ping_phas = 50;
+			}
 			break;
 	}
 }
@@ -344,6 +421,13 @@ void wpc_idle_dig_ping_init_128K(void)
 		fml_adp_volt_set(gd->pid_volt);
 		wpc_mode_pre = wpc_mode;
 	}
+
+	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && gd->vpwr <10000)
+	{
+		gd->pid_volt = gd->dig_ping_volt;
+		fml_adp_volt_set(gd->pid_volt);
+	}
+
 
 	fml_nu103x_por_rst();
 	ctx_switch(4);
@@ -588,15 +672,12 @@ void wpc_idle_phase_process(void)
 	{
 		return;
 	}
-
 	if(tcpm_qi_work_delay)
 	{
 		tcpm_qi_work_delay--;
 		return;
 	}
-
 	if(wpc_mode == TCPM_WPC_WORK_DISABLE) return;
-
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
 		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag)
