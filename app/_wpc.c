@@ -524,6 +524,10 @@ void wpc_task_event_handler(uint32_t event)
 			}
 			break;
 		case WPC_EVT_HDR_START:
+			if(gd->ptx_protocol_phase == WPC_PHASE_CNFG)
+			{
+		     osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_PKT_TO);
+			}
 			break;
 		case WPC_EVT_HDR_RECVD:
 			wpc_pkt_hdr_handler();

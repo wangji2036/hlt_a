@@ -44,6 +44,7 @@
   */ 
 #include "regdef.h"
 #include "sys.h"
+#include"config.h"
 
 /**
  * @brief 	   Clock initialization function for clock source selection and frequency range selection.
@@ -56,8 +57,12 @@
  */
 void hal_sys_init(void)
 {
+#if ONLY7_5W_ENALBE
+	SYS->CLK_CTRL.WORD = (_SYS_CPU_CLK_36M << SYS_CLK_CTRL_CPU_CLK_SEL_Pos) | (_SYS_PLL_SRC_HIRC << SYS_CLK_CTRL_PLL_SRC_SEL_Pos);
+#else
 	SYS->CLK_CTRL.WORD = (_SYS_CPU_CLK_36M << SYS_CLK_CTRL_CPU_CLK_SEL_Pos) | (_SYS_PLL_SRC_XTAL << SYS_CLK_CTRL_PLL_SRC_SEL_Pos) |
 			           (_SYS_XTAL_PREDIV_3 << SYS_CLK_CTRL_XTAL_PREDIV_Pos) | SYS_CLK_CTRL_XTAL_EN_Msk;
+#endif
 //	SYS->CLK_CTRL.WORD = (_SYS_CPU_CLK_36M << SYS_CLK_CTRL_CPU_CLK_SEL_Pos) | (_SYS_PLL_SRC_XTAL << SYS_CLK_CTRL_PLL_SRC_SEL_Pos) |
 //			           (_SYS_XTAL_PREDIV_1 << SYS_CLK_CTRL_XTAL_PREDIV_Pos) | SYS_CLK_CTRL_XTAL_EN_Msk;
 	SYS->PRO_CTRL.WORD = (_SYS_TSD_THD_125C << SYS_PRO_CTRL_TSD_THD_SEL_Pos) | (_SYS_PVD_THD_V2P4 << SYS_PRO_CTRL_PVD_THD_SEL_Pos) | SYS_PRO_CTRL_PVD_EN_Msk;

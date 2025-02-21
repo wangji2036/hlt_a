@@ -289,8 +289,13 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 goto __CNFG_PHASE_ERR__;
 			}
+#if ONLY7_5W_ENALBE
+			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high > 20
+					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
+#else
 			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high >= 20
 					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
+#endif
 			{
 				if (com_ask->msg.cfg.max_power > 10)
 				{
@@ -357,7 +362,7 @@ goto __CNFG_PHASE_ERR__;
 					}
 
 					/*+++++++++++++++++++++ ATL TPR#1C 6.2.09 Test#23 workaround +++++++++++++++++++++*/
-					if (gd->rx_infos.ssp_value > 200) //for IOC test, TPR#1C, 6.2.09 Test#23
+/*					if (gd->rx_infos.ssp_value > 200) //for IOC test, TPR#1C, 6.2.09 Test#23
 					{
 						gd->atl_test_tpr1c_coil_flag = 1;
 						gd->pid_volt = 9000;
@@ -366,7 +371,7 @@ goto __CNFG_PHASE_ERR__;
 						pid_set_duty_limit(500, 350, 50);
 						fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
 						printk("\r\n IOC_Test,TPR#1C,6.2.09,#23");
-					}
+					}*/
 					/*--------------------- ATL TPR#1C 6.2.09 Test#23 workaround ---------------------*/
 
 					//even MPP/EPP, but input power is limit, enter BPP

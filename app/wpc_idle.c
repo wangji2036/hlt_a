@@ -358,10 +358,16 @@ void wpc_idle_dping_select(void)
 			}
 			break;
 		case EADP_TYPE_POWERBANK_WIRELESS_ONLY:
-			gd->dig_ping_volt = ap->dig_ping_volt_11v;
-			gd->dig_ping_perd = ap->dig_ping_perd_11v;
-			gd->dig_ping_duty = ap->dig_ping_duty_11v;
-			gd->dig_ping_phas = ap->dig_ping_phas_11v;
+//			gd->dig_ping_volt = ap->dig_ping_volt_11v;
+//			gd->dig_ping_perd = ap->dig_ping_perd_11v;
+//			gd->dig_ping_duty = ap->dig_ping_duty_11v;
+//			gd->dig_ping_phas = ap->dig_ping_phas_11v;
+
+			gd->dig_ping_volt = ap->dig_ping_volt_6v;
+			gd->dig_ping_perd = ap->dig_ping_perd_6v;
+			gd->dig_ping_duty = ap->dig_ping_duty_6v;
+			gd->dig_ping_phas = ap->dig_ping_phas_6v;
+
 			break;
 //		case EADP_TYPE_PD2P0_12V:
 //			gd->dig_ping_volt = ap->dig_ping_volt_12v;
@@ -422,7 +428,7 @@ void wpc_idle_dig_ping_init_128K(void)
 		wpc_mode_pre = wpc_mode;
 	}
 
-	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && gd->vpwr <10000)
+	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && gd->vpwr >6000)
 	{
 		gd->pid_volt = gd->dig_ping_volt;
 		fml_adp_volt_set(gd->pid_volt);
@@ -437,13 +443,13 @@ void wpc_idle_dig_ping_init_128K(void)
 	if (gd->dig_ping_continuous_cnt % 5 == 0) //for IOC test, TPR#1C, 6.2.09 Test#23
 	{
 //		printk("\r\n dig_ping_continuous_cnt: %d", gd->dig_ping_continuous_cnt);
-		if(gd->dig_ping_volt == ap->dig_ping_volt_11v)
+/*		if(gd->dig_ping_volt == ap->dig_ping_volt_11v)
 		{
 			gd->dig_ping_volt = 11000;
 			gd->dig_ping_perd = 1000;//144K
 			gd->dig_ping_duty = 125; // 250;
 			gd->dig_ping_phas = 0;
-		}
+		}*/
 		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
 //		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
 		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X36);
@@ -456,13 +462,13 @@ void wpc_idle_dig_ping_init_128K(void)
 	}
 	else
 	{
-		if(gd->dig_ping_volt == ap->dig_ping_volt_11v)
+/*		if(gd->dig_ping_volt == ap->dig_ping_volt_11v)
 		{
 			gd->dig_ping_volt = 11000;
 			gd->dig_ping_perd = 1127;//127.772K
 			gd->dig_ping_duty = 125; // 250;
 			gd->dig_ping_phas = 0;
-		}
+		}*/
 		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
 	//	fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
 		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);

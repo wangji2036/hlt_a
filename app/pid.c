@@ -53,8 +53,13 @@ static void pid_ctrl_mode_sel(int8_t cep);
  */
 void ctx_switch(uint8_t ctx_ind)
 {
+#if ONLY7_5W_ENALBE
+	gd->ctx = 468;
+	gd->ctx_ind = 0;
+	return;
+#else
 	gd->ctx_ind = ctx_ind;
-
+#endif
 	switch (ctx_ind)
 	{
 		case 0:

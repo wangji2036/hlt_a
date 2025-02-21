@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "adp.h"
 #include "tcpm.h"
+#include "config.h"
 
 void fml_adp_type_set(enum adp_type_t adp_type, uint16_t volt_min, uint16_t volt_max, uint16_t pwr_high)
 {
@@ -44,9 +45,11 @@ void fml_adp_init(void)
 //
 
 	// 15w, set buck-boost to voltage adjust mode,
-
-	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
-
+#if ONLY7_5W_ENALBE
+	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 10000, 10 * 2);
+#else
+	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 19500, 15 * 2);
+#endif
 //	fml_adp_type_set(EADP_TYPE_POWERBANK_09V,  9000, 9000, 15);
 	//fml_adp_type_set(EADP_TYPE_POWERBANK_05V,  5000, 5000, 10);
 	ap->vbus_uvp_thd = 4000;

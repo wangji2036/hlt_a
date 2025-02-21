@@ -13,6 +13,7 @@
 #include "pid.h"
 #include "usb_qc.h"
 #include "port_manager.h"
+#include"config.h"
 
 uint16_t port_vbus = 5000;
 uint16_t qi_volt = 5000;
@@ -117,16 +118,29 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 			break;
 		case TCPM_WPC_WORK_BOOST:
 		#if(BUCKBOOST_USED_NU6801 == 1)
-			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 16500, 15 * 2);
+			#if ONLY7_5W_ENALBE
+				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 10000, 10 * 2);
+			#else
+
+				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 16500, 15 * 2);
+			#endif
 		#else
-			fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  9000, 19500, 15 * 2);
+           #if ONLY7_5W_ENALBE
+				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 10000, 10 * 2);
+           #else
+			    fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 19500, 15 * 2);
+           #endif
 		#endif
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			//printk("\r\n adapter updated! BOOST");
 			break;
 		case TCPM_WPC_WORK_PD_PPS:
 			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) - 1];
-			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  9000, pdo_pps_apdo_max_voltage(source_pdo), 15 * 2);
+#if ONLY7_5W_ENALBE
+			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, (pdo_pps_apdo_max_voltage(source_pdo)>10000?10000:pdo_pps_apdo_max_voltage(source_pdo)), 10 * 2);
+#else
+			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, pdo_pps_apdo_max_voltage(source_pdo), 15 * 2);
+#endif
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
 			//printk("\r\n adapter updated! PPS");
 			break;
