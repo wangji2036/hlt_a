@@ -289,13 +289,8 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 goto __CNFG_PHASE_ERR__;
 			}
-#if ONLY7_5W_ENALBE
-			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high > 20
-					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
-#else
 			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high >= 20
 					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
-#endif
 			{
 				if (com_ask->msg.cfg.max_power > 10)
 				{

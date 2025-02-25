@@ -46,7 +46,7 @@ void fml_adp_init(void)
 
 	// 15w, set buck-boost to voltage adjust mode,
 #if ONLY7_5W_ENALBE
-	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 10000, 10 * 2);
+	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 13000, 10 * 2);
 #else
 	fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 19500, 15 * 2);
 #endif

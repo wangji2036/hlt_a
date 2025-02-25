@@ -149,9 +149,18 @@ void wpc_epp_GRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
     case WPC_PTx_PKT_TYP_CAP_31:
         fsk_pkt.epp_fsk.cap.hdr_31 = 0x31;
 
-        fsk_pkt.epp_fsk.cap.neg_power = EPP_CAP_NEGOTIABLE_POWER;
-
+        if(gd->adp.adp_type ==EADP_TYPE_POWERBANK_09V)
+        {
+        fsk_pkt.epp_fsk.cap.neg_power = 20; //10W
+        fsk_pkt.epp_fsk.cap.pot_power = 20;
+        //printk("\r\n !!!EPP 10W \r\n");
+        }
+        else
+        {
+        fsk_pkt.epp_fsk.cap.neg_power = EPP_CAP_NEGOTIABLE_POWER; //15W
         fsk_pkt.epp_fsk.cap.pot_power = EPP_CAP_POTENTIAL_POWER;
+        //printk("\r\n !!!EPP 15W \r\n");
+        }
 
         fsk_pkt.epp_fsk.cap.nrs = EPP_CAP_NRS;
         fsk_pkt.epp_fsk.cap.wpid = EPP_CAP_WPID;

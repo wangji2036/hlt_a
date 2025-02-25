@@ -14,6 +14,7 @@
 #include "usb_qc.h"
 #include "port_manager.h"
 #include"config.h"
+#include"adp.h"
 
 uint16_t port_vbus = 5000;
 uint16_t qi_volt = 5000;
@@ -119,7 +120,7 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 		case TCPM_WPC_WORK_BOOST:
 		#if(BUCKBOOST_USED_NU6801 == 1)
 			#if ONLY7_5W_ENALBE
-				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 10000, 10 * 2);
+				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 13000, 10 * 2);
 			#else
 
 				fml_adp_type_set(EADP_TYPE_POWERBANK_WIRELESS_ONLY,  5000, 16500, 15 * 2);
@@ -137,7 +138,7 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 		case TCPM_WPC_WORK_PD_PPS:
 			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) - 1];
 #if ONLY7_5W_ENALBE
-			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, (pdo_pps_apdo_max_voltage(source_pdo)>10000?10000:pdo_pps_apdo_max_voltage(source_pdo)), 10 * 2);
+			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, (pdo_pps_apdo_max_voltage(source_pdo)>13000?13000:pdo_pps_apdo_max_voltage(source_pdo)), 10 * 2);
 #else
 			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, pdo_pps_apdo_max_voltage(source_pdo), 15 * 2);
 #endif
