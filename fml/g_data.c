@@ -90,7 +90,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 30000))
 	{
-		ap->q_factor_base_value = 160;
+		ap->q_factor_base_value = 161;
 	}
 	else
 	{

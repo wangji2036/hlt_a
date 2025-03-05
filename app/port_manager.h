@@ -3,7 +3,7 @@
 
 #include "typdef.h"
 #include "osal.h"
-
+#include "config.h"
 
 
 

@@ -26,11 +26,11 @@ struct usb_pd_state_task_t
 
 #define tSinkWaitCapTime						2380
 #define tChunkingNotSupportedTime				40
-#define tSenderResponseTime 					27
+#define tSenderResponseTime 					24
 #define tPSTransitionTime						500
 #define tSinkPPSPeriodicTime					14000
 #define tSourceCapabilityTime					150
-#define tSourceHardResetRecoverTime            	1000
+#define tSourceHardResetRecoverTime            	800
 #define tPSHardResetTime						28
 #define tBISTContModeTime						60
 #define tPSSourceOffTime						835
@@ -66,7 +66,7 @@ enum usb_pd_state_e
 	PE_SRC_Send_Capabilities,
 	PE_SRC_Negotiate_Capability,
 	PE_SRC_Transition_Supply,
-	PE_SRC_Ready,
+	PE_SRC_Ready,					//21
 	PE_SRC_Disabled,
 	PE_SRC_Capability_Response,
 	PE_SRC_Hard_Reset,
@@ -84,6 +84,7 @@ enum usb_pd_state_e
 	PE_SRC_SNK_Chunk_Received,//33
 	PE_BIST_Carrier_Mode,//34
 	PE_BIST_Test_Mode,//35
+	PE_Give_Battery_Status,
 
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 	PE_PRS_SRC_SNK_Evaluate_Swap,
@@ -202,6 +203,7 @@ union usb_pd_timer_u
 };
 
 extern struct usb_pd_s g_usb_pd_s;
+void usb_pd_timer_update(void);
 void usb_pd_timer_all_reset(void);
 void usb_pd_set_event(uint8_t tc_index,uint32_t event);
 void usb_pd_clear_event(uint32_t event);

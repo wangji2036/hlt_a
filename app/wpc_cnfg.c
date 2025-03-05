@@ -78,6 +78,24 @@ static uint8_t get_prx_type(uint16_t prmc)
 		case 0x0072:
 			gd->rx_infos.rx_type = EPRX_TYPE_GOOGLE;
 			break;
+		case 0x018D://IOP QI ID 21201 NOKIA
+			if (/*gd->rx_infos.device_id == 0xE40A2F67 && */gd->rx_infos.qi_version == 0x20)
+			{
+				gd->rx_infos.rx_type = EPRX_TYPE_NOKIA_MPP_21201;
+			}
+			break;
+		case 0x0018:
+			if (/*gd->rx_infos.device_id == 0x64000000 && */gd->rx_infos.qi_version == 0x12)
+			{
+				gd->rx_infos.rx_type = EPRX_TYPE_BPP_TWS_12168;
+			}
+			break;
+		case 0x0051:
+			if (/*gd->rx_infos.device_id == 0x64000000 && */gd->rx_infos.qi_version == 0x12)
+			{
+				gd->rx_infos.rx_type = EPRX_TYPE_BPP_TWS_12175;
+			}
+			break;
 		default:
 			gd->rx_infos.rx_type = EPRX_TYPE_UNKNOWN;
 			break;
@@ -289,8 +307,13 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 goto __CNFG_PHASE_ERR__;
 			}
+#if ONLY7_5W_ENALBE
+			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high > 20
+					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
+#else
 			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high >= 20
 					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
+#endif
 			{
 				if (com_ask->msg.cfg.max_power > 10)
 				{
@@ -406,8 +429,14 @@ goto __CNFG_PHASE_ERR__;
 			break;
 	}
 
-//	osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT + 50, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
-	osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
+	if (gd->rx_infos.rx_type == EPRX_TYPE_NOKIA_MPP_21201 || gd->rx_infos.rx_type == EPRX_TYPE_BPP_TWS_12168 || gd->rx_infos.rx_type == EPRX_TYPE_BPP_TWS_12175)
+	{
+		osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT + 50, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
+	}
+	else
+	{
+		osal_start_timerEx(WPC_NEXT_TIMER, T_NEXT +  0, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_1ST_TO);
+	}
 
 __CNFG_PHASE_ERR__:
 	return;

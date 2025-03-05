@@ -53,6 +53,7 @@
 #include "wdt.h"
 
 #define WDT_TIMEOUT    (64 * 1000 - 1) //64000 * 0.015625 = 1000ms
+#define WDT_TIMEOUT_5MS    (64 * 5 - 1) //
 
 /**
  * @brief 	Enable and configure the Watchdog timer timeout to 1000ms(1 second).
@@ -63,9 +64,17 @@
  */
 void hal_wdt_init(void) //64K
 {
+
 	if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
 	{
 		WDT->CTRL.WORD = (WDT_TIMEOUT << WDT_CTRL_WDT_CNT_Pos) | WDT_CTRL_RST_EN_Msk | WDT_CTRL_LOAD_EN_Msk | WDT_CTRL_MODU_EN_Msk;
+	}
+}
+void hal_wdt_init_to_reset(void) //64K
+{
+	if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+	{
+		WDT->CTRL.WORD = (WDT_TIMEOUT_5MS << WDT_CTRL_WDT_CNT_Pos) | WDT_CTRL_RST_EN_Msk | WDT_CTRL_LOAD_EN_Msk | WDT_CTRL_MODU_EN_Msk;
 	}
 }
 

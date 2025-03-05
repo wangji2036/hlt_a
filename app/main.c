@@ -23,6 +23,7 @@
 #include "port_manager.h"
 #include "usb_qc.h"
 #include "buckboost.h"
+#include"sleep.h"
 
 uint32_t rrlen;
 
@@ -35,6 +36,8 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
+	RST_vCheck();
+
 	ap_data_init();
 	gd_data_init();
 
@@ -67,7 +70,8 @@ int main(void)
 	printk("\r\n base_fre [%d]", ap->fs_base_value);
 	printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
 	printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
-
+    printk("system state---> %x",SYS->OPR_STAT.WORD);
+	//SLP_vNormalToSleep();
 	if (ap->auth_seic_type == 1)
 	{
 		t91206_init();
@@ -97,8 +101,9 @@ int main(void)
 
 
 	fml_task_init();
+#if(CONFIG_WPC_SUPPORT == 1)
 	wpc_task_init();
-
+#endif
 	port_manager_task_init();
 
 

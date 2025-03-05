@@ -596,7 +596,7 @@ typedef union {
 		uint32_t PID :16;
 		uint32_t VER : 4;
 		uint32_t     : 4;
-		uint32_t     : 8;
+		uint32_t DFT : 8;
 	} BITS;
 	uint32_t WORD;
 } TS_SYS_PID_INFO;
@@ -612,7 +612,9 @@ typedef union {
 	 * |        |             |32-bit chip unique identification code
 	 */
 	struct {
-		uint32_t UID :32;
+		uint32_t UID_CODE :26;
+		uint32_t SUB_CODE : 3;
+		uint32_t DIE_CODE : 3;
 	} BITS;
 	uint32_t WORD;
 } TS_SYS_UID_INFO;
@@ -807,6 +809,7 @@ enum {
 
 #define  SP3800         ( 3800)
 #define  SP3802         ( 3802)
+#define  SP3803         ( 3803)
 #define  SP3811         ( 3811)
 #define  SP3820         ( 3820)
 #define NU17100         (17100)

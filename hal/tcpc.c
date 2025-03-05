@@ -250,11 +250,46 @@ bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 #endif
 }
 
+bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
+{
+#if(BUCKBOOST_USED_NU6801 == 1)
+	if(tc_index == 0)
+	{
+		if(buckboost_ops.get_typeca_vbus_present() < 2000 ) return true;
+	}
+	else if(tc_index == 1)
+	{
+		if(buckboost_ops.get_typecb_vbus_present() < 2000 ) return true;
+	}
+	return false;
+#else
+	return true;
+#endif
+}
+
+bool hal_tcpc_vbus_is_vsfae0v(uint8_t tc_index)
+{
+#if(BUCKBOOST_USED_NU6801 == 1)
+	if(tc_index == 0)
+	{
+		if(buckboost_ops.get_typeca_vbus_present() < 800 ) return true;
+	}
+	else if(tc_index == 1)
+	{
+		if(buckboost_ops.get_typecb_vbus_present() < 800 ) return true;
+	}
+	return false;
+#else
+	return true;
+#endif
+}
+
 bool hal_tcpc_vbus_is_vsafe5v(void)
 {
 	if(g_buckboost.adc_vbus <= 5500) return true;
 	return false;
 }
+
 
 void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 {
@@ -284,6 +319,8 @@ enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)
 		cc_stat = TCPC->FSM_STAT.BITS.CCA_STAT;
 	else
 		cc_stat = TCPC->FSM_STAT.BITS.CCB_STAT;
+
+	//printk("cc_stat=0x%x\n",cc_stat);
 
 	switch(cc_stat)
 	{
@@ -595,6 +632,27 @@ void tcpc_pd_send_pps_status(void)
 	transmit_pkt.msg.ext_msg.data[1] = PD_PPS_SET_OUTPUT_MV(g_buckboost.adc_vbus) >> 8;
 	transmit_pkt.msg.ext_msg.data[2] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[3] =  0x1 << 1 | ((g_buckboost.ibus_cc_flag) ? (0x1 << 3) : 0x0);
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void tcpc_pd_send_bat_capability(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_BATT_CAP, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 3);
+	transmit_pkt.hdr.BITS.externed = 1;
+	transmit_pkt.msg_len = 3;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.data_size = 9;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
+	transmit_pkt.msg.ext_msg.data[0] = (uint8_t)USBPD_VID;
+	transmit_pkt.msg.ext_msg.data[1] = (USBPD_VID >> 8);
+	transmit_pkt.msg.ext_msg.data[4] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[5] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[6] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[7] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[8] = 00;
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 

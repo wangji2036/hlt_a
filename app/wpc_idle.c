@@ -13,6 +13,7 @@
 #include "debug.h"
 #include "mpp.h"
 #include "tcpm.h"
+#include"sleep.h"
 
 static uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
@@ -525,7 +526,7 @@ void wpc_idle_dig_ping_init_360K(void)
 		wpc_mode_pre = wpc_mode;
 	}
 
-		printk(" [ctx:%d k:%d]", gd->ctx, gd->k_est);
+		printk(" [ctx:%d k:%d pid-v %d]", gd->ctx, gd->k_est,gd->pid_volt);
 
 		//config_1
 		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
@@ -674,6 +675,24 @@ void wpc_idle_cloak_phase_process(void)
 
 void wpc_idle_phase_process(void)
 {
+	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY)
+	{
+		if(gd->idle_to_sleep_cnt >100)
+		{
+			gd->idle_to_sleep_cnt = 0;
+			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
+		}
+		else
+		{
+			gd->idle_to_sleep_cnt++;
+			printk("idle cnt [%d]",gd->idle_to_sleep_cnt);
+		}
+	}
+	else
+	{
+		gd->idle_to_sleep_cnt = 0;
+	}
+
 	if (gd->ptx_protocol_phase != WPC_PHASE_IDLE)
 	{
 		return;
@@ -745,6 +764,7 @@ void wpc_idle_phase_process(void)
 	else if (gd->tx_infos.dig_ping_type == _360K_FB)
 	{
 		gd->tx_infos.dig_ping_type = _128K_HB;
+		printk("back to 128k-2\r\n");
 		wpc_idle_dig_ping_init_360K();
 	}
 

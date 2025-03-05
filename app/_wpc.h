@@ -86,7 +86,7 @@ enum EPT_CODE {
 };
 
 #define T_PING             70
-#define T_NEXT             22
+#define T_NEXT             23
 #define T_FIRST_LIMIT                 (   20)
 #define T_MAX_LIMIT                   (  170)
 #define T_NEGOTIATE       400

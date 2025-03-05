@@ -188,21 +188,63 @@ void hal_ecap_close(TS_ECAP *ecap)
 	/*--------------------- ECAP design issue workaround ---------------------*/
 }
 
+static void hal_ecap_int_callback(TS_ECAP *ecap)
+{
+	volatile uint8_t idx;
+
+	if (ecap == ECAP1)
+	{
+		GPA->DOUT.BITS.PIN4 ^= 1;
+		idx = 0;
+	}
+	else if (ecap == ECAP2)
+	{
+		GPA->DOUT.BITS.PIN5 ^= 1;
+		idx = 1;
+	}
+	else if (ecap == ECAP4)
+	{
+		GPC->DOUT.BITS.PIN3 ^= 1;
+		idx = 2;
+	}
+	else if (ecap == ECAP3)
+	{
+		idx = 3;
+	}
+	else
+	{
+		idx = 4;
+	}
+
+	if (ecap->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
+	{
+		if (ecap_callback != NULL)
+		{
+			ecap_callback(idx, ecap->EDGE_CNT.BITS.EDGE_DET_CNT);
+		}
+		ecap->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
+	}
+
+	if (ecap->STS_FLAG.WORD & ECAP_STS_FLAG_OVERFLOW_FLAG_Msk)
+	{
+		if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+		{
+			if (ecap_callback != NULL)
+			{
+				ecap_callback(idx, 1125 * 2);
+			}
+		}
+		ecap->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
+	}
+}
+
 /**
   * @brief  ECAP1 Interrupt Handler.
   * @retval void
   */
 void __attribute__((isr)) ECAP1_IRQHandler(void)
 {
-	if (ECAP1->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
-	{
-	//	GPA->DOUT.BITS.PIN4 ^= 1;//debug toggle SDA pin
-		if (ecap_callback != NULL)
-		{
-			ecap_callback(0, ECAP1->EDGE_CNT.BITS.EDGE_DET_CNT);
-		}
-		ECAP1->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
-	}
+	hal_ecap_int_callback(ECAP1);
 }
 
 /**
@@ -211,15 +253,7 @@ void __attribute__((isr)) ECAP1_IRQHandler(void)
   */
 void __attribute__((isr)) ECAP2_IRQHandler(void)
 {
-	if (ECAP2->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
-	{
-	//	GPC->DOUT.BITS.PIN6 ^= 1;//debug toggle SCL pin
-		if (ecap_callback != NULL)
-		{
-			ecap_callback(1, ECAP2->EDGE_CNT.BITS.EDGE_DET_CNT);
-		}
-		ECAP2->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
-	}
+	hal_ecap_int_callback(ECAP2);
 }
 
 /**
@@ -228,16 +262,7 @@ void __attribute__((isr)) ECAP2_IRQHandler(void)
   */
 void __attribute__((isr)) ECAP4_IRQHandler(void)
 {
-	if (ECAP4->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
-	{
-//		GPA->DOUT.BITS.PIN5 ^= 1;
-//		GPC->DOUT.BITS.PIN7 ^= 1;
-		if (ecap_callback != NULL)
-		{
-			ecap_callback(2, ECAP4->EDGE_CNT.BITS.EDGE_DET_CNT);
-		}
-		ECAP4->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
-	}
+	hal_ecap_int_callback(ECAP4);
 }
 
 /**

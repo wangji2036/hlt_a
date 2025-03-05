@@ -136,7 +136,13 @@ enum nu103x_cmd_t {
 	//enable Q measurement
 	_1030_CFG_QDT_EN_ = 24,
 
-	//VDD LDO and Buck configure
+	/*+++++++++++ for NU103X-A1 version +++++++++++*/
+	//QDT pre_charge voltage configure, the VDD LDO enable by default
+	_1030_CFG_QDT_PRECHARGE_V1P8 = 14, //default
+	_1030_CFG_QDT_PRECHARGE_V1P2 = 15,
+	/*----------- for NU103X-A1 version -----------*/
+	/*########### for NU103X-A0 version ###########*/
+	//VDD LDO and Buck configure, the QDT pre_charge voltage fixed to 1.8V by default
 	_1030_CFG_VDD_LDO_V4P8_ON_ = 14, //default
 	_1030_CFG_VDD_LDO_V4P8_OFF = 15,
 	_1030_CFG_VDD_V5V_BUCK_DIS = 54, //default, VDD will output 4.8V
@@ -189,8 +195,8 @@ enum nu103x_cmd_t {
 	_1030_CFG_DMO2_DDM_SRC_VCAP = 38, //default
 	_1030_CFG_DMO2_DDM_SRC_PHAS = 39,
 	//DMO2 DDM Band Pass Filter option
-	_1030_CFG_DMO2_DDM_BPF_2ORD = 48, //default
-	_1030_CFG_DMO2_DDM_BPF_1ORD = 49,
+	_1030_CFG_DMO2_DDM_BPF_1ORD = 48, //default
+	_1030_CFG_DMO2_DDM_BPF_2ORD = 49,
 	//DMO2 DDM gain mode configure
 	_1030_CFG_DMO2_DDM_GAIN_MODE_AUTO = 16, //default
 	_1030_CFG_DMO2_DDM_GAIN_MODE_FIXD = 17,
@@ -208,8 +214,11 @@ enum nu103x_cmd_t {
 #define _NU1030_LPM_STS_DIS                      0
 #define _NU1030_LPM_STS_EN_                      1
 
-#define _NU1030_VDD_LDO_V4P8_STS_ON_             0
-#define _NU1030_VDD_LDO_V4P8_STS_OFF             1
+#define _NU1030_VDD_LDO_V4P8_STS_ON_             0 //NU103X-A0
+#define _NU1030_VDD_LDO_V4P8_STS_OFF             1 //NU103X-A0
+#define _NU1030_QDT_PRECHARGE_VOLT_V1P8          0 //NU103X-A1
+#define _NU1030_QDT_PRECHARGE_VOLT_V1P2          1 //NU103X-A1
+
 #define _NU1030_VDD_V5V_BUCK_STS_OFF             0
 #define _NU1030_VDD_V5V_BUCK_STS_ON_             1
 
@@ -246,8 +255,8 @@ enum nu103x_cmd_t {
 #define _NU1030_DMO2_VCAP_RATIO_K1               2
 #define _NU1030_DMO2_DDM_SRC_VCAP                0
 #define _NU1030_DMO2_DDM_SRC_PHAS                1
-#define _NU1030_DMO2_DDM_BPF_2ord                0
-#define _NU1030_DMO2_DDM_BPF_1ord                1
+#define _NU1030_DMO2_DDM_BPF_1ord                0
+#define _NU1030_DMO2_DDM_BPF_2ord                1
 #define _NU1030_DMO2_DDM_GAIN_MODE_AUTO          0
 #define _NU1030_DMO2_DDM_GAIN_MODE_FIXD          1
 #define _NU1030_DMO2_DDM_GAIN_FIXED_X36          0

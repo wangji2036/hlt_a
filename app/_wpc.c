@@ -102,6 +102,7 @@ void wpc_stop_power(void)
 		if (gd->tx_infos.flg_mode_cloak != TRUE)
 		{
 			gd->tx_infos.dig_ping_type = _128K_HB;
+			printk("back to 128k\r\n");
 		}
 	}
 

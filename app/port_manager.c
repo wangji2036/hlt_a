@@ -109,12 +109,12 @@ void port_enum_port0_connect_closed(void)
 		port_manager_set_state(PORT_IDLE_OR_READY);
 	}
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && g_tc[PORT0_INDEX].usb_tc_state == TC_Disable)  // 重新开启toogle
 	{
 		usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_tc[PORT1_INDEX].usb_tc_state == TC_Disable)  // 重新开启toogle
 	{
 		usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
 	}
@@ -686,15 +686,31 @@ void port_enum_port_snk_setcharge(void)
 		//g_port.ibat_limit = g_port.ibat_limit < 500 ? g_port.ibat_limit : 500;
 		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
 		g_port.ibat_limit = g_port.ibat_limit < 2000 ? g_port.ibat_limit : 2000;
+
+	#if(BUCKBOOST_USED_NU6801 == 1)
+		g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
+	#endif
 	}
 	else
 	{
 		g_port.ibat_limit = g_port.ibat_limit;
 		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+
+		if(g_buckboost.adc_vbus<5500)// 5v
+		{
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			g_port.ibus_limit = g_port.ibus_limit < 3000 ? g_port.ibus_limit : 3000;
+		#endif
+		}
+		else
+		{
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
+		#endif
+		}
 	}
 
 #if(BUCKBOOST_USED_NU6801 == 1)
-	g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
 	g_port.ibat_limit = g_port.ibat_limit < 5000 ? g_port.ibat_limit : 5000;
 #endif
 
@@ -716,8 +732,8 @@ void port_enum_port_snk_setvolt(void)
 	hal_tcpc_set_gate_en(g_port.incharge_port,false);
 	printk("[%d]%s!\n",g_port.inhandle_port,__func__);
 
-	g_port.ibus_limit = 500;
-	g_port.ibat_limit = 300;
+	g_port.ibus_limit = 1000;
+	g_port.ibat_limit = 1000;
 
 	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
 			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (!g_tc[TYPEC_PORT_A].is_deadbattery))
@@ -785,8 +801,8 @@ void port_enum_port_snk_setvolt(void)
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 		}
-		g_port.ibus_limit = 500;
-		g_port.ibat_limit = 300;
+		g_port.ibus_limit = 1000;
+		g_port.ibat_limit = 1000;
 	}
 
 	if(g_port.inhandle_port == PORT0_INDEX)
@@ -1134,16 +1150,22 @@ void port_enum_scan_handle(void)
 	else if(g_port.port_event & PORT0_EVENT_TRY_CONNECT)				//TTPEC0
 	{
 		g_port.port_event &= ~PORT0_EVENT_TRY_CONNECT;
-		port_manager_set_state(PORT_INHANDLING);
-		g_port.inhandle_port = 0;
-		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_START);
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)
+		{
+			port_manager_set_state(PORT_INHANDLING);
+			g_port.inhandle_port = 0;
+			osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_START);
+		}
 	}
 	else if(g_port.port_event & PORT1_EVENT_TRY_CONNECT) 			//TYPEC1
 	{
 		g_port.port_event &= ~PORT1_EVENT_TRY_CONNECT;
-		port_manager_set_state(PORT_INHANDLING);
-		g_port.inhandle_port = 1;
-		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_START);
+		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
+		{
+			port_manager_set_state(PORT_INHANDLING);
+			g_port.inhandle_port = 1;
+			osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_START);
+		}
 	}
 	else if(g_port.port_event & PORT2_EVENT_TRY_CONNECT)			//USB-A
 	{
@@ -1199,6 +1221,7 @@ void port_manager_event_handle(uint32_t event)
 			port_enum_port0_connect_success();
 			break;
 		case PORT_ENUM_EVT_PORT0_CONNECT_CLOSED:
+			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port0_connect_closed();
 			buckboost_ops.typca_dischg_en(true);
 			break;
@@ -1220,6 +1243,7 @@ void port_manager_event_handle(uint32_t event)
 			port_enum_port1_connect_success();
 			break;
 		case PORT_ENUM_EVT_PORT1_CONNECT_CLOSED:
+			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port1_connect_closed();
 			buckboost_ops.typcb_dischg_en(true);
 			break;

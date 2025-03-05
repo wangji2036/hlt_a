@@ -371,7 +371,7 @@ void pkt_decode(struct ask_dm_t *dm_chan)
 void byt_decode_init(struct ask_dm_t *dm_chan)
 {
 	dm_chan->byt.byt_error = BYT_ERR_NUL;
-	dm_chan->byt.byt_phase = BYT_ERR_STR;
+	dm_chan->byt.byt_phase = BYT_PHS_STR;
 }
 
 /**

@@ -63,4 +63,7 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void);
 uint8_t hal_nu6801_buckboost_get_charge_flag(void);
 uint16_t hal_nu6801_buckboost_get_iac1(void);//iac1;
 uint8_t hal_nu6801_buckboost_is_ibus_loop(void);
+
+extern bool nu6801_dead_bat;
+
 #endif /* SW7201_H_ */

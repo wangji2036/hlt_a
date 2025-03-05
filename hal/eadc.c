@@ -143,7 +143,14 @@ static uint16_t hal_eadc_vref_update(void)
 	tmp = 0;
 	for (int i=0; i<20; i++)
 	{
-		tmp += (EADC->DATA[i].BITS.CONV_DATA & 0x80) ? EADC->DATA[i].BITS.CONV_DATA + 2 : EADC->DATA[i].BITS.CONV_DATA - 2;
+		if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+		{
+			tmp += EADC->DATA[i].BITS.CONV_DATA;
+		}
+		else
+		{
+			tmp += (EADC->DATA[i].BITS.CONV_DATA & 0x80) ? EADC->DATA[i].BITS.CONV_DATA + 2 : EADC->DATA[i].BITS.CONV_DATA - 2;
+		}
 	}
 
 	tmp /= 20;
@@ -195,7 +202,14 @@ uint16_t hal_eadc_meas(enum eadc_chan_t channel)
 
 		for(int i=0; i<20; i++)
 		{
-			tmp[i] = (EADC->DATA[i].BITS.CONV_DATA & 0x80) ? EADC->DATA[i].BITS.CONV_DATA + 2 : EADC->DATA[i].BITS.CONV_DATA - 2;
+			if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+			{
+				tmp[i] = EADC->DATA[i].BITS.CONV_DATA;
+			}
+			else
+			{
+				tmp[i] = (EADC->DATA[i].BITS.CONV_DATA & 0x80) ? EADC->DATA[i].BITS.CONV_DATA + 2 : EADC->DATA[i].BITS.CONV_DATA - 2;
+			}
 			tmp[i] = (tmp[i] * EDAC_VREF_V3P3) >> 12;
 			tmp[i] = tmp[i] * eadc_vcap_gain / 10000 + eadc_vcap_bias / 10;
 			tmp[i] = tmp[i] - EADC_VCAP_CHAN_DC_OFFSET;

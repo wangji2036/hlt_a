@@ -163,6 +163,7 @@ void tcpm_task_event_handler(uint32_t event)
 			usb_tc_run();
 			break;
 		case TCPM_EVT_USBA_SCAN:
+#if(CONFIG_USBA_SUPPORT == 1)
 			if(g_buckboost.usba_state && g_buckboost.usba_dectet_en)
 			{
 #ifdef TEST_PIN
@@ -217,6 +218,8 @@ void tcpm_task_event_handler(uint32_t event)
 #endif
 				//printk("usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
+#endif
+
 
 			if(qi_state == 1 && gd->ptx_protocol_phase <= WPC_PHASE_PING)
 			{
@@ -235,13 +238,16 @@ void tcpm_task_event_handler(uint32_t event)
 			break;
 
 		case TCPM_EVT_USBA_REDETECT:
+#if(CONFIG_USBA_SUPPORT == 1)
 			if(usba_state == 0)
 			{
 				osal_start_timerEx(TCPM_USB_A_TIMER, 300, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
 				buckboost_ops.usb_a_dischg_en(true);
 			}
+#endif
 			break;
 		case TCPM_EVT_USBA_DETEN:
+#if(CONFIG_USBA_SUPPORT == 1)
 			buckboost_ops.usb_a_dischg_en(false);
 			g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 			buckboost_ops.vbus_dischg_en(true);
@@ -250,6 +256,7 @@ void tcpm_task_event_handler(uint32_t event)
 #endif
 			buckboost_ops.vbus_dischg_en(false);
 			printk("enable A det\n");
+#endif
 			break;
 		case TCPM_EVT_QI_SET_VOLT:
 			if(wpc_mode == TCPM_WPC_WORK_BOOST)

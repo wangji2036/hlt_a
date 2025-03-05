@@ -60,7 +60,20 @@ uint8_t fm1210_device_select(uint8_t *rbuf)
 
 	return 0;
 }
+void fm1210_sleep(void)
+{
+	//this for fm1210 sleep
+	uint16_t slen = 0;
+	uint16_t read_len;
+	uint8_t  ret;
+	//fm1210_wakeup();
+	fm_pack.cmd = 0x10;
+	fm_pack.apdu_data[0] = 0x46;
+	slen = 2;
 
+	ret = fm1210_i2c_transceive_sleep((uint8_t *)&fm_pack, slen, g_rbuf, &read_len);
+    printk("\r\n FMSC sleep %d",ret);
+}
 void fm1210_init(void)
 {
 	hal_i2cm_init(100000);
@@ -165,7 +178,7 @@ int fm1210_i2c_recv_frame(uint8_t *rbuf, uint16_t *rlen)
 
 int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t *rlen)
 {
-	uint8_t ret;
+	int ret;
 
 	*rlen = 0;
 	if (fm1210_i2c_send_frame(I2C_CMD_IBLOCK, sbuf, slen) < 0) return -1;
@@ -175,10 +188,11 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 		ret = fm1210_i2c_recv_frame(rbuf, rlen);
 		if (ret)
 		{
-//			printk("\r\n %d", ret);
+			printk("\r\n fm1210 %d", ret);
 		}
 		else
 		{
+			printk("\r\n fm1210--- %d", ret);
 			break;
 		}
 	} while (1);//TODO: need timeout to avoid endless loop
@@ -186,6 +200,54 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 	return ret;
 }
 
+
+int fm1210_i2c_transceive_sleep(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t *rlen)
+{
+/*	int ret;
+
+	*rlen = 0;
+	if (fm1210_i2c_send_frame(I2C_CMD_IBLOCK, sbuf, slen) < 0) return -1;
+    delay_1ms(10);
+    for (uint8_t ii = 0; ii < 32; ii++)
+    {
+        ret = fm1210_i2c_recv_frame(rbuf, rlen);
+        delay_1ms(5);
+        if (0 != ret)
+        {
+        	printk("\r\n readfail %d %d",ret,ii);
+        	delay_1ms(5);
+        	continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return ret;*/
+
+
+	int ret;
+
+	*rlen = 0;
+	if (fm1210_i2c_send_frame(I2C_CMD_IBLOCK, sbuf, slen) < 0) return -1;
+
+	do {
+		delay_1ms(2);
+		ret = fm1210_i2c_recv_frame(rbuf, rlen);
+		if (ret)
+		{
+			printk("\r\n fm1210 %d", ret);
+			break;
+		}
+		else
+		{
+			printk("\r\n fm1210--- %d", ret);
+			break;
+		}
+	} while (1);//TODO: need timeout to avoid endless loop
+
+	return ret;
+}
 int fm1210_get_qi_id(uint8_t *rbuf)
 {
 	uint16_t slen = 0;

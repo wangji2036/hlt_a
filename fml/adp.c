@@ -73,7 +73,7 @@ void fml_adp_update(void)
 
 void fml_adp_volt_set(uint16_t volt)
 {
-	printk("adp[%d] = %d \n",gd->adp.adp_type,volt);
+	printk("adp[%x] = %d \n",gd->adp.adp_type,volt);
 	switch (gd->adp.adp_type)
 	{
 		case EADP_TYPE_PD2P0_05V:

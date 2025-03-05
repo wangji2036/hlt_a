@@ -66,8 +66,8 @@ const uint32_t sink_pdo[] =
 {
 	#define SINK_PDO_FIXED_FLAGS     			(0)
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 3000, 0),
-	[2] = PDO_FIXED(15000, 3000, 0),
+	[1] = PDO_FIXED(9000, 2000, 0),
+	//[2] = PDO_FIXED(15000, 3000, 0),
 };
 
 static union usb_pd_timer_u usb_pd_timers[USBPD_TIMER_MAX];
@@ -669,7 +669,7 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
         	pdo_max_current = pdo->source_pdo[index - 1].BITS.FIX_BITS.max_current * 10;
             if (rdo_op_current > pdo_max_current) return check_current_error;
             voltage = pdo->source_pdo[index - 1].BITS.FIX_BITS.voltage * 50;
-            current = pdo_max_current * 12 / 10;
+            current = pdo_max_current * 11 / 10;
             g_usb_pd_s.is_in_pps = 0;
             break;
         case PDO_TYPE_APDO:
@@ -680,9 +680,9 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
             voltage = rqt->request.PPS_BITS.output_voltage * 20;
             if ((voltage > pdo->source_pdo[index - 1].BITS.PPS_BITS.max_voltage * 100) || (voltage < pdo->source_pdo[index - 1].BITS.PPS_BITS.min_voltage * 100)) return check_pps_voltage_error;
 			current = rdo_op_current;
-		#if(BUCKBOOST_USED_NU6801 == 1)
-			current = (voltage * current / 1000) > 18000 ? 18000 * 1000/voltage :current;
-		#endif
+//		#if(BUCKBOOST_USED_NU6801 == 1)
+//			current = (voltage * current / 1000) > 18000 ? 18000 * 1000/voltage :current;
+//		#endif
 			g_usb_pd_s.is_in_pps = 1;
             break;
     }
@@ -1018,6 +1018,20 @@ static void PE_BIST_Test_Mode_Exit(void)
 
 }
 
+static void PE_Give_Battery_Status_Entry(void)
+{
+	tcpc_pd_send_bat_capability();
+	usb_pd_set_state(PE_Give_Battery_Status,exit_state);
+}
+
+static void PE_Give_Battery_Status_Exit(void)
+{
+	if(g_tcpc.pwr_role == TYPEC_SINK)
+		usb_pd_set_state(PE_SNK_Ready,enter_state);
+	else
+		usb_pd_set_state(PE_SRC_Ready,enter_state);
+}
+
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 static void PE_PRS_SRC_SNK_Evaluate_Swap_Entry(void)
 {
@@ -1039,6 +1053,7 @@ static void PE_PRS_SRC_SNK_Accept_Swap_Entry(void)
 static void PE_PRS_SRC_SNK_Accept_Swap_Exit(void)
 {
 	usb_pd_set_state(PE_PRS_SRC_SNK_Transition_to_off,enter_state);
+	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
 }
 
 static void PE_PRS_SRC_SNK_Transition_to_off_Entry(void)
@@ -1139,6 +1154,7 @@ static void PE_PRS_SNK_SRC_Accept_Swap_Entry(void)
 static void PE_PRS_SNK_SRC_Accept_Swap_Exit(void)
 {
 	usb_pd_set_state(PE_PRS_SNK_SRC_Transition_to_off,enter_state);
+	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
 }
 
 static void PE_PRS_SNK_SRC_Transition_to_off_Entry(void)
@@ -1146,6 +1162,7 @@ static void PE_PRS_SNK_SRC_Transition_to_off_Entry(void)
 	usb_pd_timer_start(PSSourceOffTimer,tPSSourceOffTime);
 	g_tc[g_tcpc.tc_port_map].is_in_prswap = 1;
 	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
+	usb_pd_set_state(PE_PRS_SNK_SRC_Transition_to_off,exit_state);
 }
 
 static void PE_PRS_SNK_SRC_Transition_to_off_Exit(void)
@@ -1176,7 +1193,7 @@ static void PE_PRS_SNK_SRC_Assert_Rp_Exit(void)
 
 static void PE_PRS_SNK_SRC_Source_on_Entry(void)
 {
-	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
+	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,true);
 	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
 	g_usb_pd_s.pe_timer_cnt = 0;
 	usb_pd_set_state(PE_PRS_SNK_SRC_Source_on,exit_state);
@@ -1216,10 +1233,8 @@ static void PE_PRS_SNK_SRC_Send_Swap_Exit(void)
 		usb_pd_set_state(PE_SNK_Ready,enter_state);
 	}
 }
+
 #endif
-
-
-
 
 
 void usb_pd_sop_data_msg_handle(void)
@@ -1350,7 +1365,7 @@ void usb_pd_sop_ctrl_msg_handle(void)
 
 			#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 				case PE_SRC_Send_Soft_Reset:
-					usb_pd_set_state(PE_SRC_Soft_Reset,enter_state);
+					usb_pd_set_state(PE_SRC_Send_Capabilities,enter_state);
 					break;
 			#endif
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -1700,11 +1715,13 @@ void usb_pd_sop_ext_msg_handle(void)
 
     switch (g_pd_packet.hdr.BITS.message_type)
     {
+		case PD_EXT_GET_BATT_CAP:
+			usb_pd_set_state(PE_Give_Battery_Status,enter_state);
+			break;
         case PD_EXT_EPR_SOURCE_CAPABILITIES:
         case PD_EXT_EXTENDED_CTRL:
         case PD_EXT_STATUS://2
         case PD_EXT_PPS_STATUS://12
-        case PD_EXT_GET_BATT_CAP:
         case PD_EXT_SOURCE_CAP_EXT:
         case PD_EXT_GET_BATT_STATUS:
         case PD_EXT_BATT_CAP:
@@ -1781,7 +1798,6 @@ void usb_pd_timer_update(void)
 
 void usb_pdevt_run(void)
 {
-	usb_pd_timer_update();
 #if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
 	if(usb_pd_event & USB_PD_EVT_SNK_ATTACHED)
 	{
@@ -1889,6 +1905,12 @@ void transmit_timeout_cb(void)
 	#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
 		case PE_SNK_Send_Soft_Reset:
 			usb_pd_set_state(PE_SNK_Hard_Reset,enter_state);
+			break;
+	#endif
+
+	#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
+		case PE_SRC_Send_Soft_Reset:
+			usb_pd_set_state(PE_SRC_Hard_Reset,enter_state);
 			break;
 	#endif
 
@@ -2496,6 +2518,7 @@ const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
 	{PE_SRC_SNK_Chunk_Received_Entry,PE_SRC_SNK_Chunk_Received_Exit},					//PE_SRC_SNK_Chunk_Received
 	{PE_BIST_Carrier_Mode_Entry,PE_BIST_Carrier_Mode_Exit},								//PE_BIST_Carrier_Mode,
 	{PE_BIST_Test_Mode_Entry,PE_BIST_Test_Mode_Exit},									//PE_BIST_Test_Mode,
+	{PE_Give_Battery_Status_Entry,PE_Give_Battery_Status_Exit},							//PE_Give_Battery_Status
 	//for drp
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 	{PE_PRS_SRC_SNK_Evaluate_Swap_Entry,PE_PRS_SRC_SNK_Evaluate_Swap_Exit},				//PE_PRS_SRC_SNK_Evaluate_Swap,

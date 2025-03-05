@@ -94,11 +94,12 @@ void buckboost_task_init(void)
 	g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 	g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 	g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
-	g_buckboost.usba_state =  buckboost_ops.get_a2_state();
+	//g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 	g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
-
+#if(CONFIG_USBA_SUPPORT == 1)
 	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
+#endif
 //	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 //	buckboost_set_bus_iv(5000,3000,0,0);
 }
@@ -130,7 +131,7 @@ void buckboost_protection_handle(void)
 #endif
 
 	#define SW7201_VBUS_OVP_TH					21500
-	#define NU6801_VBUS_OVP_TH					18000
+	#define NU6801_VBUS_OVP_TH					14000
 
 	static uint8_t buckboost_protection_flag = false;
 
@@ -190,9 +191,9 @@ void buckboost_protection_handle(void)
 			printk("protect lock =0x%x\n",status);
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
-
-		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG | VBUS_REL_LOW_FLAG | DIS_VBAT_LOW  | PPS_UV))
+		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV))
 		{
+			printk("protect lock =0x%x\n",status);
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
@@ -201,14 +202,16 @@ void buckboost_protection_handle(void)
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
 			buckboost_set_bus_iv(5000,3000,0,0);
+			g_tc[PORT0_INDEX].is_in_prswap = 0;
+			g_tc[PORT1_INDEX].is_in_prswap = 0;
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_ops.init();
 			buckboost_protection_flag = 1;
-			printk("protect lock =0x%x\n",status);
 		}
 #endif
 	}
@@ -283,7 +286,9 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 			else if(get_info_step == 1)
 			{
+			#if(CONFIG_USBA_SUPPORT == 1)
 				g_buckboost.usba_state =  buckboost_ops.get_a2_state();
+			#endif
 				g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 
 			#if(BUCKBOOST_USED_SW7201 == 1)
@@ -338,6 +343,22 @@ void buckboost_task_event_handler(uint32_t event)
 			else if(get_info_step == 3)
 			{
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
+			#if(BUCKBOOST_USED_NU6801 == 1)
+				if(nu6801_dead_bat && g_buckboost.adc_vbat > 3500)
+				{
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2d);
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xf9);
+
+					uint8_t read_n;
+					hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x68,&read_n);
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x68,read_n | 0x80);
+					nu6801_dead_bat = false;
+					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
+					printk("----nu6801_dead_bat-- release \n");
+				}
+			#endif
 			#if(BUCKBOOST_USED_SW7201 == 1)
 				buckboost_ir_drop_handle();
 			#endif
@@ -348,10 +369,11 @@ void buckboost_task_event_handler(uint32_t event)
 
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 
-			if(g_usb_pd_s.is_in_pps && g_usb_pd_s.explicit_contract)
+			//if(g_usb_pd_s.is_in_pps && g_usb_pd_s.explicit_contract)
+			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_tc[0].usb_tc_state == TC_SRC_Attached || g_tc[1].usb_tc_state == TC_SRC_Attached))
 			{
 				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
-				if(g_buckboost.adc_vbus < 4600)
+				if(g_buckboost.adc_vbus < 4400)
 				{
 					pps_uv_cnt++;
 					if(pps_uv_cnt >= 5)
@@ -368,8 +390,6 @@ void buckboost_task_event_handler(uint32_t event)
 				pps_uv_cnt = 0;
 				pps_vbus_uv = false;
 			}
-
-
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
 //			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)

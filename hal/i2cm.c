@@ -608,20 +608,7 @@ int hal_i2cm_write_multi_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t *
 //#define _SET_I2CM_SDA_IN_PUT()    do { GPA->O_EN.BITS.PIN7 = 0; GPA->I_EN.BITS.PIN7 = 1; } while (0)
 //#define _SET_I2CM_SDA_OUTPUT()    do { GPA->I_EN.BITS.PIN7 = 0; GPA->O_EN.BITS.PIN7 = 1; } while (0)
 
-#define _I2CM_SDA_PORT     GPA
-#define _I2CM_SDA_PINx    PIN7
-#define _I2CM_SCL_PORT     GPA
-#define _I2CM_SCL_PINx    PIN6
 
-#define _PIN_LEVEL_HI     (1)
-#define _PIN_LEVEL_LO     (0)
-
-#define _I2CM_SDA_D_IN    (_I2CM_SDA_PORT->D_IN.BITS._I2CM_SDA_PINx)
-#define _I2CM_SDA_DOUT    (_I2CM_SDA_PORT->DOUT.BITS._I2CM_SDA_PINx)
-#define _I2CM_SCL_DOUT    (_I2CM_SCL_PORT->DOUT.BITS._I2CM_SCL_PINx)
-
-#define _SET_I2CM_SDA_IN_PUT()    do { _I2CM_SDA_PORT->O_EN.BITS._I2CM_SDA_PINx = 0; _I2CM_SDA_PORT->I_EN.BITS._I2CM_SDA_PINx = 1; } while (0)
-#define _SET_I2CM_SDA_OUTPUT()    do { _I2CM_SDA_PORT->I_EN.BITS._I2CM_SDA_PINx = 0; _I2CM_SDA_PORT->O_EN.BITS._I2CM_SDA_PINx = 1; } while (0)
 
 void hal_i2cm_init(uint32_t u32BusClock)
 {

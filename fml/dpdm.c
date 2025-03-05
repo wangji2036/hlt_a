@@ -168,8 +168,13 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				case QC_CONTINUOUS_MODE:
 					break;
 			}
-			hal_tcpc_pd_set_bus_iv(0,qc_volt,3000,0,0);
-			printk("qc2 volt = %d\n",qc_volt);
+			uint16_t qc_current = 18000 * 1000/ qc_volt;
+
+			qc_current = qc_current > 3000? 3000 : qc_current;
+
+			hal_tcpc_pd_set_bus_iv(0,qc_volt,qc_current + 150,0,0);
+
+			printk("qc2 v= %d i= %d\n",qc_volt,qc_current);
 			break;
 		case DPDM_EVT_QC_CONTINUES:
 			break;
@@ -186,8 +191,14 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				return;
 			}
 			if(DPDM->QC_SRC_FLAG.BITS.QC_SRC_STAT == QC_CONTINUOUS_MODE)
-				hal_tcpc_pd_set_bus_iv(0,qc_volt,3000,0,0);
-			printk("qc3 volt = %d\n",qc_volt);
+			{
+				uint16_t qc3_current = 18000 * 1000/ qc_volt;
+				qc3_current = qc3_current > 3000? 3000 : qc3_current;
+				hal_tcpc_pd_set_bus_iv(0,qc_volt,qc3_current + 150,0,0);
+
+				printk("qc3 v= %d i= %d\n",qc_volt,qc3_current);
+			}
+
 			break;
 		case DPDM_EVT_AFC_RX_DATA:
 			//printk("afc rx = 0x%x\n",DPDM->AFC_RX_0.WORD);
@@ -357,7 +368,7 @@ void __attribute__((isr)) QC_SRC_IRQHandler(void)
 		if(int_flag & (0x01<<13))
 		{
 			qc_volt -= 200;
-			if(qc_volt <= 3600) qc_volt = 3600;
+			if(qc_volt <= 5000) qc_volt = 5000;
 			DPDM->QC_SRC_FLAG.BITS.QC_PULSE_DEC_INT = 1;
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_QC_PLUSE_DEC);
 		}

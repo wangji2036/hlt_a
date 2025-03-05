@@ -9,7 +9,7 @@
  * @retval void
  */
 void hal_wdt_init(void);
-
+void hal_wdt_init_to_reset(void);
 /**
  * @brief 	Watchdog timer feed function.
  * @details This function feeds the watchdog timer to prevent a system reset.

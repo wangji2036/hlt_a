@@ -17,10 +17,11 @@ struct fm_pack_t {
 } __attribute__ ((packed));
 
 void fm1210_init(void);
-
+void fm1210_sleep(void);
 int fm1210_i2c_send_frame(uint8_t cmd, uint8_t *sbuf, uint16_t slen);
 int fm1210_i2c_recv_frame(uint8_t *rbuf, uint16_t *rlen);
 int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t *rlen);
+int fm1210_i2c_transceive_sleep(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t *rlen);
 
 int fm1210_get_qi_id(uint8_t *rbuf);
 int fm1210_read_cert_hash(uint8_t *rbuf);

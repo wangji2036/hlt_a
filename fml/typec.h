@@ -10,9 +10,9 @@
 
 
 #define TC_T_CC_DEBOUNCE	        120	/* 100 - 200 ms */
-#define TC_T_PD_DEBOUNCE	        15	/* 10 - 20 ms */
-#define TC_T_TRY_CC_DEBOUNCE	    15	/* 10 - 20 ms */
-#define TC_T_DRP_TRY		        100	/* 75 - 150 ms */
+#define TC_T_PD_DEBOUNCE	        9	/* 10 - 20 ms */
+#define TC_T_TRY_CC_DEBOUNCE	    12	/* 10 - 20 ms */
+#define TC_T_DRP_TRY		        550	/* 75 - 150 ms */
 #define TC_T_DRP_TRYWAIT	        600	/* 400 - 800 ms */
 #define TC_T_DRP_TRYTIMEOUT	        800	/* 550 - 1100 ms */
 #define TC_T_ERROR_RECOVERY	        500	/* 550 - 1100 ms */
@@ -45,7 +45,7 @@ enum usb_tc_state_e
 	TC_Try_SRC,				//11
 	TC_TryWAIT_SNK,			//12
 #endif
-
+	TC_ACCESSORY_Attached,		//13
 	TC_ErrorRecovery,
 
 	TC_STATE_MAX,

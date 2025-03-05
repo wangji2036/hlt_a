@@ -137,7 +137,14 @@ static uint16_t hal_badc_vref_update(void)
 	BADC->CTRL.WORD |= BADC_CTRL_CONV_START_Msk; //hardware clear automatically
 	while ((BADC->FLAG.WORD & BADC_FLAG_DONE_FLAG_Msk) == 0);
 
-	tmp = (BADC->DATA.BITS.CONV_DATA & 0x80) ? BADC->DATA.BITS.CONV_DATA + 2 : BADC->DATA.BITS.CONV_DATA - 2;
+	if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+	{
+		tmp = BADC->DATA.BITS.CONV_DATA;
+	}
+	else
+	{
+		tmp = (BADC->DATA.BITS.CONV_DATA & 0x80) ? BADC->DATA.BITS.CONV_DATA + 2 : BADC->DATA.BITS.CONV_DATA - 2;
+	}
 	tmp = tmp * badc_vref_gain / 1000;
 
 	return (tmp != 0) ? (12000 - badc_vref_bias) * 4096 / tmp : 3300;
@@ -172,8 +179,15 @@ static int16_t hal_badc_average_meas(enum badc_chan_t channel, uint8_t times)
 		BADC->CTRL.WORD |= BADC_CTRL_CONV_START_Msk; //hardware clear automatically
 		while ((BADC->FLAG.WORD & BADC_FLAG_DONE_FLAG_Msk) == 0);
 
-		tmp = (BADC->DATA.WORD & BADC_DATA_NEGA_SIGN_Msk) ? 0 - ((BADC->DATA.BITS.CONV_DATA ^ 0xFFF) + 1) : (BADC->DATA.BITS.CONV_DATA);
-		tmp = (tmp & 0x80) ? tmp + 2 : tmp - 2;
+		if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
+		{
+			tmp = (BADC->DATA.WORD & BADC_DATA_NEGA_SIGN_Msk) ? 0 - ((BADC->DATA.BITS.CONV_DATA ^ 0xFFF) + 1) : (BADC->DATA.BITS.CONV_DATA);
+		}
+		else
+		{
+			tmp = (BADC->DATA.WORD & BADC_DATA_NEGA_SIGN_Msk) ? 0 - ((BADC->DATA.BITS.CONV_DATA ^ 0xFFF) + 1) : (BADC->DATA.BITS.CONV_DATA);
+			tmp = (tmp & 0x80) ? tmp + 2 : tmp - 2;
+		}
 
 		if (tmp > max) max = tmp;
 		if (tmp < min) min = tmp;
