@@ -51,6 +51,7 @@ struct buckboost_s
 	uint8_t ibus_cc_flag;
 #if(BUCKBOOST_USED_NU6801 == 1)
 	uint16_t adc_iac1;
+	uint8_t charging_stat; //ÊÇ·ñÔÚ³äµç
 #endif
 	uint8_t protect_status;
 };
@@ -89,6 +90,7 @@ struct buckboost_operations
 	uint16_t (*get_typecb_vbus_present)(void);
 	uint8_t (*get_charge_flag)(void);
 	uint16_t (*get_adc_iac1)(void);
+	void (*set_ovp)(void);
 #endif
 
 };

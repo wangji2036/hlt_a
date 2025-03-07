@@ -168,6 +168,10 @@ static void ui_update_led(void)
     	 if(flash_light_on) soc_show_ram_led = 0x1F;
     	 else soc_show_ram_led = 0;
      }
+     else if(flash_flag ==3)
+     {
+    	 soc_show_ram_led = 0;
+     }
      else if (flash_flag == 1)
      {
 		 if (!flash_light_on) // if needs blink, and it is blink-off
@@ -341,9 +345,12 @@ void ui_update(void)
     soc_show = SOCPack_DisplaySOC_pct;
     //static uint8_t cnt_2s;
     flash_light_on ^= 1;
-    if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+    if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
-    	flash_flag = 1;
+    	if(g_buckboost.charging_stat == 0)
+    		flash_flag = 3;
+    	else
+    		flash_flag = 1;
     }
 /*    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (soc_show<15))
     {

@@ -13,7 +13,7 @@
 #include "pid.h"
 #include "usb_qc.h"
 #include "tcpm.h"
-
+#include "nu6801.h"
 
 void port_manager_set_event(uint32_t event)
 {
@@ -721,6 +721,11 @@ void port_enum_port_snk_setcharge(void)
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
 
+
+#if(BUCKBOOST_USED_NU6801 == 1)
+	if(nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
+#endif
+
 	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
 
 }
@@ -781,7 +786,12 @@ void port_enum_port_snk_setvolt(void)
 		}
 		else
 		{
-			if(bc12_type > BC1P2_CDP)
+			if(bc12_type > BC1P2_HVDCP)
+			{
+				g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
+				g_port.ibus_limit = 3000;
+			}
+			else if(bc12_type > BC1P2_CDP)
 				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
@@ -796,7 +806,11 @@ void port_enum_port_snk_setvolt(void)
 		}
 		else
 		{
-			if(bc12_type > BC1P2_CDP)
+			if(bc12_type > BC1P2_HVDCP)
+			{
+				g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
+			}
+			else if(bc12_type > BC1P2_CDP)
 				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;

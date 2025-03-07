@@ -58,7 +58,8 @@ const uint32_t source_pdo[] =
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
 	[1] = PDO_FIXED(9000, 2000, 0),
-	[2] = PDO_PPS_APDO(5000,11000,2000),
+	[2] = PDO_FIXED(12000, 1500, 0),
+	[3] = PDO_PPS_APDO(5000,11000,2000),
 };
 #endif
 
@@ -67,6 +68,7 @@ const uint32_t sink_pdo[] =
 	#define SINK_PDO_FIXED_FLAGS     			(0)
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
 	[1] = PDO_FIXED(9000, 2000, 0),
+
 	//[2] = PDO_FIXED(15000, 3000, 0),
 };
 
@@ -669,7 +671,7 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
         	pdo_max_current = pdo->source_pdo[index - 1].BITS.FIX_BITS.max_current * 10;
             if (rdo_op_current > pdo_max_current) return check_current_error;
             voltage = pdo->source_pdo[index - 1].BITS.FIX_BITS.voltage * 50;
-            current = pdo_max_current * 11 / 10;
+            current = pdo_max_current * 11 / 10 + 100;
             g_usb_pd_s.is_in_pps = 0;
             break;
         case PDO_TYPE_APDO:

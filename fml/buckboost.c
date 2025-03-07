@@ -131,7 +131,7 @@ void buckboost_protection_handle(void)
 #endif
 
 	#define SW7201_VBUS_OVP_TH					21500
-	#define NU6801_VBUS_OVP_TH					14000
+	#define NU6801_VBUS_OVP_TH					20000
 
 	static uint8_t buckboost_protection_flag = false;
 
@@ -142,7 +142,10 @@ void buckboost_protection_handle(void)
 #if(BUCKBOOST_USED_SW7201 == 1)
 	if(g_buckboost.adc_vbus > SW7201_VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
 #elif(BUCKBOOST_USED_NU6801 == 1)
-	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH) status |= VBUS_OV_FLAG;
+	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH )
+	{
+		status |= VBUS_OV_FLAG;
+	}
 
 	if(g_buckboost.adc_vbat < 2900 && g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
@@ -299,7 +302,12 @@ void buckboost_task_event_handler(uint32_t event)
 				}
 				else
 			#endif
+
+			#if(BUCKBOOST_USED_NU6801 == 1)
+				if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V && !nu6801_dead_bat)
+			#else
 				if(g_buckboost.adc_vbat > BAT_ACTIVE_RBATTER_V)
+			#endif
 				{
 
 					if(g_tc[TYPEC_PORT_A].is_deadbattery)
@@ -342,28 +350,49 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 			else if(get_info_step == 3)
 			{
+				static uint16_t last_vbat;
+				last_vbat = g_buckboost.adc_vbat;
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
-			#if(BUCKBOOST_USED_NU6801 == 1)
-				if(nu6801_dead_bat && g_buckboost.adc_vbat > 3500)
-				{
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2d);
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xf9);
 
-					uint8_t read_n;
-					hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x68,&read_n);
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x68,read_n | 0x80);
+
+			#if(BUCKBOOST_USED_NU6801 == 1)
+
+				#define ABS(x,y)  x>y? x-y:y-x
+
+				if(
+						nu6801_dead_bat  && last_vbat > 2800
+						&&(
+								g_buckboost.adc_vbat > 3500 ||  ((ABS(g_buckboost.adc_vbat , last_vbat) >300) && g_buckboost.adc_vbat < last_vbat)
+								)
+						)
+				{
+					printk("vbat=%d  last_vbat=%d \n",g_buckboost.adc_vbat,last_vbat);
+					hal_nu6801_buckboost_charge_ibus_limit(150);
+					hal_nu6801_buckboost_enter_force_trickle(false);
 					nu6801_dead_bat = false;
-					hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
-					printk("----nu6801_dead_bat-- release \n");
 				}
 			#endif
 			#if(BUCKBOOST_USED_SW7201 == 1)
 				buckboost_ir_drop_handle();
 			#endif
 			}
-			if(get_info_step ++ > 3) get_info_step = 0;
+			else if(get_info_step == 4)
+			{
+				//hal_nu6801_buckboost_get_main_state();
+			#if(BUCKBOOST_USED_NU6801 == 1)
+				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					uint8_t main_stat = hal_nu6801_buckboost_get_main_stat();
+					if((main_stat & 0xF0 ) != 0x40)
+						g_buckboost.charging_stat = 0;
+					else
+						g_buckboost.charging_stat = 1;
+
+					printk("[MianStat]=0x%x charing=%d\n",main_stat,g_buckboost.charging_stat);
+				}
+			#endif
+			}
+			if(get_info_step ++ > 4) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
 
@@ -417,27 +446,18 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.regulator_state = 1;
 			g_buckboost.out_voltage_wait = 0;
 			g_buckboost.out_voltage_delay = 0;
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			buckboost_ops.set_ovp();
+		#endif
 			osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
 			break;
 		case BUCKBOOST_EVT_SET_CHARGER_CURRENT:
-			//printk("%s\n","BUCKBOOST_EVT_SET_CHARGER_CURRENT");
-//			g_buckboost.woke_mode = BUCKBOOST_SHUTDOWM_MODE;
-//			buckboost_ops.set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-//			g_buckboost.woke_mode = BUCKBOOST_CHAGER_MODE;
-//			buckboost_ops.set_work_mode(g_buckboost.woke_mode);
-//			buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_limit);
-//			buckboost_ops.set_chager_ibat_limit(g_buckboost.chager_ibat_limit);
 			break;
 		case BUCKBOOST_EVT_SET_TYPECA_GATE_EN:
-			//printk("%s\n","BUCKBOOST_EVT_SET_TYPECA_GATE_EN");
-			//buckboost_ops.typca_gate_en(g_buckboost.set_typeca_gate_en);
 			break;
 		case BUCKBOOST_EVT_SET_TYPECB_GATE_EN:
-			//printk("%s\n","BUCKBOOST_EVT_SET_TYPECB_GATE_EN");
-			//buckboost_ops.typcb_gate_en(g_buckboost.set_typecb_gate_en);
 			break;
 		case BUCKBOOST_EVT_SET_USB_A_GATE_EN:
-			//buckboost_ops.usb_a_gate_en(g_buckboost.set_usb_a_gate_en);
 			break;
 		case BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_EN:
 			buckboost_ops.typca_dischg_en(true);
@@ -513,7 +533,7 @@ const struct buckboost_operations buckboost_ops =
 	.get_typecb_vbus_present = 	hal_nu6801_buckboost_typecb_vbus_present,
 	.get_charge_flag = 			hal_nu6801_buckboost_get_charge_flag,
 	.get_adc_iac1 = 			hal_nu6801_buckboost_get_iac1,
-
+	.set_ovp = 					hal_nu6801_buckboost_set_ovp,
 #endif
 };
 

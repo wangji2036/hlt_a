@@ -16,6 +16,32 @@ bool nu6801_dead_bat = false;
 
 void hal_nu6801_buckboost_bat_ivcfg(void);
 
+void hal_nu6801_buckboost_enter_force_trickle(bool enter)
+{
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2d);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xf9);
+
+	if(enter)
+	{
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x67,0x03);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x68,0x20);
+
+		printk("----force trick \n");
+	}
+	else
+	{
+
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x68,0xA0);
+
+		printk("----nu6801_dead_bat-- release \n");
+	}
+
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
+
+}
+
 void hal_nu6801_buckboost_init(void)
 {
 	uint8_t revision = hal_nu6801_buckboost_get_verision();
@@ -42,11 +68,8 @@ void hal_nu6801_buckboost_init(void)
 		uint16_t vbat = hal_nu6801_buckboost_get_bat_voltage();
 		if(vbat < 2500)    //
 		{
-			nu6801_dead_bat = true;
-			hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x68,0x03);
-			hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x67,0x20);
-
 			printk("\nvbat= %d debug\n",vbat);
+			nu6801_dead_bat = true;
 		}
 
 
@@ -98,11 +121,11 @@ void hal_nu6801_buckboost_set_cv(void)
 void hal_nu6801_buckboost_bat_ivcfg(void)
 {
 	//
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBAT_CTRL,0x09);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBAT_CTRL,0x19);
 
 //	ITRCKLE=400mA
 //	ITERM: VBUS=5V/200mA
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,0x17);  //
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,0x07);  //
 }
 
 
@@ -191,7 +214,7 @@ void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 	if(vbus < 4400 || vbus > 19000) return;
 	vbus = (vbus - 4400) / 20;
 	if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) return;
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x08)|(vbus >> 8));
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x1C)|(vbus >> 8));
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,vbus & 0xFF);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(0x05 << 5));
 
@@ -237,6 +260,12 @@ void hal_nu6801_buckboost_usb_a_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x04));
 }
 
+uint8_t hal_nu6801_buckboost_get_main_stat(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MAIN_STAT,&read);
+	return read;
+}
 
 void hal_nu6801_buckboost_charge_ibus_limit(uint16_t ibus_limit)
 {
@@ -250,7 +279,7 @@ void hal_nu6801_buckboost_charge_ibus_limit(uint16_t ibus_limit)
 void hal_nu6801_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 {
 	uint16_t vbus = (4400 -4400) / 20;
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x08)|(vbus >> 8));
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x1C)|(vbus >> 8));
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,vbus & 0xFF);
 
 	uint8_t read;
@@ -361,6 +390,16 @@ uint16_t hal_nu6801_buckboost_get_bat_voltage(void)
 	delay_1us(300);
 	nu6801_vref =  hal_badc_meas(_BADC_CH_PD3_ADC9);
 
+	if(nu6801_vref < 1000)
+	{
+		uint8_t read_0x10,read_0x11,read_0x06,read_0x00;
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read_0x11);
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,&read_0x10);
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_FAULT_FLAG,&read_0x06);
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_FLAG,&read_0x00);
+		printk("adc_err [0x00]=0x%x [0x06]=0x%x [0x10]=0x%x [0x11]=0x%x\n",read_0x00,read_0x06,read_0x10,read_0x11);
+	}
+
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x00);
 	delay_1us(300);
@@ -387,6 +426,21 @@ uint16_t hal_nu6801_buckboost_get_bat_temperature(void)
 	return 25;// in mOhm,
 }
 
+void hal_nu6801_buckboost_set_ovp(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H,&read);
+	if(g_buckboost.buckboost_out_voltage < 5500)
+		read = (read & 0x03) | (0x00 <<2);   //ovp 6.5v
+	else if(g_buckboost.buckboost_out_voltage < 12500)
+		read = (read & 0x03) | (0x02 <<2);   //ovp 13.5v
+	else
+		read = (read & 0x03) | (0x07 <<2);   //ovp 19.8v
+
+	if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) read = (read & 0x03) | (0x02 <<2);  // ³äµçÉèÖÃ 13.5V
+
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, read);
+}
 
 
 uint8_t hal_nu6801_buckboost_get_verision(void)
