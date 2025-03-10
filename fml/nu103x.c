@@ -158,9 +158,9 @@ void fml_nu103x_qdt_init(void)
 	// fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);
 	// fml_nu103x_config(_1030_CFG_VDM_PIN_EVDM_IN_);
 
-	fml_nu103x_config(_1030_CFG_DRVH1_TURN_ON_);
+//	fml_nu103x_config(_1030_CFG_DRVH1_TURN_ON_);
 	fml_nu103x_config(_1030_CFG_DRVH2_TURN_ON_);
-
+	fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P2);
 	fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_QDT);
 	fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_QDT);
 	fml_nu103x_config(_1030_CFG_QDT_EN_);
