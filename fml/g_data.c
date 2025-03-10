@@ -73,7 +73,7 @@ void ap_data_init(void)
 	ap->dig_ping_duty_5v = 500;
 	ap->dig_ping_phas_5v = 0;
 
-	ap->dig_ping_volt_6v = 5500;
+	ap->dig_ping_volt_6v = 5800;
 	ap->dig_ping_perd_6v = 1127;;//144000000 / 127772;
 	ap->dig_ping_duty_6v = 500;
 	ap->dig_ping_phas_6v = 0;
@@ -88,7 +88,7 @@ void ap_data_init(void)
 	ap->dig_ping_duty_11v = 250;//200;
 	ap->dig_ping_phas_11v = 0;
 
-	if ((*pdest0 < 0) || (*pdest0 > 30000))
+	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
 		ap->q_factor_base_value = 161;
 	}
@@ -96,11 +96,11 @@ void ap_data_init(void)
 	{
 		ap->q_factor_base_value = *pdest0;
 	}
-	ap->q_factor_reco_value =  30;
+	ap->q_factor_reco_value =  20;
 	ap->q_factor_limH_value = 500;
 	ap->q_factor_limL_value =  	0;
 
-	if ((*pdest0 < 0) || (*pdest0 > 30000))
+	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
 		ap->fs_base_value = 818;
 	}
@@ -108,13 +108,13 @@ void ap_data_init(void)
 	{
 		ap->fs_base_value = *pdest1;
 	}
-	ap->fs_reco_value = 30;
+	ap->fs_reco_value = 19;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
 
 	ap->q_factor_obj_value = 30;//50
 	ap->q_factor_stable_value = 30;
-	ap->fs_obj_value = 30;//50
+	ap->fs_obj_value = 20;//30;//50
 	ap->fs_stable_value = 30;
 
 	ap->t_next_ping = 100;

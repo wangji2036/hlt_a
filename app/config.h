@@ -5,8 +5,8 @@
 #define CUST_CODE                               0x00
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
-#define RELE_DATE                             0x5305	//update 20250219
-#define TX_FW_VER                               0x06
+#define RELE_DATE                             0x5310	//update 20250219
+#define TX_FW_VER                               0x07
 
 /*.....7.5w Debug......*/
 #define CONFIG_WPC_SUPPORT					1

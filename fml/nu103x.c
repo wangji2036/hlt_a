@@ -92,7 +92,10 @@ void fml_nu103x_por_rst(void)
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 
 	fml_nu103x_config(_1030_CFG_OCP_08A);
+	if (SYS->PID_INFO.BITS.VER == CHIP_VER_A0)
+	{
 	fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
+	}
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
 
 	fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);
@@ -112,7 +115,10 @@ void fml_nu103x_por_init(void)
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 
 	fml_nu103x_config(_1030_CFG_OCP_08A);
+	if (SYS->PID_INFO.BITS.VER == CHIP_VER_A0)
+	{
 	fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
+	}
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
 
 	fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);

@@ -210,9 +210,9 @@ typedef struct {
 #define TMR_GEN_CTRL_CNT_EN_Msk          (0x1UL << TMR_GEN_CTRL_CNT_EN_Pos)     /*!< TS_TMR::GEN_CTRL: CNT_EN Mask        */
 
 #define TMR_SPL_CTRL_CLK_SRC_Pos         (0)                                    /*!< TS_TMR::SPL_CTRL: CLK_SRC Position   */
-#define TMR_SPL_CTRL_CLK_SRC_Msk         (0x1FUL << TMR_SPL_CTRL_CLK_SRC_Pos)   /*!< TS_TMR::SPL_CTRL: CLK_SRC Mask       */
-#define TMR_SPL_CTRL_WKUP_EN_Pos         (0)                                    /*!< TS_TMR::SPL_CTRL: WKUP_EN Position   */
-#define TMR_SPL_CTRL_WKUP_EN_Msk         (0x1FUL << TMR_SPL_CTRL_WKUP_EN_Pos)   /*!< TS_TMR::SPL_CTRL: WKUP_EN Mask       */
+#define TMR_SPL_CTRL_CLK_SRC_Msk         (0x1UL << TMR_SPL_CTRL_CLK_SRC_Pos)    /*!< TS_TMR::SPL_CTRL: CLK_SRC Mask       */
+#define TMR_SPL_CTRL_WKUP_EN_Pos         (1)                                    /*!< TS_TMR::SPL_CTRL: WKUP_EN Position   */
+#define TMR_SPL_CTRL_WKUP_EN_Msk         (0x1UL << TMR_SPL_CTRL_WKUP_EN_Pos)    /*!< TS_TMR::SPL_CTRL: WKUP_EN Mask       */
 
 #define TMR_STS_FLAG_CNT_FLAG_Pos        (0)                                    /*!< TS_TMR::STS_FLAG: CNT_FLAG Position  */
 #define TMR_STS_FLAG_CNT_FLAG_Msk        (0x1UL << TMR_STS_FLAG_CNT_FLAG_Pos)   /*!< TS_TMR::STS_FLAG: CNT_FLAG Mask      */

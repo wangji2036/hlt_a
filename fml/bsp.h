@@ -2,5 +2,5 @@
 #define BSP_H_
 
 void fml_bsp_init(void);
-
+void BSP_vInit(void);
 #endif /* BSP_H_ */

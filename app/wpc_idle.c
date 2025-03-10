@@ -675,9 +675,11 @@ void wpc_idle_cloak_phase_process(void)
 
 void wpc_idle_phase_process(void)
 {
-	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY)
+	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && (gd->ptx_idle_phase_status == WPC_IDLE_STAT_STANDBY
+		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_XER_FOD || 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_QDT_FOD
+		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_LAR_MET))
 	{
-		if(gd->idle_to_sleep_cnt >100)
+		if(gd->idle_to_sleep_cnt >200)
 		{
 			gd->idle_to_sleep_cnt = 0;
 			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
@@ -778,7 +780,7 @@ void wpc_idle_phase_process(void)
 		gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
 
 	fml_ask_enbale();
-
+	gd->idle_to_sleep_cnt = 0;
 	gd->ptx_protocol_phase = WPC_PHASE_PING;
 	osal_start_timerEx(WPC_NEXT_TIMER, T_PING, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 	osal_stop_timerEx(WPC_PING_TIMER);

@@ -16,5 +16,5 @@
  * @retval void.
  */
 void hal_gpio_init(void);
-
+void hal_gpio_init_default(void);
 #endif /* GPIO_H_ */

@@ -24,6 +24,7 @@
 #include "usb_qc.h"
 #include "buckboost.h"
 #include"sleep.h"
+#include"bsp.h"
 
 uint32_t rrlen;
 
