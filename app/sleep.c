@@ -47,11 +47,19 @@ void SLP_vNormalToSleep(void)
 	//
 	FMC->FMC_CMD_CTRL.WORD = _FMC_CMD_ALL_CTRL_DISABLE;// off flash
 	//How to shut sram?
-	ECAP1->GEN_CTRL.WORD &= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
-	ECAP2->GEN_CTRL.WORD &= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
-	ECAP4->GEN_CTRL.WORD &= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
-	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.DPDM_EN = 0;
-	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.BITS.BC1P2_EN = 0;
+	ECAP1->GEN_CTRL.WORD =0;//ecap
+	ECAP2->GEN_CTRL.WORD =0;//&= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
+	ECAP3->GEN_CTRL.WORD =0;//&= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
+	ECAP4->GEN_CTRL.WORD =0;//&= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
+	ECAP5->GEN_CTRL.WORD =0;//&= ~ECAP_GEN_CTRL_CAP_EN_Msk;//ecap
+	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.WORD = 0;
+	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.WORD  = 0;
+
+	I2CM->GEN_CTRL.WORD = 0;
+	DPDM->QC_SRC_CTRL.WORD = 0;
+	DPDM->SOURCE_CTRL.WORD = 0;
+
+
 #if(BUCKBOOST_USED_NU6801 == 1)
     // enable all 6801 INT
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x00);
@@ -86,8 +94,27 @@ void SLP_vNormalToSleep(void)
 
     hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x11);*/
 #endif
+
+#if(BUCKBOOST_USED_SW7201 == 1)
+	uint8_t read;
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
+    hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
+//	uint8_t read;
+	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
+    hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Mode_Control,0);
+	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x00);
+    hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x01);
+
+
+#endif
+    TCPC->CCA_CTRL.WORD = 0;
+    TCPC->CCB_CTRL.WORD = 0;
+    TCPC->RXD_CTRL.WORD = 0;
+    ECAP2->QDT_CTRL.WORD = 0;
 	//tcpc wake up start.
-	SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_TCPC_WKUP_DIS_Pos;
+    SYS->PWR_CTRL.WORD = 0;
+	//SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_TCPC_WKUP_DIS_Pos;
 	//CCA
 	  //(Enable CC, Disable RDB, Enter low power mode)
 	TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
@@ -108,10 +135,7 @@ void SLP_vNormalToSleep(void)
 	TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
 	TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
 	TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
-
-	TMR1->GEN_CTRL.WORD &= !TMR_GEN_CTRL_CNT_EN_Msk;
-	TMR2->GEN_CTRL.WORD &= !TMR_GEN_CTRL_CNT_EN_Msk;
-	TMR3->GEN_CTRL.WORD &= !TMR_GEN_CTRL_CNT_EN_Msk;
+	TMR0->GEN_CTRL.WORD = 0;
 	TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
@@ -130,16 +154,6 @@ void SLP_vNormalToSleep(void)
 	GPD->MODE.BITS.PIN1 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPD->ITEN.BITS.PIN1 = 1;
 	GPD->ITTP.BITS.PIN1 = 0;
-	hal_wdt_feed();
-/*
-	GPB->I_EN.BITS.PIN7 = 1;
-	GPB->O_EN.BITS.PIN7 = 0;
-	GPB->DOUT.BITS.PIN7 = 0;
-	GPB->ODEN.BITS.PIN7 = 0;
-	GPB->PUEN.BITS.PIN7 = 0;
-	GPB->PDEN.BITS.PIN7 = 0;
-	GPB->MODE.BITS.PIN7 = 0; //00:PB7 01:UART1_TXD 10:RESERVED 11:RESERVED
-*/
 	UART1->GEN_CTRL.WORD = 0;
 	UART1->BRG_CTRL.WORD = 0;
 	hal_wdt_feed();
@@ -154,10 +168,8 @@ void SLP_vNormalToSleep(void)
 	TMR2->GEN_CTRL.WORD = 0;
 	TMR3->GEN_CTRL.WORD = 0;
 
-	UART1->GEN_CTRL.WORD = 0;
-	UART1->BRG_CTRL.WORD = 0;
 
-	VIC_vModuleDisable();
+//	VIC_vModuleDisable();
 	//useless
 	BADC->CTRL.WORD = 0;
 	EADC->CTRL.WORD = 0;
@@ -169,6 +181,11 @@ void SLP_vNormalToSleep(void)
 
 	EPWM1->PWM_CTRL.WORD = 0;
 	EPWM2->PWM_CTRL.WORD = 0;
+	printk("\r\n enter sleep mode");
+	hal_wdt_feed();
+	UART1->GEN_CTRL.WORD = 0;
+	UART1->BRG_CTRL.WORD = 0;
+
 //		hal_wdt_init();
 	WDT->CTRL.WORD = 0;
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
@@ -253,7 +270,7 @@ uint8_t SLP_u8SleepModeQDetect(void)
 	switch (gd->ptx_idle_phase_status)
 	{
 		case WPC_IDLE_STAT_STANDBY:
-			if ((gd->tx_infos.q_fact  + ap->q_factor_obj_value +60  < ap->q_factor_base_value ) ||
+			if ((gd->tx_infos.q_fact  + ap->q_factor_obj_value +30  < ap->q_factor_base_value ) ||
 				(gd->tx_infos.f_self > ap->fs_limL_value && gd->tx_infos.f_self + ap->fs_obj_value < ap->fs_base_value))
 			{
 				u8NeedToNormal = 1;

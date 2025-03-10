@@ -679,7 +679,7 @@ void wpc_idle_phase_process(void)
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_XER_FOD || 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_QDT_FOD
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_LAR_MET))
 	{
-		if(gd->idle_to_sleep_cnt >200)
+		if(gd->idle_to_sleep_cnt >100)
 		{
 			gd->idle_to_sleep_cnt = 0;
 			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
