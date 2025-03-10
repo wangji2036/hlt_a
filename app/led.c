@@ -347,9 +347,11 @@ void ui_update(void)
     flash_light_on ^= 1;
     if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
+#if(BUCKBOOST_USED_NU6801 == 1)
     	if(g_buckboost.charging_stat == 0)
     		flash_flag = 3;
     	else
+#endif
     		flash_flag = 1;
     }
 /*    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (soc_show<15))
