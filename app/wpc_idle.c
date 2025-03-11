@@ -769,7 +769,7 @@ void wpc_idle_phase_process(void)
 		printk("back to 128k-2\r\n");
 		wpc_idle_dig_ping_init_360K();
 	}
-
+	fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P8);// set to 1.8v again, for better DDM
 	printk("\r\n ping: [%d] [%d %d] [%d %d %d %d]", gd->tx_infos.dig_ping_type, gd->vbus, gd->vpwr,
 			gd->pid_volt, 144000000 / gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
 

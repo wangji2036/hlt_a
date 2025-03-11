@@ -13,6 +13,6 @@
 #define CONFIG_USBA_SUPPORT					1
 #define CONFIG_TYPECA_SUPPORT				1
 #define CONFIG_TYPECB_SUPPORT				1
-#define ONLY7_5W_ENALBE     (1)
+#define ONLY7_5W_ENALBE     (0)
 
 #endif /* CONFIG_H_ */
