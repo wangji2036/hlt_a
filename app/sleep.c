@@ -326,6 +326,8 @@ uint8_t SLP_u8SleepModeQDetect(void)
 #define RST_SRC_PROTOCOL        4
 uint8_t reset_cnt;
 
+extern uint16_t key_ui_cnt;
+
 void RST_vCheck(void)
 {
 		printk("\r\n sleep check");
@@ -368,6 +370,7 @@ void RST_vCheck(void)
 				break;
 			case RST_SRC_GPIO:
 				printk("\r\n sleep check- GPIO");
+				key_ui_cnt = 20;
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				//SLP_vSleepToSleep();
 				break;

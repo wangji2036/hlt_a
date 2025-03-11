@@ -202,7 +202,7 @@ void tcpm_task_event_handler(uint32_t event)
 				if(g_buckboost.adc_iac1  < 20 )
 				{
 					usba_cnt++;
-					if(usba_cnt >= 50)
+					if(usba_cnt >= 30)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
@@ -261,7 +261,7 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_QI_SET_VOLT:
 			if(wpc_mode == TCPM_WPC_WORK_BOOST)
 			{
-				hal_tcpc_pd_set_bus_iv(WPC_INDEX,qi_volt,3500,0,0);
+				hal_tcpc_pd_set_bus_iv(WPC_INDEX,qi_volt,3500,0,10);
 
 			}
 			else if(wpc_mode == TCPM_WPC_WORK_PD_PPS)

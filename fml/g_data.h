@@ -374,6 +374,7 @@ struct gd_t
 	 uint8_t idle_to_sleep_cnt;
 	 uint8_t sleep_qdt_complete_charg_count;
 	 uint8_t sleep_qdt_fod_rec_count;
+	 uint8_t soc_show;
 };
 
 extern volatile struct ap_t *ap;

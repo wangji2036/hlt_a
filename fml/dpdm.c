@@ -172,7 +172,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 			qc_current = qc_current > 3000? 3000 : qc_current;
 
-			hal_tcpc_pd_set_bus_iv(0,qc_volt,qc_current + 300,0,0);
+			hal_tcpc_pd_set_bus_iv(0,qc_volt,qc_current + 300,0,10);
 
 			printk("qc2 v= %d i= %d\n",qc_volt,qc_current);
 			break;
@@ -180,7 +180,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 
 		case DPDM_EVT_AFC_SCP_OUT:
-			hal_tcpc_pd_set_bus_iv(0,scp_vout,scp_iout,0,0);
+			hal_tcpc_pd_set_bus_iv(0,scp_vout,scp_iout,0,10);
 			break;
 
 		case DPDM_EVT_QC_PLUSE_INC:
@@ -194,7 +194,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			{
 				uint16_t qc3_current = 18000 * 1000/ qc_volt;
 				qc3_current = qc3_current > 3000? 3000 : qc3_current;
-				hal_tcpc_pd_set_bus_iv(0,qc_volt,qc3_current + 300,0,0);
+				hal_tcpc_pd_set_bus_iv(0,qc_volt,qc3_current + 300,0,10);
 
 				printk("qc3 v= %d i= %d\n",qc_volt,qc3_current);
 			}

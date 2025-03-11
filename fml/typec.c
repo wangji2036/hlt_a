@@ -158,6 +158,7 @@ static void TC_SNK_AttachWait_Entry(struct tc_s * tc)
 	tc->tc_timer_cnt = 0;
 	usb_tc_set_state(tc,TC_SNK_AttachWait,exit_state);
 	hal_tcpc_port_dummyload_en(tc->tc_index,true);
+	buckboost_ops.vbus_dischg_en(true);
 #ifndef MULTI_PORT_ALT_MODE
 	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
 	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
@@ -181,6 +182,7 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
     else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
     {
     	hal_tcpc_port_dummyload_en(tc->tc_index,false);
+    	buckboost_ops.vbus_dischg_en(false);
         if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
         {
 			#if(CONFIG_TC_TRY_SOURCE_SUPPORT_EN)

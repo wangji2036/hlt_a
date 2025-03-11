@@ -5,11 +5,12 @@
 #include "led.h"
 #include"_wpc.h"
 #include"BMS_FixPoint.h"
+#include "port_manager.h"
 extern volatile uint16_t sys_ticks;
 #define LED_DISPLAY
 
 // following variable will be update to be GB data.
-uint8_t soc_show = 0;// SOC value, for display
+//uint8_t soc_show = 0;// SOC value, for display
 static uint8_t flash_flag;//1:charging flashing,2, Error - all flashing
 static uint8_t flash_light_on;//flash control, 1 means on state when flash, 0 means off state.
 static uint8_t ui_scan_index;// for scan index
@@ -111,7 +112,7 @@ static batt_level_t drv_ui_coulomb(void)
 
      for(uint8_t i= 0; i < sizeof(_batt_energy_table); i++)
      {
-         if(soc_show < _batt_energy_table[i])
+         if(gd->soc_show < _batt_energy_table[i])
          {
             return (batt_level_t)(i+1);
          }
@@ -342,14 +343,14 @@ void ui_display (void)
 void ui_update(void)
 {
  //   if(ui_wait_cnt< WAIT_IN_250MS) ui_wait_cnt++;
-    soc_show = SOCPack_DisplaySOC_pct;
+	gd->soc_show = SOCPack_DisplaySOC_pct;
     //static uint8_t cnt_2s;
     flash_light_on ^= 1;
     if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
 #if(BUCKBOOST_USED_NU6801 == 1)
     	if(g_buckboost.charging_stat == 0)
-    		flash_flag = 3;
+    		flash_flag = 3;  // 灭灯
     	else
 #endif
     		flash_flag = 1;
@@ -359,7 +360,19 @@ void ui_update(void)
     	flash_flag = 2;
     }*/
     else{
-    	flash_flag = 0;
+
+    	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] != PORT_STATE_SOURCE)
+    	{
+    		extern uint16_t key_ui_cnt;
+    		if(key_ui_cnt)
+			{
+				flash_flag = 0;
+				key_ui_cnt--;
+			}
+    		else flash_flag = 3; // 灭灯
+    	}
+    	else
+    		flash_flag = 0;
     }
 
 //    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);
@@ -395,6 +408,7 @@ void initKey(void) {
     key.is_single_click = 0;
 }
 
+uint16_t key_ui_cnt = 0;
 // double click, needs detect single click first.
 void detectSingleKey() {
     int currentLevel = _KEY_LEVEL;
@@ -414,6 +428,7 @@ void detectSingleKey() {
                     if (release_time - key.last_release_time < DOUBLE_CLICK_TIME_MS) {
                         if (!key.is_single_click) {
                             key.is_single_click = 1;
+                            key_ui_cnt = 20;
                             printk("\r\n ----------------------------//-------key single click");
                         }
                         key.click_count = 0;
@@ -422,6 +437,7 @@ void detectSingleKey() {
                     } else {
                         key.click_count = 0;
                         key.is_single_click = 0;
+                        key_ui_cnt = 20;
                         printk("\r\n ---------------------------------//------key single click");
                     }
                 }

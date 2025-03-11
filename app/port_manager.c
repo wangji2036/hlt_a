@@ -34,7 +34,7 @@ void port_manager_task_init(void)
 	osal_task_handler_reg(PORT_MANAGER_TASK, port_manager_event_handle);
 	osal_start_timerEx(PORT_ENUM_TIMER, PORT_ENUM_PERIOD, PORT_ENUM_PERIOD, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT_SCAN);
 
-	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,10,0);
+	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 
 	tcpm_stop_wpc(WPC_DELAY);

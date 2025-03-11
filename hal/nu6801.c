@@ -95,6 +95,10 @@ void hal_nu6801_buckboost_init(void)
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
 
 		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x50,&read);
+
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x6D,&read);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x6D,read | 0x02);
+
 		printk("LOCK6801 =0x%x\n",read);
 
 	}
@@ -159,7 +163,12 @@ void hal_nu6801_buckboost_usb_a_dischg(bool en)  //vac1
 
 void hal_nu6801_buckboost_vbus_dischg(bool en)
 {
-
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
+	if(en)
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x08);
+	else
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x08));
 }
 
 uint8_t hal_nu6801_buckboost_get_protect(void)

@@ -133,5 +133,6 @@ void gd_data_init(void)
 	}
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
-	gd->tx_infos.fo_exist = 1;
+//	gd->tx_infos.fo_exist = 1;
+	gd->tx_infos.fo_exist = 0;
 }

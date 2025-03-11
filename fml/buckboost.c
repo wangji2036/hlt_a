@@ -270,6 +270,20 @@ void buckboost_ir_drop_handle(void)
 	}
 }
 
+//void buckboost_ntc_handle(void)
+//{
+///*
+// *
+//*/
+//	static uint8_t ntc_cnt = 0;
+//
+//	if(g_buckboost.adc_tbat < N_NTC_LOW)
+//	{
+//
+//	}
+//
+//}
+
 void buckboost_task_event_handler(uint32_t event)
 {
 	static uint8_t get_info_step = 0;
@@ -438,8 +452,8 @@ void buckboost_task_event_handler(uint32_t event)
 			//printk("%s\n","BUCKBOOST_EVT_REGULATOR_WAITDONE");
 			//buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
 			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current);
-			if(g_buckboost.out_voltage_delay != 0)
-				osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_delay, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_DELAYDONE);
+			//if(g_buckboost.out_voltage_delay != 0)
+			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_delay, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_DELAYDONE);
 			break;
 		case BUCKBOOST_EVT_REGULATOR_DELAYDONE:
 			//printk("%s\n","BUCKBOOST_EVT_REGULATOR_DELAYDONE");
