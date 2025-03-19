@@ -136,7 +136,7 @@ void SLP_vNormalToSleep(void)
 	TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
 	TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
 	TMR0->GEN_CTRL.WORD = 0;
-	TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
+	TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 
@@ -195,7 +195,7 @@ void SLP_vSleepToSleep(void)
 {
 
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
-	TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
+	TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 
@@ -250,7 +250,7 @@ uint8_t SLP_u8SleepModeQDetect(void)
 
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 	fml_nu103x_config(_1030_CFG_LPM_DIS);
-	delay_1ms(5);
+	delay_1ms(3);
 
 
 	fml_nu103x_por_rst();
@@ -263,9 +263,9 @@ uint8_t SLP_u8SleepModeQDetect(void)
 	fml_qdt_detect((uint32_t *)&gd->tx_infos.q_fact, (uint32_t *)&gd->tx_infos.f_self);
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 	fml_nu103x_config(_1030_CFG_LPM_EN_);
-	printk("\r\n sleep: [%d] [q:%d,%d,%d] [f:%d,%d,%d] ",gd->ptx_idle_phase_status,
+/*	printk("\r\n sleep: [%d] [q:%d,%d,%d] [f:%d,%d,%d] ",gd->ptx_idle_phase_status,
 			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value,
-			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value);
+			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value);*/
 	uint8_t u8NeedToNormal = 0;
 	switch (gd->ptx_idle_phase_status)
 	{
@@ -330,12 +330,12 @@ extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
-		printk("\r\n sleep check");
+		//printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
 			case RST_SRC_1PTIMER:
-				printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
+			//	printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{
 					gd->reset_magicode = 0;
@@ -351,7 +351,7 @@ void RST_vCheck(void)
 						TMR0->SPL_CTRL.WORD &= !TMR_SPL_CTRL_WKUP_EN_Msk;
 						do
 						{
-							printk("\r\n wait to reset");
+					//		printk("\r\n wait to reset");
 							reset_cnt++;
 							delay_1ms(1000);
 						}while (reset_cnt<4);
