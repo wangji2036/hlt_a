@@ -4,6 +4,7 @@
 #include "printk.h"
 #include "delay.h"
 #include "usb_pd.h"
+#include "config.h"
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 
@@ -47,8 +48,6 @@ void hal_nu6801_buckboost_init(void)
 	uint8_t revision = hal_nu6801_buckboost_get_verision();
 	{
 		hal_nu6801_buckboost_wake_up();
-
-
 
 		hal_nu6801_buckboost_set_busiv(5000,3000);  //5v3a
 		hal_nu6801_buckboost_bat_ivcfg();
@@ -144,12 +143,21 @@ void hal_nu6801_buckboost_typeca_dischg(bool en) //vac2
 }
 void hal_nu6801_buckboost_typecb_dischg(bool en) //vac3
 {
+#ifdef POWERBANK_BACK_V02
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
+	if(en)
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x40);
+	else
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x40));
+#else
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
 	if(en)
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x10);
 	else
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x10));
+#endif
 }
 void hal_nu6801_buckboost_usb_a_dischg(bool en)  //vac1
 {
@@ -217,6 +225,13 @@ void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode)
 	if(woke_mode != BUCKBOOST_SHUTDOWM_MODE) hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,read | 0x04);
 }
 
+void hal_nu6801_disable_bubo(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,&read);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,read & (~0x04));
+}
+
 void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 {
 	//printk("%s= %d\n",__func__,vbus);
@@ -251,12 +266,23 @@ void hal_nu6801_buckboost_typeca_gate_en(bool en)
 
 void hal_nu6801_buckboost_typecb_gate_en(bool en)
 {
+
+#ifdef POWERBANK_BACK_V02
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
+	if(en)
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x04);
+	else
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x04));
+#else
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
 	if(en)
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x01);
 	else
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x01));
+#endif
+
 }
 
 void hal_nu6801_buckboost_usb_a_gate_en(bool en)
@@ -361,6 +387,21 @@ uint16_t hal_nu6801_buckboost_typeca_vbus_present(void)//vac2
 
 uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 {
+
+#ifdef POWERBANK_BACK_V02
+	uint8_t read;
+
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x01);
+	delay_1us(300);
+	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
+
+	uint32_t vbat = row* 120  * 100 / nu6801_vref;
+
+	//printk("typecb = %d\n",vbat);
+	printk("typecb = %d adc_vac1 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
+	return vbat;
+#else
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
@@ -371,8 +412,10 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
 
 	//printk("typecb = %d\n",vbat);
-	printk("typecb = %d adc_vac2 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
+	printk("typecb = %d adc_vac1 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
+#endif
+
 }
 
 uint16_t hal_nu6801_buckboost_get_iac1(void)//iac1
@@ -430,9 +473,20 @@ uint16_t hal_nu6801_buckboost_get_bus_voltage(void)
 	return vbat;
 }
 
-uint16_t hal_nu6801_buckboost_get_bat_temperature(void)
+uint16_t hal_nu6801_buckboost_get_bat_temperature(void)  //return 0.1K/bit
 {
-	return 25;// in mOhm,
+	uint8_t read;
+
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x0d | 0x00);
+	delay_1us(300);
+	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
+	uint32_t adc_value = row* 120  * 10 / nu6801_vref;
+
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_TEMP_STAT,&read);
+	if(read & 0x04) adc_value = adc_value / 22; //220uA
+	else adc_value = adc_value / 2; //220uA
+	return adc_value;
 }
 
 void hal_nu6801_buckboost_set_ovp(void)

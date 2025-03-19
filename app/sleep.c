@@ -62,7 +62,7 @@ void SLP_vNormalToSleep(void)
 
 #if(BUCKBOOST_USED_NU6801 == 1)
     // enable all 6801 INT
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x00);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x80);
 	// 6801 sleep function and firmware work-round start
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x09);//09
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H,0x1C);//0C

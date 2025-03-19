@@ -14,6 +14,7 @@
 #define USB_PD_EVT_TX_FAIL  						(0x01ul<<7)  //include tx_discard tx_fald tx_timeout
 #define USB_PD_EVT_SNK_SET_VOLTAGE  				(0x01ul<<8)  //include tx_discard tx_fald tx_timeout
 #define USB_PD_EVT_PS_TRANST 						(0x01ul<<9)
+#define USB_PD_EVT_SOURCE_SOFTRESET 				(0x01ul<<10)
 
 struct usb_pd_state_task_t
 {

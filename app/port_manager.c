@@ -712,6 +712,13 @@ void port_enum_port_snk_setcharge(void)
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 	g_port.ibat_limit = g_port.ibat_limit < 5000 ? g_port.ibat_limit : 5000;
+#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
+	if(ntc_ut_flag | ntc_ot_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit / 2;
+		g_port.ibus_limit = g_port.ibus_limit / 2;
+	}
+#endif
 #endif
 
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
@@ -724,7 +731,12 @@ void port_enum_port_snk_setcharge(void)
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 	if(nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
+	#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
+	if(ntc_stop_chrg_flag) hal_nu6801_disable_bubo();
+	#endif
 #endif
+
+
 
 	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
 

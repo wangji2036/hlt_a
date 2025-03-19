@@ -202,7 +202,7 @@ void tcpm_task_event_handler(uint32_t event)
 				if(g_buckboost.adc_iac1  < 20 )
 				{
 					usba_cnt++;
-					if(usba_cnt >= 30)
+					if(usba_cnt >= 50)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
@@ -210,6 +210,7 @@ void tcpm_task_event_handler(uint32_t event)
 						test_pin2_out(0);
 #endif
 						port_manager_set_event(PORT2_EVENT_UNCONNECT);
+						g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
 						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					}
 				}
@@ -241,7 +242,12 @@ void tcpm_task_event_handler(uint32_t event)
 #if(CONFIG_USBA_SUPPORT == 1)
 			if(usba_state == 0)
 			{
+			#if(BUCKBOOST_USED_NU6801 == 1)
+				osal_start_timerEx(TCPM_USB_A_TIMER, 20, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
+
+			#else
 				osal_start_timerEx(TCPM_USB_A_TIMER, 300, 0, USB_TASK, TCPM_EVT_USBA_DETEN);
+			#endif
 				buckboost_ops.usb_a_dischg_en(true);
 			}
 #endif
@@ -249,6 +255,7 @@ void tcpm_task_event_handler(uint32_t event)
 		case TCPM_EVT_USBA_DETEN:
 #if(CONFIG_USBA_SUPPORT == 1)
 			buckboost_ops.usb_a_dischg_en(false);
+			buckboost_ops.get_a2_state();
 			g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 			buckboost_ops.vbus_dischg_en(true);
 #ifdef TEST_PIN

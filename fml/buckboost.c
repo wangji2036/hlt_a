@@ -6,6 +6,7 @@
 #include "tcpm.h"
 #include "typec.h"
 #include "port_manager.h"
+#include "config.h"
 #include "tcpm.h"
 
 static bool pps_vbus_uv = false;
@@ -95,7 +96,7 @@ void buckboost_task_init(void)
 	g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 	g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
 	//g_buckboost.usba_state =  buckboost_ops.get_a2_state();
-	g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+	//g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 #if(CONFIG_USBA_SUPPORT == 1)
 	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
@@ -126,7 +127,7 @@ void buckboost_protection_handle(void)
 
 	#define DIS_VBAT_LOW				BIT(8)
 	#define PPS_UV						BIT(9)
-
+	#define NTC_PCT					BIT(10)
 	static uint8_t cnt = 0;
 #endif
 
@@ -146,8 +147,39 @@ void buckboost_protection_handle(void)
 	{
 		status |= VBUS_OV_FLAG;
 	}
+#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
+	static uint8_t ntc_lock_cnt = 0;
+	static uint8_t ntc_lock_flag = 0;
 
-	if(g_buckboost.adc_vbat < 2900 && g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && !g_tc[TYPEC_PORT_A].is_deadbattery)
+	if(ntc_lock_flag == 0)
+	{
+		if(g_buckboost.adc_tbat < DISG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat> DISG_NTC_UT_LOCK_VALUE)
+		{
+			ntc_lock_cnt++;
+			if(ntc_lock_cnt >= 20)
+			{
+				ntc_lock_cnt = 0;
+				ntc_lock_flag = 1;
+			}
+		}
+	}
+	else
+	{
+		if(g_buckboost.adc_tbat > DISG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat< DISG_NTC_UT_LOCK_RESTORE_VALUE)
+		{
+			ntc_lock_cnt++;
+			if(ntc_lock_cnt >= 20)
+			{
+				ntc_lock_cnt = 0;
+				ntc_lock_flag = 0;
+			}
+		}
+	}
+
+	if(ntc_lock_flag) status |= NTC_PCT;
+#endif
+
+	if(g_buckboost.adc_vbat < 2900 && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
 		cnt++;
 		if(cnt >= 10)
@@ -194,7 +226,7 @@ void buckboost_protection_handle(void)
 			printk("protect lock =0x%x\n",status);
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
-		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV))
+		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT))
 		{
 			printk("protect lock =0x%x\n",status);
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
@@ -209,6 +241,7 @@ void buckboost_protection_handle(void)
 			g_tc[PORT1_INDEX].is_in_prswap = 0;
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
 			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+			usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -270,19 +303,184 @@ void buckboost_ir_drop_handle(void)
 	}
 }
 
-//void buckboost_ntc_handle(void)
-//{
-///*
-// *
-//*/
-//	static uint8_t ntc_cnt = 0;
-//
-//	if(g_buckboost.adc_tbat < N_NTC_LOW)
-//	{
-//
-//	}
-//
-//}
+
+
+bool ntc_ut_flag = false;
+bool ntc_ot_flag = false;
+bool ntc_stop_chrg_flag = false;
+
+
+void buckboost_ntc_handle(void)
+{
+#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
+	static uint8_t ntc_ut_cnt = 0;
+	static uint8_t ntc_ot_cnt = 0;
+	static uint8_t ntc_stop_chg_cnt = 0;
+	//static uint8_t ntc_lock_cnt = 0;
+	printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat,ntc_ut_flag,ntc_ot_flag);
+
+	uint16_t ntc_ut_value;
+	uint16_t ntc_ut_restore_value;
+	uint16_t ntc_ot_value;
+	uint16_t ntc_ot_restore_value;
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		ntc_ut_value = 			CHRG_NTC_UT_VALUE;
+		ntc_ut_restore_value = 	CHRG_NTC_UT_RESTORE_VALUE;
+		ntc_ot_value = 			CHRG_NTC_OT_VALUE;
+		ntc_ot_restore_value = 	CHRG_NTC_OT_RESTORE_VALUE;
+	}
+	else
+	{
+		ntc_ut_value = 			DISG_NTC_UT_VALUE;
+		ntc_ut_restore_value = 	DISG_NTC_UT_RESTORE_VALUE;
+		ntc_ot_value = 			DISG_NTC_OT_VALUE;
+		ntc_ot_restore_value = 	DISG_NTC_OT_RESTORE_VALUE;
+	}
+
+	if(ntc_ut_flag == 0)
+	{
+		if(g_buckboost.adc_tbat > ntc_ut_value)
+		{
+			ntc_ut_cnt++;
+			if(ntc_ut_cnt >= 5)
+			{
+				ntc_ut_cnt = 0;
+				ntc_ut_flag = 1;
+
+				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				{
+					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+				}
+				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+
+				printk("\nR_ntc ut\n");
+			}
+		}
+		else
+		{
+			ntc_ut_cnt = 0;
+		}
+	}
+	else
+	{
+		if(g_buckboost.adc_tbat < ntc_ut_restore_value)
+		{
+			ntc_ut_cnt++;
+			if(ntc_ut_cnt >= 5)
+			{
+				ntc_ut_cnt = 0;
+				ntc_ut_flag = 0;
+				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				{
+					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+				}
+				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+				printk("\nR_ntc utrestore\n");
+			}
+		}
+		else
+		{
+			ntc_ut_cnt = 0;
+		}
+	}
+
+	if(ntc_ot_flag == 0)
+	{
+		if(g_buckboost.adc_tbat < ntc_ot_value)
+		{
+			ntc_ot_cnt++;
+			if(ntc_ot_cnt >= 5)
+			{
+				ntc_ot_cnt = 0;
+				ntc_ot_flag = 1;
+
+				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				{
+					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+				}
+				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+
+				printk("\nR_ntc Ot\n");
+			}
+		}
+		else
+		{
+			ntc_ot_cnt = 0;
+		}
+	}
+	else
+	{
+		if(g_buckboost.adc_tbat > ntc_ot_restore_value)
+		{
+			ntc_ot_cnt++;
+			if(ntc_ot_cnt >= 5)
+			{
+				ntc_ot_cnt = 0;
+				ntc_ot_flag = 0;
+				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				{
+					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+				}
+				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+				printk("\nR_ntc otrestore\n");
+			}
+		}
+		else
+		{
+			ntc_ot_cnt = 0;
+		}
+	}
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //ntc_stop_chg_cnt
+	{
+		if(ntc_stop_chrg_flag == 0)
+		{
+			if(g_buckboost.adc_tbat < CHRG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat> CHRG_NTC_UT_LOCK_VALUE)
+			{
+				ntc_stop_chg_cnt++;
+				if(ntc_stop_chg_cnt >= 20)
+				{
+					ntc_stop_chg_cnt = 0;
+					ntc_stop_chrg_flag = 1;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+		}
+		else
+		{
+			if(g_buckboost.adc_tbat > CHRG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat< CHRG_NTC_UT_LOCK_RESTORE_VALUE)
+			{
+				ntc_stop_chg_cnt++;
+				if(ntc_stop_chg_cnt >= 20)
+				{
+					ntc_stop_chg_cnt = 0;
+					ntc_stop_chrg_flag = 0;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+		}
+	}
+
+#endif
+}
 
 void buckboost_task_event_handler(uint32_t event)
 {
@@ -296,7 +494,6 @@ void buckboost_task_event_handler(uint32_t event)
 
 			if(get_info_step == 0)
 			{
-				g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 			#if(BUCKBOOST_USED_NU6801 == 1)
 				g_buckboost.adc_iac1 = buckboost_ops.get_adc_iac1();
 			#endif
@@ -393,6 +590,9 @@ void buckboost_task_event_handler(uint32_t event)
 			else if(get_info_step == 4)
 			{
 				//hal_nu6801_buckboost_get_main_state();
+
+				g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
+				buckboost_ntc_handle();
 			#if(BUCKBOOST_USED_NU6801 == 1)
 				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{

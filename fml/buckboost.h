@@ -135,5 +135,8 @@ bool buckboost_regulator_done(void);
 
 extern struct buckboost_s  g_buckboost;
 extern const struct buckboost_operations buckboost_ops;
+extern bool ntc_ut_flag;
+extern bool ntc_ot_flag;
+extern bool ntc_stop_chrg_flag;
 
 #endif /* BUCK_BOOST_H_ */

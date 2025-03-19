@@ -66,6 +66,7 @@ uint8_t hal_nu6801_buckboost_is_ibus_loop(void);
 void hal_nu6801_buckboost_enter_force_trickle(bool enter);
 void hal_nu6801_buckboost_set_ovp(void);
 uint8_t hal_nu6801_buckboost_get_main_stat(void);
+void hal_nu6801_disable_bubo(void);
 extern bool nu6801_dead_bat;
 
 #endif /* SW7201_H_ */

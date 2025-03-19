@@ -61,7 +61,13 @@ const uint32_t source_pdo[] =
 	[2] = PDO_FIXED(12000, 1500, 0),
 	[3] = PDO_PPS_APDO(5000,11000,2000),
 };
+
 #endif
+
+const uint32_t source_pdo_ntc[] =
+{
+	[0] = PDO_FIXED(5000, 2000, SOURCE_PDO_FIXED_FLAGS),
+};
 
 const uint32_t sink_pdo[] =
 {
@@ -630,6 +636,12 @@ static void PE_SRC_Send_Capabilities_Entry(void)
 {
 	g_usb_pd_s.caps_counter++;
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_SOURCECAPS;
+
+	if(ntc_ut_flag | ntc_ot_flag)
+		updata_pdo_of_source((uint32_t *)source_pdo_ntc,sizeof(source_pdo_ntc) / 4);
+	else
+		updata_pdo_of_source((uint32_t *)source_pdo,sizeof(source_pdo) / 4);
+
 	hal_tcpc_send_source_caps(g_usb_pd_s.src_source_pdo,g_usb_pd_s.src_tx_pdo_n);
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 }
@@ -1893,6 +1905,14 @@ void usb_pdevt_run(void)
 			usb_pd_event &= ~USB_PD_EVT_SNK_SET_VOLTAGE;
 		}
 	#endif
+	}
+	else if(usb_pd_event & USB_PD_EVT_SOURCE_SOFTRESET)
+	{
+		if(usb_pd_state == PE_SRC_Ready)
+		{
+			usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
+			usb_pd_event &= ~USB_PD_EVT_SOURCE_SOFTRESET;
+		}
 	}
 }
 
