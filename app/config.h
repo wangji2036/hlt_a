@@ -6,7 +6,7 @@
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
 #define RELE_DATE                             0x5310	//update 20250219
-#define TX_FW_VER                               0x07
+#define TX_FW_VER                               0x08
 
 //#define POWERBANK_BACK_V02
 
@@ -42,7 +42,5 @@
 #define DISG_NTC_OT_LOCK_VALUE						32	   // 58¡ãC 3.2K ±£»¤
 #define DISG_NTC_OT_LOCK_RESTORE_VALUE				38		//53¡ãC 3.8K »Ö¸´
 
-
-#define POWERBANK_BACK_V02
 
 #endif /* CONFIG_H_ */

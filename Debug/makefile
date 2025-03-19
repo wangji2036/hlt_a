@@ -60,10 +60,10 @@ PowerBankEvk.elf.asm: PowerBankEvk.elf
 	@echo ' '
 
 # Tool invocations
-PowerBankEvk.elf: $(OBJS) $(USER_OBJS) D:\Mason\power\ bank\nu17112_powerbank~~~~~new\startup\ckcpu.ld
+PowerBankEvk.elf: $(OBJS) $(USER_OBJS) D:\Mason\power\ bank\nu17112_powerbank----0319\startup\ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"D:\Mason\power bank\nu17112_powerbank~~~~~new\startup\ckcpu.ld" -o "PowerBankEvk.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"D:\Mason\power bank\nu17112_powerbank----0319\startup\ckcpu.ld" -o "PowerBankEvk.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"
