@@ -63,11 +63,13 @@ const uint32_t source_pdo[] =
 	[3] = PDO_PPS_APDO(5000,11000,2000),
 };
 
+
+#endif
+
 const uint32_t source_pdo_ntc[] =
 {
 	[0] = PDO_FIXED(5000, 2000, SOURCE_PDO_FIXED_FLAGS),
 };
-#endif
 
 const uint32_t sink_pdo[] =
 {
