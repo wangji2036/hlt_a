@@ -96,7 +96,7 @@ enum pd_bist_mode
 #define RDO_FIXED_OP_CURR(ma) ((((ma) / 10) & RDO_CURR_MASK) << RDO_FIXED_OP_CURR_SHIFT)
 #define RDO_FIXED_MAX_CURR(ma) ((((ma) / 10) & RDO_CURR_MASK) << RDO_FIXED_MAX_CURR_SHIFT)
 
-#define RDO_FIXED(idx, op_ma, max_ma, flags) (RDO_OBJ(idx) | (flags) | RDO_FIXED_OP_CURR(op_ma) | RDO_FIXED_MAX_CURR(max_ma))
+#define RDO_FIXED(idx, op_ma, max_ma, flags) (RDO_OBJ(idx) | (flags) | RDO_FIXED_OP_CURR(op_ma) | RDO_FIXED_MAX_CURR(max_ma) | RDO_NO_SUSPEND)
 
 
 
@@ -165,7 +165,7 @@ enum pd_bist_mode
 #define PDO_PPS_APDO(min_mv, max_mv, max_ma)                \
     (PDO_TYPE(PDO_TYPE_APDO) | PDO_APDO_TYPE(APDO_TYPE_PPS) |   \
     PDO_PPS_APDO_MIN_VOLT(min_mv) | PDO_PPS_APDO_MAX_VOLT(max_mv) | \
-    PDO_PPS_APDO_MAX_CURR(max_ma) | PDO_PPS_POWER_LIMITED)
+    PDO_PPS_APDO_MAX_CURR(max_ma))
 
 #define PD_PPS_FLAGS_OMF                      (1 << 3)
 #define PD_PPS_FLGAS_PTF(raw)                 ((raw & 0x06) >> 1)

@@ -675,6 +675,27 @@ void wpc_idle_cloak_phase_process(void)
 
 void wpc_idle_phase_process(void)
 {
+	static uint8_t bat_low_sleep = 0;
+
+	if(gd->bat_dead_flag)
+	{
+		bat_low_sleep++;
+
+		printk("low cnt [%d]",bat_low_sleep);
+		if(bat_low_sleep >= 5)
+		{
+			bat_low_sleep = 0;
+			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
+		}
+	}
+	else
+	{
+		bat_low_sleep = 0;
+	}
+
+	if(gd->bat_dead_flag) return;
+
+
 	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && (gd->ptx_idle_phase_status == WPC_IDLE_STAT_STANDBY
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_XER_FOD || 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_QDT_FOD
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_LAR_MET))
@@ -769,7 +790,7 @@ void wpc_idle_phase_process(void)
 		printk("back to 128k-2\r\n");
 		wpc_idle_dig_ping_init_360K();
 	}
-	fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P8);// set to 1.8v again, for better DDM
+
 	printk("\r\n ping: [%d] [%d %d] [%d %d %d %d]", gd->tx_infos.dig_ping_type, gd->vbus, gd->vpwr,
 			gd->pid_volt, 144000000 / gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
 

@@ -370,11 +370,18 @@ struct gd_t
 	 uint8_t alt_test_last_rp8_value;
 	 uint8_t alt_test_1st_rp8_value;
 
+
+
 	 uint8_t reset_magicode;
 	 uint8_t idle_to_sleep_cnt;
 	 uint8_t sleep_qdt_complete_charg_count;
 	 uint8_t sleep_qdt_fod_rec_count;
 	 uint8_t soc_show;
+
+	 uint8_t rd0_cnt;
+	 uint8_t rd1_cnt;
+
+	 uint8_t bat_dead_flag;
 };
 
 extern volatile struct ap_t *ap;

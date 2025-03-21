@@ -278,6 +278,7 @@ void usb_dpdm_select(uint8_t tc_index);
 #define DPDM_EVT_SNK_QC_DONE    		osal_event_declare(20)
 #define DPDM_EVT_AFC_SCP_OUT    		osal_event_declare(21)
 #define DPDM_EVT_SNK_HVDCP_FAIL    		osal_event_declare(22)
+#define DPDM_EVT_SNK_QC12V_DONE    		osal_event_declare(23)
 
 
 
@@ -289,6 +290,7 @@ enum dpdm_snk_type
 	BC1P2_CDP,
 	BC1P2_DCP,
 	BC1P2_HVDCP,
+	BC1P2_QC12V,
 	BC1P2_QC9V,
 };
 

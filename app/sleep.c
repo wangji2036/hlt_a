@@ -25,18 +25,22 @@
 #include"fm1210.h"
 #include"ask.h"
 #include"bpwm.h"
+#include "usbpd_config.h"
 #include"bsp.h"
 //uint8_t reset_magic_code;
 
 void SLP_vNormalToSleep(void)
 {
 	printk("\r\n enter sleep");
+
 	hal_wdt_feed();
 	//WDT->CTRL.WORD &= !WDT_CTRL_MODU_EN_Msk;
 	//hal_wdt_init();
 	//WDT->CTRL.WORD = 0;
 	fm1210_sleep();
 
+	gd->rd0_cnt = 0;
+	gd->rd1_cnt = 0;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	/* shut down module to lower power--- start*/
 	//hal_wdt_stop();
@@ -59,11 +63,14 @@ void SLP_vNormalToSleep(void)
 	DPDM->QC_SRC_CTRL.WORD = 0;
 	DPDM->SOURCE_CTRL.WORD = 0;
 
+	hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
+	hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
 
 #if(BUCKBOOST_USED_NU6801 == 1)
     // enable all 6801 INT
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x80);
 	// 6801 sleep function and firmware work-round start
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,0x00);//09
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x09);//09
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H,0x1C);//0C
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,0x50);//0D
@@ -78,6 +85,7 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0xCB);//
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0xE2);//
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0x6A);//
+
 	hal_wdt_feed();
 	delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x63,0x01);//
@@ -87,6 +95,7 @@ void SLP_vNormalToSleep(void)
 	hal_wdt_feed();
 	delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,0x41);//10
+
 	/* 6801 sleep function and firmware work-round end*/
 /*#else if (BUCKBOOST_USED_SW7201 ==1)
 
@@ -105,8 +114,6 @@ void SLP_vNormalToSleep(void)
     hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Mode_Control,0);
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x00);
     hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x01);
-
-
 #endif
     TCPC->CCA_CTRL.WORD = 0;
     TCPC->CCB_CTRL.WORD = 0;
@@ -117,24 +124,44 @@ void SLP_vNormalToSleep(void)
 	//SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_TCPC_WKUP_DIS_Pos;
 	//CCA
 	  //(Enable CC, Disable RDB, Enter low power mode)
-	TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-	  //(Enable DRP)
-	TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
-	TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
-	TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
-	TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+
+
+	if(!gd->bat_dead_flag)
+	{
+		TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+		TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+		TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+		  //(Enable DRP)
+		TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
+		TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
+		TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
+		TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+	}
+	else
+	{
+
+	}
 	//CCB
 	  //(Enable CC, Disable RDB, Enter low power mode)
-	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-	  //(Enable DRP)
-	TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
-	TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
-	TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
-	TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+
+	if(!gd->bat_dead_flag)
+	{
+		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+		  //(Enable DRP)
+		TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
+		TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
+		TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
+		TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+	}
+	else
+	{
+		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 1;
+		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
+		printk("\r\n sleep Rd");
+	}
+
 	TMR0->GEN_CTRL.WORD = 0;
 	TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
@@ -195,11 +222,19 @@ void SLP_vSleepToSleep(void)
 {
 
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
-	TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
+	if(!gd->bat_dead_flag)
+		TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
+	else
+	{
+		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 1;
+		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
+		printk("\r\n batlow");
+		TMR0->LOAD_CNT.WORD = 16 * 373 * 1 - 1; //500ms
+	}
 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
-
 	printk("\r\n sleep again");
+
 	hal_wdt_feed();
 	GPB->I_EN.BITS.PIN7 = 0;
 	GPB->O_EN.BITS.PIN7 = 0;
@@ -330,16 +365,65 @@ extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
-		//printk("\r\n sleep check");
+		printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
 			case RST_SRC_1PTIMER:
-			//	printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
+				printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{
 					gd->reset_magicode = 0;
 					printk("\r\n reset go on");
+				}
+				else if(gd->bat_dead_flag)
+				{
+					printk("\r\n set Rd");
+					TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
+					TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+					hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RD);
+					TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+					TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+					hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RD);
+
+					delay_1us(500);
+					enum tc_cc_status cc1,cc2;
+					hal_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
+					extern bool tc_snk_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
+				    if (tc_snk_is_connected(cc1,cc2))
+				    {
+				    	gd->rd0_cnt++;
+				    	printk("\r\n rd0_cnt = %d\n",gd->rd0_cnt);
+				    	if(gd->rd0_cnt >= 10) break;
+				    	else
+						{
+				    		TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1;
+						}
+				    }
+				    else
+				    {
+				    	gd->rd0_cnt = 0;
+				    	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1;
+				    }
+
+
+					hal_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
+				    if (tc_snk_is_connected(cc1,cc2))
+				    {
+				    	gd->rd1_cnt++;
+				    	printk("\r\n rd1_cnt = %d\n",gd->rd1_cnt);
+				    	if(gd->rd1_cnt >= 10) break;
+				    	else
+						{
+				    		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1;
+						}
+				    }
+				    else
+				    {
+				    	gd->rd1_cnt = 0;
+				    	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1;
+				    }
+				    SLP_vSleepToSleep();
 				}
 				else
 				{
@@ -351,7 +435,7 @@ void RST_vCheck(void)
 						TMR0->SPL_CTRL.WORD &= !TMR_SPL_CTRL_WKUP_EN_Msk;
 						do
 						{
-					//		printk("\r\n wait to reset");
+							printk("\r\n wait to reset");
 							reset_cnt++;
 							delay_1ms(1000);
 						}while (reset_cnt<4);
@@ -359,7 +443,7 @@ void RST_vCheck(void)
 					else
 					{
 					//	printk("\r\n sleep again");
-					SLP_vSleepToSleep();
+						SLP_vSleepToSleep();
 					//	SLP_vNormalToSleep();
 					}
 				}
@@ -367,12 +451,19 @@ void RST_vCheck(void)
 			case RST_SRC_PROTOCOL:
 				printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
+				if(gd->bat_dead_flag)
+				{
+					SLP_vSleepToSleep();
+				}
 				break;
 			case RST_SRC_GPIO:
 				printk("\r\n sleep check- GPIO");
-				key_ui_cnt = 20;
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
-				//SLP_vSleepToSleep();
+				if(gd->bat_dead_flag)
+				{
+					SLP_vSleepToSleep();
+				}
+				key_ui_cnt = 20;
 				break;
 			case RST_SRC_WARMUP_DONE:
 			default:

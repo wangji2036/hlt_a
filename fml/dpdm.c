@@ -266,24 +266,31 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
-			//printk("Set Qc 9V\n");
-			//osal_stop_timerEx(DPDM_SINK_TIMER);
-			//DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x01;
-			qc2_set_volt(9000);
-			bc12_type = BC1P2_QC9V;
-			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_DONE);
+			bc12_type = BC1P2_HVDCP;
+			qc2_set_volt(12000);
+			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);
 			break;
-
-		case DPDM_EVT_SNK_QC_DONE:
-			printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
-			if(g_buckboost.adc_vbus >= 8000)
+		case DPDM_EVT_SNK_QC12V_DONE:
+			printk("Set Qc 12V=%d\n",g_buckboost.adc_vbus);
+			if(g_buckboost.adc_vbus >= 10500)
 			{
-				bc12_type = BC1P2_QC9V;
+				bc12_type = BC1P2_QC12V;
 				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 			}
 			else
 			{
-				bc12_type = BC1P2_HVDCP;
+				qc2_set_volt(9000);
+				osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_DONE);
+			}
+			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
+			break;
+
+		case DPDM_EVT_SNK_QC_DONE:
+			printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
+			if(g_buckboost.adc_vbus >= 7500)
+			{
+				bc12_type = BC1P2_QC9V;
+				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 			}
 			qc2_set_volt(5000);
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);

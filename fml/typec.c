@@ -110,12 +110,6 @@ static void TC_SNK_Unattached_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,9000,3000,0,0);
-	hal_tcpc_set_gate_en(tc->tc_index,false);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
     tc->tc_timer_cnt = 0;
     tc->try_snk_cnt = 0;
     usb_tc_set_state(tc,TC_SNK_Unattached,exit_state);
@@ -142,7 +136,7 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
     else
     {
     	tc->tc_timer_cnt++;
-    	if(tc->tc_timer_cnt >= 10)
+    	if(tc->tc_timer_cnt >= 28)
     	{
     		tc->tc_timer_cnt = 0;
     		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
@@ -158,12 +152,6 @@ static void TC_SNK_AttachWait_Entry(struct tc_s * tc)
 	tc->tc_timer_cnt = 0;
 	usb_tc_set_state(tc,TC_SNK_AttachWait,exit_state);
 	hal_tcpc_port_dummyload_en(tc->tc_index,true);
-	buckboost_ops.vbus_dischg_en(true);
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
 }
 
 static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
@@ -182,7 +170,6 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
     else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
     {
     	hal_tcpc_port_dummyload_en(tc->tc_index,false);
-    	buckboost_ops.vbus_dischg_en(false);
         if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
         {
 			#if(CONFIG_TC_TRY_SOURCE_SUPPORT_EN)
@@ -210,9 +197,6 @@ static void TC_SNK_Attached_Entry(struct tc_s * tc)
 
 
     tc->tc_timer_cnt = 0;
-#ifndef MULTI_PORT_ALT_MODE
-    hal_tcpc_set_gate_en(tc->tc_index,true);
-#endif
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
     usb_tc_set_state(tc,TC_SNK_Attached,exit_state);
@@ -239,14 +223,11 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		tc->tc_timer_cnt++;
 		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
 		{
-		#ifndef MULTI_PORT_ALT_MODE
-			hal_tcpc_set_gate_en(tc->tc_index,false);
-		#endif
-
 			if(hal_tcpc_vbus_is_removed(tc->tc_index))
 			{
 				usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 				usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
+				hal_tcpc_set_gate_en(tc->tc_index,false);
 				if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
 
 				//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
@@ -274,12 +255,6 @@ static void TC_SRC_Unattached_Entry(struct tc_s * tc)
     hal_tcpc_set_vconn(tc->tc_index,false);
 	hal_tcpc_set_pd_rx(tc->tc_index,EN_SOP | EN_HARD_RESET | EN_SOP1 ,false);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SOURCE,TYPEC_HOST);
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_gate_en(tc->tc_index,false);
-	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,9000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
     tc->tc_timer_cnt = 0;
     usb_tc_set_state(tc,TC_SRC_Unattached,exit_state);
 }
@@ -301,7 +276,7 @@ static void TC_SRC_Unattached_Exit(struct tc_s * tc)
     else
     {
     	tc->tc_timer_cnt++;
-    	if(tc->tc_timer_cnt >= 10)
+    	if(tc->tc_timer_cnt >= 58)
     	{
     		tc->tc_timer_cnt = 0;
     		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
@@ -321,11 +296,7 @@ static void TC_SRC_AttachWait_Entry(struct tc_s * tc)
         tc->polarity = TYPEC_POLARITY_CC1;
     else
     	tc->polarity = TYPEC_POLARITY_CC2;
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
+
 	usb_tc_set_state(tc,TC_SRC_AttachWait,exit_state);
 }
 static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
@@ -371,10 +342,7 @@ static void TC_SRC_Attached_Entry(struct tc_s * tc)
 {
 	tc->tc_timer_cnt = 0;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_gate_en(tc->tc_index,true);
-	osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
-#endif
+
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
     tc->try_src_cnt = 5;
     if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
@@ -399,6 +367,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			//usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 			usb_tc_set_state(tc,TC_TryWAIT_SNK,enter_state);
 			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+			hal_tcpc_set_gate_en(tc->tc_index,false);
 			hal_tcpc_port_dummyload_en(tc->tc_index,true);
             if(tc->tc_index == 0)
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);
@@ -468,12 +437,6 @@ static void TC_ACCESSORY_Attached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 {
-#ifndef MULTI_PORT_ALT_MODE
-    hal_tcpc_set_gate_en(tc->tc_index,false);
-	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,9000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
     hal_tcpc_set_vconn(tc->tc_index,false);
 	hal_tcpc_set_pd_rx(tc->tc_index,EN_SOP | EN_HARD_RESET | EN_SOP1 ,false);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
@@ -569,11 +532,7 @@ static void TC_Try_SRC_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
 	tc->tc_timer_cnt = 0;
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
+
 	usb_tc_set_state(tc,TC_Try_SRC,exit_state);
 }
 
@@ -609,11 +568,6 @@ static void TC_TryWAIT_SNK_Entry(struct tc_s * tc)
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 	tc->tc_timer_cnt = 0;
 	usb_tc_set_state(tc,TC_TryWAIT_SNK,exit_state);
-#ifndef MULTI_PORT_ALT_MODE
-	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
-	hal_tcpc_pd_set_bus_iv(tc->tc_index,5000,3000,0,0);
-	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-#endif
 }
 static void TC_TryWAIT_SNK_Exit(struct tc_s * tc)
 {
@@ -629,7 +583,7 @@ static void TC_TryWAIT_SNK_Exit(struct tc_s * tc)
     {
     	if(tc_snk_is_disconnected(tc) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
 		{
-    		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+    		usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 		}
 		else if(tc_snk_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
 		{

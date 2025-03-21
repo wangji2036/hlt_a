@@ -8,6 +8,7 @@
 #include "usb_pd.h"
 #include "usbpd_config.h"
 #include "port_manager.h"
+#include "ntc.h"
 
 #define SINK_PDO_MATCH_MODE_VOLTAGE					0
 #define SINK_PDO_MATCH_MODE_VOLTAGE_CURRENT			1
@@ -62,12 +63,11 @@ const uint32_t source_pdo[] =
 	[3] = PDO_PPS_APDO(5000,11000,2000),
 };
 
-#endif
-
 const uint32_t source_pdo_ntc[] =
 {
 	[0] = PDO_FIXED(5000, 2000, SOURCE_PDO_FIXED_FLAGS),
 };
+#endif
 
 const uint32_t sink_pdo[] =
 {
@@ -429,15 +429,7 @@ static void PE_SNK_Ready_Entry(void)
 	}
 	g_usb_pd_s.explicit_contract = 1;
 
-#ifndef MULTI_PORT_ALT_MODE
-	usb_pd_snk_dump_pdoinfo();
-	uint16_t ibus_limit = rdo_op_current(g_usb_pd_s.snk_rdo);
-	uint16_t ibat_limit = ibus_limit * pdo_fixed_voltage(g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) -1])/ 4000;
-	if(ibat_limit > 2000) ibat_limit = 2000;
-	usbpd_printk("ibat_limit =%d ibus_limit =%d\n",ibat_limit,ibus_limit);
-	hal_tcpc_set_snk_charge_current(ibat_limit,ibus_limit);
-	usb_pd_set_state(PE_SNK_Ready,exit_state);
-#endif
+
 
 	usb_pd_set_state(PE_SNK_Ready,exit_state);
 
@@ -459,10 +451,7 @@ static void PE_SNK_Ready_Exit(void)
 	{
 		usb_pd_set_state(PE_SNK_Select_Capability,enter_state);
 	}
-#ifndef MULTI_PORT_ALT_MODE
-	if(!g_usb_pd_s.is_in_pps)
-		usb_pd_requsrt_voltage(6,10000,2000);
-#endif
+
 }
 
 static void PE_SNK_Hard_Reset_Entry(void)
@@ -554,10 +543,10 @@ static void PE_SNK_Send_Not_Supported_Exit(void)
 
 static void PE_SNK_Give_Sink_Cap_Entry(void)
 {
-	hal_tcpc_send_snk_caps(g_usb_pd_s.snk_sink_pdo,g_usb_pd_s.snk_tx_pdo_n);
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_GIVESNKCAP;
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 	usb_pd_set_state(PE_SNK_Give_Sink_Cap,exit_state);
+	hal_tcpc_send_snk_caps(g_usb_pd_s.snk_sink_pdo,g_usb_pd_s.snk_tx_pdo_n);
 }
 
 static void PE_SNK_Give_Sink_Cap_Exit(void)
@@ -693,10 +682,7 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
             if(rdo_op_current < 1000) rdo_op_current = 1000;
             voltage = rqt->request.PPS_BITS.output_voltage * 20;
             if ((voltage > pdo->source_pdo[index - 1].BITS.PPS_BITS.max_voltage * 100) || (voltage < pdo->source_pdo[index - 1].BITS.PPS_BITS.min_voltage * 100)) return check_pps_voltage_error;
-			current = rdo_op_current;
-//		#if(BUCKBOOST_USED_NU6801 == 1)
-//			current = (voltage * current / 1000) > 18000 ? 18000 * 1000/voltage :current;
-//		#endif
+			current = rdo_op_current + 250;
 			g_usb_pd_s.is_in_pps = 1;
             break;
     }
@@ -837,6 +823,7 @@ static void PE_SRC_Hard_Reset_Received_Exit(void)
 static void PE_SRC_Transition_to_default_Entry(void)
 {
 	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
+	hal_tcpc_port_dummyload_en(g_tcpc.tc_port_map,true);
 	hal_tcpc_set_vconn(g_tcpc.tc_port_map,false);
 	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
 	hal_tcpc_pd_phy_disable();
@@ -870,7 +857,7 @@ static void PE_SRC_Give_Source_Cap_Entry(void)
 
 static void PE_SRC_Give_Source_Cap_Exit(void)
 {
-	if(usb_pd_timer_is_timeout(SourceHardResetRecoverTimer))
+	if(usb_pd_timer_is_timeout(SenderResponseTimer))
     {
 		usb_pd_set_state(PE_SRC_Hard_Reset,enter_state);
     }
@@ -889,13 +876,13 @@ static void PE_SRC_Wait_New_Capabilities_Exit(void)
 
 static void PE_SRC_Soft_Reset_Entry(void)
 {
+	usb_pd_reset_prl();
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_ACCEPT;
 	hal_tcpc_send_ctrl_mgs(PD_CTRL_ACCEPT);
 }
 
 static void PE_SRC_Soft_Reset_Exit(void)
 {
-	usb_pd_reset_prl();
 	usb_pd_set_state(PE_SRC_Send_Capabilities,enter_state);
 }
 
@@ -1034,7 +1021,9 @@ static void PE_BIST_Test_Mode_Exit(void)
 
 static void PE_Give_Battery_Status_Entry(void)
 {
-	tcpc_pd_send_bat_capability();
+	uint8_t bat_index;
+	bat_index = g_pd_packet.msg.ext_msg.data[0];
+	tcpc_pd_send_bat_capability(bat_index);
 	usb_pd_set_state(PE_Give_Battery_Status,exit_state);
 }
 
@@ -1193,15 +1182,17 @@ static void PE_PRS_SNK_SRC_Assert_Rp_Entry(void)
 {
 	hal_tcpc_set_cc(g_tcpc.tc_port_map,TYPEC_CC_RP_3_0);
 	usb_pd_set_state(PE_PRS_SNK_SRC_Assert_Rp,exit_state);
+	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
 	g_usb_pd_s.pe_timer_cnt = 0;
 }
 
 static void PE_PRS_SNK_SRC_Assert_Rp_Exit(void)
 {
 	g_usb_pd_s.pe_timer_cnt++;
-	if(g_usb_pd_s.pe_timer_cnt >= 10) // wait 10ms for Rp
+	if(g_usb_pd_s.pe_timer_cnt >= 20) // wait 10ms for Rp
 	{
-		usb_pd_set_state(PE_PRS_SNK_SRC_Source_on,exit_state);
+		usb_pd_set_state(PE_PRS_SNK_SRC_Source_on,enter_state);
 	}
 }
 
@@ -1267,7 +1258,7 @@ void usb_pd_sop_data_msg_handle(void)
 			break;
 		case PD_DATA_REQUEST:
 		#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
-			if(usb_pd_state == PE_SRC_Send_Capabilities || usb_pd_state == PE_SRC_Ready)
+			if(usb_pd_state == PE_SRC_Send_Capabilities || usb_pd_state == PE_SRC_Ready || usb_pd_state == PE_SRC_Give_Source_Cap)
 			{
 				g_usb_pd_s.nego_revision = g_pd_packet.hdr.BITS.spec_revision < g_usb_pd_s.nego_revision ? g_pd_packet.hdr.BITS.spec_revision : g_usb_pd_s.nego_revision;
 				usb_pd_set_state(PE_SRC_Negotiate_Capability,enter_state);
@@ -1679,7 +1670,6 @@ void usb_pd_sop_ctrl_msg_handle(void)
 		case PD_CTRL_GET_SOURCE_CAP_EXT:
 		case PD_CTRL_GET_STATUS:
 		case PD_CTRL_FR_SWAP:
-
 		case PD_CTRL_GET_COUNTRY_CODES:
 		case PD_CTRL_GET_SOURCE_INFO:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -1999,24 +1989,34 @@ void usb_pd_run(void)
 	}
 
 
-	if(usb_pd_state_last != usb_pd_state || usb_pd_substate != usb_pd_substate_last) usbpd_printk("pe_state = %d %d\n", usb_pd_state,usb_pd_substate);
-	usb_pd_state_last = usb_pd_state;
-	usb_pd_substate_last = usb_pd_substate;
+
 
 	//usbpd_printk("tx_discard_cnt = %d \n ", tx_discard_cnt);
 
 	if(g_usb_pd_s.pe_prl_busy) return;
 
-	if(usb_pd_substate == enter_state)
+	uint8_t pd_prv_state;
+	uint8_t pd_prv_substate;
+	do
 	{
-		//if(usb_pd_tasks_table[usb_pd_state].enter_cb != NULL)
-			usb_pd_tasks_table[usb_pd_state].enter_cb();
-	}
-	else
-	{
-		//if(usb_pd_tasks_table[usb_pd_state].exit_cb != NULL)
-			usb_pd_tasks_table[usb_pd_state].exit_cb();
-	}
+		if(usb_pd_state_last != usb_pd_state || usb_pd_substate != usb_pd_substate_last) usbpd_printk("pe_state = %d %d\n", usb_pd_state,usb_pd_substate);
+		usb_pd_state_last = usb_pd_state;
+		usb_pd_substate_last = usb_pd_substate;
+
+		pd_prv_state = usb_pd_state;
+		pd_prv_substate = usb_pd_substate;
+		if(usb_pd_substate == enter_state)
+		{
+			//if(usb_pd_tasks_table[usb_pd_state].enter_cb != NULL)
+				usb_pd_tasks_table[usb_pd_state].enter_cb();
+		}
+		else
+		{
+			//if(usb_pd_tasks_table[usb_pd_state].exit_cb != NULL)
+				usb_pd_tasks_table[usb_pd_state].exit_cb();
+		}
+
+	} while(usb_pd_state != pd_prv_state ||  usb_pd_substate != pd_prv_substate);
 }
 
 typedef void (*callback)(void);
@@ -2274,7 +2274,7 @@ void transmit_fail_cb(void)
 
 	g_usb_pd_s.tx_sop_msgid++;
 	g_usb_pd_s.tx_sop_msgid = g_usb_pd_s.tx_sop_msgid & 0x07;
-
+	g_usb_pd_s.pe_prl_busy = 0;
 	switch(usb_pd_state)
 	{
 	#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
@@ -2285,7 +2285,9 @@ void transmit_fail_cb(void)
 	#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 		case PE_SRC_Send_Capabilities:
 			if(g_usb_pd_s.explicit_contract == 0)
+			{
 				usb_pd_set_state(PE_SRC_Discovery,enter_state);
+			}
 			else
 			{
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -2302,6 +2304,9 @@ void transmit_fail_cb(void)
 				usb_pd_set_state(PE_SNK_Send_Soft_Reset,enter_state);
 			#endif
 			}
+			break;
+		case PE_SRC_Send_Soft_Reset:
+			usb_pd_set_state(PE_SRC_Hard_Reset,enter_state);
 			break;
 	#endif
 
@@ -2333,7 +2338,7 @@ void transmit_fail_cb(void)
 		#endif
 			break;
 	}
-	g_usb_pd_s.pe_prl_busy = 0;
+
 }
 
 void transmit_discard_cb(void)
@@ -2355,6 +2360,9 @@ void transmit_discard_cb(void)
 	#endif
 
 	#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
+		case PE_SRC_Send_Soft_Reset:
+			usb_pd_set_state(PE_SRC_Hard_Reset,enter_state);
+			break;
 		case PE_PRS_SRC_SNK_Wait_Source_on:
 		case PE_PRS_SNK_SRC_Source_on:
 			g_tc[g_tcpc.tc_port_map].is_in_prswap = false;
@@ -2478,10 +2486,10 @@ void __attribute__((isr)) USBPD_IRQHandler(void)
 		if(int_flag & (0x01<<14))
 		{
 			transmit_success_cb[g_usb_pd_s.pe_tran_cb_type]();
+			g_usb_pd_s.pe_prl_busy = 0;
 			TCPC->INT_FLAG.BITS.PHY_TX_SUCCESSFUL_FLAG = 0x01;
 			g_usb_pd_s.tx_sop_msgid++;
 			g_usb_pd_s.tx_sop_msgid = g_usb_pd_s.tx_sop_msgid & 0x07;
-			g_usb_pd_s.pe_prl_busy = 0;
 		}
 
 		int_flag = TCPC->INT_FLAG.WORD;

@@ -35,6 +35,7 @@ enum {
 
 	PORT_ENUM_TIMER = 24,
 	PORT_CONNECT_TIMER = 25,
+	BUCKBOOST_ADC_TIMER = 26,
 	/////////////
 	MAX_TIMER,
 };

@@ -4,8 +4,8 @@
 #include "typdef.h"
 #include "osal.h"
 
-#define BUCKBOOST_USED_SW7201		0
-#define BUCKBOOST_USED_NU6801		1
+#define BUCKBOOST_USED_SW7201		1
+#define BUCKBOOST_USED_NU6801		0
 
 #if(BUCKBOOST_USED_SW7201 == 1)
 	#define BAT_DEAD_BATTER_V   	6000
@@ -90,14 +90,14 @@ struct buckboost_operations
 	uint16_t (*get_typecb_vbus_present)(void);
 	uint8_t (*get_charge_flag)(void);
 	uint16_t (*get_adc_iac1)(void);
-	void (*set_ovp)(void);
+	void (*set_ovp)(uint16_t volt);
 #endif
 
 };
 
 
 #define BUCKBOOST_TIME_PERIOD									23
-#define BUCKBOOST_VBUS_PERIOD									10
+#define BUCKBOOST_VBUS_PERIOD									9
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)
 #define BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT    					osal_event_declare(1)
@@ -117,6 +117,7 @@ struct buckboost_operations
 #define BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS    				osal_event_declare(14)
 #define BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS    				osal_event_declare(15)
 
+#define BUCKBOOST_EVT_ADC_PERIOD    							osal_event_declare(29)
 #define BUCKBOOST_EVT_VBUS_PERIOD    							osal_event_declare(30)
 #define BUCKBOOST_EVT_TIME_PERIOD    							osal_event_declare(31)
 
@@ -135,8 +136,8 @@ bool buckboost_regulator_done(void);
 
 extern struct buckboost_s  g_buckboost;
 extern const struct buckboost_operations buckboost_ops;
-extern bool ntc_ut_flag;
-extern bool ntc_ot_flag;
-extern bool ntc_stop_chrg_flag;
+
 
 #endif /* BUCK_BOOST_H_ */
+
+

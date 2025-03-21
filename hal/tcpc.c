@@ -445,6 +445,7 @@ void hal_tcpc_pd_phy_disable(void)
 
 void hal_tcpc_send_hardreset(void)
 {
+	usbpd_printk("HARDRESET SENT\n");
 	transmit_pkt.msg_len = 0;
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_HARDRESER;
 	hal_tcpc_pkt_transmit(Transmit_HardReset,&transmit_pkt);
@@ -635,7 +636,7 @@ void tcpc_pd_send_pps_status(void)
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 
-void tcpc_pd_send_bat_capability(void)
+void tcpc_pd_send_bat_capability(uint8_t bat_index)
 {
 	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
 	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_BATT_CAP, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 3);
@@ -646,13 +647,16 @@ void tcpc_pd_send_bat_capability(void)
 	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
 	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
 	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
-	transmit_pkt.msg.ext_msg.data[0] = (uint8_t)USBPD_VID;
-	transmit_pkt.msg.ext_msg.data[1] = (USBPD_VID >> 8);
+	transmit_pkt.msg.ext_msg.data[0] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[1] = 0XFF;
 	transmit_pkt.msg.ext_msg.data[4] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[5] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[6] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[7] = 0xFF;
-	transmit_pkt.msg.ext_msg.data[8] = 00;
+	if(bat_index == 0)
+		transmit_pkt.msg.ext_msg.data[8] = 0x00;
+	else
+		transmit_pkt.msg.ext_msg.data[8] = 0x01;
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 

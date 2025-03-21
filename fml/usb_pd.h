@@ -25,9 +25,9 @@ struct usb_pd_state_task_t
 #define N_HARDRESET_COUNTER						50
 #define N_CAPS_COUNT							50
 
-#define tSinkWaitCapTime						2380
+#define tSinkWaitCapTime						365
 #define tChunkingNotSupportedTime				40
-#define tSenderResponseTime 					24
+#define tSenderResponseTime 					28
 #define tPSTransitionTime						500
 #define tSinkPPSPeriodicTime					14000
 #define tSourceCapabilityTime					150
@@ -63,7 +63,7 @@ enum usb_pd_state_e
 // source port
 #if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 	PE_SRC_Startup,
-	PE_SRC_Discovery,
+	PE_SRC_Discovery,		//17
 	PE_SRC_Send_Capabilities,
 	PE_SRC_Negotiate_Capability,
 	PE_SRC_Transition_Supply,

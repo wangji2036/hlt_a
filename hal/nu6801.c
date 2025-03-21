@@ -7,7 +7,7 @@
 #include "config.h"
 
 #if(BUCKBOOST_USED_NU6801 == 1)
-
+uint8_t nu6801_adc_chennel;
 bool nu6801_dead_bat = false;
 
 #define BAT_CELL_FULL_VOLT   4200
@@ -333,6 +333,39 @@ void hal_nu6801_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 
 uint16_t nu6801_vref = 1200;
 
+void hal_nu6801_buckboost_set_adc_channel(uint8_t channel)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
+
+	nu6801_adc_chennel = channel;
+
+	switch(channel)
+	{
+		case NU6801_ADC_VBAT:
+			read = (read & 0xE0) | 0x010 | 0x00;
+			break;
+		case NU6801_ADC_IBAT:
+			read = (read & 0xE0) | 0x010 | 0x07;
+			break;
+		case NU6801_ADC_VBUS:
+			read = (read & 0xE0) | 0x010 | 0x04;
+			break;
+		case NU6801_ADC_IBUS:
+			read = (read & 0xE0) | 0x010 | 0x05;
+			break;
+		case NU6801_ADC_IAC1:
+			read = (read & 0xE0) | 0x010 | 0x08;
+			break;
+		case NU6801_ADC_VREF:
+			read = (read & 0xE0) | 0x010 | 0x0F;
+			break;
+	}
+
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, read);
+	osal_start_timerEx(BUCKBOOST_ADC_TIMER, 2, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_ADC_PERIOD);
+}
+
 int16_t hal_nu6801_buckboost_get_bus_current(void)
 {
 	uint8_t read;
@@ -341,6 +374,7 @@ int16_t hal_nu6801_buckboost_get_bus_current(void)
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 25 / nu6801_vref;
+	nu6801_adc_chennel = NU6801_ADC_IBUS;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		return vbat;
 	else
@@ -364,6 +398,7 @@ int16_t hal_nu6801_buckboost_get_bat_current(void)
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
+	nu6801_adc_chennel = NU6801_ADC_IBAT;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		return vbat;
 	else
@@ -380,7 +415,7 @@ uint16_t hal_nu6801_buckboost_typeca_vbus_present(void)//vac2
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
-
+	nu6801_adc_chennel = NU6801_ADC_OTHER;
 	printk("typeca = %d adc_vac2 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
 }
@@ -410,7 +445,7 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
-
+	nu6801_adc_chennel = NU6801_ADC_OTHER;
 	//printk("typecb = %d\n",vbat);
 	printk("typecb = %d adc_vac1 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
@@ -428,7 +463,7 @@ uint16_t hal_nu6801_buckboost_get_iac1(void)//iac1
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 30 * 15  / nu6801_vref;
-
+	nu6801_adc_chennel = NU6801_ADC_IAC1;
 	printk("adc_ivac1 = %d row = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
 }
@@ -458,7 +493,7 @@ uint16_t hal_nu6801_buckboost_get_bat_voltage(void)
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 
 	uint32_t vbat = row* 120  * 25 / nu6801_vref;
-
+	nu6801_adc_chennel = NU6801_ADC_VBAT;
 	//printk("vbat = %d adc_vbat = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
 }
@@ -470,6 +505,7 @@ uint16_t hal_nu6801_buckboost_get_bus_voltage(void)
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
+	nu6801_adc_chennel = NU6801_ADC_VBUS;
 	return vbat;
 }
 
@@ -489,18 +525,18 @@ uint16_t hal_nu6801_buckboost_get_bat_temperature(void)  //return 0.1K/bit
 	return adc_value;
 }
 
-void hal_nu6801_buckboost_set_ovp(void)
+void hal_nu6801_buckboost_set_ovp(uint16_t set_volt)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H,&read);
-	if(g_buckboost.buckboost_out_voltage < 5500)
+	if(set_volt < 5500)
 		read = (read & 0x03) | (0x00 <<2);   //ovp 6.5v
-	else if(g_buckboost.buckboost_out_voltage < 12500)
+	else if(set_volt < 12500)
 		read = (read & 0x03) | (0x02 <<2);   //ovp 13.5v
 	else
 		read = (read & 0x03) | (0x07 <<2);   //ovp 19.8v
 
-	if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) read = (read & 0x03) | (0x02 <<2);  // 充电设置 13.5V
+	//if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) read = (read & 0x03) | (0x02 <<2);  // 充电设置 13.5V
 
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, read);
 }
@@ -547,6 +583,46 @@ uint8_t hal_nu6801_buckboost_get_charge_flag(void)
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_CHG_FLAG,&read);
 	return read & 0x03;
+}
+
+void hal_nu6801_deadbat_patch(void)
+{
+	#define ABS(x,y)  x>y? x-y:y-x
+	static uint16_t last_vbat;
+
+
+
+	if(
+			nu6801_dead_bat  && last_vbat > 2800
+			&&(
+					g_buckboost.adc_vbat > 3500 ||  ((ABS(g_buckboost.adc_vbat , last_vbat) >300) && g_buckboost.adc_vbat < last_vbat)
+					)
+			)
+	{
+		printk("vbat=%d  last_vbat=%d \n",g_buckboost.adc_vbat,last_vbat);
+		hal_nu6801_buckboost_charge_ibus_limit(150);
+		hal_nu6801_buckboost_enter_force_trickle(false);
+		nu6801_dead_bat = false;
+	}
+	last_vbat = g_buckboost.adc_vbat;
+
+}
+
+void hal_nu6801_get_charge_state(void)
+{
+
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		uint8_t main_stat = hal_nu6801_buckboost_get_main_stat();
+		if((main_stat & 0xF0 ) != 0x40)
+			g_buckboost.charging_stat = 0;
+		else
+			g_buckboost.charging_stat = 1;
+
+		//printk("[MianStat]=0x%x charing=%d\n",main_stat,g_buckboost.charging_stat);
+	}
+
 }
 
 

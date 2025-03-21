@@ -11,7 +11,7 @@
 
 #define TC_T_CC_DEBOUNCE	        120	/* 100 - 200 ms */
 #define TC_T_PD_DEBOUNCE	        9	/* 10 - 20 ms */
-#define TC_T_TRY_CC_DEBOUNCE	    12	/* 10 - 20 ms */
+#define TC_T_TRY_CC_DEBOUNCE	    10	/* 10 - 20 ms */
 #define TC_T_DRP_TRY		        550	/* 75 - 150 ms */
 #define TC_T_DRP_TRYWAIT	        600	/* 400 - 800 ms */
 #define TC_T_DRP_TRYTIMEOUT	        800	/* 550 - 1100 ms */

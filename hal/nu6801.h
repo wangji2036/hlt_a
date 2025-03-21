@@ -5,6 +5,19 @@
 
 #define NU6801_I2C_DEV_ADDR		0x66
 
+extern uint8_t nu6801_adc_chennel;
+extern uint16_t nu6801_vref;
+enum
+{
+	NU6801_ADC_VBAT = 0,
+	NU6801_ADC_IBAT,
+	NU6801_ADC_VBUS,
+	NU6801_ADC_IBUS,
+	NU6801_ADC_IAC1,
+	NU6801_ADC_VREF,
+	NU6801_ADC_OTHER,
+};
+
 extern int hal_i2cm_wirte_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t data);
 extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data);
 
@@ -64,9 +77,14 @@ uint8_t hal_nu6801_buckboost_get_charge_flag(void);
 uint16_t hal_nu6801_buckboost_get_iac1(void);//iac1;
 uint8_t hal_nu6801_buckboost_is_ibus_loop(void);
 void hal_nu6801_buckboost_enter_force_trickle(bool enter);
-void hal_nu6801_buckboost_set_ovp(void);
+void hal_nu6801_buckboost_set_ovp(uint16_t set_volt);
 uint8_t hal_nu6801_buckboost_get_main_stat(void);
 void hal_nu6801_disable_bubo(void);
+void hal_nu6801_buckboost_set_adc_channel(uint8_t channel);
+void hal_nu6801_deadbat_patch(void);
+void hal_nu6801_get_charge_state(void);
+void nu6801_deadbat_patch(void);
+
 extern bool nu6801_dead_bat;
 
 #endif /* SW7201_H_ */

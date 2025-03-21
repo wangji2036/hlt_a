@@ -131,7 +131,7 @@ void hal_tcpc_send_ctrl_mgs(enum pd_ctrl_msg_type msg_type);
 void hal_tcpc_send_source_caps(uint32_t * pdos,uint32_t pdo_n);
 void hal_tcpc_send_snk_caps(uint32_t * pdos,uint32_t pdo_n);
 void hal_tcpc_send_sink_caps_ext(void);
-void tcpc_pd_send_bat_capability(void);
+void tcpc_pd_send_bat_capability(uint8_t bat_index);
 void tcpc_pd_send_pps_status(void);
 void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en);
 void hal_tcpc_pd_set_bus_iv(uint8_t tc_index,uint16_t voltage,uint16_t current,uint16_t wait, uint16_t delay);

@@ -128,6 +128,7 @@ void gd_data_init(void)
 	uint32_t addr;
 
 	for (addr=G_DATA_RAM_ADDR_BASE; addr<G_DATA_RAM_ADDR_BASE + sizeof(struct gd_t); addr++)
+	//for (addr=G_DATA_RAM_ADDR_BASE; addr< (uint32_t)(gd->reset_magicode); addr++)
 	{
 		__write_08bits(addr, 0);
 	}
