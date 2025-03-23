@@ -3,9 +3,7 @@
 
 #include "typdef.h"
 #include "osal.h"
-
-#define BUCKBOOST_USED_SW7201		1
-#define BUCKBOOST_USED_NU6801		0
+#include "config.h"
 
 #if(BUCKBOOST_USED_SW7201 == 1)
 	#define BAT_DEAD_BATTER_V   	6000

@@ -143,7 +143,7 @@ void hal_nu6801_buckboost_typeca_dischg(bool en) //vac2
 }
 void hal_nu6801_buckboost_typecb_dischg(bool en) //vac3
 {
-#ifdef POWERBANK_BACK_V02
+#ifdef POWERBANK_BUCK_EVK_V02
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
 	if(en)
@@ -267,7 +267,7 @@ void hal_nu6801_buckboost_typeca_gate_en(bool en)
 void hal_nu6801_buckboost_typecb_gate_en(bool en)
 {
 
-#ifdef POWERBANK_BACK_V02
+#ifdef POWERBANK_BUCK_EVK_V02
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
 	if(en)
@@ -423,7 +423,7 @@ uint16_t hal_nu6801_buckboost_typeca_vbus_present(void)//vac2
 uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 {
 
-#ifdef POWERBANK_BACK_V02
+#ifdef POWERBANK_BUCK_EVK_V02
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);

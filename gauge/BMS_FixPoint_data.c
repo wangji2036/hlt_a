@@ -13,7 +13,7 @@
  */
 #include "regdef.h"
 #include "BMS_FixPoint.h"
-
+#include "config.h"
 /* Invariant block signals (default storage) */
 const ConstB ConstB_s = {
   55000,                               /* '<S39>/Add2' */
@@ -34,6 +34,29 @@ const ConstP ConstP_s = {
    *   '<S19>/OCV_DSG'
    *   '<S22>/SOC_Slope'
    */
+   #if(BUCKBOOST_USED_NU6801 == 1)
+     { 2989, 3492, 3601, 3645, 3700, 3825, 3939, 4045, 4105, 4146, 4177, 4209 },
+
+  /* Computed Parameter: DCIR_Discharge_tableData
+   * Referenced by: '<S33>/DCIR_Discharge'
+   */
+  { 70, 70, 70, 84, 84, 84, 70, 70, 70, 77, 77, 77, 86, 86, 86, 75, 75, 75, 81,
+    81, 81, 88, 88, 88, 100, 100, 100, 107, 107, 107, 112, 112, 112, 135, 135,
+    135 },
+	  /* Pooled Parameter (Expression: )
+   * Referenced by:
+   *   '<S33>/DCIR_Discharge'
+   *   '<S33>/OCV_DSG'
+   *   '<S12>/OCV_DSG'
+   *   '<S19>/OCV_DSG'
+   *   '<S23>/DCIR_Discharge'
+   *   '<S23>/OCV_Discharge'
+   *   '<S23>/R0_Discharge'
+   */
+  { 2U, 11U }
+   #endif
+   
+#if(BUCKBOOST_USED_SW7201 == 1)
   { 6083, 6498, 6726, 6811, 6854, 6903, 6961, 7018, 7069, 7114, 7156, 7212, 7257,
     7304, 7358, 7426, 7511, 7615, 7730, 7809, 7881, 7968, 8015, 8063, 8108, 8144,
     8169, 8186, 8205, 8234, 8284, 8366 },
@@ -59,4 +82,5 @@ const ConstP ConstP_s = {
    *   '<S23>/R0_Discharge'
    */
   { 2U, 31U }
+  #endif
 };

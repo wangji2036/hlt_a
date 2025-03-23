@@ -377,7 +377,7 @@ struct gd_t
 	 uint8_t sleep_qdt_complete_charg_count;
 	 uint8_t sleep_qdt_fod_rec_count;
 	 uint8_t soc_show;
-
+	 uint8_t sleep_q_times;
 	 uint8_t rd0_cnt;
 	 uint8_t rd1_cnt;
 

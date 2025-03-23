@@ -14,7 +14,7 @@
 #include "rtwtypes.h"
 #include "BMS_FixPoint_private.h"
 #include "BMS_data.h"
-
+#include "config.h"
 /* Exported data definition */
 
 /* Definition for custom storage class: Localizable */

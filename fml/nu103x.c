@@ -96,6 +96,10 @@ void fml_nu103x_por_rst(void)
 	{
 	fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
 	}
+	else
+	{
+		fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P2);
+	}
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
 
 	fml_nu103x_config(_1030_CFG_DRVH2_CONN_SW2);
@@ -118,6 +122,10 @@ void fml_nu103x_por_init(void)
 	if (SYS->PID_INFO.BITS.VER == CHIP_VER_A0)
 	{
 	fml_nu103x_config(_1030_CFG_VDD_LDO_V4P8_ON_);
+	}
+	else
+	{
+		fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P2);
 	}
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_EN_);
 
@@ -159,7 +167,7 @@ void fml_nu103x_qdt_init(void)
 	// fml_nu103x_config(_1030_CFG_VDM_PIN_EVDM_IN_);
 
 //	fml_nu103x_config(_1030_CFG_DRVH1_TURN_ON_);
-	fml_nu103x_config(_1030_CFG_DRVH2_TURN_ON_);
+//	fml_nu103x_config(_1030_CFG_DRVH2_TURN_ON_);
 	fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P2);
 	fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_QDT);
 	fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_QDT);

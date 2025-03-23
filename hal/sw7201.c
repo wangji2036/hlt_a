@@ -2,7 +2,7 @@
 #include "eadc.h"
 #include "sw7201.h"
 #include "printk.h"
-
+#include "config.h"
 #if(BUCKBOOST_USED_SW7201 == 1)
 #define BAT_CELL_FULL_VOLT   4200
 #define BAT_CELL_EMPTY_VOLT   2900

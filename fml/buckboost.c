@@ -14,7 +14,42 @@
 
 static bool pps_vbus_uv = false;
 struct buckboost_s  g_buckboost;
-
+int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
+{
+	int16_t k,b;
+	uint32_t actual_effiency;
+	int32_t temp_ibat;
+	// x1 =5,y1= 970; x2 = 9, y2= 950;
+	// xielv k ----- (y2-y1)/(x2-x1) , so k = (950-970)/(9-5) = -5,  k  used as * 100
+	// jieju ------y1=kx1+b, b= y1-kx1, so  b = 970 - (-5)*5 = 995
+	// y= (k * x) + b; effiency, used as *1000
+	if(ibus>0)// buck mode
+	{
+		k = -500;
+		b = 995;
+	}
+	else // boost mode
+	{
+		if(vbus> 12000)
+		{
+            k = -300;
+            b = 1000;
+		}
+		else if(vbus> 9000)
+		{
+			 k = -333;
+			 b = 980;
+		}
+		else // <9v
+		{
+			k = -500;
+			b = 995;
+		}
+	}
+	actual_effiency = (k*vbus)/100 +b;
+	temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
+    return (int16_t)temp_ibat;
+}
 void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint16_t delay)
 {
 	printk("OUT = %d %d\n",voltage,current);

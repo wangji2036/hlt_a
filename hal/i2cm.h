@@ -32,4 +32,5 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ); //0-ack 1-nak
 
 #define _SET_I2CM_SDA_IN_PUT()    do { _I2CM_SDA_PORT->O_EN.BITS._I2CM_SDA_PINx = 0; _I2CM_SDA_PORT->I_EN.BITS._I2CM_SDA_PINx = 1; } while (0)
 #define _SET_I2CM_SDA_OUTPUT()    do { _I2CM_SDA_PORT->I_EN.BITS._I2CM_SDA_PINx = 0; _I2CM_SDA_PORT->O_EN.BITS._I2CM_SDA_PINx = 1; } while (0)
+#define _SET_I2CM_SCL_OUTPUT()    do { _I2CM_SCL_PORT->I_EN.BITS._I2CM_SCL_PINx = 0; _I2CM_SCL_PORT->O_EN.BITS._I2CM_SCL_PINx = 1; } while (0)
 #endif /* I2CM_H_ */

@@ -25,7 +25,7 @@ void fml_task_event_handler(uint32_t event)
 			break;
 		case APL_EVT_GAUGE:
 			SigPr_CellTemps_C_s = 25;
-			SigPr_CellVolts_mV_s = g_buckboost.adc_vbat * 2;
+			SigPr_CellVolts_mV_s = g_buckboost.adc_vbat;
 			SigPr_PackCurr_mA_s   = g_buckboost.adc_ibat;
 	//		printk("\r\n gauge T/V/I=%d  %d  %d\n",SigPr_CellTemps_C_s, SigPr_CellVolts_mV_s,SigPr_PackCurr_mA_s);
 			Cyclic();

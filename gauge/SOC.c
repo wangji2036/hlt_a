@@ -17,6 +17,7 @@
 #include "zero_crossing_types.h"
 #include "multiword_types.h"
 #include "regdef.h"
+#include "config.h"
 /* Exported data definition */
 
 /* Definition for custom storage class: Localizable */
@@ -328,8 +329,14 @@ void SOC_Correction(void)
       (SOC_VirtOCVSOC_mpct, P_SocRangeAxis_mpct, P_SocRangeCorrect_mpct,
        (uint32_T *)&hjj_m_bpIndex_s, 4U);
     VSOCRawSOCmpct = SOC_VirtOCVSOC_mpct - SOC_RawSOC_mpct;
+	#if(BUCKBOOST_USED_NU6801 == 1)
+	    SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
+      ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 11U);
+	#endif
+	#if(BUCKBOOST_USED_SW7201 == 1)
     SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
       ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
+	  #endif
     SOC_CorrEachStep_upct = div_nde_s32_floor(SigPr_PackCurr_mA * (int32_T)
       SOC_ModelR0_mOhm, 1000);
     SOC_CorrEachStep_mpct = mul_s32_loSR(1288490189, (CellVoltsDelay -

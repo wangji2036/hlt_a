@@ -21,6 +21,7 @@
 #include "zero_crossing_types.h"
 #include "regdef.h"
 #include "printk.h"
+#include "config.h"
 /* Exported block signals */
 boolean_T SOC_OCVUpd_flg;              /* '<Root>/SOC_OCVUpd_flg' */
 int32_T SOC_OCVSOC_mpct;               /* '<Root>/SOC_OCVSOC_mpct' */
@@ -45,6 +46,41 @@ int32_T SOC_VirtualOCV_mV;             /* '<S20>/UdVirtualOcv' */
 uint16_T BMS_SampleTime_ms;            /* '<S43>/Constant1' */
 uint16_T SOC_ModelOCV_mV;              /* '<S23>/Switch1' */
 
+#if(BUCKBOOST_USED_NU6801 == 1)
+/* Exported block parameters */
+int32_T P_AtRateCurrent_mA = 1650;     /* Variable: P_AtRateCurrent_mA
+                                        * Referenced by: '<S4>/At_Rate_Current_mA'
+                                        */
+int32_T P_EmptyVoltage_mV = 3000;      /* Variable: P_EmptyVoltage_mV
+                                        * Referenced by: '<S4>/Empty_Voltage_mV'
+                                        */
+const int32_T P_OcvSOCDsg_mpct[36] = { 0, 0, 0, 12424, 12424, 12424, 24849, 24849,
+  24849, 37273, 37273, 37273, 49698, 49698, 49698, 62122, 62122, 62122, 74547,
+  74547, 74547, 85077, 85077, 85077, 91437, 91437, 91437, 95451, 95451, 95451,
+  97891, 97891, 97891, 100000, 100000, 100000 } ;/* Variable: P_OcvSOCDsg_mpct
+                                                  * Referenced by:
+                                                  *   '<S33>/OCV_DSG'
+                                                  *   '<S12>/OCV_DSG'
+                                                  *   '<S19>/OCV_DSG'
+                                                  */
+
+int32_T P_SOCAxis_mpct[12] = { 0, 12424, 24849, 37273, 49698, 62122, 74547,
+  85077, 91437, 95451, 97891, 100000 } ;/* Variable: P_SOCAxis_mpct
+                                         * Referenced by:
+                                         *   '<S33>/DCIR_Discharge'
+                                         *   '<S23>/DCIR_Discharge'
+                                         *   '<S23>/OCV_Discharge'
+                                         *   '<S23>/R0_Discharge'
+                                         */
+
+int32_T P_SOCSlope_mpctPermV[12] = { 25, 25, 114, 282, 226, 99, 109, 99, 106, 98,
+  79, 66 } ;                           /* Variable: P_SOCSlope_mpctPermV
+                                        * Referenced by: '<S22>/SOC_Slope'
+                                        */
+#endif
+
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 /* Exported block parameters */
 int32_T P_AtRateCurrent_mA = 1000;     /* Variable: P_AtRateCurrent_mA
                                         * Referenced by: '<S4>/At_Rate_Current_mA'
@@ -83,7 +119,7 @@ int32_T P_SOCSlope_mpctPermV[32] = { 5, 6, 10, 28, 55, 49, 41, 42, 47, 53, 57,
   48, 27 } ;                           /* Variable: P_SOCSlope_mpctPermV
                                         * Referenced by: '<S22>/SOC_Slope'
                                         */
-
+#endif
 int32_T P_SocDeviationAxis_mpct[7] = { 0, 1000, 2000, 8000, 10000, 20000, 100000
 } ;                                    /* Variable: P_SocDeviationAxis_mpct
                                         * Referenced by: '<S19>/1-D Lookup Table1'
@@ -107,6 +143,22 @@ uint32_T P_CurrentThresRelaxJudge_mA = 40U;/* Variable: P_CurrentThresRelaxJudge
                                             *   '<S11>/Constant1'
                                             *   '<S13>/Constant1'
                                             */
+#if(BUCKBOOST_USED_NU6801 == 1)
+const uint32_T P_DcirDsg_mOhm[36] = { 70U, 70U, 70U, 84U, 84U, 84U, 70U, 70U, 70U, 77U,
+  77U, 77U, 86U, 86U, 86U, 75U, 75U, 75U, 81U, 81U, 81U, 88U, 88U, 88U, 100U,
+  100U, 100U, 107U, 107U, 107U, 112U, 112U, 112U, 135U, 135U, 135U } ;/* Variable: P_DcirDsg_mOhm
+                                                                      * Referenced by: '<S23>/DCIR_Discharge'
+                                                                      */
+
+const uint32_T P_R0Dsg_mOhm[36] = { 52U, 52U, 52U, 52U, 52U, 52U, 45U, 45U, 45U, 42U,
+  42U, 42U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U, 41U,
+  41U, 44U, 44U, 44U, 45U, 45U, 45U, 43U, 43U, 43U } ;/* Variable: P_R0Dsg_mOhm
+                                                       * Referenced by: '<S23>/R0_Discharge'
+                                                       */
+#endif
+											
+											
+#if(BUCKBOOST_USED_SW7201 == 1)
 const uint32_T P_DcirDsg_mOhm[96] = { 138U, 138U, 138U, 108U, 108U, 108U, 95U, 95U,
   95U, 90U, 90U, 90U, 79U, 79U, 79U, 73U, 73U, 73U, 69U, 69U, 69U, 65U, 65U, 65U,
   64U, 64U, 64U, 64U, 64U, 64U, 60U, 60U, 60U, 58U, 58U, 58U, 60U, 60U, 60U, 60U,
@@ -126,7 +178,7 @@ const uint32_T P_R0Dsg_mOhm[96] = { 46U, 46U, 46U, 46U, 46U, 46U, 47U, 47U, 47U,
   43U, 43U, 43U, 42U, 42U, 42U } ;     /* Variable: P_R0Dsg_mOhm
                                         * Referenced by: '<S23>/R0_Discharge'
                                         */
-
+#endif
 uint32_T P_RelaxDurationExtremeLowTemp_s = 7200U;
                                     /* Variable: P_RelaxDurationExtremeLowTemp_s
                                      * Referenced by: '<S11>/P_RelaxDurationExtremeLowTemp_s'
@@ -153,7 +205,26 @@ int16_T P_TAxis_degC[3] = { 0, 25, 45 } ;/* Variable: P_TAxis_degC
                                           *   '<S23>/OCV_Discharge'
                                           *   '<S23>/R0_Discharge'
                                           */
+#if(BUCKBOOST_USED_NU6801 == 1)
+uint16_T P_Capacity_mAh = 5374U;       /* Variable: P_Capacity_mAh
+                                        * Referenced by:
+                                        *   '<S40>/SOH_capacity_mAh'
+                                        *   '<S40>/Constant3'
+                                        */
+uint16_T P_OCVAxis_mV[12] = { 2989U, 3492U, 3601U, 3645U, 3700U, 3825U, 3939U,
+  4045U, 4105U, 4146U, 4177U, 4209U } ;/* Variable: P_OCVAxis_mV
+                                        * Referenced by: '<S12>/OCV_DSG'
+                                        */
 
+const uint16_T P_OCVDsg_mV[36] = { 2989U, 2989U, 2989U, 3492U, 3492U, 3492U, 3601U,
+  3601U, 3601U, 3645U, 3645U, 3645U, 3700U, 3700U, 3700U, 3825U, 3825U, 3825U,
+  3939U, 3939U, 3939U, 4045U, 4045U, 4045U, 4105U, 4105U, 4105U, 4146U, 4146U,
+  4146U, 4177U, 4177U, 4177U, 4209U, 4209U, 4209U } ;/* Variable: P_OCVDsg_mV
+                                                      * Referenced by: '<S23>/OCV_Discharge'
+                                                      */
+#endif
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 uint16_T P_Capacity_mAh = 10487U;      /* Variable: P_Capacity_mAh
                                         * Referenced by:
                                         *   '<S40>/SOH_capacity_mAh'
@@ -178,7 +249,7 @@ const uint16_T P_OCVDsg_mV[96] = { 6083U, 6083U, 6083U, 6498U, 6498U, 6498U, 672
   8366U } ;                            /* Variable: P_OCVDsg_mV
                                         * Referenced by: '<S23>/OCV_Discharge'
                                         */
-
+#endif
 uint16_T P_SampleTime_ms = 100U;       /* Variable: P_SampleTime_ms
                                         * Referenced by: '<S43>/Constant1'
                                         */

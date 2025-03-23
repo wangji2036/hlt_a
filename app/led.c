@@ -375,7 +375,7 @@ void ui_update(void)
     		flash_flag = 0;
     }
 
-//    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);
+  //  printk("\r\n ---------------SOC show=%d  row=%d", gd->soc_show,SOCPack_RealSOC_pct);
     //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
     //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
 

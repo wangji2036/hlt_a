@@ -11,7 +11,7 @@
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
-
+#include "config.h"
 #ifndef BMS_FixPoint_h_
 #define BMS_FixPoint_h_
 #ifndef BMS_FixPoint_COMMON_INCLUDES_
@@ -55,13 +55,23 @@ typedef struct {
    *   '<S19>/OCV_DSG'
    *   '<S22>/SOC_Slope'
    */
+   
+#if(BUCKBOOST_USED_NU6801 == 1)
+     int32_T pooled7[12];
+
+  /* Computed Parameter: DCIR_Discharge_tableData
+   * Referenced by: '<S33>/DCIR_Discharge'
+   */
+     int32_T DCIR_Discharge_tableData[36];
+#endif
+#if(BUCKBOOST_USED_SW7201 == 1)
   int32_T pooled7[32];
 
   /* Computed Parameter: DCIR_Discharge_tableData
    * Referenced by: '<S33>/DCIR_Discharge'
    */
   int32_T DCIR_Discharge_tableData[96];
-
+#endif
   /* Pooled Parameter (Expression: )
    * Referenced by:
    *   '<S33>/DCIR_Discharge'
@@ -139,6 +149,27 @@ extern int32_T P_AtRateCurrent_mA;     /* Variable: P_AtRateCurrent_mA
 extern int32_T P_EmptyVoltage_mV;      /* Variable: P_EmptyVoltage_mV
                                         * Referenced by: '<S4>/Empty_Voltage_mV'
                                         */
+
+#if(BUCKBOOST_USED_NU6801 == 1)
+extern const  int32_T P_OcvSOCDsg_mpct[36];   /* Variable: P_OcvSOCDsg_mpct
+                                        * Referenced by:
+                                        *   '<S33>/OCV_DSG'
+                                        *   '<S12>/OCV_DSG'
+                                        *   '<S19>/OCV_DSG'
+                                        */
+extern int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
+                                        * Referenced by:
+                                        *   '<S33>/DCIR_Discharge'
+                                        *   '<S23>/DCIR_Discharge'
+                                        *   '<S23>/OCV_Discharge'
+                                        *   '<S23>/R0_Discharge'
+                                        */
+extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
+                                         * Referenced by: '<S22>/SOC_Slope'
+                                         */
+#endif
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 extern const  int32_T P_OcvSOCDsg_mpct[96];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
                                         *   '<S33>/OCV_DSG'
@@ -155,6 +186,8 @@ extern int32_T P_SOCAxis_mpct[32];     /* Variable: P_SOCAxis_mpct
 extern int32_T P_SOCSlope_mpctPermV[32];/* Variable: P_SOCSlope_mpctPermV
                                          * Referenced by: '<S22>/SOC_Slope'
                                          */
+
+#endif
 extern int32_T P_SocDeviationAxis_mpct[7];/* Variable: P_SocDeviationAxis_mpct
                                            * Referenced by: '<S19>/1-D Lookup Table1'
                                            */
@@ -172,12 +205,24 @@ extern uint32_T P_CurrentThresRelaxJudge_mA;/* Variable: P_CurrentThresRelaxJudg
                                              *   '<S11>/Constant1'
                                              *   '<S13>/Constant1'
                                              */
+#if(BUCKBOOST_USED_NU6801 == 1)
+extern const  uint32_T P_DcirDsg_mOhm[36];    /* Variable: P_DcirDsg_mOhm
+                                        * Referenced by: '<S23>/DCIR_Discharge'
+                                        */
+extern const  uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
+                                        * Referenced by: '<S23>/R0_Discharge'
+                                        */
+#endif
+
+#if(BUCKBOOST_USED_SW7201 == 1)
+
 extern const  uint32_T P_DcirDsg_mOhm[96];    /* Variable: P_DcirDsg_mOhm
                                         * Referenced by: '<S23>/DCIR_Discharge'
                                         */
 extern const  uint32_T P_R0Dsg_mOhm[96];      /* Variable: P_R0Dsg_mOhm
                                         * Referenced by: '<S23>/R0_Discharge'
                                         */
+#endif
 extern uint32_T P_RelaxDurationExtremeLowTemp_s;
                                     /* Variable: P_RelaxDurationExtremeLowTemp_s
                                      * Referenced by: '<S11>/P_RelaxDurationExtremeLowTemp_s'
@@ -209,12 +254,23 @@ extern uint16_T P_Capacity_mAh;        /* Variable: P_Capacity_mAh
                                         *   '<S40>/SOH_capacity_mAh'
                                         *   '<S40>/Constant3'
                                         */
+#if(BUCKBOOST_USED_NU6801 == 1)
+extern uint16_T P_OCVAxis_mV[12];      /* Variable: P_OCVAxis_mV
+                                        * Referenced by: '<S12>/OCV_DSG'
+                                        */
+extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
+                                        * Referenced by: '<S23>/OCV_Discharge'
+                                        */
+#endif
+
+#if(BUCKBOOST_USED_SW7201 == 1)
 extern uint16_T P_OCVAxis_mV[32];      /* Variable: P_OCVAxis_mV
                                         * Referenced by: '<S12>/OCV_DSG'
                                         */
 extern const  uint16_T P_OCVDsg_mV[96];       /* Variable: P_OCVDsg_mV
                                         * Referenced by: '<S23>/OCV_Discharge'
                                         */
+#endif
 extern uint16_T P_SampleTime_ms;       /* Variable: P_SampleTime_ms
                                         * Referenced by: '<S43>/Constant1'
                                         */
