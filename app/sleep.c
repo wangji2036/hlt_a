@@ -478,7 +478,7 @@ extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
-		printk("\r\n sleep check");
+		//printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
@@ -544,12 +544,10 @@ void RST_vCheck(void)
 					{
 						extern bool tc_src_is_disconnected(struct tc_s * tc);
 						enum tc_cc_status cc1,cc2;
-						hal_tcpc_get_cc(g_tc[0].tc_index, &cc1,&cc2);
+						hal_tcpc_get_cc(0, &cc1,&cc2);
 
 						printk("\r\n 0cc:[%d %d]\n",cc1,cc2);
-						g_tc[0].cc1 = cc1;
-						g_tc[0].cc2 = cc2;
-						if(tc_src_is_disconnected(&g_tc[0]))
+						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
 							gd->tc0_lighting_mode = 0;
 							printk("\r\n lighting_mode exit");
@@ -573,12 +571,10 @@ void RST_vCheck(void)
 					{
 						extern bool tc_src_is_disconnected(struct tc_s * tc);
 						enum tc_cc_status cc1,cc2;
-						hal_tcpc_get_cc(g_tc[1].tc_index, &cc1,&cc2);
+						hal_tcpc_get_cc(1, &cc1,&cc2);
 
-						printk("\r\n [%d]cc:[%d %d]\n",g_tc[1].tc_index,cc1,cc2);
-						g_tc[1].cc1 = cc1;
-						g_tc[1].cc2 = cc2;
-						if(tc_src_is_disconnected(&g_tc[1]))
+						printk("\r\n [%d]cc:[%d %d]\n",1,cc1,cc2);
+						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
 							gd->tc1_lighting_mode = 0;
 							printk("\r\n lighting_mode exit");

@@ -37,7 +37,7 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
-	//RST_vCheck();
+	RST_vCheck();
 
 	ap_data_init();
 	gd_data_init();
