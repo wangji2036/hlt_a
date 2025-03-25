@@ -64,7 +64,7 @@ struct tc_s
 	uint16_t tc_timer_cnt;
 	uint8_t try_snk_cnt;
 	uint8_t try_src_cnt;
-
+	uint8_t light_cnt;
 	uint16_t snk_voltage;
 };
 

@@ -64,6 +64,21 @@ void tcpm_task_init(void)
 	//fml_adp_type_set(EADP_TYPE_DCSRC_09V,  9000, 19500, 15 * 2);
 }
 
+//void tcpm_dp_set_10uA(void)
+//{
+//	//DPDM_QC_SINK->DPDM_MANUAL.BITS.DPDM_Manual_EN = 1;
+//	DPDM_QC_SINK->DPDM_MANUAL.BITS.DP_SRC_10UA = 1;
+//	//DPDM_QC_SINK->DPDM_MANUAL.BITS.DP_RD_EN = 1;
+//	delay_1us(50);
+//}
+//
+//uint32_t tcpm_dp_get_result(void)
+//{
+//	uint32_t ret = DPDM_QC_SINK->DPDM_MANUAL.BITS.VDP_RD;
+//	printk("dp ret = 0x%x\n",ret);
+//	return ret;
+//}
+//
 
 void tcpm_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_substate_e tc_substate)
 {
@@ -199,10 +214,10 @@ void tcpm_task_event_handler(uint32_t event)
 					usba_cnt = 0;
 
 #elif(BUCKBOOST_USED_NU6801 == 1)
-				if(g_buckboost.adc_iac1  < 20 )
+				if(g_buckboost.adc_iac1  < 60  && g_buckboost.usba_dectet_en)
 				{
 					usba_cnt++;
-					if(usba_cnt >= 50)
+					if(usba_cnt >= 250)
 					{
 						usba_cnt = 0;
 						usba_state = 0;
@@ -236,6 +251,65 @@ void tcpm_task_event_handler(uint32_t event)
 			else
 				qi_cnt = 0;
 			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			if(g_tc[0].usb_tc_state == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
+					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
+			{
+				if(g_buckboost.adc_iac2 < 60)
+				{
+					g_tc[0].light_cnt++;
+					if(g_tc[0].light_cnt >= 25 * 10)
+					{
+						g_tc[0].light_cnt = 0;
+						gd->tc0_lighting_mode = 1;
+						//tcpm_dp_set_10uA();
+						//gd->dp_result = tcpm_dp_get_result();
+						printk("TC[0] light = 0x%x\n",gd->dp_result);
+					}
+				}
+				else
+				{
+					g_tc[0].light_cnt = 0;
+				}
+			}
+			else
+			{
+				g_tc[0].light_cnt = 0;
+			}
+
+
+			if(g_tc[1].usb_tc_state == TC_SRC_Attached && g_port.port_state[0] == PORT_STATE_NONE
+					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE)
+			{
+			#ifdef POWERBANK_BACK_V02
+				if(g_buckboost.adc_iac1 < 60)
+			#else
+				if(g_buckboost.adc_ibus > -60  && g_buckboost.adc_ibus <0 )
+			#endif
+				{
+					g_tc[1].light_cnt++;
+					if(g_tc[1].light_cnt >= 25 * 10)
+					{
+						g_tc[1].light_cnt = 0;
+						gd->tc1_lighting_mode = 1;
+						//tcpm_dp_set_10uA();
+						//gd->dp_result = tcpm_dp_get_result();
+
+						printk("TC[1] light = 0x%x\n",gd->dp_result);
+					}
+				}
+				else
+				{
+					g_tc[1].light_cnt = 0;
+				}
+			}
+			else
+			{
+				g_tc[1].light_cnt = 0;
+			}
+
+		#endif
+
 			break;
 
 		case TCPM_EVT_USBA_REDETECT:

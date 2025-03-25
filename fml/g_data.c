@@ -127,11 +127,20 @@ void gd_data_init(void)
 {
 	uint32_t addr;
 
-	for (addr=G_DATA_RAM_ADDR_BASE; addr<G_DATA_RAM_ADDR_BASE + sizeof(struct gd_t); addr++)
-	//for (addr=G_DATA_RAM_ADDR_BASE; addr< (uint32_t)(gd->reset_magicode); addr++)
+	//for (addr=G_DATA_RAM_ADDR_BASE; addr<G_DATA_RAM_ADDR_BASE + sizeof(struct gd_t); addr++)
+	for (addr=G_DATA_RAM_ADDR_BASE; addr< (uint32_t)(&(gd->resverd_reset)); addr++)
 	{
 		__write_08bits(addr, 0);
 	}
+
+	if(gd->power_on_magic != 0xaa)
+	{
+		gd->tc0_lighting_mode = 0x00;
+		gd->tc1_lighting_mode = 0x00;
+		printk("\r\n ------------------------------------------------------------poweron reset");
+	}
+
+	gd->power_on_magic = 0xaa;
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
 //	gd->tx_infos.fo_exist = 1;

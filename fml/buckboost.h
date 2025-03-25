@@ -48,8 +48,11 @@ struct buckboost_s
 	uint16_t ir_drop;
 	uint8_t ibus_cc_flag;
 #if(BUCKBOOST_USED_NU6801 == 1)
-	uint16_t adc_iac1;
+	int16_t adc_iac1;
+	int16_t adc_iac2;
+	//int16_t adc_iac3;
 	uint8_t charging_stat; //ÊÇ·ñÔÚ³äµç
+	uint8_t vsnkdisconnect_flag;
 #endif
 	uint8_t protect_status;
 };
@@ -94,7 +97,7 @@ struct buckboost_operations
 };
 
 
-#define BUCKBOOST_TIME_PERIOD									23
+#define BUCKBOOST_TIME_PERIOD									17
 #define BUCKBOOST_VBUS_PERIOD									9
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)

@@ -121,7 +121,7 @@ void pid_init(void)
 			break;
 		case EADP_TYPE_POWERBANK_05V:
 		    pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			pid_set_freq_limit(144000000/111000, 144000000/127772, 144000000/147000);
+			pid_set_freq_limit(144000000/110500, 144000000/127772, 144000000/147000);
 			pid_set_duty_limit(500, 350, 150);
 			pid_set_phas_limit(0, 0, 0);
 			break;

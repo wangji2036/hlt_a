@@ -61,4 +61,7 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit);
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode);
 void tcpm_disable_usba_detect(void);
 
+void tcpm_dp_set_10uA(void);
+uint32_t tcpm_dp_get_result(void);
+
 #endif /* FML_H_ */

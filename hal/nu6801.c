@@ -54,7 +54,6 @@ void hal_nu6801_buckboost_init(void)
 		hal_nu6801_buckboost_typeca_gate_en(false);
 		hal_nu6801_buckboost_typecb_gate_en(false);
 		hal_nu6801_buckboost_usb_a_gate_en(false);
-		hal_nu6801_buckboost_usba_detect_enable(true);
 		hal_nu6801_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
 
 		/*UNLOCK*/
@@ -357,6 +356,12 @@ void hal_nu6801_buckboost_set_adc_channel(uint8_t channel)
 		case NU6801_ADC_IAC1:
 			read = (read & 0xE0) | 0x010 | 0x08;
 			break;
+		case NU6801_ADC_IAC2:
+			read = (read & 0xE0) | 0x010 | 0x09;
+			break;
+		case NU6801_ADC_RNTC:
+			read = (read & 0xE0) | 0x010 | 0x0d;
+			break;
 		case NU6801_ADC_VREF:
 			read = (read & 0xE0) | 0x010 | 0x0F;
 			break;
@@ -434,6 +439,7 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
 
 	//printk("typecb = %d\n",vbat);
+	nu6801_adc_chennel = NU6801_ADC_OTHER;
 	printk("typecb = %d adc_vac1 = %d nu6801_vref = %d\n",vbat,row,nu6801_vref);
 	return vbat;
 #else
@@ -522,6 +528,7 @@ uint16_t hal_nu6801_buckboost_get_bat_temperature(void)  //return 0.1K/bit
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_TEMP_STAT,&read);
 	if(read & 0x04) adc_value = adc_value / 22; //220uA
 	else adc_value = adc_value / 2; //220uA
+	nu6801_adc_chennel = NU6801_ADC_RNTC;
 	return adc_value;
 }
 
@@ -605,6 +612,17 @@ void hal_nu6801_deadbat_patch(void)
 		nu6801_dead_bat = false;
 	}
 	last_vbat = g_buckboost.adc_vbat;
+
+
+	if(g_buckboost.adc_ibus < 200  && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		uint8_t ret = hal_nu6801_buckboost_get_main_stat();
+		if(ret & 0x08 || !(ret & 0x03)) g_buckboost.vsnkdisconnect_flag = 1;
+	}
+	else
+	{
+		g_buckboost.vsnkdisconnect_flag = 0;
+	}
 
 }
 

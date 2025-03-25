@@ -382,6 +382,12 @@ struct gd_t
 	 uint8_t rd1_cnt;
 
 	 uint8_t bat_dead_flag;
+	 uint8_t resverd_reset;
+	 uint8_t power_on_magic;
+	 uint8_t tc0_lighting_mode;
+	 uint8_t tc1_lighting_mode;
+
+	 uint8_t dp_result;
 };
 
 extern volatile struct ap_t *ap;

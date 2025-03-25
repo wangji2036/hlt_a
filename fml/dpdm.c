@@ -231,7 +231,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			dpdm_sink_deinit();
 			break;
 		case DPDM_EVT_SNK_BC12DONE:
-			printk("bc12_type=0x%x\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE);
+			printk("BC12 bc12_type=0x%x\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE);
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x02)
 				bc12_type = BC1P2_CDP;
 			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
@@ -266,6 +266,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
+			buckboost_ops.set_ovp(20000);
 			bc12_type = BC1P2_HVDCP;
 			qc2_set_volt(12000);
 			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);

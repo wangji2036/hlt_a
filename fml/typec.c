@@ -7,6 +7,7 @@
 #include "osal.h"
 #include "usbpd_config.h"
 #include "_wpc.h"
+#include "g_data.h"
 #include "port_manager.h"
 
 struct tc_s g_tc[TYPEC_PORT_MAX_N] = {};
@@ -96,6 +97,8 @@ void usb_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_
 static void TC_Disable_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_OPEN);
+	if(tc->tc_index == PORT0_INDEX) gd->tc0_lighting_mode= 0;
+	if(tc->tc_index == PORT1_INDEX) gd->tc1_lighting_mode= 0;
 	if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
 	usb_tc_set_state(tc,TC_Disable,exit_state);
 }
@@ -108,6 +111,18 @@ static void TC_Disable_Exit(struct tc_s * tc)
 
 static void TC_SNK_Unattached_Entry(struct tc_s * tc)
 {
+	if(gd->tc0_lighting_mode && tc->tc_index == 0)
+	{
+		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
+		return;
+	}
+
+	if(gd->tc1_lighting_mode && tc->tc_index == 1)
+	{
+		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
+		return;
+	}
+
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 
     tc->tc_timer_cnt = 0;
@@ -223,7 +238,11 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		tc->tc_timer_cnt++;
 		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
 		{
+		#if(BUCKBOOST_USED_NU6801 == 1)
+			if(hal_tcpc_vbus_is_removed(tc->tc_index) || g_buckboost.vsnkdisconnect_flag)
+		#else
 			if(hal_tcpc_vbus_is_removed(tc->tc_index))
+		#endif
 			{
 				usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 				usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
@@ -341,6 +360,7 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 static void TC_SRC_Attached_Entry(struct tc_s * tc)
 {
 	tc->tc_timer_cnt = 0;
+	tc->light_cnt = 0;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
@@ -357,6 +377,31 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index, &cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
+
+    if(gd->tc0_lighting_mode && tc->tc_index == 0)
+    {
+		usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_UNATTACH);
+		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
+		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
+		hal_tcpc_set_gate_en(tc->tc_index,false);
+        if(tc->tc_index == 0)
+        	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+        else
+        	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+    }
+
+    if(gd->tc1_lighting_mode && tc->tc_index == 1)
+    {
+		usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_UNATTACH);
+		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
+		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
+		hal_tcpc_set_gate_en(tc->tc_index,false);
+        if(tc->tc_index == 0)
+        	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+        else
+        	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+    }
+
 	if(tc_src_is_disconnected(tc)) //CC¶Ï¿ª
 	{
 		tc->tc_timer_cnt++;
@@ -437,6 +482,32 @@ static void TC_ACCESSORY_Attached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 {
+	if(gd->tc0_lighting_mode && tc->tc_index == PORT0_INDEX)
+	{
+		enum tc_cc_status cc1,cc2;
+		hal_tcpc_get_cc(tc->tc_index, &cc1,&cc2);
+	    tc->cc1 = cc1;
+	    tc->cc2 = cc2;
+		if(tc_src_is_disconnected(tc))// || gd->dp_result != tcpm_dp_get_result())
+		{
+			gd->tc0_lighting_mode = 0;
+		}
+		return;
+	}
+
+	if(gd->tc1_lighting_mode && tc->tc_index == PORT1_INDEX)
+	{
+		enum tc_cc_status cc1,cc2;
+		hal_tcpc_get_cc(tc->tc_index, &cc1,&cc2);
+	    tc->cc1 = cc1;
+	    tc->cc2 = cc2;
+		if(tc_src_is_disconnected(tc))// || gd->dp_result != tcpm_dp_get_result())
+		{
+			gd->tc1_lighting_mode = 0;
+		}
+		return;
+	}
+
     hal_tcpc_set_vconn(tc->tc_index,false);
 	hal_tcpc_set_pd_rx(tc->tc_index,EN_SOP | EN_HARD_RESET | EN_SOP1 ,false);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
@@ -661,13 +732,11 @@ void usb_tc_run(void)
 
 	if(g_tc[TYPEC_PORT_A].usb_tc_substate == enter_state)
 	{
-		//if(usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].enter_cb != NULL)
-			usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].enter_cb(&g_tc[TYPEC_PORT_A]);
+		usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].enter_cb(&g_tc[TYPEC_PORT_A]);
 	}
 	else
 	{
-		//if(usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].exit_cb != NULL)
-			usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].exit_cb(&g_tc[TYPEC_PORT_A]);
+		usb_tc_table[g_tc[TYPEC_PORT_A].usb_tc_state].exit_cb(&g_tc[TYPEC_PORT_A]);
 	}
 #endif
 
@@ -676,13 +745,11 @@ void usb_tc_run(void)
 
 	if(g_tc[TYPEC_PORT_B].usb_tc_substate == enter_state)
 	{
-		//if(usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].enter_cb != NULL)
-			usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].enter_cb(&g_tc[TYPEC_PORT_B]);
+		usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].enter_cb(&g_tc[TYPEC_PORT_B]);
 	}
 	else
 	{
-		//if(usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].exit_cb != NULL)
-			usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].exit_cb(&g_tc[TYPEC_PORT_B]);
+		usb_tc_table[g_tc[TYPEC_PORT_B].usb_tc_state].exit_cb(&g_tc[TYPEC_PORT_B]);
 	}
 #endif
 }

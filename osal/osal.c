@@ -114,8 +114,10 @@ static void osal_event_handle(void)
 			continue;
 		}
 
+		VIC_vModuleDisable();
 		event = osal_tasks_tbl[id].event;
 		osal_tasks_tbl[id].event = 0;
+		VIC_vModuleEnable();
 
 		while (event != 0)
 		{

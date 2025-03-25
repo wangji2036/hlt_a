@@ -253,15 +253,21 @@ bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 {
 #if(BUCKBOOST_USED_NU6801 == 1)
-	if(tc_index == 0)
+	static uint8_t delay_cnt = 0;
+	if(delay_cnt == 0)
 	{
-		if(buckboost_ops.get_typeca_vbus_present() < 2000 ) return true;
+		if(tc_index == 0)
+		{
+			if(buckboost_ops.get_typeca_vbus_present() < 2000 ) return true;
+		}
+		else if(tc_index == 1)
+		{
+			if(buckboost_ops.get_typecb_vbus_present() < 2000 ) return true;
+		}
+		return false;
 	}
-	else if(tc_index == 1)
-	{
-		if(buckboost_ops.get_typecb_vbus_present() < 2000 ) return true;
-	}
-	return false;
+	delay_cnt++;
+	if(delay_cnt >= 23) delay_cnt = 0;
 #else
 	return true;
 #endif

@@ -28,6 +28,7 @@
 #include "usbpd_config.h"
 #include"bsp.h"
 #include "config.h"
+#include "typec.h"
 //uint8_t reset_magic_code;
 
 #if ONLY7_5W_ENALBE
@@ -43,8 +44,14 @@ void SLP_vNormalToSleep(void)
 	hal_wdt_feed();
 	fm1210_sleep();
    SYS->PWR_CTRL.WORD = 0;
+	gd->rd0_cnt = 0;
+	gd->rd1_cnt = 0;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
+	if(!gd->tc0_lighting_mode) hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
+	else hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RP_DEF);
+	if(!gd->tc1_lighting_mode) hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
+	else hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RP_DEF);
 #if(BUCKBOOST_USED_NU6801 == 1)
     // enable all 6801 INT
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x80);
@@ -117,14 +124,22 @@ void SLP_vNormalToSleep(void)
 
 	if(!gd->bat_dead_flag)
 	{
-		TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-		TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-		TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-		  //(Enable DRP)
-		TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
-		TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
-		TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
-		TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+		if(!gd->tc0_lighting_mode)
+		{
+			TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+			TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+			TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+			  //(Enable DRP)
+			TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
+			TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
+			TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
+			TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+		}
+		else
+		{
+			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
+			printk("\r\n lighting sleep");
+		}
 	}
 	else
 	{
@@ -135,14 +150,22 @@ void SLP_vNormalToSleep(void)
 
 	if(!gd->bat_dead_flag)
 	{
-		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-		  //(Enable DRP)
-		TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
-		TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
-		TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
-		TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+		if(!gd->tc1_lighting_mode)
+		{
+			TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+			TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+			TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+			  //(Enable DRP)
+			TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
+			TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
+			TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
+			TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+		}
+		else
+		{
+			printk("\r\n lighting sleep");
+			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
+		}
 	}
 	else
 	{
@@ -150,7 +173,7 @@ void SLP_vNormalToSleep(void)
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		printk("\r\n sleep Rd");
 	}
-		_SET_ALL_PINS_IN_PUT();
+	_SET_ALL_PINS_IN_PUT();
 	hal_wdt_feed();
 
 	BADC->CTRL.WORD = 0;
@@ -253,7 +276,7 @@ void SLP_vSleepToSleep(void)
 	SYS->PRO_CTRL.WORD = 0;
 	SYS->CLK_CTRL.BITS.XTAL_EN = 0;// disable XTAL
 	SYS->PRO_CTRL.BITS.PVD_EN = 0;// disable PVD
-    SYS->PWR_CTRL.WORD = 0;
+    //SYS->PWR_CTRL.WORD = 0;
 
     TCPC->PHY_CTRL.WORD = 0;
 	DPDM->AFC_CTRL.WORD = 0;
@@ -437,7 +460,7 @@ uint8_t SLP_u8SleepModeQDetect(void)
 		default:
 			break;
 	}
-	//printk("\r\n Q wake-up? [%d]",u8NeedToNormal);
+	printk("\r\n Q wake-up? [%d]",u8NeedToNormal);
 	return u8NeedToNormal;
 }
 #define FMS_STS_IDLE       0
@@ -455,12 +478,12 @@ extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
-//		printk("\r\n sleep check");
+		printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
 			case RST_SRC_1PTIMER:
-			//	printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
+				printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{
 					gd->reset_magicode = 0;
@@ -517,6 +540,64 @@ void RST_vCheck(void)
 				}
 				else
 				{
+					if(gd->tc0_lighting_mode)
+					{
+						extern bool tc_src_is_disconnected(struct tc_s * tc);
+						enum tc_cc_status cc1,cc2;
+						hal_tcpc_get_cc(g_tc[0].tc_index, &cc1,&cc2);
+
+						printk("\r\n 0cc:[%d %d]\n",cc1,cc2);
+						g_tc[0].cc1 = cc1;
+						g_tc[0].cc2 = cc2;
+						if(tc_src_is_disconnected(&g_tc[0]))
+						{
+							gd->tc0_lighting_mode = 0;
+							printk("\r\n lighting_mode exit");
+							break;
+						}
+
+						if(!gd->tc1_lighting_mode)
+						{
+							if(hal_get_drp_toggle_result(1) == TYPEC_DRP_SNK_CONNECTED)
+							{
+								break;
+							}
+							else if(hal_get_drp_toggle_result(1) == TYPEC_DRP_SRC_CONNECTED)
+							{
+								break;
+							}
+						}
+					}
+
+					if(gd->tc1_lighting_mode)
+					{
+						extern bool tc_src_is_disconnected(struct tc_s * tc);
+						enum tc_cc_status cc1,cc2;
+						hal_tcpc_get_cc(g_tc[1].tc_index, &cc1,&cc2);
+
+						printk("\r\n [%d]cc:[%d %d]\n",g_tc[1].tc_index,cc1,cc2);
+						g_tc[1].cc1 = cc1;
+						g_tc[1].cc2 = cc2;
+						if(tc_src_is_disconnected(&g_tc[1]))
+						{
+							gd->tc1_lighting_mode = 0;
+							printk("\r\n lighting_mode exit");
+							break;
+						}
+
+						if(!gd->tc0_lighting_mode)
+						{
+							if(hal_get_drp_toggle_result(0) == TYPEC_DRP_SNK_CONNECTED)
+							{
+								break;
+							}
+							else if(hal_get_drp_toggle_result(0) == TYPEC_DRP_SRC_CONNECTED)
+							{
+								break;
+							}
+						}
+					}
+
 					if(SLP_u8SleepModeQDetect())// need to normal
 					{
 						SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
@@ -525,6 +606,7 @@ void RST_vCheck(void)
 						TMR0->SPL_CTRL.WORD &= !TMR_SPL_CTRL_WKUP_EN_Msk;
 						do
 						{
+							printk("\r\n wait to reset");
 							reset_cnt++;
 							delay_1ms(1000);
 						}while (reset_cnt<4);
