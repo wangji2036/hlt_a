@@ -268,6 +268,7 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 	}
 	delay_cnt++;
 	if(delay_cnt >= 23) delay_cnt = 0;
+	return false;
 #else
 	return true;
 #endif

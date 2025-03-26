@@ -658,7 +658,7 @@ static void TC_TryWAIT_SNK_Exit(struct tc_s * tc)
 		}
 		else if(tc_snk_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
 		{
-			if(hal_tcpc_vbus_is_present(tc->tc_index))
+			if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
 			{
 				usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
 			}

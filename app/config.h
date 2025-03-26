@@ -6,7 +6,7 @@
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
 #define RELE_DATE                             0x53125	//update 20250325
-#define TX_FW_VER                               0x09
+#define TX_FW_VER                               0x10
 
 #define POWERBANK_BUCK_EVK_V02
 

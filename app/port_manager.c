@@ -750,7 +750,8 @@ void port_enum_port_snk_setcharge(void)
 #endif
 
 #if(BUCKBOOST_USED_NU6801 == 1)
-	buckboost_ops.set_ovp(g_buckboost.adc_vbus);
+
+	buckboost_ops.set_ovp(g_port.snk_set_volt);
 #endif
 
 	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
@@ -796,6 +797,7 @@ void port_enum_port_snk_setvolt(void)
 					if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
 					{
 						usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
+						g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
 						g_port.ibus_limit = pdo_max_current(source_pdo);
 						g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
 						break;
@@ -811,11 +813,13 @@ void port_enum_port_snk_setvolt(void)
 			{
 				qc2_set_volt(VOLTAGE_12V);
 				g_port.ibus_limit = 1500;
+				g_port.snk_set_volt = VOLTAGE_12V;
 				g_port.adpater_power =  (uint32_t)2000 * VOLTAGE_12V / 1000;
 			}
 			else
 			{
 				qc2_set_volt(VOLTAGE_9V);
+				g_port.snk_set_volt = VOLTAGE_9V;
 				g_port.ibus_limit = 2000;
 				g_port.adpater_power =  (uint32_t)2000 * VOLTAGE_9V / 1000;
 			}
@@ -833,6 +837,8 @@ void port_enum_port_snk_setvolt(void)
 				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
+
+			g_port.snk_set_volt = VOLTAGE_5V;
 		}
 	}
 	else
@@ -853,6 +859,7 @@ void port_enum_port_snk_setvolt(void)
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 		}
+		g_port.snk_set_volt = VOLTAGE_5V;
 		g_port.ibus_limit = 1000;
 		g_port.ibat_limit = 1000;
 	}
