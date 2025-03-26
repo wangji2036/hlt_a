@@ -142,6 +142,8 @@ void gd_data_init(void)
 
 	gd->power_on_magic = 0xaa;
 
+	printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);
+
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
 //	gd->tx_infos.fo_exist = 1;
 	gd->tx_infos.fo_exist = 0;
