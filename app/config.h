@@ -30,5 +30,7 @@
 
 #define CONFIG_USE_NTC_FOR_CHAGER			1
 
+#define CAPACITOR_300_NF         			1
+
 
 #endif /* CONFIG_H_ */

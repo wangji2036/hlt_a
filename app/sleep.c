@@ -35,8 +35,13 @@
 static uint16_t sleep_q_68nf_thd = 0;
 static uint16_t sleep_f_68nf_thd = 0;
 #else
+#if CAPACITOR_300_NF
+static uint16_t sleep_q_68nf_thd = 115;
+static uint16_t sleep_f_68nf_thd = 1235;// sleep F -normal F,
+#else
 static uint16_t sleep_q_68nf_thd = 166;
 static uint16_t sleep_f_68nf_thd = 1317;// sleep F -normal F,
+#endif
 #endif
 void SLP_vNormalToSleep(void)
 {
@@ -460,7 +465,7 @@ uint8_t SLP_u8SleepModeQDetect(void)
 		default:
 			break;
 	}
-	printk("\r\n Q wake-up? [%d]",u8NeedToNormal);
+//	printk("\r\n Q wake-up? [%d]",u8NeedToNormal);
 	return u8NeedToNormal;
 }
 #define FMS_STS_IDLE       0
