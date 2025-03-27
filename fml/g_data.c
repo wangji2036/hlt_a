@@ -73,7 +73,7 @@ void ap_data_init(void)
 	ap->dig_ping_duty_5v = 500;
 	ap->dig_ping_phas_5v = 0;
 
-	ap->dig_ping_volt_6v = 5800;
+	ap->dig_ping_volt_6v = 5600;
 	ap->dig_ping_perd_6v = 1127;;//144000000 / 127772;
 	ap->dig_ping_duty_6v = 500;
 	ap->dig_ping_phas_6v = 0;

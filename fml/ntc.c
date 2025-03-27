@@ -26,7 +26,7 @@ void buckboost_ntc_handle(void)
 	static uint8_t ntc_ot_cnt = 0;
 	static uint8_t ntc_stop_chg_cnt = 0;
 	//static uint8_t ntc_lock_cnt = 0;
-	printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat,ntc_ut_flag,ntc_ot_flag);
+	//printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat,ntc_ut_flag,ntc_ot_flag);
 
 	uint16_t ntc_ut_value;
 	uint16_t ntc_ut_restore_value;

@@ -339,7 +339,7 @@ goto __CNFG_PHASE_ERR__;
 
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
-				pid_set_freq_limit(144000000/112000, 144000000/127772, 144000000/147000);
+				pid_set_freq_limit(144000000/110500, 144000000/127772, 144000000/147000);
 goto __CNFG_PHASE_ERR__;
 			}
 			else
@@ -376,7 +376,7 @@ goto __CNFG_PHASE_ERR__;
 //					if (gd->rx_infos.rx_type != EPRX_TYPE_APPLE_STD && gd->rx_infos.rx_type != EPRX_TYPE_APPLE_MAG)
 					if (!(gd->adp.pwr_high >= 20 && (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG || gd->rx_infos.rx_type == EPRX_TYPE_APPLE_STD)))
 					{
-						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
+						pid_set_freq_limit(144000000/110500, 144000000/147000, 144000000/147000);
 					}
 
 					/*+++++++++++++++++++++ ATL TPR#1C 6.2.09 Test#23 workaround +++++++++++++++++++++*/
