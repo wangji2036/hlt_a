@@ -508,6 +508,7 @@ void RST_vCheck(void)
 					delay_1us(500);
 					enum tc_cc_status cc1,cc2;
 					hal_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
+					sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCA_STAT.WORD);
 					extern bool tc_snk_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
 				    if (tc_snk_is_connected(cc1,cc2))
 				    {
@@ -527,6 +528,8 @@ void RST_vCheck(void)
 
 
 					hal_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
+					//sleep_printk("\r\n 1cc:[%d %d]\n",cc1,cc2);
+					sleep_printk("\r\n 1cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCB_STAT.WORD);
 				    if (tc_snk_is_connected(cc1,cc2))
 				    {
 				    	gd->rd1_cnt++;
