@@ -1,36 +1,36 @@
 #include "regdef.h"
 #include "eadc.h"
-#include "sw7201.h"
+#include "nu6805.h"
 #include "printk.h"
 #include "config.h"
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 #define BAT_CELL_FULL_VOLT   4200
 #define BAT_CELL_EMPTY_VOLT   2900
 
 #define BAT_CELL_NUM 2
 
-void hal_sw7201_buckboost_init(void)
+void hal_nu6805_buckboost_init(void)
 {
-	//if(hal_sw7201_buckboost_get_verision() == 0x11)
+	//if(hal_nu6805_buckboost_get_verision() == 0x11)
 
-	uint8_t revision = hal_sw7201_buckboost_get_verision();
+	uint8_t revision = hal_nu6805_buckboost_get_verision();
 	{
-		hal_sw7201_buckboost_dis_indetb();
-		hal_sw7201_buckboost_charge_target_volt(BAT_CELL_FULL_VOLT*BAT_CELL_NUM);
-		hal_sw7201_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
+		hal_nu6805_buckboost_dis_indetb();
+		hal_nu6805_buckboost_charge_target_volt(BAT_CELL_FULL_VOLT*BAT_CELL_NUM);
+		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
 
-		hal_sw7201_buckboost_set_busiv(5000,3000);  //5v3a
-		hal_sw7201_buckboost_write_reset_check();
-		hal_sw7201_buckboost_typeca_gate_en(false);
-		hal_sw7201_buckboost_typecb_gate_en(false);
-		hal_sw7201_buckboost_usb_a_gate_en(false);
-		hal_sw7201_buckboost_charge_vbus_uv(4000);
-		hal_sw7201_buckboost_charge_ibus_limit(1000);
-		hal_sw7201_buckboost_charge_ibat_limit(500);
-		hal_sw7201_buckboost_charge_set_trickle_volt(3000);
-		//hal_sw7201_buckboost_a2_detect_enable(true);
-		hal_sw7201_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
-		hal_sw7201_buckboost_set_cv();
+		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a
+		hal_nu6805_buckboost_write_reset_check();
+		hal_nu6805_buckboost_typeca_gate_en(false);
+		hal_nu6805_buckboost_typecb_gate_en(false);
+		hal_nu6805_buckboost_usb_a_gate_en(false);
+		hal_nu6805_buckboost_charge_vbus_uv(4000);
+		hal_nu6805_buckboost_charge_ibus_limit(1000);
+		hal_nu6805_buckboost_charge_ibat_limit(500);
+		hal_nu6805_buckboost_charge_set_trickle_volt(3000);
+		//hal_nu6805_buckboost_a2_detect_enable(true);
+		hal_nu6805_buckboost_set_mode(BUCKBOOST_SHUTDOWM_MODE);
+		hal_nu6805_buckboost_set_cv();
 		// Disable NTC
 		uint8_t read;
 		hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
@@ -39,18 +39,18 @@ void hal_sw7201_buckboost_init(void)
 
 		//return;
 	}
-	printk("sw7201 revision =0x%x\n",revision);
+	printk("nu6805 revision =0x%x\n",revision);
 }
 
 
-void hal_sw7201_buckboost_set_cv(void)
+void hal_nu6805_buckboost_set_cv(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_RESEVERD,&read);
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_RESEVERD,0x08 | read);
 }
 
-void hal_sw7201_buckboost_typeca_dischg(bool en)
+void hal_nu6805_buckboost_typeca_dischg(bool en)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
@@ -59,7 +59,7 @@ void hal_sw7201_buckboost_typeca_dischg(bool en)
 	else
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x02));
 }
-void hal_sw7201_buckboost_typecb_dischg(bool en)
+void hal_nu6805_buckboost_typecb_dischg(bool en)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
@@ -68,7 +68,7 @@ void hal_sw7201_buckboost_typecb_dischg(bool en)
 	else
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x04));
 }
-void hal_sw7201_buckboost_usb_a_dischg(bool en)
+void hal_nu6805_buckboost_usb_a_dischg(bool en)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
@@ -78,7 +78,7 @@ void hal_sw7201_buckboost_usb_a_dischg(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x01));
 }
 
-void hal_sw7201_buckboost_vbus_dischg(bool en)
+void hal_nu6805_buckboost_vbus_dischg(bool en)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,&read);
@@ -88,7 +88,7 @@ void hal_sw7201_buckboost_vbus_dischg(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x08));
 }
 
-uint8_t hal_sw7201_buckboost_get_protect(void)
+uint8_t hal_nu6805_buckboost_get_protect(void)
 {
 	uint8_t read;
 
@@ -100,7 +100,7 @@ uint8_t hal_sw7201_buckboost_get_protect(void)
 	return read;
 }
 
-bool hal_sw7201_buckboost_a2_detect_enable(bool en)
+bool hal_nu6805_buckboost_a2_detect_enable(bool en)
 {
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_discharge_Control,0x00);
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event1,0x02);
@@ -110,7 +110,7 @@ bool hal_sw7201_buckboost_a2_detect_enable(bool en)
 	return en;
 }
 
-bool hal_sw7201_buckboost_get_a2_state(void)
+bool hal_nu6805_buckboost_get_a2_state(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_IRQ_Event1,&read);
@@ -123,7 +123,7 @@ bool hal_sw7201_buckboost_get_a2_state(void)
 	return false;
 }
 
-void hal_sw7201_buckboost_set_mode(enum buckboost_mode woke_mode)
+void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
 	uint8_t write_data = 0;
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
@@ -134,7 +134,7 @@ void hal_sw7201_buckboost_set_mode(enum buckboost_mode woke_mode)
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Mode_Control,write_data);
 }
 
-void hal_sw7201_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
+void hal_nu6805_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 {
 	//printk("%s= %d\n",__func__,vbus);
 	if(vbus < 3000 || vbus > 22000) return;
@@ -149,7 +149,7 @@ void hal_sw7201_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 	//hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Discharge_Ibus_Limit,ibus);
 }
 
-void hal_sw7201_buckboost_typeca_gate_en(bool en)
+void hal_nu6805_buckboost_typeca_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
@@ -160,8 +160,8 @@ void hal_sw7201_buckboost_typeca_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x02));
 }
 
-void hal_sw7201_buckboost_usb_a_gate_en(bool en)
-//void hal_sw7201_buckboost_typecb_gate_en(bool en)
+void hal_nu6805_buckboost_usb_a_gate_en(bool en)
+//void hal_nu6805_buckboost_typecb_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
@@ -172,8 +172,8 @@ void hal_sw7201_buckboost_usb_a_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
 }
 
-void hal_sw7201_buckboost_typecb_gate_en(bool en)
-//void hal_sw7201_buckboost_usb_a_gate_en(bool en)
+void hal_nu6805_buckboost_typecb_gate_en(bool en)
+//void hal_nu6805_buckboost_usb_a_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
@@ -184,21 +184,21 @@ void hal_sw7201_buckboost_typecb_gate_en(bool en)
 		hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x04));
 }
 
-void hal_sw7201_buckboost_charge_ibus_limit(uint16_t ibus_limit)
+void hal_nu6805_buckboost_charge_ibus_limit(uint16_t ibus_limit)
 {
 	if(ibus_limit < 500) ibus_limit = 500;
 	ibus_limit = (ibus_limit - 500) / 50;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_Ibus_Limit,ibus_limit);
 }
 
-void hal_sw7201_buckboost_charge_ibat_limit(uint16_t ibat_limit)
+void hal_nu6805_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 {
 	if(ibat_limit < 100) ibat_limit = 100;
 	ibat_limit = (ibat_limit - 100) / 100;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_Ibat_Limit,ibat_limit);
 }
 
-int16_t hal_sw7201_buckboost_get_bus_current(void)
+int16_t hal_nu6805_buckboost_get_bus_current(void)
 {
 	uint16_t ibus = 0;
 	uint8_t read = 0;
@@ -224,7 +224,7 @@ int16_t hal_sw7201_buckboost_get_bus_current(void)
 	}
 }
 
-int16_t hal_sw7201_buckboost_get_bat_current(void)
+int16_t hal_nu6805_buckboost_get_bat_current(void)
 {
 	uint16_t ibus = 0;
 	uint8_t read = 0;
@@ -248,7 +248,7 @@ int16_t hal_sw7201_buckboost_get_bat_current(void)
 	}
 }
 
-uint16_t hal_sw7201_buckboost_get_bat_voltage(void)
+uint16_t hal_nu6805_buckboost_get_bat_voltage(void)
 {
 	uint16_t vbat = 0;
 	uint8_t read = 0;
@@ -261,7 +261,7 @@ uint16_t hal_sw7201_buckboost_get_bat_voltage(void)
 	vbat |= read & 0x0F;
 	return vbat *75 / 10;
 }
-uint16_t hal_sw7201_buckboost_get_bus_voltage(void)
+uint16_t hal_nu6805_buckboost_get_bus_voltage(void)
 {
 	uint16_t vbus = 0;
 	uint8_t read = 0;
@@ -275,7 +275,7 @@ uint16_t hal_sw7201_buckboost_get_bus_voltage(void)
 	return vbus *75 / 10;
 }
 
-uint16_t hal_sw7201_buckboost_get_bat_temperature(void)
+uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 {
 	uint16_t ntc = 0;
 	uint8_t read = 0;
@@ -292,19 +292,19 @@ uint16_t hal_sw7201_buckboost_get_bat_temperature(void)
 
 
 
-uint8_t hal_sw7201_buckboost_get_verision(void)
+uint8_t hal_nu6805_buckboost_get_verision(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Version_info,&read);
 	return read;
 }
 
-void hal_sw7201_buckboost_write_reset_check(void)
+void hal_nu6805_buckboost_write_reset_check(void)
 {
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_IC_Reset_Check,0x01);
 }
 
-void hal_sw7201_buckboost_dis_indetb(void)
+void hal_nu6805_buckboost_dis_indetb(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(SW7201_I2C_DEV_ADDR,REG_Discharge_Setting3,&read);
@@ -313,14 +313,14 @@ void hal_sw7201_buckboost_dis_indetb(void)
 
 }
 
-void hal_sw7201_buckboost_charge_vbus_uv(uint16_t vbus_uv)
+void hal_nu6805_buckboost_charge_vbus_uv(uint16_t vbus_uv)
 {
 	if(vbus_uv < 4000) vbus_uv = 4000;
 	vbus_uv = (vbus_uv - 4000) / 100;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_HoldVol,vbus_uv);
 }
 
-void hal_sw7201_buckboost_charge_target_volt(uint16_t volt)
+void hal_nu6805_buckboost_charge_target_volt(uint16_t volt)
 {
 	if(volt < 3000 || volt > 19200) return;
 	volt = (volt -3000) / 10;
@@ -328,14 +328,14 @@ void hal_sw7201_buckboost_charge_target_volt(uint16_t volt)
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Charger_VbatVol_Low,volt & 0x7);
 }
 
-void hal_sw7201_buckboost_charge_set_trickle_volt(uint16_t volt)
+void hal_nu6805_buckboost_charge_set_trickle_volt(uint16_t volt)
 {
 	if(volt < 2500) volt = 2500;
 	volt = (volt -2500) / 100;
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Trickle_Vol,volt);
 }
 
-void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
+void hal_nu6805_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 {
 	if(volt < 2700) volt = 2700;
 	volt = (volt -2700) /100;
@@ -346,7 +346,7 @@ void hal_sw7201_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 }
 
 
-uint8_t hal_sw7201_buckboost_is_ibus_loop(void)
+uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
 {
 	return 0;
 }

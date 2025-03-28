@@ -195,7 +195,7 @@ void tcpm_task_event_handler(uint32_t event)
 
 			if(usba_state)
 			{
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 				if(g_buckboost.adc_ibus >= -100 && g_buckboost.adc_ibus <= 0 )
 				{
 					usba_cnt++;

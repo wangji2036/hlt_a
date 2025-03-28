@@ -61,7 +61,7 @@ int main(void)
 //	fml_usbqc_init();
 
 	fml_nu103x_por_init();
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	delay_1ms(500);
 #endif
 //	WPC_vInit();

@@ -16,7 +16,7 @@
 #include"i2cm.h"
 #include"buckboost.h"
 #include"nu6801.h"
-#include"sw7201.h"
+#include"nu6805.h"
 #include "fmc.h"
 #include"qdt.h"
 #include"led.h"
@@ -89,14 +89,14 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,0x41);//10
 
 	/* 6801 sleep function and firmware work-round end*/
-/*#else if (BUCKBOOST_USED_SW7201 ==1)
+/*#else if (BUCKBOOST_USED_NU6805 ==1)
 
 	hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x00);
 
     hal_i2cm_wirte_one_byte(SW7201_I2C_DEV_ADDR,REG_Indt_Control,0x11);*/
 #endif
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	hal_wdt_feed();
 
 	uint8_t read;
@@ -323,7 +323,7 @@ void SLP_vSleepToSleep(void)
 	GPD->MODE.BITS.PIN1 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPD->ITEN.BITS.PIN1 = 1;
 	GPD->ITTP.BITS.PIN1 = 0;
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	hal_wdt_feed();
 	_SET_I2CM_SDA_OUTPUT();
 	_SET_I2CM_SCL_OUTPUT();

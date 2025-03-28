@@ -43,7 +43,7 @@ void usb_set_enable(void)
 
 
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)

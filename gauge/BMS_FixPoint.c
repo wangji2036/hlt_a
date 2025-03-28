@@ -80,7 +80,7 @@ int32_T P_SOCSlope_mpctPermV[12] = { 25, 25, 114, 282, 226, 99, 109, 99, 106, 98
 #endif
 
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 /* Exported block parameters */
 int32_T P_AtRateCurrent_mA = 1000;     /* Variable: P_AtRateCurrent_mA
                                         * Referenced by: '<S4>/At_Rate_Current_mA'
@@ -158,7 +158,7 @@ const uint32_T P_R0Dsg_mOhm[36] = { 52U, 52U, 52U, 52U, 52U, 52U, 45U, 45U, 45U,
 #endif
 											
 											
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 const uint32_T P_DcirDsg_mOhm[96] = { 138U, 138U, 138U, 108U, 108U, 108U, 95U, 95U,
   95U, 90U, 90U, 90U, 79U, 79U, 79U, 73U, 73U, 73U, 69U, 69U, 69U, 65U, 65U, 65U,
   64U, 64U, 64U, 64U, 64U, 64U, 60U, 60U, 60U, 58U, 58U, 58U, 60U, 60U, 60U, 60U,
@@ -224,7 +224,7 @@ const uint16_T P_OCVDsg_mV[36] = { 2989U, 2989U, 2989U, 3492U, 3492U, 3492U, 360
                                                       */
 #endif
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 uint16_T P_Capacity_mAh = 10487U;      /* Variable: P_Capacity_mAh
                                         * Referenced by:
                                         *   '<S40>/SOH_capacity_mAh'

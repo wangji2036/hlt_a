@@ -1,6 +1,6 @@
 #include "regdef.h"
 #include "buckboost.h"
-#include "sw7201.h"
+#include "nu6805.h"
 #include "nu6801.h"
 #include "printk.h"
 #include "tcpm.h"
@@ -149,7 +149,7 @@ void buckboost_task_init(void)
 
 void buckboost_protection_handle(void)
 {
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	#define VBUS_FUALT_VBUS_OCP			BIT(1)
 	#define VBUS_FUALT_VBUS_SCP			BIT(2)
 	#define VBUS_FUALT_VBAT_UVP			BIT(3)
@@ -181,7 +181,7 @@ void buckboost_protection_handle(void)
 
 	status = buckboost_ops.get_protect_status();
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	if(g_buckboost.adc_vbus > SW7201_VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
 #elif(BUCKBOOST_USED_NU6801 == 1)
 	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH )
@@ -230,7 +230,7 @@ void buckboost_protection_handle(void)
 
 	if(status != 0)
 	{
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP))
 		{
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
@@ -351,12 +351,12 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(CONFIG_USBA_SUPPORT == 1)
 				g_buckboost.usba_state =  buckboost_ops.get_a2_state();
 			#endif
-			#if(BUCKBOOST_USED_SW7201 == 1)
+			#if(BUCKBOOST_USED_NU6805 == 1)
 				g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 			#else
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_IBAT);
 			#endif
-			#if(BUCKBOOST_USED_SW7201 == 1)
+			#if(BUCKBOOST_USED_NU6805 == 1)
 				if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
 				{
 					g_tc[TYPEC_PORT_A].is_deadbattery = 1;
@@ -385,7 +385,7 @@ void buckboost_task_event_handler(uint32_t event)
 			}
 			else if(get_info_step == 2)
 			{
-			#if(BUCKBOOST_USED_SW7201 == 1)
+			#if(BUCKBOOST_USED_NU6805 == 1)
 				g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
 			#else
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_IBUS);
@@ -420,7 +420,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6801 == 1)
 				hal_nu6801_deadbat_patch();
 			#endif
-			#if(BUCKBOOST_USED_SW7201 == 1)
+			#if(BUCKBOOST_USED_NU6805 == 1)
 				buckboost_ir_drop_handle();
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			#else
@@ -452,7 +452,7 @@ void buckboost_task_event_handler(uint32_t event)
 			if(get_info_step ++ > 6) get_info_step = 0;
 			break;
 		case BUCKBOOST_EVT_VBUS_PERIOD:
-		#if(BUCKBOOST_USED_SW7201 == 1)
+		#if(BUCKBOOST_USED_NU6805 == 1)
 			g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 		#else
 			hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_VBUS);
@@ -490,7 +490,9 @@ void buckboost_task_event_handler(uint32_t event)
 			break;
 		case BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT:
 			//printk("%s\n","BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT");
+#if(BUCKBOOST_USED_NU6801 == 1)
 			buckboost_ops.set_ovp(20000);
+#endif
 			g_buckboost.regulator_state = 0;
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_wait, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_WAITDONE);
 			break;
@@ -615,30 +617,30 @@ void buckboost_task_event_handler(uint32_t event)
 
 }
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 const struct buckboost_operations buckboost_ops =
 {
-	.init = 					hal_sw7201_buckboost_init,
-	.set_work_mode = 			hal_sw7201_buckboost_set_mode,
-	.set_out = 					hal_sw7201_buckboost_set_busiv,
-	.typca_gate_en = 			hal_sw7201_buckboost_typeca_gate_en,
-	.typcb_gate_en = 			hal_sw7201_buckboost_typecb_gate_en,
-	.usb_a_gate_en = 			hal_sw7201_buckboost_usb_a_gate_en,
-	.set_chager_ibus_limit = 	hal_sw7201_buckboost_charge_ibus_limit,
-	.set_chager_ibat_limit = 	hal_sw7201_buckboost_charge_ibat_limit,
-	.get_bus_current = 			hal_sw7201_buckboost_get_bus_current,
-	.get_bat_current =  		hal_sw7201_buckboost_get_bat_current,
-	.get_bat_voltage =  		hal_sw7201_buckboost_get_bat_voltage,
-	.get_bus_voltage =  		hal_sw7201_buckboost_get_bus_voltage,
-	.get_a2_state    = 			hal_sw7201_buckboost_get_a2_state,
-	.en_a2_detect  = 			hal_sw7201_buckboost_a2_detect_enable,
-	.get_bat_temperature =      hal_sw7201_buckboost_get_bat_temperature,
-	.typca_dischg_en = 			hal_sw7201_buckboost_typeca_dischg,
-	.typcb_dischg_en = 			hal_sw7201_buckboost_typecb_dischg,
-	.usb_a_dischg_en = 			hal_sw7201_buckboost_usb_a_dischg,
-	.vbus_dischg_en = 			hal_sw7201_buckboost_vbus_dischg,
-	.get_protect_status = 		hal_sw7201_buckboost_get_protect,
-	.is_ibus_loop = 			hal_sw7201_buckboost_is_ibus_loop,
+	.init = 					hal_nu6805_buckboost_init,
+	.set_work_mode = 			hal_nu6805_buckboost_set_mode,
+	.set_out = 					hal_nu6805_buckboost_set_busiv,
+	.typca_gate_en = 			hal_nu6805_buckboost_typeca_gate_en,
+	.typcb_gate_en = 			hal_nu6805_buckboost_typecb_gate_en,
+	.usb_a_gate_en = 			hal_nu6805_buckboost_usb_a_gate_en,
+	.set_chager_ibus_limit = 	hal_nu6805_buckboost_charge_ibus_limit,
+	.set_chager_ibat_limit = 	hal_nu6805_buckboost_charge_ibat_limit,
+	.get_bus_current = 			hal_nu6805_buckboost_get_bus_current,
+	.get_bat_current =  		hal_nu6805_buckboost_get_bat_current,
+	.get_bat_voltage =  		hal_nu6805_buckboost_get_bat_voltage,
+	.get_bus_voltage =  		hal_nu6805_buckboost_get_bus_voltage,
+	.get_a2_state    = 			hal_nu6805_buckboost_get_a2_state,
+	.en_a2_detect  = 			hal_nu6805_buckboost_a2_detect_enable,
+	.get_bat_temperature =      hal_nu6805_buckboost_get_bat_temperature,
+	.typca_dischg_en = 			hal_nu6805_buckboost_typeca_dischg,
+	.typcb_dischg_en = 			hal_nu6805_buckboost_typecb_dischg,
+	.usb_a_dischg_en = 			hal_nu6805_buckboost_usb_a_dischg,
+	.vbus_dischg_en = 			hal_nu6805_buckboost_vbus_dischg,
+	.get_protect_status = 		hal_nu6805_buckboost_get_protect,
+	.is_ibus_loop = 			hal_nu6805_buckboost_is_ibus_loop,
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 

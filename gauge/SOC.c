@@ -333,7 +333,7 @@ void SOC_Correction(void)
 	    SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
       ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 11U);
 	#endif
-	#if(BUCKBOOST_USED_SW7201 == 1)
+	#if(BUCKBOOST_USED_NU6805 == 1)
     SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
       ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
 	  #endif

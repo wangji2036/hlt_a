@@ -1,6 +1,6 @@
 #include "regdef.h"
 #include "buckboost.h"
-#include "sw7201.h"
+#include "nu6805.h"
 #include "nu6801.h"
 #include "printk.h"
 #include "tcpm.h"

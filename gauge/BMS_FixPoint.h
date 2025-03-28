@@ -64,7 +64,7 @@ typedef struct {
    */
      int32_T DCIR_Discharge_tableData[36];
 #endif
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
   int32_T pooled7[32];
 
   /* Computed Parameter: DCIR_Discharge_tableData
@@ -169,7 +169,7 @@ extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
                                          */
 #endif
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 extern const  int32_T P_OcvSOCDsg_mpct[96];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
                                         *   '<S33>/OCV_DSG'
@@ -214,7 +214,7 @@ extern const  uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
                                         */
 #endif
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 
 extern const  uint32_T P_DcirDsg_mOhm[96];    /* Variable: P_DcirDsg_mOhm
                                         * Referenced by: '<S23>/DCIR_Discharge'
@@ -263,7 +263,7 @@ extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
                                         */
 #endif
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 extern uint16_T P_OCVAxis_mV[32];      /* Variable: P_OCVAxis_mV
                                         * Referenced by: '<S12>/OCV_DSG'
                                         */

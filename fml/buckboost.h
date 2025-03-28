@@ -5,7 +5,7 @@
 #include "osal.h"
 #include "config.h"
 
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 	#define BAT_DEAD_BATTER_V   	6000
 	#define BAT_ACTIVE_RBATTER_V   	6500
 #elif(BUCKBOOST_USED_NU6801 == 1)

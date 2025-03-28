@@ -767,16 +767,17 @@ void port_enum_port_snk_setvolt(void)
 
 	g_port.ibus_limit = 1000;
 	g_port.ibat_limit = 1000;
+#if(BUCKBOOST_USED_NU6801 == 1)
 
 	buckboost_ops.set_ovp(20000);
-
+#endif
 	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
 			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (!g_tc[TYPEC_PORT_A].is_deadbattery))
 	{
 
 		if(g_usb_pd_s.explicit_contract)
 		{
-#if(BUCKBOOST_USED_SW7201 == 1)
+#if(BUCKBOOST_USED_NU6805 == 1)
 			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
 			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
 			{

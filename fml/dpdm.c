@@ -266,7 +266,10 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
+#if(BUCKBOOST_USED_NU6801 == 1)
+
 			buckboost_ops.set_ovp(20000);
+#endif
 			bc12_type = BC1P2_HVDCP;
 			qc2_set_volt(12000);
 			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);
