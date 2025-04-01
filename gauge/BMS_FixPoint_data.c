@@ -17,7 +17,7 @@
 /* Invariant block signals (default storage) */
 const ConstB ConstB_s = {
   55000,                               /* '<S39>/Add2' */
-  -10,                                 /* '<S36>/Divide1' */
+  -100,                                /* '<S36>/Divide1' */
   9,                                   /* '<S22>/Math Function1' */
   9,                                   /* '<S32>/Add5' */
   1,                                   /* '<S20>/Minus' */

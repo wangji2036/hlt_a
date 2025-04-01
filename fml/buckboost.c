@@ -17,20 +17,44 @@ struct buckboost_s  g_buckboost;
 int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 {
 	int16_t k,b;
-	uint32_t actual_effiency;
+	int32_t actual_effiency;
 	int32_t temp_ibat;
 	// x1 =5,y1= 970; x2 = 9, y2= 950;
 	// xielv k ----- (y2-y1)/(x2-x1) , so k = (950-970)/(9-5) = -5,  k  used as * 100
 	// jieju ------y1=kx1+b, b= y1-kx1, so  b = 970 - (-5)*5 = 995
 	// y= (k * x) + b; effiency, used as *1000
-	if(ibus>0)// buck mode
+	if(ibus<0)// buck mode
 	{
-		k = -500;
-		b = 995;
+		if(vbus> 15000)
+		{
+			k= -375;
+			b = 981;
+		}
+		else if(vbus> 12000)
+		{
+			k = -300;
+			b = 1000;
+		}
+		else if(vbus> 9000)
+		{
+			 k = -333;
+			 b = 980;
+		}
+		else // <9v
+		{
+			k = -500;
+			b = 995;
+		}
 	}
 	else // boost mode
 	{
-		if(vbus> 12000)
+
+		if(vbus> 15000)
+		{
+            k= -375;
+            b = 981;
+		}
+		else if(vbus> 12000)
 		{
             k = -300;
             b = 1000;
@@ -46,8 +70,19 @@ int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 			b = 995;
 		}
 	}
-	actual_effiency = (k*vbus)/100 +b;
-	temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
+	printk(" vbus = %d vbat= %d k= %d b= %d\n",vbus,vbat,k,b);
+	actual_effiency = (k*(vbus/100))/1000 +b;
+	printk("effi = %d \n",actual_effiency);
+//	temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
+
+	if(ibus>=0)
+	{
+	    temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
+	}
+	else
+	{
+		temp_ibat = (((vbus*ibus*10) /actual_effiency) *100)/vbat;
+	}
     return (int16_t)temp_ibat;
 }
 void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint16_t delay)
@@ -544,6 +579,9 @@ void buckboost_task_event_handler(uint32_t event)
 					//printk("adc_vbat = %d\n",g_buckboost.adc_vbat);
 					break;
 				case NU6801_ADC_IBAT:
+                  #if 1
+					g_buckboost.adc_ibat = ibus_to_ibat(g_buckboost.adc_ibus,g_buckboost.adc_vbus,g_buckboost.adc_vbat);
+                  #else
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 					uint32_t ibat = row* 120  * 100 / nu6801_vref;
 					if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -551,6 +589,7 @@ void buckboost_task_event_handler(uint32_t event)
 					else
 						g_buckboost.adc_ibat = -ibat;
 					//printk("adc_ibat = %d\n",g_buckboost.adc_ibat);
+                 #endif
 					break;
 				case NU6801_ADC_VBUS:
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
