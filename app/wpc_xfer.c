@@ -100,7 +100,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case WPC_PRx_PKT_TYP_CE_03:
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-			if (gd->tx_power > 10000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+			if (gd->tx_power > 13000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
 			{
 				gd->rx_infos.mpp_restricted_power_limit = 1;
 			}
