@@ -279,6 +279,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			if(g_buckboost.adc_vbus >= 10500)
 			{
 				bc12_type = BC1P2_QC12V;
+				qc2_set_volt(5000);
 				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 			}
 			else
