@@ -32,5 +32,5 @@
 
 #define CAPACITOR_300_NF         			1
 
-
+#define OPTION_SAMSUNG_PPDE                       OPTION_ENABLED
 #endif /* CONFIG_H_ */

@@ -17,6 +17,9 @@ static uint8_t need_cloak_atn;
 static uint8_t cnt_cep0 = 0;
 static uint8_t cnt_cloak_pkt = 0;
 
+uint8_t samsungNeedFSK_Flag = 0, samsungPrivateFastChargeFlag = 0;
+static uint8_t samsung_ackmsg[2] = {0x02, 0x01};
+
 uint8_t need_atn_cnt;
 uint8_t need_atn_evt;
 
@@ -45,8 +48,43 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 	switch (com_ask->hdr)
 	{
 		case 0x18:
+#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20)
+			{
+				if (com_ask->msg.prop.data[0] == 0xFF)
+				{
+					samsungNeedFSK_Flag = 0;
+				}
+			}
+#endif
 			break;
 		case 0x28:
+#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20 && gd->adp.pwr_high >= 20)
+			{
+				if (com_ask->msg.prop.data[0] == 0x01 && com_ask->msg.prop.data[1] == 0x00)
+				{
+
+				}
+				else if (com_ask->msg.prop.data[0] == 0x06 && com_ask->msg.prop.data[1] == 0x2C)
+				{
+					if (samsungPrivateFastChargeFlag == 0)
+					{
+						samsungPrivateFastChargeFlag = 1;
+						//TODO: May need switch half to full bridge
+					}
+				}
+				else if (com_ask->msg.prop.data[0] == 0x06 && com_ask->msg.prop.data[1] == 0x05)
+				{
+					if (samsungPrivateFastChargeFlag == 1)
+						samsungPrivateFastChargeFlag = 0;
+				}
+				else if (com_ask->msg.prop.data[0] == 0x0C && com_ask->msg.prop.data[1] == 0x00)
+				{
+					samsungNeedFSK_Flag = 1;
+				}
+			}
+#endif
 			if (gd->rx_infos.prmc == 0x005C && gd->rx_infos.device_id == 0x16197510)
 			{
 				if ((com_ask->msg.prop.data[0] == 0x12 && com_ask->msg.prop.data[1] == 0x34) ||
@@ -114,6 +152,30 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				gd->rx_infos.cep_val = 0;
 				printk("#");
 			}
+			
+#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+			static uint8_t samsungFSKWaitCnt = 0;
+			if (samsungNeedFSK_Flag)
+			{
+				if (samsungFSKWaitCnt++ < 5)
+				{
+					if (gd->rx_infos.cep_val >= -5 && gd->rx_infos.cep_val <= 5)
+					{
+						gd->rx_infos.cep_val = 0; //good for fsk demo on Rx side
+					}
+					fml_fsk_data_send(EPWM1, T_RESPONSE, samsung_ackmsg, 2);
+				}
+				else
+				{
+					samsungNeedFSK_Flag = 0;			
+				}
+
+			}
+			else
+			{
+				samsungFSKWaitCnt = 0;
+			}
+#endif
 
 			if (gd->rx_infos.pch_t_delay == 0x32)
 			{
@@ -136,7 +198,10 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_power = (com_ask->msg.rp8.rp_value * (uint32_t)gd->rx_infos.max_power * 1000) >> 8;
 			osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
-
+#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+			if (samsungPrivateFastChargeFlag)
+				gd->rx_power <<= 1;
+#endif
 			if (++gd->alt_test_resv_rp8_cnt > 200)
 			{
 				gd->alt_test_resv_rp8_cnt = 200;

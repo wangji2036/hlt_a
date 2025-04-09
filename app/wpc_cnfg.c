@@ -264,6 +264,12 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				goto __CNFG_PHASE_ERR__;
 			}
 
+#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+			extern uint8_t samsungNeedFSK_Flag, samsungPrivateFastChargeFlag;
+			samsungNeedFSK_Flag = 0;
+			samsungPrivateFastChargeFlag = 0;
+#endif
+
 			gd->rx_infos.neg = com_ask->msg.cfg.is_nego;
 			gd->rx_infos.max_power = com_ask->msg.cfg.max_power;
 			gd->rx_infos.guaranteed_power = gd->rx_infos.max_power;
