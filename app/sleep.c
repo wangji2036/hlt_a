@@ -505,7 +505,7 @@ void RST_vCheck(void)
 					TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
 					hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RD);
 
-					delay_1us(500);
+					delay_1us(1000);
 					enum tc_cc_status cc1,cc2;
 					hal_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
 					sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCA_STAT.WORD);

@@ -30,6 +30,8 @@
 
 #define CONFIG_USE_NTC_FOR_CHAGER			1
 
+#define CONFIG_USBPD_ACCEPT_PRSWAP			0
+
 #define CAPACITOR_300_NF         			1
 
 #define OPTION_SAMSUNG_PPDE                       OPTION_ENABLED

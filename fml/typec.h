@@ -9,8 +9,8 @@
 
 
 
-#define TC_T_CC_DEBOUNCE	        120	/* 100 - 200 ms */
-#define TC_T_PD_DEBOUNCE	        9	/* 10 - 20 ms */
+#define TC_T_CC_DEBOUNCE	        100	/* 100 - 200 ms */
+#define TC_T_PD_DEBOUNCE	        10	/* 10 - 20 ms */
 #define TC_T_TRY_CC_DEBOUNCE	    10	/* 10 - 20 ms */
 #define TC_T_DRP_TRY		        550	/* 75 - 150 ms */
 #define TC_T_DRP_TRYWAIT	        600	/* 400 - 800 ms */
@@ -61,7 +61,7 @@ struct tc_s
 	bool is_in_prswap;
 	enum tc_cc_status cc1;
 	enum tc_cc_status cc2;
-	uint16_t tc_timer_cnt;
+	uint32_t tc_timer_cnt;
 	uint8_t try_snk_cnt;
 	uint8_t try_src_cnt;
 	uint8_t light_cnt;

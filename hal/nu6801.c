@@ -112,7 +112,7 @@ void hal_nu6801_buckboost_wake_up(void)
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,&read);
 	//hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0x1C) | 0xC0 | 0x20| 0x03));  //设置nu6801的工作频率
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0x1C) | 0x00 | 0x00| 0x00));  //设置nu6801的工作频率
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,((read & 0x1C) | 0x00 | 0x00| 0x01));  //设置nu6801的工作频率
 }
 
 void hal_nu6801_buckboost_set_cv(void)

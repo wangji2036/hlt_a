@@ -27,7 +27,7 @@ struct usb_pd_state_task_t
 
 #define tSinkWaitCapTime						365
 #define tChunkingNotSupportedTime				40
-#define tSenderResponseTime 					28
+#define tSenderResponseTime 					25
 #define tPSTransitionTime						500
 #define tSinkPPSPeriodicTime					14000
 #define tSourceCapabilityTime					150
@@ -75,31 +75,31 @@ enum usb_pd_state_e
 	PE_SRC_Transition_to_default,
 	PE_SRC_Give_Source_Cap,
 	PE_SRC_Wait_New_Capabilities,
-	PE_SRC_Send_Soft_Reset,
+	PE_SRC_Send_Soft_Reset,			//29
 	PE_SRC_Soft_Reset,
 	PE_SRC_Not_Supported_Received,
 	PE_SRC_Send_Not_Supported,
-	PE_SRC_Give_PPS_Status,
+	PE_SRC_Give_PPS_Status,//33
 #endif
-	PE_Give_Revision,//32
-	PE_SRC_SNK_Chunk_Received,//33
-	PE_BIST_Carrier_Mode,//34
-	PE_BIST_Test_Mode,//35
-	PE_Give_Battery_Status,
+	PE_Give_Revision,//34
+	PE_SRC_SNK_Chunk_Received,//35
+	PE_BIST_Carrier_Mode,//36
+	PE_BIST_Test_Mode,//37
+	PE_Give_Battery_Status,//38
 
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
-	PE_PRS_SRC_SNK_Evaluate_Swap,
+	PE_PRS_SRC_SNK_Evaluate_Swap,//39
 	PE_PRS_SRC_SNK_Accept_Swap,
 	PE_PRS_SRC_SNK_Transition_to_off,
 	PE_PRS_SRC_SNK_Assert_Rd,
 	PE_PRS_SRC_SNK_Wait_Source_on,
-	PE_PRS_SRC_SNK_Send_Swap,
+	PE_PRS_SRC_SNK_Send_Swap,//44
 	PE_PRS_SRC_SNK_Reject_PR_Swap,
 	PE_PRS_SNK_SRC_Evaluate_Swap,
 	PE_PRS_SNK_SRC_Accept_Swap,
 	PE_PRS_SNK_SRC_Transition_to_off,
 	PE_PRS_SNK_SRC_Assert_Rp,
-	PE_PRS_SNK_SRC_Source_on,
+	PE_PRS_SNK_SRC_Source_on,//50
 	PE_PRS_SNK_SRC_Reject_Swap,
 	PE_PRS_SNK_SRC_Send_Swap,
 #endif

@@ -378,7 +378,10 @@ void ui_update(void)
     		else flash_flag = 3; // 灭灯
     	}
     	else
-    		flash_flag = 0;
+    	{
+    		if(buckboost_protection_flag) flash_flag = 3;
+    		else flash_flag = 0;
+    	}
     }
 
 //    printk("\r\n SOC show=%d  row=%d", soc_show,SOCPack_RealSOC_pct);

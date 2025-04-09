@@ -9,8 +9,8 @@
 	#define BAT_DEAD_BATTER_V   	6000
 	#define BAT_ACTIVE_RBATTER_V   	6500
 #elif(BUCKBOOST_USED_NU6801 == 1)
-	#define BAT_DEAD_BATTER_V   	3000
-	#define BAT_ACTIVE_RBATTER_V   	3250
+	#define BAT_DEAD_BATTER_V   	2900
+	#define BAT_ACTIVE_RBATTER_V   	3100
 #endif
 
 enum buckboost_mode
@@ -137,7 +137,7 @@ bool buckboost_regulator_done(void);
 
 extern struct buckboost_s  g_buckboost;
 extern const struct buckboost_operations buckboost_ops;
-
+extern uint8_t buckboost_protection_flag;
 
 #endif /* BUCK_BOOST_H_ */
 

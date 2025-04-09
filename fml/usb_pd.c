@@ -56,7 +56,7 @@ const uint32_t source_pdo[] =
 #elif(BUCKBOOST_USED_NU6801 == 1)
 const uint32_t source_pdo[] =
 {
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
 	[1] = PDO_FIXED(9000, 2000, 0),
 	[2] = PDO_FIXED(12000, 1500, 0),
@@ -73,7 +73,7 @@ const uint32_t source_pdo_ntc[] =
 
 const uint32_t sink_pdo[] =
 {
-	#define SINK_PDO_FIXED_FLAGS     			(0)
+	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
 	[1] = PDO_FIXED(9000, 2000, 0),
 
@@ -474,13 +474,17 @@ static void PE_SNK_Transition_to_default_Entry(void)
 	usb_pd_reset_prl();
 	hal_tcpc_reset_pd_phy();
 	usb_pd_set_state(PE_SNK_Transition_to_default,exit_state);
+	g_usb_pd_s.pe_timer_cnt = 0;
 }
 
 static void PE_SNK_Transition_to_default_Exit(void)
 {
-	usb_pd_set_state(PE_SNK_Wait_for_Capabilities,enter_state);
-
-	need_rechager = 1;
+	g_usb_pd_s.pe_timer_cnt++;
+	if(g_usb_pd_s.pe_timer_cnt >= 100)
+	{
+		usb_pd_set_state(PE_SNK_Startup,enter_state);
+		need_rechager = 1;
+	}
 }
 
 static void PE_SNK_Send_Soft_Reset_Entry(void)
@@ -827,7 +831,7 @@ static void PE_SRC_Transition_to_default_Entry(void)
 	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
 	hal_tcpc_port_dummyload_en(g_tcpc.tc_port_map,true);
 	hal_tcpc_set_vconn(g_tcpc.tc_port_map,false);
-	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
+	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3500,0,0);
 	hal_tcpc_pd_phy_disable();
 	hal_tcpc_set_pd_rx(g_tcpc.tc_port_map,EN_SOP | EN_HARD_RESET,false);
 	hal_tcpc_set_roles(g_tcpc.tc_port_map,TYPEC_SOURCE,TYPEC_HOST);
@@ -1066,7 +1070,7 @@ static void PE_PRS_SRC_SNK_Transition_to_off_Entry(void)
 	//usb_pd_timer_start(PSSourceOffTimer,tBISTContModeTime);
 	g_tc[g_tcpc.tc_port_map].is_in_prswap = 1;
 	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
-	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
+	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3500,0,0);
 	g_usb_pd_s.pe_timer_cnt = 0;
 	usb_pd_set_state(PE_PRS_SRC_SNK_Transition_to_off,exit_state);
 }
@@ -1159,14 +1163,13 @@ static void PE_PRS_SNK_SRC_Accept_Swap_Entry(void)
 static void PE_PRS_SNK_SRC_Accept_Swap_Exit(void)
 {
 	usb_pd_set_state(PE_PRS_SNK_SRC_Transition_to_off,enter_state);
-	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
 }
 
 static void PE_PRS_SNK_SRC_Transition_to_off_Entry(void)
 {
+	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,false);
 	usb_pd_timer_start(PSSourceOffTimer,tPSSourceOffTime);
 	g_tc[g_tcpc.tc_port_map].is_in_prswap = 1;
-	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
 	usb_pd_set_state(PE_PRS_SNK_SRC_Transition_to_off,exit_state);
 }
 
@@ -1184,15 +1187,16 @@ static void PE_PRS_SNK_SRC_Assert_Rp_Entry(void)
 {
 	hal_tcpc_set_cc(g_tcpc.tc_port_map,TYPEC_CC_RP_3_0);
 	usb_pd_set_state(PE_PRS_SNK_SRC_Assert_Rp,exit_state);
+	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
 	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
-	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
+	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3500,0,0);
 	g_usb_pd_s.pe_timer_cnt = 0;
 }
 
 static void PE_PRS_SNK_SRC_Assert_Rp_Exit(void)
 {
 	g_usb_pd_s.pe_timer_cnt++;
-	if(g_usb_pd_s.pe_timer_cnt >= 20) // wait 10ms for Rp
+	if(g_usb_pd_s.pe_timer_cnt >= 50) // wait 10ms for Rp
 	{
 		usb_pd_set_state(PE_PRS_SNK_SRC_Source_on,enter_state);
 	}
@@ -1200,8 +1204,8 @@ static void PE_PRS_SNK_SRC_Assert_Rp_Exit(void)
 
 static void PE_PRS_SNK_SRC_Source_on_Entry(void)
 {
+	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3500,0,0);
 	hal_tcpc_set_gate_en(g_tcpc.tc_port_map,true);
-	hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,5000,3000,0,0);
 	g_usb_pd_s.pe_timer_cnt = 0;
 	usb_pd_set_state(PE_PRS_SNK_SRC_Source_on,exit_state);
 }
@@ -1209,10 +1213,13 @@ static void PE_PRS_SNK_SRC_Source_on_Entry(void)
 static void PE_PRS_SNK_SRC_Source_on_Exit(void)
 {
 	g_usb_pd_s.pe_timer_cnt++;
-	if(g_usb_pd_s.pe_timer_cnt >= 50) // wait 50ms for Vbus
+	if(g_usb_pd_s.pe_timer_cnt >= 30) // wait 50ms for Vbus
 	{
 		g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_PSREADY;
 		hal_tcpc_send_ctrl_mgs(PD_CTRL_PS_RDY);
+		g_tc[g_tcpc.tc_port_map].usb_tc_state = TC_SRC_Attached;
+		g_tc[g_tcpc.tc_port_map].usb_tc_substate = exit_state;
+		osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	}
 }
 
@@ -1375,9 +1382,13 @@ void usb_pd_sop_ctrl_msg_handle(void)
 					usb_pd_set_state(PE_SRC_Send_Capabilities,enter_state);
 					break;
 			#endif
+
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 				case PE_PRS_SRC_SNK_Send_Swap:
 					usb_pd_set_state(PE_PRS_SRC_SNK_Transition_to_off,enter_state);
+					break;
+				case PE_PRS_SNK_SRC_Send_Swap:
+					usb_pd_set_state(PE_PRS_SNK_SRC_Transition_to_off,enter_state);
 					break;
 			#endif
 				default:
@@ -1441,6 +1452,8 @@ void usb_pd_sop_ctrl_msg_handle(void)
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 				case PE_PRS_SRC_SNK_Wait_Source_on:
 					g_tc[g_tcpc.tc_port_map].is_in_prswap = false;
+					g_tc[g_tcpc.tc_port_map].usb_tc_state = TC_SNK_Attached;
+					g_tc[g_tcpc.tc_port_map].usb_tc_substate = exit_state;
 					usb_pd_set_state(PE_SNK_Startup,enter_state);
 					usb_tc_set_state(&g_tc[g_tcpc.tc_port_map],TC_SNK_Attached,exit_state);
 					break;
@@ -1548,6 +1561,7 @@ void usb_pd_sop_ctrl_msg_handle(void)
             break;
 		case PD_CTRL_PR_SWAP:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
+		#if( CONFIG_USBPD_ACCEPT_PRSWAP == 1)
 			if(usb_pd_state == PE_SRC_Ready)
 				usb_pd_set_state(PE_PRS_SRC_SNK_Evaluate_Swap,enter_state);
 			else if(usb_pd_state == PE_SNK_Ready)
@@ -1559,6 +1573,12 @@ void usb_pd_sop_ctrl_msg_handle(void)
 				else
 					usb_pd_set_state(PE_SRC_Send_Soft_Reset,enter_state);
 			}
+		#else
+			if(g_tcpc.pwr_role == TYPEC_SINK)
+				usb_pd_set_state(PE_SNK_Send_Not_Supported,enter_state);
+			else
+				usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
+		#endif
 		#else
 			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_SRC)
 				usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
@@ -1724,12 +1744,15 @@ void usb_pd_sop_ext_msg_handle(void)
 		case PD_EXT_GET_BATT_CAP:
 			usb_pd_set_state(PE_Give_Battery_Status,enter_state);
 			break;
+		case PD_EXT_GET_BATT_STATUS:
+			hal_tcpc_pd_send_batt_status();
+			break;
         case PD_EXT_EPR_SOURCE_CAPABILITIES:
         case PD_EXT_EXTENDED_CTRL:
         case PD_EXT_STATUS://2
         case PD_EXT_PPS_STATUS://12
         case PD_EXT_SOURCE_CAP_EXT:
-        case PD_EXT_GET_BATT_STATUS:
+
         case PD_EXT_BATT_CAP:
         case PD_EXT_GET_MANUFACTURER_INFO://6
         case PD_EXT_MANUFACTURER_INFO://7
@@ -1865,8 +1888,13 @@ void usb_pdevt_run(void)
 	{
 		#define abs(a,b) a>b?a-b:b-a
 		usb_pd_event &= ~USB_PD_EVT_PS_TRANST;
-		if(g_usb_pd_s.is_in_pps && (abs(g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage)<= 500))
-			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,0,24);
+		uint16_t v_abs = abs(g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage);
+		if(g_usb_pd_s.is_in_pps && v_abs<= 500)
+		{
+			//usbpd_printk("V1=%d V2= %d\n",g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage);
+			//usbpd_printk(" v_abs = %d\n",v_abs);
+			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,0,20);
+		}
 		else
 			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,30,180);
 	}

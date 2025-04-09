@@ -9,8 +9,11 @@
 #include "_wpc.h"
 #include "g_data.h"
 #include "port_manager.h"
+#include "nu6801.h"
 
 struct tc_s g_tc[TYPEC_PORT_MAX_N] = {};
+
+extern volatile uint32_t tc_sys_ticks;
 
 void usb_tc_init(void)
 {
@@ -125,7 +128,7 @@ static void TC_SNK_Unattached_Entry(struct tc_s * tc)
 
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 
-    tc->tc_timer_cnt = 0;
+    tc->tc_timer_cnt = tc_sys_ticks;
     tc->try_snk_cnt = 0;
     usb_tc_set_state(tc,TC_SNK_Unattached,exit_state);
 }
@@ -150,10 +153,9 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
     else
     {
-    	tc->tc_timer_cnt++;
-    	if(tc->tc_timer_cnt >= 28)
+    	if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) >= 28)
     	{
-    		tc->tc_timer_cnt = 0;
+    		tc->tc_timer_cnt = tc_sys_ticks;
     		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
     	}
     }
@@ -164,7 +166,7 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
 
 static void TC_SNK_AttachWait_Entry(struct tc_s * tc)
 {
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	usb_tc_set_state(tc,TC_SNK_AttachWait,exit_state);
 	hal_tcpc_port_dummyload_en(tc->tc_index,true);
 }
@@ -173,16 +175,16 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
     	usb_tc_set_state(tc,TC_SNK_AttachWait,enter_state);
     }
-    else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE && (tc_snk_is_disconnected(tc)))
+    else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > 3 && (tc_snk_is_disconnected(tc)))
     {
     	usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
     }
-    else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+    else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
     {
     	hal_tcpc_port_dummyload_en(tc->tc_index,false);
         if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
@@ -209,9 +211,7 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
 
 static void TC_SNK_Attached_Entry(struct tc_s * tc)
 {
-
-
-    tc->tc_timer_cnt = 0;
+    tc->tc_timer_cnt = tc_sys_ticks;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
     usb_tc_set_state(tc,TC_SNK_Attached,exit_state);
@@ -235,8 +235,8 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
     tc->cc2 = cc2;
 	if(tc_snk_is_disconnected(tc)) //CC断开
 	{
-		tc->tc_timer_cnt++;
-		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+		//tc->tc_timer_cnt++;
+		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
 		#if(BUCKBOOST_USED_NU6801 == 1)
 			if(hal_tcpc_vbus_is_removed(tc->tc_index) || g_buckboost.vsnkdisconnect_flag)
@@ -246,9 +246,10 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 			{
 				usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 				usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
+				hal_tcpc_port_dummyload_en(tc->tc_index,true);
 				hal_tcpc_set_gate_en(tc->tc_index,false);
 				if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
-
+				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 				//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
 				if(tc->tc_index == 0)
 					port_manager_set_event(PORT0_EVENT_UNCONNECT);
@@ -259,7 +260,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 	}
 	else
 	{
-		tc->tc_timer_cnt = 0;
+		tc->tc_timer_cnt = tc_sys_ticks;
 	}
 }
 
@@ -274,7 +275,7 @@ static void TC_SRC_Unattached_Entry(struct tc_s * tc)
     hal_tcpc_set_vconn(tc->tc_index,false);
 	hal_tcpc_set_pd_rx(tc->tc_index,EN_SOP | EN_HARD_RESET | EN_SOP1 ,false);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SOURCE,TYPEC_HOST);
-    tc->tc_timer_cnt = 0;
+    tc->tc_timer_cnt = tc_sys_ticks;
     usb_tc_set_state(tc,TC_SRC_Unattached,exit_state);
 }
 static void TC_SRC_Unattached_Exit(struct tc_s * tc)
@@ -294,10 +295,10 @@ static void TC_SRC_Unattached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
     else
     {
-    	tc->tc_timer_cnt++;
-    	if(tc->tc_timer_cnt >= 58)
+    	//tc->tc_timer_cnt++;
+    	if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) >= 58)
     	{
-    		tc->tc_timer_cnt = 0;
+    		tc->tc_timer_cnt = tc_sys_ticks;
     		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
     	}
     }
@@ -309,7 +310,7 @@ static void TC_SRC_AttachWait_Entry(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	hal_tcpc_port_dummyload_en(tc->tc_index,true);
     if(cc1 == TYPEC_CC_RD)
         tc->polarity = TYPEC_POLARITY_CC1;
@@ -322,16 +323,16 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
     	usb_tc_set_state(tc,TC_SRC_AttachWait,enter_state);
     }
-    else if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE && (tc_src_is_disconnected(tc)) && !tc_acc_is_connected(cc1,cc2))
+    else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > 3 && (tc_src_is_disconnected(tc)) && !tc_acc_is_connected(cc1,cc2))
     {
-    	usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+    	usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
     }
-    else if(tc->tc_timer_cnt > TC_T_CC_DEBOUNCE)
+    else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_CC_DEBOUNCE)
     {
     	hal_tcpc_port_dummyload_en(tc->tc_index,false);
         if(tc_debug_is_connected(cc1,cc2))
@@ -350,7 +351,8 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 				else
 					usb_tc_set_state(tc,TC_Try_SNK,enter_state);
 			#else
-				if(hal_tcpc_vbus_is_vsafe5v() &&hal_tcpc_vbus_is_vsfae0v(tc->tc_index)) usb_tc_set_state(tc,TC_SRC_Attached,enter_state);
+				if(hal_tcpc_vbus_is_vsafe5v() &&hal_tcpc_vbus_is_vsfae0v(tc->tc_index))
+					usb_tc_set_state(tc,TC_SRC_Attached,enter_state);
 			#endif
         }
     }
@@ -359,8 +361,7 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 }
 static void TC_SRC_Attached_Entry(struct tc_s * tc)
 {
-	tc->tc_timer_cnt = 0;
-	tc->light_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
@@ -404,16 +405,16 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 
 	if(tc_src_is_disconnected(tc)) //CC断开
 	{
-		tc->tc_timer_cnt++;
-		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+		//tc->tc_timer_cnt++;
+		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
 			usb_pd_set_event(tc->tc_index,USB_PD_EVT_SRC_UNATTACH);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
-			//usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 			usb_tc_set_state(tc,TC_TryWAIT_SNK,enter_state);
 			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
-			hal_tcpc_set_gate_en(tc->tc_index,false);
 			hal_tcpc_port_dummyload_en(tc->tc_index,true);
+			hal_tcpc_set_gate_en(tc->tc_index,false);
+			hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
             if(tc->tc_index == 0)
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);
             else
@@ -422,7 +423,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 	}
 	else
 	{
-		tc->tc_timer_cnt = 0;
+		tc->tc_timer_cnt = tc_sys_ticks;
 	}
 }
 
@@ -440,15 +441,15 @@ static void TC_DEBUG_Attached_Exit(struct tc_s * tc)
     tc->cc2 = cc2;
 	if(tc_debug_is_disconnected(cc1,cc2)) //CC断开
 	{
-		tc->tc_timer_cnt++;
-		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+		//tc->tc_timer_cnt++;
+		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
 			usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 		}
 	}
 	else
 	{
-		tc->tc_timer_cnt = 0;
+		tc->tc_timer_cnt = tc_sys_ticks;
 	}
 }
 
@@ -465,15 +466,15 @@ static void TC_ACCESSORY_Attached_Exit(struct tc_s * tc)
     tc->cc2 = cc2;
 	if(tc_acc_is_disconnected(cc1,cc2)) //CC断开
 	{
-		tc->tc_timer_cnt++;
-		if(tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+		//tc->tc_timer_cnt++;
+		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
 			usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 		}
 	}
 	else
 	{
-		tc->tc_timer_cnt = 0;
+		tc->tc_timer_cnt = tc_sys_ticks;
 	}
 }
 
@@ -541,26 +542,26 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 static void TC_Try_SNK_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index, TYPEC_CC_RD);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	usb_tc_set_state(tc,TC_Try_SNK,exit_state);
 }
 static void TC_Try_SNK_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
     	usb_tc_set_state(tc,TC_Try_SNK,enter_state);
     }
     else
     {
-        if(tc_snk_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_TRY_CC_DEBOUNCE)
+        if(tc_snk_is_connected(cc1,cc2) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_TRY_CC_DEBOUNCE)
         {
         	usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
         }
 
-        if(tc_snk_is_disconnected(tc) &&  tc->tc_timer_cnt > TC_T_DRP_TRYWAIT)
+        if(tc_snk_is_disconnected(tc) &&  (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_DRP_TRYWAIT)
         {
         	usb_tc_set_state(tc,TC_TryWAIT_SRC,enter_state);
         }
@@ -572,25 +573,25 @@ static void TC_Try_SNK_Exit(struct tc_s * tc)
 static void TC_TryWAIT_SRC_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	usb_tc_set_state(tc,TC_TryWAIT_SRC,exit_state);
 }
 static void TC_TryWAIT_SRC_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
     	usb_tc_set_state(tc,TC_TryWAIT_SRC,enter_state);
     }
     else
     {
-    	if(tc_src_is_disconnected(tc) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+    	if(tc_src_is_disconnected(tc) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
     		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
 		}
-		else if(tc_src_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_CC_DEBOUNCE)
+		else if(tc_src_is_connected(cc1,cc2) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_CC_DEBOUNCE)
 		{
 			usb_tc_set_state(tc,TC_SRC_Attached,enter_state);
 		}
@@ -602,7 +603,7 @@ static void TC_TryWAIT_SRC_Exit(struct tc_s * tc)
 static void TC_Try_SRC_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 
 	usb_tc_set_state(tc,TC_Try_SRC,exit_state);
 }
@@ -612,20 +613,20 @@ static void TC_Try_SRC_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
     	usb_tc_set_state(tc,TC_Try_SRC,enter_state);
     }
     else
     {
-        if(tc_src_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_TRY_CC_DEBOUNCE)
+        if(tc_src_is_connected(cc1,cc2) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_TRY_CC_DEBOUNCE)
         {
 
         	usb_tc_set_state(tc,TC_SRC_Attached,enter_state);
         }
 
-        if(tc_src_is_disconnected(tc) &&  tc->tc_timer_cnt > TC_T_DRP_TRY)
+        if(tc_src_is_disconnected(tc) &&  (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_DRP_TRY)
         {
         	usb_tc_set_state(tc,TC_TryWAIT_SNK,enter_state);
         }
@@ -637,14 +638,14 @@ static void TC_Try_SRC_Exit(struct tc_s * tc)
 static void TC_TryWAIT_SNK_Entry(struct tc_s * tc)
 {
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	usb_tc_set_state(tc,TC_TryWAIT_SNK,exit_state);
 }
 static void TC_TryWAIT_SNK_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	tc->tc_timer_cnt++;
+	//tc->tc_timer_cnt++;
 
     if ((cc1 != tc->cc1 && tc->polarity == TYPEC_POLARITY_CC1) || (cc2 != tc->cc2  && tc->polarity == TYPEC_POLARITY_CC2))   //CC changes
     {
@@ -652,13 +653,13 @@ static void TC_TryWAIT_SNK_Exit(struct tc_s * tc)
     }
     else
     {
-    	if(tc_snk_is_disconnected(tc) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+    	if(tc_snk_is_disconnected(tc) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
     		usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 		}
-		else if(tc_snk_is_connected(cc1,cc2) && tc->tc_timer_cnt > TC_T_PD_DEBOUNCE)
+		else if(tc_snk_is_connected(cc1,cc2) && (uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
-			if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
+			if(hal_tcpc_vbus_is_present(tc->tc_index))
 			{
 				usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
 			}
@@ -678,13 +679,13 @@ static void TC_ErrorRecovery_Entry(struct tc_s * tc)
     tc->try_snk_cnt = 0;
     tc->try_src_cnt = 0;
     hal_tcpc_set_roles(tc->tc_index,TYPEC_SINK,TYPEC_DEVICE);
-	tc->tc_timer_cnt = 0;
+	tc->tc_timer_cnt = tc_sys_ticks;
 	usb_tc_set_state(tc,TC_ErrorRecovery,exit_state);
 }
 static void TC_ErrorRecovery_Exit(struct tc_s * tc)
 {
-	tc->tc_timer_cnt++;
-	if(tc->tc_timer_cnt > TC_T_ERROR_RECOVERY)
+	//tc->tc_timer_cnt++;
+	if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_ERROR_RECOVERY)
 	{
 	#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_SRC)
 		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);

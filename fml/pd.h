@@ -111,8 +111,8 @@ enum pd_bist_mode
 
 #define PDO_FIXED_DUAL_ROLE             (0x01 << 29)/* Power role swap supported */
 #define PDO_FIXED_SUSPEND               (0x01 << 28) /* USB Suspend supported (Source) */
+#define PDO_HIGH_CAPABILITY             (0x01 << 28) /* USB Suspend supported (Source) */
 #define PDO_FIXED_UNCONSTRAINED_POWER   (0x01 << 27) /* Unconstrained Power */
-#define PDO_PPS_POWER_LIMITED   		(0x01 << 27) /* Unconstrained Power */
 #define PDO_FIXED_USB_COMM              (0x01 << 26) /* USB communications capable */
 #define PDO_FIXED_DATA_SWAP             (0x01 << 25) /* Data role swap supported */
 #define PDO_FIXED_UNCHUNK_EXT           (0x01 << 24) /* Unchunked Extended Message supported (Source) */

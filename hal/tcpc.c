@@ -267,7 +267,7 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 		return false;
 	}
 	delay_cnt++;
-	if(delay_cnt >= 23) delay_cnt = 0;
+	if(delay_cnt >= 10) delay_cnt = 0;
 	return false;
 #else
 	return true;
@@ -302,18 +302,12 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 {
 	if(tc_index == 0)
 	{
-		if(en)
-			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_EN);
-		else
-			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS);
+		buckboost_ops.typca_dischg_en(en);
 	}
 
 	if(tc_index == 1)
 	{
-		if(en)
-			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_EN);
-		else
-			osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS);
+		buckboost_ops.typcb_dischg_en(en);
 	}
 }
 
@@ -508,7 +502,7 @@ void hal_tcpc_pd_send_revision(void)
 	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_REVISION, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
 	transmit_pkt.msg_len = 1;
 	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
-	transmit_pkt.msg.WORDS[0] = 0x31180000;
+	transmit_pkt.msg.WORDS[0] = 0x32110000;
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 
@@ -617,6 +611,7 @@ void hal_tcpc_send_sink_caps_ext(void)
 	transmit_pkt.msg.ext_msg.data[0] = (uint8_t)USBPD_VID;
 	transmit_pkt.msg.ext_msg.data[1] = (USBPD_VID >> 8);
 	transmit_pkt.msg.ext_msg.data[10] = 0x01;
+	transmit_pkt.msg.ext_msg.data[16] = 0x01;
 	transmit_pkt.msg.ext_msg.data[17] = 0x02;
 	transmit_pkt.msg.ext_msg.data[18] = 0;
 	transmit_pkt.msg.ext_msg.data[19] = 5;
@@ -643,6 +638,20 @@ void tcpc_pd_send_pps_status(void)
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 
+void hal_tcpc_pd_send_batt_status(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_BAT_STATUS, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
+	transmit_pkt.msg_len = 1;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		transmit_pkt.msg.WORDS[0] = 0xFFFF0100;
+	else
+		transmit_pkt.msg.WORDS[0] = 0xFFFF0100;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
 void tcpc_pd_send_bat_capability(uint8_t bat_index)
 {
 	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
@@ -660,7 +669,7 @@ void tcpc_pd_send_bat_capability(uint8_t bat_index)
 	transmit_pkt.msg.ext_msg.data[5] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[6] = 0xFF;
 	transmit_pkt.msg.ext_msg.data[7] = 0xFF;
-	if(bat_index == 0)
+	if(bat_index == 0 && g_tcpc.pwr_role == TYPEC_SOURCE)
 		transmit_pkt.msg.ext_msg.data[8] = 0x00;
 	else
 		transmit_pkt.msg.ext_msg.data[8] = 0x01;

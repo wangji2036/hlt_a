@@ -139,5 +139,5 @@ bool hal_tcpc_pd_bus_ready(uint8_t tc_index);
 void hal_tcpc_set_source_mode(enum buckboost_mode mode);
 void hal_tcpc_set_snk_charge_current(uint16_t ibat,uint16_t ibus);
 void hal_tcpc_set_phy_rx_vref(enum rx_vref vref);
-
+void hal_tcpc_pd_send_batt_status(void);
 #endif /* TCPC_H_ */

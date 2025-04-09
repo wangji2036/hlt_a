@@ -11,7 +11,7 @@
 #include "g_data.h"
 #include "ntc.h"
 
-
+uint8_t buckboost_protection_flag = false;
 static bool pps_vbus_uv = false;
 struct buckboost_s  g_buckboost;
 int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
@@ -209,7 +209,7 @@ void buckboost_protection_handle(void)
 	#define SW7201_VBUS_OVP_TH					21500
 	#define NU6801_VBUS_OVP_TH					20000
 
-	static uint8_t buckboost_protection_flag = false;
+
 
 
 	uint16_t status = 0;
@@ -223,6 +223,12 @@ void buckboost_protection_handle(void)
 	{
 		status |= VBUS_OV_FLAG;
 	}
+
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		status &= ~VBUS_UV_FLAG;
+	}
+
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(ntc_lock_flag) status |= NTC_PCT;
 #endif
@@ -285,21 +291,34 @@ void buckboost_protection_handle(void)
 			printk("protect lock =0x%x\n",status);
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
+		//static bool protection_lock = false;
 		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT))
 		{
 			printk("protect lock =0x%x\n",status);
-			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
-			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
-			g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
-			g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
+
+			if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW | PPS_UV))
+			{
+				//lock
+				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE) usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE) usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+			}
+			else  //ntc
+			{
+				g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+				g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+				g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+				g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
+				usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+				usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+			}
+
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
 			buckboost_set_bus_iv(5000,3000,0,0);
 			g_tc[PORT0_INDEX].is_in_prswap = 0;
 			g_tc[PORT1_INDEX].is_in_prswap = 0;
-			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
-			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+
 			usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
@@ -312,7 +331,7 @@ void buckboost_protection_handle(void)
 	}
 	else
 	{
-		if(buckboost_protection_flag)
+		if(buckboost_protection_flag && g_port.port_state[PORT0_INDEX] ==PORT_STATE_NONE &&g_port.port_state[PORT1_INDEX] ==PORT_STATE_NONE)
 		{
 			buckboost_protection_flag = 0;
 			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);

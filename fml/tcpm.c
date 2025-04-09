@@ -13,8 +13,8 @@
 #include "pid.h"
 #include "usb_qc.h"
 #include "port_manager.h"
-#include"config.h"
-#include"adp.h"
+#include "config.h"
+#include "adp.h"
 
 uint16_t port_vbus = 5000;
 uint16_t qi_volt = 5000;
@@ -281,7 +281,7 @@ void tcpm_task_event_handler(uint32_t event)
 			if(g_tc[1].usb_tc_state == TC_SRC_Attached && g_port.port_state[0] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE)
 			{
-			#ifdef POWERBANK_BACK_V02
+			#ifdef POWERBANK_BUCK_EVK_V02
 				if(g_buckboost.adc_iac1 < 60)
 			#else
 				if(g_buckboost.adc_ibus > -60  && g_buckboost.adc_ibus <0 )
