@@ -138,6 +138,7 @@ bool buckboost_regulator_done(void);
 extern struct buckboost_s  g_buckboost;
 extern const struct buckboost_operations buckboost_ops;
 extern uint8_t buckboost_protection_flag;
+extern uint8_t zero_soc_cnt;
 
 #endif /* BUCK_BOOST_H_ */
 

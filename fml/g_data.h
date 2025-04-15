@@ -376,17 +376,17 @@ struct gd_t
 	 uint8_t idle_to_sleep_cnt;
 	 uint8_t sleep_qdt_complete_charg_count;
 	 uint8_t sleep_qdt_fod_rec_count;
-	 uint8_t soc_show;
 	 uint8_t sleep_q_times;
 	 uint8_t rd0_cnt;
 	 uint8_t rd1_cnt;
 
 	 uint8_t bat_dead_flag;
 	 uint8_t resverd_reset;
-	 uint8_t power_on_magic;
+	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;
 	 uint8_t tc1_lighting_mode;
-
+	 uint8_t real_soc_show;
+	 uint8_t real_soc_obtained;
 	 uint8_t dp_result;
 };
 

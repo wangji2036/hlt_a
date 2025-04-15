@@ -133,14 +133,16 @@ void gd_data_init(void)
 		__write_08bits(addr, 0);
 	}
 
-	if(gd->power_on_magic != 0xaa)
+	if(gd->power_on_magic != 0xaaaa)
 	{
 		gd->tc0_lighting_mode = 0x00;
 		gd->tc1_lighting_mode = 0x00;
+		gd->real_soc_show = 0;
+		gd->real_soc_obtained = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 
-	gd->power_on_magic = 0xaa;
+	gd->power_on_magic = 0xaaaa;
 
 	printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);
 

@@ -112,7 +112,7 @@ static batt_level_t drv_ui_coulomb(void)
 
      for(uint8_t i= 0; i < sizeof(_batt_energy_table); i++)
      {
-         if(gd->soc_show < _batt_energy_table[i])
+         if(gd->real_soc_show < _batt_energy_table[i])
          {
             return (batt_level_t)(i+1);
          }
@@ -160,7 +160,7 @@ static void ui_update_led(void)
              break;
          }
      }
-	 if(flash_flag_wls && !flash_light_on)
+	 if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
 	 {
 		 soc_show_ram_led ^= (1 << 4);// for blink-off
 	 }
@@ -343,17 +343,53 @@ void ui_display (void)
 void ui_update(void)
 {
 	static uint8_t cnt = 0;
+	static uint8_t one_min_cnt = 0;
  //   if(ui_wait_cnt< WAIT_IN_250MS) ui_wait_cnt++;
-	gd->soc_show = SOCPack_DisplaySOC_pct;
+
+	if(gd->real_soc_obtained == 0 )
+	{
+		if(SOCPack_DisplaySOC_pct >0)
+		{
+			gd->real_soc_show = SOCPack_DisplaySOC_pct;
+			gd->real_soc_obtained = 1;
+			printk("update real show soc");
+		}
+	}
+	else
+	{
+		if(one_min_cnt++>60)//15s
+		{
+			one_min_cnt =0;
+			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.charging_stat)
+			{
+				if(gd->real_soc_show < SOCPack_DisplaySOC_pct) gd->real_soc_show +=1;
+			}
+			else if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+			{
+				if(gd->real_soc_show > SOCPack_DisplaySOC_pct) gd->real_soc_show -=1;
+			}
+		}
+
+	}
+	if(gd->real_soc_show >100)
+	{
+		gd->real_soc_show = 100;
+	}
+	else if ((gd->real_soc_show > SOCPack_DisplaySOC_pct+15 || gd->real_soc_show+15 < SOCPack_DisplaySOC_pct) && SOCPack_DisplaySOC_pct >0)
+	{
+		gd->real_soc_show = SOCPack_DisplaySOC_pct;
+	}
+	if(gd->real_soc_show>0) zero_soc_cnt = 0;
     //static uint8_t cnt_2s;
 	cnt++;
-	if(cnt > 3)
+	if(cnt > 1)//1hz
 	{
 		cnt = 0;
 		flash_light_on ^= 1;
 	}
     if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
+    	zero_soc_cnt = 0;
 #if(BUCKBOOST_USED_NU6801 == 1)
     	if(g_buckboost.charging_stat == 0)
     		flash_flag = 3;  // 灭灯
@@ -361,10 +397,14 @@ void ui_update(void)
 #endif
     		flash_flag = 1;
     }
-/*    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (soc_show<15))
+   else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show<=5))
     {
-    	flash_flag = 2;
-    }*/
+    	flash_flag = 1;// low SOC state,flash
+    	if(gd->real_soc_show<=0)
+    	{
+    		if(zero_soc_cnt< 250) zero_soc_cnt++;
+    	}
+    }
     else{
 
     	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] != PORT_STATE_SOURCE)

@@ -12,6 +12,7 @@
 #include "ntc.h"
 
 uint8_t buckboost_protection_flag = false;
+uint8_t zero_soc_cnt =0;
 static bool pps_vbus_uv = false;
 struct buckboost_s  g_buckboost;
 int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
@@ -233,7 +234,7 @@ void buckboost_protection_handle(void)
 	if(ntc_lock_flag) status |= NTC_PCT;
 #endif
 
-	if(g_buckboost.adc_vbat < 3000)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
+	if(g_buckboost.adc_vbat < 3000 ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
 		cnt++;
 		if(cnt >= 10)

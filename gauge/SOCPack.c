@@ -135,11 +135,11 @@ void SOCPack(void)
 
   if (SOCPack_RealSOC_mpct <= SOCPack_EmptySOC_mpct + 2000) {
     SOCPack_UsableSOC_pct = 0;
-  } else if (SOCPack_RealSOC_mpct >= 98000) {
+  } else if (SOCPack_RealSOC_mpct >= 96000) {
     SOCPack_UsableSOC_pct = 100000;
   } else {
     SOCPack_UsableSOC_pct = ((SOCPack_RealSOC_mpct - SOCPack_EmptySOC_mpct) -
-      2000) * div_nde_s32_floor(100000, 96000 - SOCPack_EmptySOC_mpct);
+      2000) * div_nde_s32_floor(100000, 94000 - SOCPack_EmptySOC_mpct);
   }
 
   SOCPack_UsableSOC_pct_s = div_nde_s32_floor(SOCPack_UsableSOC_pct, 1000);
