@@ -4,16 +4,18 @@
 #include "nu6801.h"
 #include "printk.h"
 #include "tcpm.h"
-#include "typec.h"
+#include "pdlib.h"
 #include "port_manager.h"
 #include "config.h"
 #include "tcpm.h"
 #include "g_data.h"
+#include "bat.h"
 #include "ntc.h"
 
 uint8_t buckboost_protection_flag = false;
 uint8_t zero_soc_cnt =0;
 static bool pps_vbus_uv = false;
+static bool adc_err_flag = 0;
 struct buckboost_s  g_buckboost;
 int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 {
@@ -102,21 +104,21 @@ void buckboost_set_charge_current(uint16_t ibat,uint16_t ibus)
 {
 	g_buckboost.chager_ibus_limit = ibus;
 	g_buckboost.chager_ibat_limit = ibat;
-//	osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_CHARGER_CURRENT);
 
 	g_buckboost.woke_mode = BUCKBOOST_SHUTDOWM_MODE;
 	buckboost_ops.set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
 	g_buckboost.woke_mode = BUCKBOOST_CHAGER_MODE;
 	buckboost_ops.set_work_mode(g_buckboost.woke_mode);
-	buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_limit);
-	buckboost_ops.set_chager_ibat_limit(g_buckboost.chager_ibat_limit);
+	buckboost_ops.set_chager_ibus_limit(200);
+	buckboost_ops.set_chager_ibat_limit(ibat);
+	g_buckboost.chager_ibus_value = 200;
+	g_buckboost.chager_ibus_start = 1;
+	printk("Start Battery Charging = %d!\n",ibus);
 }
 
 void buckboost_set_work_mode(enum buckboost_mode mode)
 {
-	//printk("%s = %d\n",__func__,mode);
 	g_buckboost.woke_mode = mode;
-	//osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SWITCH_WORK_MODE);
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -125,6 +127,9 @@ void buckboost_set_work_mode(enum buckboost_mode mode)
 		buckboost_ops.set_chager_ibat_limit(g_buckboost.chager_ibat_limit);
 		buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_limit);
 	}
+
+	g_buckboost.chager_ibus_start = 0;
+	g_buckboost.chager_ibus_value = 200;
 	buckboost_ops.set_work_mode(g_buckboost.woke_mode);
 }
 
@@ -132,25 +137,18 @@ void buckboost_set_work_mode(enum buckboost_mode mode)
 void buckboost_set_typeca_gate_en(bool en)
 {
 	g_buckboost.set_typeca_gate_en = en;
-	//printk("typeca gate = 0x%x\n",g_buckboost.set_typeca_gate_en);
-	//osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECA_GATE_EN);
-
 	buckboost_ops.typca_gate_en(g_buckboost.set_typeca_gate_en);
 }
 
 void buckboost_set_typecb_gate_en(bool en)
 {
 	g_buckboost.set_typecb_gate_en = en;
-	//printk("typecb gate = 0x%x\n",g_buckboost.set_typecb_gate_en);
-	//osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_TYPECB_GATE_EN);
 	buckboost_ops.typcb_gate_en(g_buckboost.set_typecb_gate_en);
 }
 
 void buckboost_set_usb_a_gate_en(bool en)
 {
 	g_buckboost.set_usb_a_gate_en = en;
-	//printk("typecb gate = 0x%x\n",g_buckboost.set_typecb_gate_en);
-	//osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_USB_A_GATE_EN);
 	buckboost_ops.usb_a_gate_en(g_buckboost.set_usb_a_gate_en);
 }
 
@@ -165,20 +163,16 @@ void buckboost_task_init(void)
 	osal_task_handler_reg(BUCKBOOST_TASK, buckboost_task_event_handler);
 	osal_start_timerEx(BUCKBOOST_PERIOD_TIMER, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TIME_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_TIME_PERIOD);
 	osal_start_timerEx(BUCKBOOST_VBUS_TIMER, BUCKBOOST_VBUS_PERIOD, BUCKBOOST_VBUS_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_VBUS_PERIOD);
-
+	osal_start_timerEx(BUCKBOOST_CHAGER_TIMER, BUCKBOOST_CHAG_PERIOD, BUCKBOOST_CHAG_PERIOD, BUCKBOOST_TASK, BUCKBOOST_EVT_CHAG_PERIOD);
 	buckboost_ops.init();
 
 	g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 	g_buckboost.adc_ibat = buckboost_ops.get_bat_current();
 	g_buckboost.adc_ibus = buckboost_ops.get_bus_current();
-	//g_buckboost.usba_state =  buckboost_ops.get_a2_state();
-	//g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 	g_buckboost.adc_vbus = buckboost_ops.get_bus_voltage();
 #if(CONFIG_USBA_SUPPORT == 1)
 	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 #endif
-//	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
-//	buckboost_set_bus_iv(5000,3000,0,0);
 }
 
 
@@ -203,7 +197,8 @@ void buckboost_protection_handle(void)
 
 	#define DIS_VBAT_LOW				BIT(8)
 	#define PPS_UV						BIT(9)
-	#define NTC_PCT					BIT(10)
+	#define NTC_PCT						BIT(10)
+	#define ADC_ERR						BIT(11)
 	static uint8_t cnt = 0;
 #endif
 
@@ -230,6 +225,8 @@ void buckboost_protection_handle(void)
 		status &= ~VBUS_UV_FLAG;
 	}
 
+	if(adc_err_flag) status |= ADC_ERR;
+
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(ntc_lock_flag) status |= NTC_PCT;
 #endif
@@ -247,13 +244,12 @@ void buckboost_protection_handle(void)
 			}
 			else
 			{
-				if(g_tc[TYPEC_PORT_A].is_deadbattery == 0)
+				if(pdlib_get_deadbat() == 0)
 				{
 					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 				}
 			}
-			g_tc[TYPEC_PORT_A].is_deadbattery = 1;
-			g_tc[TYPEC_PORT_B].is_deadbattery = 1;
+			pdlib_set_deadbat(true);
 			cnt = 0;
 		}
 	}
@@ -283,7 +279,8 @@ void buckboost_protection_handle(void)
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
 			buckboost_set_bus_iv(5000,3000,0,0);
-			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
+			pdlib_disable_typec(PORT0_INDEX);
+			pdlib_disable_typec(PORT1_INDEX);
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -300,8 +297,8 @@ void buckboost_protection_handle(void)
 			if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW | PPS_UV))
 			{
 				//lock
-				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE) usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
-				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE) usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE) pdlib_disable_typec(PORT0_INDEX);
+				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE) pdlib_disable_typec(PORT1_INDEX);
 			}
 			else  //ntc
 			{
@@ -309,20 +306,20 @@ void buckboost_protection_handle(void)
 				g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 				g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
 				g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
-				usb_tc_set_state(&g_tc[PORT0_INDEX],TC_Disable,enter_state);
-				usb_tc_set_state(&g_tc[PORT1_INDEX],TC_Disable,enter_state);
+				pdlib_disable_typec(PORT0_INDEX);
+				pdlib_disable_typec(PORT1_INDEX);
 			}
 
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
 			buckboost_set_bus_iv(5000,3000,0,0);
-			g_tc[PORT0_INDEX].is_in_prswap = 0;
-			g_tc[PORT1_INDEX].is_in_prswap = 0;
-
-			usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+			pdlib_clear_typec_prswap(PORT0_INDEX);
+			pdlib_clear_typec_prswap(PORT1_INDEX);
+			pdlib_disable_usbpd();
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
+			adc_err_flag = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_ops.init();
@@ -335,8 +332,8 @@ void buckboost_protection_handle(void)
 		if(buckboost_protection_flag && g_port.port_state[PORT0_INDEX] ==PORT_STATE_NONE &&g_port.port_state[PORT1_INDEX] ==PORT_STATE_NONE)
 		{
 			buckboost_protection_flag = 0;
-			usb_tc_set_state(&g_tc[PORT0_INDEX],TC_DRP_TOGGLE,enter_state);
-			usb_tc_set_state(&g_tc[PORT1_INDEX],TC_DRP_TOGGLE,enter_state);
+			pdlib_restart_typec(PORT0_INDEX);
+			pdlib_restart_typec(PORT1_INDEX);
 			osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
@@ -355,7 +352,7 @@ void buckboost_ir_drop_handle(void)
 
 	uint16_t ir_drop = 0;
 	static uint8_t cnt_delay = 0;
-	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && wpc_mode != TCPM_WPC_WORK_BOOST && !g_usb_pd_s.is_in_pps)
+	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && wpc_mode != TCPM_WPC_WORK_BOOST && !pdlib_is_pps_source())
 	{
 		ir_drop = -g_buckboost.adc_ibus * 100 / 1000 ;    //1A +100mV
 		ir_drop = ir_drop / 20 * 20;
@@ -391,9 +388,6 @@ void buckboost_task_event_handler(uint32_t event)
 	switch (event)
 	{
 		case BUCKBOOST_EVT_TIME_PERIOD:
-			//g_buckboost.adc_dischg_adc_ibus = buckboost_ops.get_bus_current();
-			//printk("DISCHG IBUS= %d\n",g_buckboost.adc_dischg_adc_ibus);
-
 			if(get_info_step == 0)
 			{
 			#if(BUCKBOOST_USED_NU6801 == 1)
@@ -414,8 +408,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6805 == 1)
 				if(g_buckboost.adc_vbat < BAT_DEAD_BATTER_V)
 				{
-					g_tc[TYPEC_PORT_A].is_deadbattery = 1;
-					g_tc[TYPEC_PORT_B].is_deadbattery = 1;
+					pdlib_set_deadbat(true);
 				}
 				else
 			#endif
@@ -427,10 +420,9 @@ void buckboost_task_event_handler(uint32_t event)
 			#endif
 				{
 
-					if(g_tc[TYPEC_PORT_A].is_deadbattery)
+					if(pdlib_get_deadbat())
 					{
-						g_tc[TYPEC_PORT_A].is_deadbattery = 0;
-						g_tc[TYPEC_PORT_B].is_deadbattery = 0;
+						pdlib_set_deadbat(false);
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 						printk("%s\n",__func__);
 					}
@@ -493,7 +485,6 @@ void buckboost_task_event_handler(uint32_t event)
 			else if(get_info_step == 5)
 			{
 			#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
-				//g_buckboost.adc_tbat = buckboost_ops.get_bat_temperature();
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC);
 				buckboost_ntc_handle();
 			#endif
@@ -513,7 +504,7 @@ void buckboost_task_event_handler(uint32_t event)
 			hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_VBUS);
 		#endif
 			//if(g_usb_pd_s.is_in_pps && g_usb_pd_s.explicit_contract)
-			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_tc[0].usb_tc_state == TC_SRC_Attached || g_tc[1].usb_tc_state == TC_SRC_Attached))
+			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached || pdlib_get_tc_state(PORT1_INDEX) == TC_SRC_Attached))
 			{
 				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
 				if(g_buckboost.adc_vbus < 4400)
@@ -534,17 +525,23 @@ void buckboost_task_event_handler(uint32_t event)
 				pps_vbus_uv = false;
 			}
 			break;
+		case BUCKBOOST_EVT_CHAG_PERIOD:
+			if(g_buckboost.chager_ibus_start)
+			{
+				if(g_buckboost.chager_ibus_value < g_buckboost.chager_ibus_limit)
+				{
+					g_buckboost.chager_ibus_value += 100;
+					if(g_buckboost.chager_ibus_value > g_buckboost.chager_ibus_limit) g_buckboost.chager_ibus_value = g_buckboost.chager_ibus_limit;
+					buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_value);
+					//printk("BAT:%dmA --->%dmA\n",g_buckboost.chager_ibus_value,g_buckboost.chager_ibus_limit);
+				}
+				else
+					g_buckboost.chager_ibus_start = 0;
+			}
+			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
-//			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-//			{
-//				g_buckboost.chager_ibat_limit = 100;
-//				buckboost_ops.set_chager_ibat_limit(g_buckboost.chager_ibat_limit);
-//			}
-//			buckboost_ops.set_work_mode(g_buckboost.woke_mode);
-			//printk("%s\n","BUCKBOOST_EVT_SWITCH_WORK_MODE");
 			break;
 		case BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT:
-			//printk("%s\n","BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT");
 #if(BUCKBOOST_USED_NU6801 == 1)
 			buckboost_ops.set_ovp(20000);
 #endif
@@ -552,14 +549,10 @@ void buckboost_task_event_handler(uint32_t event)
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_wait, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_WAITDONE);
 			break;
 		case BUCKBOOST_EVT_REGULATOR_WAITDONE:
-			//printk("%s\n","BUCKBOOST_EVT_REGULATOR_WAITDONE");
-			//buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
 			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current);
-			//if(g_buckboost.out_voltage_delay != 0)
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_delay + 10, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_DELAYDONE);
 			break;
 		case BUCKBOOST_EVT_REGULATOR_DELAYDONE:
-			//printk("%s\n","BUCKBOOST_EVT_REGULATOR_DELAYDONE");
 			g_buckboost.regulator_state = 1;
 			g_buckboost.out_voltage_wait = 0;
 			g_buckboost.out_voltage_delay = 0;
@@ -651,15 +644,16 @@ void buckboost_task_event_handler(uint32_t event)
 				case NU6801_ADC_VREF:
 
 					vref  = hal_badc_meas(_BADC_CH_PD3_ADC9);
-					//printk("adc_vref = %d\n",nu6801_vref);
+
 					if(vref < 1500)
 					{
+						printk("adc_vref = %d\n",nu6801_vref);
 						uint8_t read_0x10,read_0x11,read_0x06,read_0x00;
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read_0x11);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,&read_0x10);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_FAULT_FLAG,&read_0x06);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_FLAG,&read_0x00);
-
+						adc_err_flag = 1;
 						printk("adc_err [0x00]=0x%x [0x06]=0x%x [0x10]=0x%x [0x11]=0x%x\n",read_0x00,read_0x06,read_0x10,read_0x11);
 					}
 					else

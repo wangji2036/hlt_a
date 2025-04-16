@@ -9,7 +9,9 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include util/subdir.mk
+-include usbpd/subdir.mk
 -include startup/subdir.mk
+-include power/subdir.mk
 -include osal/subdir.mk
 -include hal/subdir.mk
 -include gauge/subdir.mk

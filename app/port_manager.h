@@ -66,6 +66,10 @@ struct port_infos
 	uint8_t inhandle_port;
 
 	uint8_t snk_5v_only;
+
+	uint8_t light0_cnt;
+	uint8_t light1_cnt;
+
 	uint32_t port_event;
 	uint16_t ibat_limit;
 	uint16_t ibus_limit;

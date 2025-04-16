@@ -4,7 +4,7 @@
 #include "nu6801.h"
 #include "printk.h"
 #include "tcpm.h"
-#include "typec.h"
+#include "pdlib.h"
 #include "port_manager.h"
 #include "config.h"
 #include "tcpm.h"
@@ -15,6 +15,9 @@ uint8_t ntc_lock_flag = 0;
 bool ntc_ut_flag = false;
 bool ntc_ot_flag = false;
 bool ntc_stop_chrg_flag = false;
+
+extern const uint32_t source_pdo[];
+extern const uint32_t source_pdo_ntc[];
 
 #if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 
@@ -58,10 +61,10 @@ void buckboost_ntc_handle(void)
 				ntc_ut_cnt = 0;
 				ntc_ut_flag = 1;
 
-				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
 				{
-					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+					tcpm_update_pdo_for_ntc();
+					pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
 				}
 				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{
@@ -85,10 +88,10 @@ void buckboost_ntc_handle(void)
 			{
 				ntc_ut_cnt = 0;
 				ntc_ut_flag = 0;
-				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
 				{
-					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+					tcpm_update_pdo_for_ntc();
+					pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
 				}
 				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{
@@ -113,10 +116,10 @@ void buckboost_ntc_handle(void)
 				ntc_ot_cnt = 0;
 				ntc_ot_flag = 1;
 
-				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
 				{
-					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+					tcpm_update_pdo_for_ntc();
+					pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
 				}
 				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{
@@ -140,10 +143,10 @@ void buckboost_ntc_handle(void)
 			{
 				ntc_ot_cnt = 0;
 				ntc_ot_flag = 0;
-				if(g_usb_pd_s.explicit_contract && g_tcpc.pwr_role == TYPEC_SOURCE)
+				if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
 				{
-					//port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-					usb_pd_set_event(g_tcpc.tc_port_map,USB_PD_EVT_SOURCE_SOFTRESET);
+					tcpm_update_pdo_for_ntc();
+					pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
 				}
 				else if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 				{

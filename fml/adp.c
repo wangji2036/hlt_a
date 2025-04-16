@@ -2,7 +2,7 @@
 #include "printk.h"
 #include "config.h"
 #include "g_data.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 #include "debug.h"
 #include "adp.h"
 #include "tcpm.h"

@@ -4,8 +4,10 @@
 #include "typdef.h"
 #include "tcpc.h"
 #include "usb_pd.h"
+#include "pd_tc.h"
 #include "tcpm.h"
 #include "usbpd_config.h"
+#include "pdlib.h"
 
 
 
@@ -18,38 +20,6 @@
 #define TC_T_ERROR_RECOVERY	        500	/* 550 - 1100 ms */
 
 #define usb_tc_substate_e usb_pd_substate_e
-
-
-
-enum usb_tc_state_e
-{
-	TC_Disable = 0,
-
-#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
-	TC_SNK_Unattached,  	//1
-	TC_SNK_AttachWait,
-	TC_SNK_Attached,
-#endif
-
-#if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
-	TC_SRC_Unattached,  	//4
-	TC_SRC_AttachWait,
-	TC_SRC_Attached,
-	TC_DEBUG_Attached,		//7
-#endif
-
-#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
-	TC_DRP_TOGGLE,			//8
-	TC_Try_SNK,				//9
-	TC_TryWAIT_SRC,			//10
-	TC_Try_SRC,				//11
-	TC_TryWAIT_SNK,			//12
-#endif
-	TC_ACCESSORY_Attached,		//13
-	TC_ErrorRecovery,
-
-	TC_STATE_MAX,
-};
 
 struct tc_s
 {
@@ -64,7 +34,6 @@ struct tc_s
 	uint32_t tc_timer_cnt;
 	uint8_t try_snk_cnt;
 	uint8_t try_src_cnt;
-	uint8_t light_cnt;
 	uint16_t snk_voltage;
 };
 

@@ -206,6 +206,8 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/startup}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/util}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/gauge}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/power}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/usbpd}&quot;"/>
 								</option>
 								<option id="ckcoregcc.compiler.option.elf.abiv2.cputype.1251294873" name="CPUType" superClass="ckcoregcc.compiler.option.elf.abiv2.cputype" value="ck802" valueType="enumerated"/>
 								<option id="ckcoregcc.c.compiler.elf.optimization.isEnhancedLRW.1371439957" name="Enhanced LRW(-Wa,-melrw)" superClass="ckcoregcc.c.compiler.elf.optimization.isEnhancedLRW" value="true" valueType="boolean"/>

@@ -8,6 +8,8 @@
 #define RELE_DATE                             0x53127	//update 20250325
 #define TX_FW_VER                               0x10
 
+
+#define BATTERY_CV_VALUE					4200
 #define POWERBANK_BUCK_EVK_V02
 
 /*.....7.5w Debug......*/

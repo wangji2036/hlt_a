@@ -1,11 +1,11 @@
 #include "tcpm.h"
 #include "tcpc.h"
-#include "pd.h"
-#include "typec.h"
+//#include "pd.h"
+//#include "typec.h"
 #include "printk.h"
 #include "osal.h"
 #include "regdef.h"
-#include "usb_pd.h"
+#include "pdlib.h"
 #include "dpdm.h"
 #include "afc_scp.h"
 #include "buckboost.h"
@@ -152,7 +152,7 @@ void fcp_single_write_handle(void)
 				//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
 	        	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
-	            hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
+				pdlib_disable_usbpd();
 			}
 			break;
 		case FCP_REG_VOUT_CONFIG:
@@ -163,7 +163,7 @@ void fcp_single_write_handle(void)
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
         	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
-            hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
+        	pdlib_disable_usbpd();
         	break;
 
 
@@ -175,13 +175,13 @@ void fcp_single_write_handle(void)
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
         	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
-            hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
+        	pdlib_disable_usbpd();
 			break;
         case SCP_REG_SPEC_FUN2://0xCE 调节电流步进
         	SCP_REG[SCP_REG_VSET_H] = 5000 >> 8;
         	SCP_REG[SCP_REG_VSET_L] = (uint8_t)5000;
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
-            hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
+        	pdlib_disable_usbpd();
             scp_vout = ((uint16_t)SCP_REG[SCP_REG_VSET_H] << 8) | SCP_REG[SCP_REG_VSET_L];
             if(scp_vout >= 10000) scp_vout = 10000;
 			scp_iout = 24000000 / scp_vout;
@@ -251,7 +251,7 @@ void fcp_multi_write_handle(void)
 			//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
-            hal_tcpc_set_pd_rx(0,EN_HARD_RESET,false);
+			pdlib_disable_usbpd();
 			break;
 	}
 }

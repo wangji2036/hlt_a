@@ -45,7 +45,7 @@ extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *dat
 #define REG_REVISION					0x12
 
 void hal_nu6801_buckboost_init(void);
-void hal_nu6801_buckboost_set_cv(void);
+void hal_nu6801_buckboost_set_cv(uint16_t volt);
 void hal_nu6801_buckboost_typeca_dischg(bool en);
 void hal_nu6801_buckboost_typecb_dischg(bool en);
 void hal_nu6801_buckboost_usb_a_dischg(bool en);

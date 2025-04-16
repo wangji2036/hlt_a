@@ -29,6 +29,7 @@ struct buckboost_s
 	bool bat_full_flag;
 	bool usba_dectet_en;
 	bool usba_state;
+	bool chager_ibus_start;
 
 	uint16_t buckboost_out_voltage;
 	uint16_t buckboost_out_current;
@@ -37,6 +38,7 @@ struct buckboost_s
 	uint16_t regulator_state;
 	uint16_t buckboost_chager_current;
 	uint16_t chager_ibus_limit;
+	uint16_t chager_ibus_value;
 	uint16_t chager_ibat_limit;
 
 	int16_t adc_ibus;
@@ -99,6 +101,7 @@ struct buckboost_operations
 
 #define BUCKBOOST_TIME_PERIOD									17
 #define BUCKBOOST_VBUS_PERIOD									9
+#define BUCKBOOST_CHAG_PERIOD									500
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)
 #define BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT    					osal_event_declare(1)
@@ -118,6 +121,7 @@ struct buckboost_operations
 #define BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS    				osal_event_declare(14)
 #define BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS    				osal_event_declare(15)
 
+#define BUCKBOOST_EVT_CHAG_PERIOD    							osal_event_declare(28)
 #define BUCKBOOST_EVT_ADC_PERIOD    							osal_event_declare(29)
 #define BUCKBOOST_EVT_VBUS_PERIOD    							osal_event_declare(30)
 #define BUCKBOOST_EVT_TIME_PERIOD    							osal_event_declare(31)

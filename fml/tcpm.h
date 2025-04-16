@@ -4,6 +4,78 @@
 #include "typdef.h"
 #include "osal.h"
 
+#define V_VBUS_PRESENT_TH			3800
+
+enum usb_tc_state_e
+{
+	TC_Disable = 0,
+
+	TC_SNK_Unattached,  	//1
+	TC_SNK_AttachWait,
+	TC_SNK_Attached,
+
+	TC_SRC_Unattached,  	//4
+	TC_SRC_AttachWait,
+	TC_SRC_Attached,
+	TC_DEBUG_Attached,		//7
+
+	TC_DRP_TOGGLE,			//8
+	TC_Try_SNK,				//9
+	TC_TryWAIT_SRC,			//10
+	TC_Try_SRC,				//11
+	TC_TryWAIT_SNK,			//12
+	TC_ACCESSORY_Attached,		//13
+	TC_ErrorRecovery,
+
+	TC_STATE_MAX,
+};
+
+enum tc_cc_status
+{
+    TYPEC_CC_OPEN,
+    TYPEC_CC_RA,
+    TYPEC_CC_RD,
+    TYPEC_CC_RP_DEF,
+    TYPEC_CC_RP_1_5,
+    TYPEC_CC_RP_3_0,
+    TYPEC_CC_TOGGLE,
+};
+
+enum tc_drp_reult
+{
+	TYPEC_DRP_NO_CONNECT = 0,
+	TYPEC_DRP_SNK_CONNECTED,
+	TYPEC_DRP_SRC_CONNECTED,
+};
+
+
+enum tc_cc_polarity
+{
+    TYPEC_POLARITY_CC1,
+    TYPEC_POLARITY_CC2,
+};
+
+enum data_role_e
+{
+	TYPEC_DEVICE = 0,
+	TYPEC_HOST,
+};
+
+enum pwr_role_e
+{
+	TYPEC_SINK = 0,
+	TYPEC_SOURCE,
+};
+
+
+struct tcpc_s
+{
+	uint8_t tc_port_map;
+	enum data_role_e data_role;
+	enum pwr_role_e pwr_role;
+
+};
+
 #define VOLTAGE_5V 	 	5000
 #define VOLTAGE_9V  	9000
 #define VOLTAGE_12V  	12000
@@ -60,7 +132,7 @@ void tcpm_set_port_sdp(uint8_t tc_index);
 void tcpm_stop_wpc(uint8_t delay_ping_unit);
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode);
 void tcpm_disable_usba_detect(void);
-
+void tcpm_update_pdo_for_ntc(void);
 void tcpm_dp_set_10uA(void);
 uint32_t tcpm_dp_get_result(void);
 

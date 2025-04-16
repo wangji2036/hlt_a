@@ -7,10 +7,11 @@
 #include "osal.h"
 #include "tcpm.h"
 #include "pd.h"
-#include "typec.h"
+#include "pdlib.h"
+//#include "typec.h"
 #include "afc_scp.h"
 #include "usb_qc.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 #include "port_manager.h"
 
 void dpdm_source_init(void);
@@ -143,7 +144,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 		case DPDM_EVT_QC_FIXED_12V:
 		case DPDM_EVT_QC_FIXED_20V:
 
-			if(g_usb_pd_s.explicit_contract && g_usb_pd_s.supply_voltage != 5000)
+			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
 				printk("pd has work,qc should not work\n");
 				return;
@@ -185,7 +186,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 		case DPDM_EVT_QC_PLUSE_INC:
 		case DPDM_EVT_QC_PLUSE_DEC:
-			if(g_usb_pd_s.explicit_contract && g_usb_pd_s.supply_voltage != 5000)
+			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
 				printk("pd has work,qc should not work\n");
 				return;
@@ -252,7 +253,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			printk("hvdcp done\n");
 			//osal_set_event(USB_TASK,TCPM_EVT_HVDCP_DONE);
 
-			if(g_port.snk_5v_only == 0 && g_usb_pd_s.explicit_contract == 0)
+			if(g_port.snk_5v_only == 0 && pdlib_is_connect() == false)
 			{
 				osal_start_timerEx(DPDM_SINK_TIMER, 50, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC_START);
 			}
@@ -280,7 +281,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			{
 				bc12_type = BC1P2_QC12V;
 				qc2_set_volt(5000);
-				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+				pdlib_disable_usbpd();
 			}
 			else
 			{
@@ -295,7 +296,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			if(g_buckboost.adc_vbus >= 7500)
 			{
 				bc12_type = BC1P2_QC9V;
-				usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
+				pdlib_disable_usbpd();
 			}
 			qc2_set_volt(5000);
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);

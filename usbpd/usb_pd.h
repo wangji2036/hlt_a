@@ -3,6 +3,7 @@
 
 #include "typdef.h"
 #include "usbpd_config.h"
+#include "pd_tc.h"
 
 #define USB_PD_EVT_SNK_ATTACHED  					(0x01ul<<0)
 #define USB_PD_EVT_SNK_UNATTACH  					(0x01ul<<1)
@@ -173,8 +174,6 @@ struct usb_pd_s
 	uint8_t snk_tx_pdo_n;
 	enum tcpc_pe_transmit_type pe_tran_cb_type;
 
-
-
 	uint16_t supply_voltage;
 	uint16_t supply_current;
 
@@ -210,11 +209,13 @@ void usb_pd_set_event(uint8_t tc_index,uint32_t event);
 void usb_pd_clear_event(uint32_t event);
 void usb_pd_set_state(enum usb_pd_state_e pe_state,enum usb_pd_substate_e pe_substate);
 void usb_pd_requsrt_voltage(uint32_t pdo_position,uint16_t voltage,uint16_t current);
-void updata_pdo_of_source(uint32_t * pdo,uint8_t n_pdo);
-void updata_pdo_of_sink(uint32_t * pdo,uint8_t n_pdo);
+void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo);
+void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo);
 void usb_pd_snk_dump_pdoinfo(void);
 void usb_pd_reset_prl(void);
 void usb_pd_init(void);
 void usb_pdevt_run(void);
 void usb_pd_run(void);
+
+
 #endif

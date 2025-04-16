@@ -1,5 +1,6 @@
 #include "usb_pd.h"
 #include "tcpc.h"
+#include "pd_tc.h"
 #include "pd.h"
 #include "typec.h"
 #include "printk.h"
@@ -40,49 +41,9 @@ void usb_set_enable(void)
 	usb_pd_disable = 0;
 }
 
-
-
-
-#if(BUCKBOOST_USED_NU6805 == 1)
-const uint32_t source_pdo[] =
-{
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
-	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 3000, 0),
-	[2] = PDO_FIXED(12000, 3000, 0),
-	[3] = PDO_FIXED(15000, 3000, 0),
-	[4] = PDO_PPS_APDO(5000,16000,3000),
-};
-#elif(BUCKBOOST_USED_NU6801 == 1)
-const uint32_t source_pdo[] =
-{
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
-	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 2000, 0),
-	[2] = PDO_FIXED(12000, 1500, 0),
-	[3] = PDO_PPS_APDO(5000,11000,2000),
-};
-
-
-#endif
-
-const uint32_t source_pdo_ntc[] =
-{
-	[0] = PDO_FIXED(5000, 2000, SOURCE_PDO_FIXED_FLAGS),
-};
-
-const uint32_t sink_pdo[] =
-{
-	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
-	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 2000, 0),
-
-	//[2] = PDO_FIXED(15000, 3000, 0),
-};
-
 static union usb_pd_timer_u usb_pd_timers[USBPD_TIMER_MAX];
 
-void updata_pdo_of_source(uint32_t * pdo,uint8_t n_pdo)
+void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo)
 {
 	osal_mem_clear((void*)g_usb_pd_s.src_source_pdo,28);
 	for(uint8_t i = 0; i< n_pdo;i++)
@@ -94,7 +55,7 @@ void updata_pdo_of_source(uint32_t * pdo,uint8_t n_pdo)
 	printk("update source caps:%d\n",n_pdo);
 }
 
-void updata_pdo_of_sink(uint32_t * pdo,uint8_t n_pdo)
+void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
 {
 	osal_mem_clear((void*)g_usb_pd_s.snk_sink_pdo,28);
 	for(uint8_t i = 0; i< n_pdo;i++)
@@ -111,17 +72,17 @@ void usb_pd_init(void)
 	osal_mem_clear(&g_usb_pd_s,sizeof(struct usb_pd_s));
 	usb_pd_reset_prl();
 	g_usb_pd_s.snk_rdo = RDO_FIXED(1, 500, 500,0);
-	g_usb_pd_s.src_tx_pdo_n = sizeof(source_pdo) / 4;
-	for(uint8_t i = 0; i< (sizeof(source_pdo) /4);i++)
-	{
-		g_usb_pd_s.src_source_pdo[i] = source_pdo[i];
-	}
-
-	g_usb_pd_s.snk_tx_pdo_n = sizeof(sink_pdo) / 4;
-	for(uint8_t i = 0; i< (sizeof(sink_pdo) /4);i++)
-	{
-		g_usb_pd_s.snk_sink_pdo[i] = sink_pdo[i];
-	}
+//	g_usb_pd_s.src_tx_pdo_n = sizeof(source_pdo) / 4;
+//	for(uint8_t i = 0; i< (sizeof(source_pdo) /4);i++)
+//	{
+//		g_usb_pd_s.src_source_pdo[i] = source_pdo[i];
+//	}
+//
+//	g_usb_pd_s.snk_tx_pdo_n = sizeof(sink_pdo) / 4;
+//	for(uint8_t i = 0; i< (sizeof(sink_pdo) /4);i++)
+//	{
+//		g_usb_pd_s.snk_sink_pdo[i] = sink_pdo[i];
+//	}
 	hal_tcpc_pd_phy_disable();
 	usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
 }
@@ -631,11 +592,6 @@ static void PE_SRC_Send_Capabilities_Entry(void)
 {
 	g_usb_pd_s.caps_counter++;
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_SOURCECAPS;
-
-	if(ntc_ut_flag | ntc_ot_flag)
-		updata_pdo_of_source((uint32_t *)source_pdo_ntc,sizeof(source_pdo_ntc) / 4);
-	else
-		updata_pdo_of_source((uint32_t *)source_pdo,sizeof(source_pdo) / 4);
 
 	hal_tcpc_send_source_caps(g_usb_pd_s.src_source_pdo,g_usb_pd_s.src_tx_pdo_n);
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);

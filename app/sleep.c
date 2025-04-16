@@ -29,7 +29,9 @@
 #include"bsp.h"
 #include "config.h"
 #include "sleep.h"
-#include "typec.h"
+#include "tcpm.h"
+#include "pdlib.h"
+//#include "typec.h"
 //uint8_t reset_magic_code;
 
 #if ONLY7_5W_ENALBE
@@ -54,10 +56,10 @@ void SLP_vNormalToSleep(void)
 	gd->rd1_cnt = 0;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
-	if(!gd->tc0_lighting_mode) hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
-	else hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RP_DEF);
-	if(!gd->tc1_lighting_mode) hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
-	else hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RP_DEF);
+	if(!gd->tc0_lighting_mode) pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
+	else pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RP_DEF);
+	if(!gd->tc1_lighting_mode) pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
+	else pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RP_DEF);
 #if(BUCKBOOST_USED_NU6801 == 1)
     // enable all 6801 INT
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_MASK,0x80);
@@ -500,14 +502,14 @@ void RST_vCheck(void)
 					sleep_printk("\r\n set Rd");
 					TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
 					TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
-					hal_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RD);
+					pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RD);
 					TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
 					TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
-					hal_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RD);
+					pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RD);
 
 					delay_1us(1000);
 					enum tc_cc_status cc1,cc2;
-					hal_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
+					pdlib_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
 					sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCA_STAT.WORD);
 					extern bool tc_snk_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
 				    if (tc_snk_is_connected(cc1,cc2))
@@ -527,7 +529,7 @@ void RST_vCheck(void)
 				    }
 
 
-					hal_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
+					pdlib_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
 					//sleep_printk("\r\n 1cc:[%d %d]\n",cc1,cc2);
 					sleep_printk("\r\n 1cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCB_STAT.WORD);
 				    if (tc_snk_is_connected(cc1,cc2))
@@ -551,9 +553,8 @@ void RST_vCheck(void)
 				{
 					if(gd->tc0_lighting_mode)
 					{
-						extern bool tc_src_is_disconnected(struct tc_s * tc);
 						enum tc_cc_status cc1,cc2;
-						hal_tcpc_get_cc(0, &cc1,&cc2);
+						pdlib_tcpc_get_cc(0, &cc1,&cc2);
 
 						sleep_printk("\r\n 0cc:[%d %d]\n",cc1,cc2);
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
@@ -565,11 +566,11 @@ void RST_vCheck(void)
 
 						if(!gd->tc1_lighting_mode)
 						{
-							if(hal_get_drp_toggle_result(1) == TYPEC_DRP_SNK_CONNECTED)
+							if(pdlib_get_drp_toggle_result(1) == TYPEC_DRP_SNK_CONNECTED)
 							{
 								break;
 							}
-							else if(hal_get_drp_toggle_result(1) == TYPEC_DRP_SRC_CONNECTED)
+							else if(pdlib_get_drp_toggle_result(1) == TYPEC_DRP_SRC_CONNECTED)
 							{
 								break;
 							}
@@ -578,9 +579,8 @@ void RST_vCheck(void)
 
 					if(gd->tc1_lighting_mode)
 					{
-						extern bool tc_src_is_disconnected(struct tc_s * tc);
 						enum tc_cc_status cc1,cc2;
-						hal_tcpc_get_cc(1, &cc1,&cc2);
+						pdlib_tcpc_get_cc(1, &cc1,&cc2);
 
 						sleep_printk("\r\n [%d]cc:[%d %d]\n",1,cc1,cc2);
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
@@ -592,11 +592,11 @@ void RST_vCheck(void)
 
 						if(!gd->tc0_lighting_mode)
 						{
-							if(hal_get_drp_toggle_result(0) == TYPEC_DRP_SNK_CONNECTED)
+							if(pdlib_get_drp_toggle_result(0) == TYPEC_DRP_SNK_CONNECTED)
 							{
 								break;
 							}
-							else if(hal_get_drp_toggle_result(0) == TYPEC_DRP_SRC_CONNECTED)
+							else if(pdlib_get_drp_toggle_result(0) == TYPEC_DRP_SRC_CONNECTED)
 							{
 								break;
 							}

@@ -4,7 +4,7 @@
 #include "printk.h"
 #include "config.h"
 #if(BUCKBOOST_USED_NU6805 == 1)
-#define BAT_CELL_FULL_VOLT   4200
+
 #define BAT_CELL_EMPTY_VOLT   2900
 
 #define BAT_CELL_NUM 2
@@ -16,7 +16,7 @@ void hal_nu6805_buckboost_init(void)
 	uint8_t revision = hal_nu6805_buckboost_get_verision();
 	{
 		hal_nu6805_buckboost_dis_indetb();
-		hal_nu6805_buckboost_charge_target_volt(BAT_CELL_FULL_VOLT*BAT_CELL_NUM);
+		hal_nu6805_buckboost_charge_target_volt(BATTERY_CV_VALUE*BAT_CELL_NUM);
 		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
 
 		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a

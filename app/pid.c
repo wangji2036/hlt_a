@@ -7,7 +7,7 @@
 #include "pid.h"
 #include "_wpc.h"
 #include "delay.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 
 enum pid_ctrl_mode_t {
 	EPID_CTRL_MODE_VOLT = 0,

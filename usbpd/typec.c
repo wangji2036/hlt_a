@@ -2,6 +2,7 @@
 #include "printk.h"
 #include "regdef.h"
 #include "tcpc.h"
+#include "pd_tc.h"
 #include "typec.h"
 #include "pd.h"
 #include "osal.h"

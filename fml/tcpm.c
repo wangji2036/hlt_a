@@ -4,9 +4,9 @@
 #include "osal.h"
 #include "tcpm.h"
 #include "pd.h"
-#include "typec.h"
+//#include "typec.h"
 #include "buckboost.h"
-#include "usb_pd.h"
+#include "pdlib.h"
 #include "adp.h"
 #include "_wpc.h"
 #include "g_data.h"
@@ -15,6 +15,40 @@
 #include "port_manager.h"
 #include "config.h"
 #include "adp.h"
+
+
+#if(BUCKBOOST_USED_NU6805 == 1)
+const uint32_t source_pdo[] =
+{
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
+	[1] = PDO_FIXED(9000, 3000, 0),
+	[2] = PDO_FIXED(12000, 3000, 0),
+	[3] = PDO_FIXED(15000, 3000, 0),
+	[4] = PDO_PPS_APDO(5000,16000,3000),
+};
+#elif(BUCKBOOST_USED_NU6801 == 1)
+const uint32_t source_pdo[] =
+{
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
+	[1] = PDO_FIXED(9000, 2000, 0),
+	[2] = PDO_FIXED(12000, 1500, 0),
+	[3] = PDO_PPS_APDO(5000,11000,2000),
+};
+#endif
+
+const uint32_t source_pdo_ntc[] =
+{
+	[0] = PDO_FIXED(5000, 2000, SOURCE_PDO_FIXED_FLAGS),
+};
+
+const uint32_t sink_pdo[] =
+{
+	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
+	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
+	[1] = PDO_FIXED(9000, 2000, 0),
+};
 
 uint16_t port_vbus = 5000;
 uint16_t qi_volt = 5000;
@@ -51,12 +85,21 @@ void test_pin1_out(bool status)
 }
 #endif
 
+void tcpm_update_pdo_for_ntc(void)
+{
+	pdlib_update_source_pdo(source_pdo_ntc,sizeof(source_pdo_ntc)/4);
+}
+
 void tcpm_task_init(void)
 {
 	osal_task_handler_reg(USB_TASK, tcpm_task_event_handler);
 	osal_start_timerEx(USB_TC_PD_TIMER, 1, 1, USB_TASK, TCPM_EVT_TIME_PERIOD);
-	usb_tc_init();
-	usb_pd_init();
+
+	pdlib_init();
+
+	pdlib_update_source_pdo(source_pdo,sizeof(source_pdo)/4);
+	pdlib_update_sink_pdo(sink_pdo,sizeof(sink_pdo) /4);
+
 #ifdef TEST_PIN
 	test_pin1_out(1);
 	test_pin2_out(0);
@@ -79,12 +122,6 @@ void tcpm_task_init(void)
 //	return ret;
 //}
 //
-
-void tcpm_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_substate_e tc_substate)
-{
-	tc->usb_tc_state = tc_state;
-	tc->usb_tc_substate = tc_substate;
-}
 
 void tcpm_stop_wpc(uint8_t delay_ping_unit)
 {
@@ -111,7 +148,7 @@ void tcpm_set_port_sdp(uint8_t tc_index)
 	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
 
-	hal_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
+	pdlib_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
 
 	printk("PORT[%d] set sdp\n",tc_index);
 }
@@ -151,7 +188,7 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 			//printk("\r\n adapter updated! BOOST");
 			break;
 		case TCPM_WPC_WORK_PD_PPS:
-			source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[rdo_index(g_usb_pd_s.snk_rdo) - 1];
+			source_pdo = pdlib_snk_get_work_pdo();
 #if ONLY7_5W_ENALBE
 			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, (pdo_pps_apdo_max_voltage(source_pdo)>13000?13000:pdo_pps_apdo_max_voltage(source_pdo)), 10 * 2);
 #else
@@ -173,9 +210,7 @@ void tcpm_task_event_handler(uint32_t event)
 	switch (event)
 	{
 		case TCPM_EVT_TIME_PERIOD:
-			usb_pdevt_run();
-			usb_pd_run();
-			usb_tc_run();
+			pdlib_run();
 			break;
 		case TCPM_EVT_USBA_SCAN:
 #if(CONFIG_USBA_SUPPORT == 1)
@@ -252,15 +287,15 @@ void tcpm_task_event_handler(uint32_t event)
 				qi_cnt = 0;
 			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 		#if(BUCKBOOST_USED_NU6801 == 1)
-			if(g_tc[0].usb_tc_state == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
+			if(pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
 			{
 				if(g_buckboost.adc_iac2 < 60)
 				{
-					g_tc[0].light_cnt++;
-					if(g_tc[0].light_cnt >= 25 * 10)
+					g_port.light0_cnt++;
+					if(g_port.light0_cnt >= 25 * 10)
 					{
-						g_tc[0].light_cnt = 0;
+						g_port.light0_cnt = 0;
 						gd->tc0_lighting_mode = 1;
 						//tcpm_dp_set_10uA();
 						//gd->dp_result = tcpm_dp_get_result();
@@ -269,16 +304,16 @@ void tcpm_task_event_handler(uint32_t event)
 				}
 				else
 				{
-					g_tc[0].light_cnt = 0;
+					g_port.light0_cnt = 0;
 				}
 			}
 			else
 			{
-				g_tc[0].light_cnt = 0;
+				g_port.light0_cnt = 0;
 			}
 
 
-			if(g_tc[1].usb_tc_state == TC_SRC_Attached && g_port.port_state[0] == PORT_STATE_NONE
+			if(pdlib_get_tc_state(PORT1_INDEX) == TC_SRC_Attached && g_port.port_state[0] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE)
 			{
 			#ifdef POWERBANK_BUCK_EVK_V02
@@ -287,10 +322,10 @@ void tcpm_task_event_handler(uint32_t event)
 				if(g_buckboost.adc_ibus > -60  && g_buckboost.adc_ibus <0 )
 			#endif
 				{
-					g_tc[1].light_cnt++;
-					if(g_tc[1].light_cnt >= 25 * 10)
+					g_port.light1_cnt++;
+					if(g_port.light1_cnt >= 25 * 10)
 					{
-						g_tc[1].light_cnt = 0;
+						g_port.light1_cnt = 0;
 						gd->tc1_lighting_mode = 1;
 						//tcpm_dp_set_10uA();
 						//gd->dp_result = tcpm_dp_get_result();
@@ -300,12 +335,12 @@ void tcpm_task_event_handler(uint32_t event)
 				}
 				else
 				{
-					g_tc[1].light_cnt = 0;
+					g_port.light1_cnt = 0;
 				}
 			}
 			else
 			{
-				g_tc[1].light_cnt = 0;
+				g_port.light1_cnt = 0;
 			}
 
 		#endif
@@ -347,8 +382,8 @@ void tcpm_task_event_handler(uint32_t event)
 			}
 			else if(wpc_mode == TCPM_WPC_WORK_PD_PPS)
 			{
-				uint32_t source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[g_usb_pd_s.snk_rx_pdo_n - 1];
-				usb_pd_requsrt_voltage(g_usb_pd_s.snk_rx_pdo_n,qi_volt,pdo_pps_apdo_max_current(source_pdo));
+				uint32_t source_pdo = (uint32_t)pdlib_snk_get_work_pdo();
+				pdlib_snk_requsrt_voltage(pdlib_snk_get_work_pdo_index(),qi_volt,pdo_pps_apdo_max_current(source_pdo));
 			}
 			printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
 			break;

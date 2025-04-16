@@ -1,7 +1,7 @@
 #include "regdef.h"
 #include "typdef.h"
 #include "printk.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 #include "osal.h"
 #include"led.h"
 

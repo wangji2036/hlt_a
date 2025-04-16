@@ -15,7 +15,7 @@
 #include "wpc_nego.h"
 #include "wpc_xfer.h"
 #include "debug.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 #include "t91206.h"
 #include "wpc_5_xfer_4_dstrm.h"
 

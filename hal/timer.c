@@ -49,7 +49,7 @@
 #include "timer.h"
 #include "g_data.h"
 #include "led.h"
-#include "usb_pd.h"
+#include "pdlib.h"
 
 /**
  * @brief Timer 0/1/2/3 initialization. 
@@ -149,7 +149,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
-	usb_pd_timer_update();
+	usb_pdlib_timer_update();
 	ui_display();
 
 

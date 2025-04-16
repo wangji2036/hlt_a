@@ -18,13 +18,14 @@
 #include "wpc_ping.h"
 #include "fm1210.h"
 #include "t91206.h"
-#include "usb_pd.h"
+//#include "usb_pd.h"
 #include "tcpm.h"
 #include "port_manager.h"
 #include "usb_qc.h"
 #include "buckboost.h"
 #include"sleep.h"
 #include"bsp.h"
+#include "bat.h"
 
 uint32_t rrlen;
 
