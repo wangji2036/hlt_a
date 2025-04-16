@@ -73,9 +73,9 @@ int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 			b = 995;
 		}
 	}
-	printk(" vbus = %d vbat= %d k= %d b= %d\n",vbus,vbat,k,b);
+	printk(" \r\nvbus = %d vbat= %d k= %d b= %d\n",vbus,vbat,k,b);
 	actual_effiency = (k*(vbus/100))/1000 +b;
-	printk("effi = %d \n",actual_effiency);
+	printk("\r\n effi = %d \n",actual_effiency);
 //	temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
 
 	if(ibus>=0)

@@ -27,7 +27,7 @@
 boolean_T SOC_OCVUpd_flg;              /* '<Root>/SOC_OCVUpd_flg' */
 int32_T SOC_OCVSOC_mpct;               /* '<Root>/SOC_OCVSOC_mpct' */
 int32_T SOC_AhIntegralSOC_mpct;        /* '<Root>/SOC_AhIntegralSOC_mpct' */
-int32_T SOC_RawSOC_mpct;               /* '<Root>/SOC_RawSOC_mpct' */
+//int32_T SOC_RawSOC_mpct;               /* '<Root>/SOC_RawSOC_mpct' */
 int32_T SOH_SOHR_pct;                  /* '<Root>/SOH_SOHR_pct' */
 int32_T SOH_Resistance_mOhm;           /* '<Root>/SOH_Resistance_mOhm' */
 boolean_T SOC_CHG_flg;                 /* '<Root>/SOC_CHG_flg' */
@@ -1322,6 +1322,14 @@ int32_T mul_s32_loSR(int32_T a, int32_T b, uint32_T aShift)
   return (int32_T)u32_clo;
 }
 
+int32_T mul_s32_hiSR(int32_T a, int32_T b, uint32_T aShift)
+{
+  uint32_T u32_chi;
+  uint32_T u32_clo;
+  mul_wide_s32(a, b, &u32_chi, &u32_clo);
+  return (int32_T)u32_chi >> aShift;
+}
+
 void mul_wide_u32(uint32_T in0, uint32_T in1, uint32_T *ptrOutBitsHi, uint32_T
                   *ptrOutBitsLo)
 {
@@ -1453,6 +1461,7 @@ void Cyclic(void)
 	{
 		Soc_Initialed = true;
 		Init();
+		BMS_NvmSOC_mpct = gd->SOC_RawSOC_mpct;
 		printk("\r\n gauge initialed");
 	}
 }

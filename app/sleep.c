@@ -54,6 +54,7 @@ void SLP_vNormalToSleep(void)
    SYS->PWR_CTRL.WORD = 0;
 	gd->rd0_cnt = 0;
 	gd->rd1_cnt = 0;
+	gd->SOC_SleepTime_s = 0;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
 	if(!gd->tc0_lighting_mode) pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
@@ -257,6 +258,7 @@ void SLP_vNormalToSleep(void)
 void SLP_vSleepToSleep(void)
 {
 
+	if(gd->SOC_SleepTime_s < 10000) gd->SOC_SleepTime_s++;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	if(!gd->bat_dead_flag)
 	{
@@ -294,7 +296,7 @@ void SLP_vSleepToSleep(void)
 	UART1-> SLA_ADEN.WORD = 0;
 	UART2-> SLA_ADEN.WORD = 0;
 
-	sleep_printk("\r\n sleep again");
+	sleep_printk("\r\n sleep again  --- sleep time%d",gd->SOC_SleepTime_s);
 
 	hal_wdt_feed();
 	hal_epwm_pwm_stop(EPWM1);

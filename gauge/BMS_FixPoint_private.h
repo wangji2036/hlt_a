@@ -73,6 +73,7 @@ extern int32_T SigPr_PackCurr_mA;      /* '<Root>/Data Type Conversion1' */
 extern uint16_T SigPr_CellVolts_mV;    /* '<Root>/Min' */
 extern int16_T SigPr_CellTemps_C;      /* '<Root>/Min1' */
 extern int32_T BMS_NvmSOC_mpct;        /* '<Root>/BMS_NvmSOC_mpct' */
+extern uint32_T SOC_SleepTime_s;       /* '<Root>/SOC_SleepTime_s' */
 extern int32_T rt_sqrt_Us32_Ys32_Is64_f_s(int32_T u);
 extern int32_T look2_is16u16lu32n32ts_lElusMKZ(int16_T u0, uint16_T u1, const
   int16_T bp0[], const uint16_T bp1[], const int32_T table[], uint32_T
@@ -102,6 +103,7 @@ extern void mul_wide_s32(int32_T in0, int32_T in1, uint32_T *ptrOutBitsHi,
   uint32_T *ptrOutBitsLo);
 extern int32_T mul_s32_loSR_sat(int32_T a, int32_T b, uint32_T aShift);
 extern int32_T mul_s32_loSR(int32_T a, int32_T b, uint32_T aShift);
+extern int32_T mul_s32_hiSR(int32_T a, int32_T b, uint32_T aShift);
 extern void mul_wide_u32(uint32_T in0, uint32_T in1, uint32_T *ptrOutBitsHi,
   uint32_T *ptrOutBitsLo);
 extern uint32_T mul_u32_sr32(uint32_T a, uint32_T b);

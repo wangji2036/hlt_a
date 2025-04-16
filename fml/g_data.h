@@ -388,6 +388,12 @@ struct gd_t
 	 uint8_t real_soc_show;
 	 uint8_t real_soc_obtained;
 	 uint8_t dp_result;
+
+
+	 int32_t SOC_RawSOC_mpct;
+	 uint32_t SOC_SleepTime_s;
+
+
 };
 
 extern volatile struct ap_t *ap;

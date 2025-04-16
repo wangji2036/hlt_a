@@ -82,7 +82,7 @@ typedef struct {
    *   '<S23>/OCV_Discharge'
    *   '<S23>/R0_Discharge'
    */
-  uint32_T pooled8[2];
+  uint32_T pooled10[2];
 } ConstP;
 
 /* Real-time Model Data Structure */

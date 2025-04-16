@@ -132,13 +132,15 @@ void gd_data_init(void)
 	{
 		__write_08bits(addr, 0);
 	}
-
+    printk(" \r\n magic code %x",gd->power_on_magic);
 	if(gd->power_on_magic != 0xaaaa)
 	{
 		gd->tc0_lighting_mode = 0x00;
 		gd->tc1_lighting_mode = 0x00;
 		gd->real_soc_show = 0;
 		gd->real_soc_obtained = 0;
+		gd->SOC_RawSOC_mpct = 0;
+		gd->SOC_SleepTime_s = 2000;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

@@ -16,13 +16,13 @@
 #include "config.h"
 /* Invariant block signals (default storage) */
 const ConstB ConstB_s = {
-  55000,                               /* '<S39>/Add2' */
-  -10,                                 /* '<S36>/Divide1' */
-  9,                                   /* '<S22>/Math Function1' */
-  9,                                   /* '<S32>/Add5' */
-  1,                                   /* '<S20>/Minus' */
-  9,                                   /* '<S26>/Add5' */
+  55000,                               /* '<S40>/Add2' */
+  -100,                                /* '<S37>/Divide1' */
+  9,                                   /* '<S23>/Math Function1' */
+  9,                                   /* '<S33>/Add5' */
+  1,                                   /* '<S21>/Minus' */
   9,                                   /* '<S27>/Add5' */
+  9,                                   /* '<S28>/Add5' */
   false                                /* '<S7>/Constant' */
 };
 
