@@ -149,7 +149,9 @@ void port_enum_port0_connect_closed(void)
 		{
 			if(pdlib_is_connect())
 			{
-				if(pdlib_is_pps_source())  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				if(pdlib_is_pps_sink())  tcpm_update_wpc_work_mode(TCPM_WPC_WORK_PD_PPS);
+				if(pdlib_snk_get_work_pdo_index() >= PDO_INDEX_2 ) tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
+				else tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 			}
 			else
 			{
@@ -771,7 +773,6 @@ void port_enum_port_snk_setvolt(void)
 	g_port.ibus_limit = 1000;
 	g_port.ibat_limit = 1000;
 #if(BUCKBOOST_USED_NU6801 == 1)
-
 	buckboost_ops.set_ovp(20000);
 #endif
 	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
@@ -780,7 +781,7 @@ void port_enum_port_snk_setvolt(void)
 
 		if(pdlib_is_connect())
 		{
-#if(BUCKBOOST_USED_NU6805 == 1)
+#if(CONFIG_SUPPORT_PPS_CHAGER == 1)
 			source_pdo = pdlib_snk_get_pdo_by_index(pdlib_snk_get_pdo_amount());
 			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
 			{
@@ -792,24 +793,25 @@ void port_enum_port_snk_setvolt(void)
 			}
 			else
 #endif
-			for(uint8_t i = 0; i< pdlib_snk_get_pdo_amount(); i++)
 			{
-
-				source_pdo = pdlib_snk_get_pdo_by_index(pdlib_snk_get_pdo_amount() - i);
-
-				if(pdo_type(source_pdo) == PDO_TYPE_FIXED)
+				for(uint8_t i = 0; i< pdlib_snk_get_pdo_amount(); i++)
 				{
-					if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
+
+					source_pdo = pdlib_snk_get_pdo_by_index(pdlib_snk_get_pdo_amount() - i);
+
+					if(pdo_type(source_pdo) == PDO_TYPE_FIXED)
 					{
-						pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
-						g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
-						g_port.ibus_limit = pdo_max_current(source_pdo);
-						g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
-						break;
+						if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
+						{
+							pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
+							g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
+							g_port.ibus_limit = pdo_max_current(source_pdo);
+							g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
+							break;
+						}
 					}
 				}
 			}
-
 			g_port.ibat_limit = 5500;
 		}
 		else if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V)
@@ -868,6 +870,8 @@ void port_enum_port_snk_setvolt(void)
 		g_port.ibus_limit = 1000;
 		g_port.ibat_limit = 1000;
 	}
+
+	g_port.prot_ibus = g_port.ibus_limit;
 
 	if(g_port.inhandle_port == PORT0_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETCHARGE);

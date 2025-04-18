@@ -360,7 +360,11 @@ void ui_update(void)
 		if(one_min_cnt++>60)//15s
 		{
 			one_min_cnt =0;
+#if(BUCKBOOST_USED_NU6801 == 1)
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.charging_stat)
+#else
+			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+#endif
 			{
 				if(gd->real_soc_show < SOCPack_DisplaySOC_pct) gd->real_soc_show +=1;
 			}

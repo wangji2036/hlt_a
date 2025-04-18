@@ -73,6 +73,7 @@ struct port_infos
 	uint32_t port_event;
 	uint16_t ibat_limit;
 	uint16_t ibus_limit;
+	uint16_t prot_ibus;
 	uint16_t snk_set_volt;
 	uint32_t adpater_power;
 	enum port_state_e state;

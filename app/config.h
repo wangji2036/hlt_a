@@ -32,6 +32,9 @@
 
 #define CONFIG_USE_NTC_FOR_CHAGER			0
 
+#define CONFIG_SUPPORT_PPS_CHAGER			0
+
+
 #define CONFIG_USBPD_ACCEPT_PRSWAP			0
 
 #define CAPACITOR_300_NF         			1
