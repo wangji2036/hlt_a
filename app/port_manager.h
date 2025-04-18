@@ -6,7 +6,6 @@
 #include "config.h"
 
 
-
 #define PORT_ENUM_EVT_PORT0_CONNECT_START						osal_event_declare(0)
 #define PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS						osal_event_declare(1)
 #define PORT_ENUM_EVT_PORT0_CONNECT_CLOSED						osal_event_declare(2)

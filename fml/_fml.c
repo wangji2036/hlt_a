@@ -9,6 +9,7 @@
 #include "BMS_FixPoint.h"
 #include "BMS_FixPoint_private.h"
 #include "SOC.h"
+#include "port_manager.h"
 
 void fml_task_init(void)
 {
@@ -31,7 +32,12 @@ void fml_task_event_handler(uint32_t event)
 			Cyclic();
 		//	printk("\r\n calu ibat =%d", temp);
 			//printk("\r\n gauge T=%d  Vbat=%d  Ibat=%d  Ibus=%d\n",SigPr_CellTemps_C_s, SigPr_CellVolts_mV_s,SigPr_PackCurr_mA_s,g_buckboost.adc_ibus);
-			printk("\r\n gauge  Vbat=%d  Ibat=%d  Ibus=%d\n", SigPr_CellVolts_mV_s,SigPr_PackCurr_mA_s,g_buckboost.adc_ibus);
+
+//			printk("\r\n gauge  Vbat=%d  Ibat=%d  Ibus=%d\n", SigPr_CellVolts_mV_s,SigPr_PackCurr_mA_s,g_buckboost.adc_ibus);
+
+			printk("\r\n  gauge  Vbat=%d  Ibat=%d  Ibus=%d  PORT0= %x PORT1= %x PORT2= %x PORT3= %x  \n",
+	SigPr_CellVolts_mV_s,SigPr_PackCurr_mA_s,g_buckboost.adc_ibus,
+	g_port.port_state[PORT0_INDEX],g_port.port_state[PORT1_INDEX],g_port.port_state[PORT2_INDEX],g_port.port_state[PORT3_INDEX]);
 
 			break;
 		default:

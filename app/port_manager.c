@@ -841,7 +841,21 @@ void port_enum_port_snk_setvolt(void)
 				g_port.ibat_limit = 5000;
 			}
 			else if(bc12_type > BC1P2_CDP)
-				g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
+			{
+
+				if(bc12_type == BC1P2_DCP)
+				{
+					g_port.ibus_limit = 1500;
+					g_port.ibat_limit = 5000;
+					g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
+				}
+				else if(bc12_type == BC1P2_APPLE)
+				{
+					g_port.ibus_limit = 1950;
+					g_port.ibat_limit = 5000;
+					g_port.adpater_power =  (uint32_t)1950 * VOLTAGE_5V / 1000;
+				}
+			}
 			else
 				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 

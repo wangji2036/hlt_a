@@ -238,11 +238,15 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			dpdm_sink_deinit();
 			break;
 		case DPDM_EVT_SNK_BC12DONE:
-			printk("BC12 bc12_type=0x%x\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE);
+			printk("\r\n  BC12 bc12_type=0x%x  UNSTANDARD_TYPE = 0x%x \r\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE,DPDM_QC_SINK->BC1P2_STAT.BITS.UNSTANDARD_TYPE);
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x02)
 				bc12_type = BC1P2_CDP;
 			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
 				bc12_type = BC1P2_DCP;
+			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.UNSTANDARD_TYPE & 0x03 )
+			{
+				bc12_type = BC1P2_APPLE; //APPLE 2.4A 2.1A
+			}
 			else
 				bc12_type = BC1P2_SDP;
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03) //DCP
