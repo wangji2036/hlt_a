@@ -115,6 +115,7 @@ void usb_dpdm_autodcp_en(void)
 }
 
 extern union scp_packet_t scp_tx;
+bool is_enter_dpdm_prot = false;
 
 void usb_dpdm_task_event_handler(uint32_t event)
 {
@@ -122,17 +123,20 @@ void usb_dpdm_task_event_handler(uint32_t event)
 	{
 		case DPDM_EVT_SRC_ATTACHED:
 			usb_dpdm_autodcp_en();
+			is_enter_dpdm_prot = false;
 			//printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
 			break;
 		case DPDM_EVT_SRC_UNATTCHED:
+			is_enter_dpdm_prot = false;
 			dpdm_source_init();
 			break;
 		case DPDM_EVT_ENTER_DCP:
-			hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
+			if(is_enter_dpdm_prot) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 			printk("enter dcp\n");
 			//usb_dpdm_autodcp_en();
 			break;
 		case DPDM_EVT_ENTER_HVDCP://if enter dpdm,buck to 5v
+			if(is_enter_dpdm_prot) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 			printk("hvdcp\n");
 			break;
 		case DPDM_EVT_TIMER_PERIOD:
@@ -143,7 +147,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 		case DPDM_EVT_QC_FIXED_9V:
 		case DPDM_EVT_QC_FIXED_12V:
 		case DPDM_EVT_QC_FIXED_20V:
-
+			is_enter_dpdm_prot = true;
 			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
 				printk("pd has work,qc should not work\n");
@@ -181,11 +185,13 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 
 		case DPDM_EVT_AFC_SCP_OUT:
+			is_enter_dpdm_prot = true;
 			hal_tcpc_pd_set_bus_iv(0,scp_vout,scp_iout,0,10);
 			break;
 
 		case DPDM_EVT_QC_PLUSE_INC:
 		case DPDM_EVT_QC_PLUSE_DEC:
+			is_enter_dpdm_prot = true;
 			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
 				printk("pd has work,qc should not work\n");

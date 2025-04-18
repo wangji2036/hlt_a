@@ -2,7 +2,8 @@
 #define USBPD_CONFIG_H_
 
 #define USBPD_VID		0x37A0
-#define USBPD_PID		0x0000
+#define USBPD_PID		0x171F
+#define USBPD_DID		0x00A1    					//DEVICE ID
 
 #define USBPD_POWER_ROLR_SNK						0x01
 #define USBPD_POWER_ROLR_SRC						0x02

@@ -199,6 +199,7 @@ void buckboost_protection_handle(void)
 	#define PPS_UV						BIT(9)
 	#define NTC_PCT						BIT(10)
 	#define ADC_ERR						BIT(11)
+	#define SWITCH_ERR					BIT(12)
 	static uint8_t cnt = 0;
 #endif
 
@@ -223,6 +224,12 @@ void buckboost_protection_handle(void)
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		status &= ~VBUS_UV_FLAG;
+	}
+
+	if(g_buckboost.vsnkdisconnect_flag)
+	{
+		g_buckboost.vsnkdisconnect_flag = 0;
+		status |= SWITCH_ERR;
 	}
 
 	if(adc_err_flag) status |= ADC_ERR;
@@ -290,7 +297,7 @@ void buckboost_protection_handle(void)
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
 		//static bool protection_lock = false;
-		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT))
+		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT | SWITCH_ERR))
 		{
 			printk("protect lock =0x%x\n",status);
 

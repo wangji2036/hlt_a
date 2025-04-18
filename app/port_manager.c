@@ -854,6 +854,7 @@ void port_enum_port_snk_setvolt(void)
 		{
 			source_pdo = pdlib_snk_get_pdo_by_index(PDO_INDEX_1);
 			g_port.adpater_power =  pdo_max_current(source_pdo) * VOLTAGE_5V / 1000;
+			pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		}
 		else
 		{

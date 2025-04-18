@@ -640,10 +640,7 @@ void hal_nu6801_deadbat_patch(void)
 		uint8_t ret = hal_nu6801_buckboost_get_main_stat();
 		if(ret & 0x08 || !(ret & 0x03)) g_buckboost.vsnkdisconnect_flag = 1;
 	}
-	else
-	{
-		g_buckboost.vsnkdisconnect_flag = 0;
-	}
+
 
 }
 

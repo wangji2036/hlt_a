@@ -240,7 +240,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
 		#if(BUCKBOOST_USED_NU6801 == 1)
-			if(hal_tcpc_vbus_is_removed(tc->tc_index) || g_buckboost.vsnkdisconnect_flag)
+			if(hal_tcpc_vbus_is_removed(tc->tc_index))
 		#else
 			if(hal_tcpc_vbus_is_removed(tc->tc_index))
 		#endif
