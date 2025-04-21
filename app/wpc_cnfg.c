@@ -13,7 +13,7 @@
 #include "wpc_ping.h"
 #include "wpc_cnfg.h"
 #include "debug.h"
-
+#include "config.h"
 
 static uint8_t is_cnfg_phase_illegal_pkt(uint8_t hdr)
 {
@@ -264,7 +264,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				goto __CNFG_PHASE_ERR__;
 			}
 
-#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+#if OPTION_SAMSUNG_PPDE
 			extern uint8_t samsungNeedFSK_Flag, samsungPrivateFastChargeFlag;
 			samsungNeedFSK_Flag = 0;
 			samsungPrivateFastChargeFlag = 0;
@@ -313,6 +313,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 goto __CNFG_PHASE_ERR__;
 			}
+#if ENABLE_EPP_FUNC
 #if ONLY7_5W_ENALBE
 			else if (gd->rx_infos.qi_version >= 0x12 && gd->rx_infos.neg == 1 && gd->adp.pwr_high > 20
 					&& (gd->tx_infos.master_adaptor_cap != 1)) //EPP before negotiation send ACK to power receiver
@@ -348,6 +349,7 @@ goto __CNFG_PHASE_ERR__;
 				pid_set_freq_limit(144000000/110500, 144000000/127772, 144000000/147000);
 goto __CNFG_PHASE_ERR__;
 			}
+#endif
 			else
 			{
 				if (gd->rx_infos.mpp_restricted_mode)

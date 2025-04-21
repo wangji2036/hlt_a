@@ -239,11 +239,8 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 		//tc->tc_timer_cnt++;
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 		{
-		#if(BUCKBOOST_USED_NU6801 == 1)
+
 			if(hal_tcpc_vbus_is_removed(tc->tc_index))
-		#else
-			if(hal_tcpc_vbus_is_removed(tc->tc_index))
-		#endif
 			{
 				usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 				usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);

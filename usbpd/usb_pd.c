@@ -2555,3 +2555,6 @@ const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
 	//other
 };
 
+//must be 4 byte aligned.
+const uint8_t m_arr_u8ConstInfoData[8] __attribute__ ((unused, section(".chip"))) =
+{ 0x00,0x00,ONLY7_5W_ENALBE<<4|BUCKBOOST_USED_NU6805<<2|BUCKBOOST_USED_NU6801,(BATTERY_CV_VALUE>>8)&0xFF,(BATTERY_CV_VALUE>>0)&0xFF, (RELE_DATE>>8)&0xFF, (RELE_DATE>>0)&0xFF, TX_FW_VER, };

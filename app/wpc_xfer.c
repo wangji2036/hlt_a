@@ -48,7 +48,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 	switch (com_ask->hdr)
 	{
 		case 0x18:
-#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+#if OPTION_SAMSUNG_PPDE
 			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20)
 			{
 				if (com_ask->msg.prop.data[0] == 0xFF)
@@ -59,7 +59,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 #endif
 			break;
 		case 0x28:
-#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+#if OPTION_SAMSUNG_PPDE
 			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20 && gd->adp.pwr_high >= 20)
 			{
 				if (com_ask->msg.prop.data[0] == 0x01 && com_ask->msg.prop.data[1] == 0x00)
@@ -137,14 +137,27 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 	{
 		case WPC_PRx_PKT_TYP_CE_03:
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
-
-			if (gd->tx_power > 13000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+			if (samsungPrivateFastChargeFlag)// samsumg
 			{
-				gd->rx_infos.mpp_restricted_power_limit = 1;
+				if (gd->tx_power > 13000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 1;
+				}
+				else if (gd->tx_power < 8000)
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 0;
+				}
 			}
-			else if (gd->tx_power < 8000)
+			else
 			{
-				gd->rx_infos.mpp_restricted_power_limit = 0;
+				if (gd->tx_power > 8000)//10000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 1;
+				}
+				else if (gd->tx_power < 6000)//8000)
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 0;
+				}
 			}
 
 			if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
@@ -153,7 +166,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				printk("#");
 			}
 			
-#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+#if OPTION_SAMSUNG_PPDE
 			static uint8_t samsungFSKWaitCnt = 0;
 			if (samsungNeedFSK_Flag)
 			{
@@ -198,7 +211,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_power = (com_ask->msg.rp8.rp_value * (uint32_t)gd->rx_infos.max_power * 1000) >> 8;
 			osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
-#if (OPTION_SAMSUNG_PPDE == OPTION_ENABLED)
+#if OPTION_SAMSUNG_PPDE
 			if (samsungPrivateFastChargeFlag)
 				gd->rx_power <<= 1;
 #endif
@@ -432,18 +445,18 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-				if (gd->tx_power > 7500)
+				if (gd->tx_power > 6800)//7500)//IOC 7.9 test:7.8W
 				{
 					gd->rx_infos.mpp_restricted_power_limit = 1;
 				}
-				else if (gd->tx_power < 7000)
+				else if (gd->tx_power < 6300)//7000)
 				{
 					gd->rx_infos.mpp_restricted_power_limit = 0;
 				}
 
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val >= 0)
 				{
-					gd->rx_infos.cep_val = -2;
+					gd->rx_infos.cep_val = -4;//-2
 					printk("#");
 				}
 

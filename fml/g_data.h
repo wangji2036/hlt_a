@@ -381,6 +381,7 @@ struct gd_t
 	 uint8_t rd1_cnt;
 
 	 uint8_t bat_dead_flag;
+	 uint8_t charger_is_6801_flag;// not delete,for gauge
 	 uint8_t resverd_reset;
 	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;

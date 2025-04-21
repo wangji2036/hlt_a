@@ -378,6 +378,3 @@ void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
 		hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
 	}
 }
-
-//must be 4 byte aligned.
-const uint8_t m_arr_u8ConstInfoData[4] __attribute__ ((unused, section(".chip"))) = { 0x00, (RELE_DATE>>8)&0xFF, (RELE_DATE>>0)&0xFF, TX_FW_VER, };

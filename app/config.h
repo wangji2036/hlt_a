@@ -38,6 +38,8 @@
 #define CONFIG_USBPD_ACCEPT_PRSWAP			0
 
 #define CAPACITOR_300_NF         			1
-
-#define OPTION_SAMSUNG_PPDE                       OPTION_ENABLED
+#define ENABLE_EPP_FUNC                     1   //1: enable epp, 0: disable epp
+#define OPTION_SAMSUNG_PPDE                 1   // samsung PPDE protocol, 1 to enable.
+#define OPTION_FOD_ENABLE                   0   // power transfer FOD enable.
+#define SLEEPQ_WAKEUP_ENABLE                1   // sleep Q wake up funtion, set 0 means no sleep Q function. when set 0,the sleep timer
 #endif /* CONFIG_H_ */

@@ -126,7 +126,11 @@ void ap_data_init(void)
 void gd_data_init(void)
 {
 	uint32_t addr;
-
+#if BUCKBOOST_USED_NU6801
+	gd->charger_is_6801_flag = 1;
+#else
+	gd->charger_is_6801_flag = 0;
+#endif
 	//for (addr=G_DATA_RAM_ADDR_BASE; addr<G_DATA_RAM_ADDR_BASE + sizeof(struct gd_t); addr++)
 	for (addr=G_DATA_RAM_ADDR_BASE; addr< (uint32_t)(&(gd->resverd_reset)); addr++)
 	{

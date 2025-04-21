@@ -604,7 +604,7 @@ void RST_vCheck(void)
 							}
 						}
 					}
-
+#if SLEEPQ_WAKEUP_ENABLE
 					if(SLP_u8SleepModeQDetect())// need to normal
 					{
 						SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
@@ -624,6 +624,9 @@ void RST_vCheck(void)
 						SLP_vSleepToSleep();
 					//	SLP_vNormalToSleep();
 					}
+#else
+					SLP_vSleepToSleep();
+#endif
 				}
 				break;
 			case RST_SRC_PROTOCOL:

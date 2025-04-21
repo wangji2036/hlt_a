@@ -1,6 +1,17 @@
 #ifndef PFOD_H_
 #define PFOD_H_
+#define pcoil_factor		160//156->NU226  //360K-156, 128K-63, ACR
+#define pcircuit_factor		 40//Rcircuit    //
 
+#define PFO_10W_THD 		265
+#define PFO_10W_RECO 		251//THD*0.95
+#define PFO_15W_THD 		385
+#define PFO_15W_RECO 		365//THD*0.95
+
+#define PFO_THD_APL_MPP		385//750
+#define PFO_RECO_APL_MPP 	365//500
+
+#define FOD_MAX_CNT			30
 enum prx_type_t {
 	EPRX_TYPE_UNKNOWN    = 0x00,
 	EPRX_TYPE_SAMSUNG    = 0x01,
@@ -45,6 +56,25 @@ enum pfod_evnt_t {
 	EXFER_FOD_EVENT_NOK9_EPP_FOD_TPR_MP3 = 0x05,
 };
 
+extern uint8_t fod_count_filter;
+
+extern uint8_t fod_enable;
+extern uint8_t pfo_en_reco;//fixture and bpp set 0
+
+extern uint8_t fod_count_filter;
+extern uint8_t fod_count;
+extern uint8_t mpla_count;
+
+extern uint16_t pfo_thd;
+extern uint16_t pfo_thd_reco;
+
+extern uint16_t p_rect_max;
+
+extern uint8_t pfo_values_index;
+extern int32_t pfo_values[5];
+extern int32_t pfo;
+extern int32_t pfo_avg;
+
 void pfod_init(void);
 uint8_t pfod_common(void);
 
@@ -56,5 +86,7 @@ void pfod_dploss_cal(void);
 uint8_t pfod_dploss_cal_cmt(uint16_t *alpha, uint16_t *beta);
 uint8_t pfod_dploss(void);
 void pfod_log_print(void);
+uint8_t pfod_action(void);
+uint32_t ploss_calc(uint8_t mode);
 
 #endif /* PFOD_H_ */
