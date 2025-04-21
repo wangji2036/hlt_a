@@ -634,11 +634,23 @@ void hal_nu6801_deadbat_patch(void)
 	}
 	last_vbat = g_buckboost.adc_vbat;
 
-
+	static uint8_t delay_cnt = 0;
 	if(g_buckboost.adc_ibus < 200  && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		uint8_t ret = hal_nu6801_buckboost_get_main_stat();
-		if(ret & 0x08 || !(ret & 0x03)) g_buckboost.vsnkdisconnect_flag = 1;
+		if(ret & 0x08 || !(ret & 0x03))
+		{
+			printk("main = 0x%x \n",ret);
+			delay_cnt++;
+			if(delay_cnt >= 100)
+			{
+				g_buckboost.vsnkdisconnect_flag = 1;
+				delay_cnt = 0;
+			}
+
+		}
+		else
+			delay_cnt = 0;
 	}
 
 
