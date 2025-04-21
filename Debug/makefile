@@ -62,10 +62,10 @@ PowerBankEvk.elf.asm: PowerBankEvk.elf
 	@echo ' '
 
 # Tool invocations
-PowerBankEvk.elf: $(OBJS) $(USER_OBJS) C:\Users\liuhuan.gao\Desktop\15W_MAIN\nu17112_powerbank\startup\ckcpu.ld
+PowerBankEvk.elf: $(OBJS) $(USER_OBJS) C:\Users\liuhuan.gao\Desktop\15W\nu17112_powerbank\startup\ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"C:\Users\liuhuan.gao\Desktop\15W_MAIN\nu17112_powerbank\startup\ckcpu.ld" -o "PowerBankEvk.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"C:\Users\liuhuan.gao\Desktop\15W\nu17112_powerbank\startup\ckcpu.ld" -o "PowerBankEvk.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"
