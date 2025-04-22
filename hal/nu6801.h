@@ -89,4 +89,4 @@ void nu6801_deadbat_patch(void);
 
 extern bool nu6801_dead_bat;
 
-#endif /* SW7201_H_ */
+#endif /* NU6805_H_ */

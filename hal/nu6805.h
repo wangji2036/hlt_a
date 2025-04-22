@@ -1,9 +1,9 @@
-#ifndef SW7201_H_
-#define SW7201_H_
+#ifndef NU6805_H_
+#define NU6805_H_
 
 #include "buckboost.h"
 
-#define SW7201_I2C_DEV_ADDR		0x3C
+#define NU6805_I2C_DEV_ADDR		0x3C
 
 extern int hal_i2cm_wirte_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t data);
 extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data);
@@ -76,4 +76,4 @@ uint16_t hal_nu6805_buckboost_get_bat_temperature(void);
 void hal_nu6805_buckboost_set_cv(void);
 uint8_t hal_nu6805_buckboost_get_protect(void);
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void);
-#endif /* SW7201_H_ */
+#endif /* NU6805_H_ */

@@ -203,7 +203,7 @@ void buckboost_protection_handle(void)
 	static uint8_t cnt = 0;
 #endif
 
-	#define SW7201_VBUS_OVP_TH					21500
+	#define NU6805_VBUS_OVP_TH					21500
 	#define NU6801_VBUS_OVP_TH					20000
 
 
@@ -214,7 +214,7 @@ void buckboost_protection_handle(void)
 	status = buckboost_ops.get_protect_status();
 
 #if(BUCKBOOST_USED_NU6805 == 1)
-	if(g_buckboost.adc_vbus > SW7201_VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
+	if(g_buckboost.adc_vbus > NU6805_VBUS_OVP_TH) status |= VBUS_FUALT_VBUS_OVP;
 #elif(BUCKBOOST_USED_NU6801 == 1)
 	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH )
 	{
