@@ -28,8 +28,7 @@
 
 #define ONLY7_5W_ENALBE     				0
 
-#define CONFIG_USE_NTC_FOR_CHAGER			0
-
+#define CONFIG_USE_NTC_FOR_CHAGER			1
 #define CONFIG_SUPPORT_PPS_CHAGER			0
 
 

@@ -241,11 +241,13 @@ void SLP_vNormalToSleep(void)
 	GPC->O_EN.BITS.PIN6 = 0;
 	GPC->MODE.BITS.PIN6 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
+#if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
 	GPD->I_EN.BITS.PIN1 = 1;
 	GPD->MODE.BITS.PIN1 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPD->ITEN.BITS.PIN1 = 1;
 	GPD->ITTP.BITS.PIN1 = 0;
+#endif
 	hal_epwm_pwm_stop(EPWM1);
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_DIS);
@@ -322,11 +324,23 @@ void SLP_vSleepToSleep(void)
 	GPC->O_EN.BITS.PIN6 = 0;
 	GPC->MODE.BITS.PIN6 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
+#if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
 	GPD->I_EN.BITS.PIN1 = 1;
 	GPD->MODE.BITS.PIN1 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPD->ITEN.BITS.PIN1 = 1;
 	GPD->ITTP.BITS.PIN1 = 0;
+#endif
+#if(BUCKBOOST_USED_NU6805 == 1)
+	if(gd->SOC_SleepTime_s >=22)
+	{
+	    // charger irq wake up start
+		GPD->I_EN.BITS.PIN1 = 1;
+		GPD->MODE.BITS.PIN1 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+		GPD->ITEN.BITS.PIN1 = 1;
+		GPD->ITTP.BITS.PIN1 = 0;
+	}
+#endif
 #if(BUCKBOOST_USED_NU6805 == 1)
 	hal_wdt_feed();
 	_SET_I2CM_SDA_OUTPUT();
