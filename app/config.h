@@ -26,9 +26,7 @@
 #define BUCKBOOST_USED_NU6805				0
 #define BUCKBOOST_USED_NU6801				1
 
-#define ONLY7_5W_ENALBE     				(0)
-
-#define PGA_CURRENT_SENSE_ENABLE			1
+#define ONLY7_5W_ENALBE     				0
 
 #define CONFIG_USE_NTC_FOR_CHAGER			0
 
@@ -42,4 +40,5 @@
 #define OPTION_SAMSUNG_PPDE                 1   // samsung PPDE protocol, 1 to enable.
 #define OPTION_FOD_ENABLE                   0   // power transfer FOD enable.
 #define SLEEPQ_WAKEUP_ENABLE                1   // sleep Q wake up funtion, set 0 means no sleep Q function. when set 0,the sleep timer
+#define SUPPORT_SLEEP_LOG                   1   // sleep print log enable,
 #endif /* CONFIG_H_ */

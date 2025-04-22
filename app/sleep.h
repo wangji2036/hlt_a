@@ -3,9 +3,8 @@
 void SLP_vNormalToSleep(void);
 void RST_vCheck(void);
 
-#define SUPPORT_SLEEP_LOG
 
-#ifdef SUPPORT_SLEEP_LOG
+#if SUPPORT_SLEEP_LOG
 	#define sleep_printk 	printk
 #else
 	#define sleep_printk(...)
