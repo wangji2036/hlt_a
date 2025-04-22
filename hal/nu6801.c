@@ -10,7 +10,6 @@
 uint8_t nu6801_adc_chennel;
 bool nu6801_dead_bat = false;
 
-#define BAT_CELL_FULL_VOLT   4200
 #define BAT_CELL_EMPTY_VOLT   3000
 
 #define BAT_CELL_NUM 1

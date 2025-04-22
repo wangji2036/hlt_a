@@ -221,7 +221,10 @@
 							<tool id="cds.managedbuild.tool.ckcoregcc.linker.cygwin.abiv2.exeWithoutOs.debug.870862649" name="CSky Elf Linker" superClass="cds.managedbuild.tool.ckcoregcc.linker.cygwin.abiv2.exeWithoutOs.debug">
 								<option id="ckcoregcc.linker.option.elf.abiv2.cputype.435117672" name="CPUType" superClass="ckcoregcc.linker.option.elf.abiv2.cputype" value="ck802" valueType="enumerated"/>
 								<option id="ckcoregcc.link.option.linkfile.679380203" name="Link file (-T)" superClass="ckcoregcc.link.option.linkfile" value="&quot;${workspace_loc:/${ProjName}/startup/ckcpu.ld}&quot;" valueType="string"/>
-								<option id="ckcoregcc.link.option.libs.410290156" name="Libraries (-l)" superClass="ckcoregcc.link.option.libs"/>
+								<option id="ckcoregcc.link.option.libs.410290156" name="Libraries (-l)" superClass="ckcoregcc.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="m"/>
+									<listOptionValue builtIn="false" value="powerbank"/>
+								</option>
 								<option id="ckcoregcc.link.option.paths.1511145921" name="Library search path (-L)" superClass="ckcoregcc.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/util}&quot;"/>
 								</option>
