@@ -1974,110 +1974,110 @@ enum {
 };
 /*------------------------------------------ ECAP define -----------------------------------------*/
 
-/*++++++++++++++++++++++++++++++++++++++++++ UFCS define +++++++++++++++++++++++++++++++++++++++++*/
-typedef union {
-	struct {
-		uint32_t src_snk_hdrest : 1;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 3;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 4;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 8;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_GEN_CTRL;
-
-typedef union {
-	struct {
-		uint32_t src_snk_hdrest : 1;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 3;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 4;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 8;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_INT_MASK;
-
-typedef union {
-	struct {
-		uint32_t src_snk_hdrest : 1;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 3;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 4;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 8;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_INT_FLAG;
-
-typedef union {
-	struct {
-		uint32_t src_snk_hdrest : 1;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 3;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 4;
-		uint32_t                : 1;
-		uint32_t                : 1;
-		uint32_t                : 2;
-		uint32_t                : 2;
-		uint32_t                : 8;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_INT_STAT;
-
-typedef union {
-	struct {
-		uint32_t LEN : 8;
-		uint32_t     :24;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_TXD_LENG;
-
-typedef union {
-	struct {
-		uint32_t DAT :32;
-	} BITS;
-	uint32_t WORD;
-} TS_UFCS_TXD_BUFF;
-
-typedef struct {
-	__IO TS_UFCS_GEN_CTRL GEN_CTRL; //4000_7000
-	__IO TS_UFCS_INT_MASK INT_MASK; //4000_7004
-	__IO TS_UFCS_INT_FLAG INT_FLAG; //4000_7008
-	__I  TS_UFCS_INT_STAT INT_STAT; //4000_700C
-	__IO TS_UFCS_TXD_LENG TXD_LENG; //4000_7010
-	__IO TS_UFCS_TXD_BUFF TXD_BUFF; //4000_7014
-} TS_UFCS;
+///*++++++++++++++++++++++++++++++++++++++++++ UFCS define +++++++++++++++++++++++++++++++++++++++++*/
+//typedef union {
+//	struct {
+//		uint32_t src_snk_hdrest : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 3;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 4;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 8;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_GEN_CTRL;
+//
+//typedef union {
+//	struct {
+//		uint32_t src_snk_hdrest : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 3;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 4;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 8;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_INT_MASK;
+//
+//typedef union {
+//	struct {
+//		uint32_t src_snk_hdrest : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 3;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 4;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 8;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_INT_FLAG;
+//
+//typedef union {
+//	struct {
+//		uint32_t src_snk_hdrest : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 3;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 4;
+//		uint32_t                : 1;
+//		uint32_t                : 1;
+//		uint32_t                : 2;
+//		uint32_t                : 2;
+//		uint32_t                : 8;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_INT_STAT;
+//
+//typedef union {
+//	struct {
+//		uint32_t LEN : 8;
+//		uint32_t     :24;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_TXD_LENG;
+//
+//typedef union {
+//	struct {
+//		uint32_t DAT :32;
+//	} BITS;
+//	uint32_t WORD;
+//} TS_UFCS_TXD_BUFF;
+//
+//typedef struct {
+//	__IO TS_UFCS_GEN_CTRL GEN_CTRL; //4000_7000
+//	__IO TS_UFCS_INT_MASK INT_MASK; //4000_7004
+//	__IO TS_UFCS_INT_FLAG INT_FLAG; //4000_7008
+//	__I  TS_UFCS_INT_STAT INT_STAT; //4000_700C
+//	__IO TS_UFCS_TXD_LENG TXD_LENG; //4000_7010
+//	__IO TS_UFCS_TXD_BUFF TXD_BUFF; //4000_7014
+//} TS_UFCS;
 /*------------------------------------------ UFCS define -----------------------------------------*/
 
 /*++++++++++++++++++++++++++++++++++++++++++ BADC define +++++++++++++++++++++++++++++++++++++++++*/

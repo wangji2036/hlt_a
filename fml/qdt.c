@@ -39,6 +39,7 @@ struct _qdt_pin_ctrl
 
 static void qdt_pin_ctrl(enum _qdt_pin_chan chan, struct _qdt_pin_ctrl ctrl)
 {
+	VIC_vModuleDisable();
 	if (chan == _qdt_pin_ch0)
 	{
 		/* PC0 */
@@ -62,6 +63,7 @@ static void qdt_pin_ctrl(enum _qdt_pin_chan chan, struct _qdt_pin_ctrl ctrl)
 		GPC->PDEN.BITS.PIN1 = ctrl.PDEN;
 		GPC->MODE.BITS.PIN1 = ctrl.MODE; //00:PC1 01:EPWM2 10:RESERVED 11:RESERVED
 	}
+	VIC_vModuleEnable();
 }
 
 void fml_qdt_detect(uint32_t *q_fact, uint32_t *f_self)

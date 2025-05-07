@@ -151,8 +151,6 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
 	ui_display();
-
-
 }
 
 /**

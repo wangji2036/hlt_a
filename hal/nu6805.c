@@ -5,7 +5,7 @@
 #include "config.h"
 #if(BUCKBOOST_USED_NU6805 == 1)
 
-#define BAT_CELL_EMPTY_VOLT   2900
+#define BAT_CELL_EMPTY_VOLT   3050
 
 #define BAT_CELL_NUM 2
 
@@ -20,11 +20,13 @@ void hal_nu6805_buckboost_init(void)
 		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
 
 		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a
+		hal_nu6805_buckboost_set_ovp(5000);
+		hal_nu6805_buckboost_disable_62368();
 		hal_nu6805_buckboost_write_reset_check();
 		hal_nu6805_buckboost_typeca_gate_en(false);
 		hal_nu6805_buckboost_typecb_gate_en(false);
 		hal_nu6805_buckboost_usb_a_gate_en(false);
-		hal_nu6805_buckboost_charge_vbus_uv(4000);
+		hal_nu6805_buckboost_charge_vbus_uv(4500);
 		hal_nu6805_buckboost_charge_ibus_limit(1000);
 		hal_nu6805_buckboost_charge_ibat_limit(500);
 		hal_nu6805_buckboost_charge_set_trickle_volt(3000);
@@ -42,6 +44,14 @@ void hal_nu6805_buckboost_init(void)
 	printk("nu6805 revision =0x%x\n",revision);
 }
 
+void hal_nu6805_buckboost_disable_62368(void)
+{
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,read | 0x04);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,&read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,read | 0xC0);
+}
 
 void hal_nu6805_buckboost_set_cv(void)
 {
@@ -178,17 +188,10 @@ void hal_nu6805_buckboost_typecb_gate_en(bool en)
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-#ifdef POWERBANK_BUCK_EVK_V02
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x01);
-	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
-#else
 	if(en)
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x04);
 	else
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x04));
-#endif
 }
 
 void hal_nu6805_buckboost_charge_ibus_limit(uint16_t ibus_limit)
@@ -352,6 +355,10 @@ void hal_nu6805_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 	//hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,0xC0);
 }
 
+void hal_nu6805_buckboost_set_ovp(uint16_t set_volt)
+{
+	g_buckboost.ovp_value =  set_volt * 125 /  100;
+}
 
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
 {

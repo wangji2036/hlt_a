@@ -33,12 +33,18 @@ static struct fm_pack_t fm_pack;
 void fm1210_wakeup(void)
 {
 	//this for fm1210 wake up
+	VIC_vModuleDisable();
 	GPA->DOUT.BITS.PIN7 = 0;
+	VIC_vModuleEnable();
 	delay_1us(FM1210_I2C_WKUP_DELAY);
+	VIC_vModuleDisable();
 	GPA->DOUT.BITS.PIN7 = 1;
+	VIC_vModuleEnable();
 	delay_1us(FM1210_I2C_WKUP_DELAY);
+	VIC_vModuleDisable();
     GPA->ODEN.BITS.PIN6 = 1;
     GPA->ODEN.BITS.PIN7 = 1;
+    VIC_vModuleEnable();
 }
 
 uint8_t fm1210_device_select(uint8_t *rbuf)
@@ -344,11 +350,11 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
     }
     else
     {
-    	printk(" \r\n rbuf-0x3001[%d]-> ", i);
+/*    	printk(" \r\n rbuf-0x3001[%d]-> ", i);
     	for (i=0; i<read_len; i++)
     	{
     		printk("%02X ", rbuf[i]);
-    	}
+    	}*/
     }
     fm_pack.apdu_data[0]++;
 
@@ -375,11 +381,11 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
         }
         else
         {
-        	printk(" \r\n rbuf-0x3001[%d]-> ", i);
+/*        	printk(" \r\n rbuf-0x3001[%d]-> ", i);
         	for (uint16_t j=0; j<read_len; j++)
         	{
         		printk("%02X ", rbuf[i * 16 + j]);
-        	}
+        	}*/
         }
 
         if (i == 14)
@@ -407,11 +413,11 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
         }
         else
         {
-        	printk(" \r\n rbuf-0x3001[%d]-> ", i+1);
+/*        	printk(" \r\n rbuf-0x3001[%d]-> ", i+1);
         	for (uint16_t j=0; j<read_len; j++)
         	{
         		printk("%02X ", rbuf[blocknumber * 16 + j]);
-        	}
+        	}*/
         }
     }
 

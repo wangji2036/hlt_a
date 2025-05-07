@@ -60,6 +60,8 @@ void ctx_switch(uint8_t ctx_ind)
 #else
 	gd->ctx_ind = ctx_ind;
 #endif
+
+    VIC_vModuleDisable();
 	switch (ctx_ind)
 	{
 		case 0:
@@ -95,6 +97,7 @@ void ctx_switch(uint8_t ctx_ind)
 		default:
 			break;
 	}
+	VIC_vModuleEnable();
 }
 
 void pid_init(void)

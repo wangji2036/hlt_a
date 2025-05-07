@@ -10,6 +10,7 @@
 uint8_t nu6801_adc_chennel;
 bool nu6801_dead_bat = false;
 
+#define BAT_CELL_FULL_VOLT   4200
 #define BAT_CELL_EMPTY_VOLT   3000
 
 #define BAT_CELL_NUM 1
@@ -86,6 +87,9 @@ void hal_nu6801_buckboost_init(void)
 //		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0xf8,&f8);
 //		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0xf9,&f9);
 //		printk("UNLOCK6801 =0x%x [F8]=0x%x [F9]=0x%x\n",read,f8,f9);
+
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x63,&read);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x63, read | 0x04);
 
 		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x61,&read);
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x61,read | 0x06);
@@ -349,39 +353,99 @@ void hal_nu6801_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 }
 
 uint16_t nu6801_vref = 1200;
+uint16_t ntc_v = 0;
+uint16_t ntc_v_switch = 0;
+uint8_t ntc_level = 1;
+
+void hal_nu6801_buckboost_switch_isrc(void)
+{
+	uint8_t read = 0;
+	uint8_t need_switch = 0;
+
+	if(ntc_v_switch < 200)
+	{
+		need_switch = 1;
+	}
+	else if(ntc_v_switch > 2600)
+	{
+		need_switch = 2;
+	}
+
+	if(need_switch)
+	{
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2d);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xf9);
+
+		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x63,&read);
+		if(need_switch == 1)  read |= 0x04;
+		else read &= ~0x04;
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x63, read);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0xFF);
+		printk("switch Reg = 0x%x\n",read);
+
+		need_switch = 0;
+	}
+
+
+}
 
 void hal_nu6801_buckboost_set_adc_channel(uint8_t channel)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
 
+	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
 	nu6801_adc_chennel = channel;
 
 	switch(channel)
 	{
 		case NU6801_ADC_VBAT:
-			read = (read & 0xE0) | 0x010 | 0x00;
+			read = (read & 0x80) | 0x010 | 0x00;
 			break;
 		case NU6801_ADC_IBAT:
-			read = (read & 0xE0) | 0x010 | 0x07;
+			read = (read & 0x80) | 0x010 | 0x07;
 			break;
 		case NU6801_ADC_VBUS:
-			read = (read & 0xE0) | 0x010 | 0x04;
+			read = (read & 0x80) | 0x010 | 0x04;
 			break;
 		case NU6801_ADC_IBUS:
-			read = (read & 0xE0) | 0x010 | 0x05;
+			read = (read & 0x80) | 0x010 | 0x05;
 			break;
 		case NU6801_ADC_IAC1:
-			read = (read & 0xE0) | 0x010 | 0x08;
+			read = (read & 0x80) | 0x010 | 0x08;
 			break;
 		case NU6801_ADC_IAC2:
-			read = (read & 0xE0) | 0x010 | 0x09;
+			read = (read & 0x80) | 0x010 | 0x09;
 			break;
 		case NU6801_ADC_RNTC:
-			read = (read & 0xE0) | 0x010 | 0x0d;
+			if(ntc_v < 1200)
+			{
+				if(ntc_level > 1)  ntc_level--;
+			}
+			else if(ntc_v > 2400)
+			{
+				ntc_level ++;
+				if(ntc_level >= 2) ntc_level = 2;
+			}
+//
+//			if(ntc_level == 0)
+//			{
+//				read = (read & 0x80) | 0x010 | 0x0d | 0x60;
+//			}
+//			else
+			if(ntc_level == 1)
+			{
+				read = (read & 0x80) | 0x010 | 0x0d | 0x20;
+			}
+			else
+			{
+				read = (read & 0x80) | 0x010 | 0x0d;
+			}
+			//printk("NTC REG_AMUX_CTRL = 0x%x\n",read);
 			break;
 		case NU6801_ADC_VREF:
-			read = (read & 0xE0) | 0x010 | 0x0F;
+			read = (read & 0x80) | 0x010 | 0x0F;
 			break;
 	}
 
@@ -393,7 +457,7 @@ int16_t hal_nu6801_buckboost_get_bus_current(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x05);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x05);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 25 / nu6801_vref;
@@ -417,7 +481,7 @@ int16_t hal_nu6801_buckboost_get_bat_current(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x07);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x07);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
@@ -434,7 +498,7 @@ uint16_t hal_nu6801_buckboost_typeca_vbus_present(void)//vac2
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x02);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x02);
 	delay_1us(300);
 	nu6801_adc_chennel = NU6801_ADC_OTHER;
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
@@ -451,7 +515,7 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x01);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x01);
 	delay_1us(300);
 	nu6801_adc_chennel = NU6801_ADC_OTHER;
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
@@ -466,7 +530,7 @@ uint16_t hal_nu6801_buckboost_typecb_vbus_present(void)//vac3
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x03);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x03);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 
@@ -485,7 +549,7 @@ uint16_t hal_nu6801_buckboost_get_iac1(void)//iac1
 
 	if(g_buckboost.set_usb_a_gate_en == false) return 0;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x08);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x08);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 30 * 15  / nu6801_vref;
@@ -499,7 +563,7 @@ uint16_t hal_nu6801_buckboost_get_bat_voltage(void)
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x0F);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x0F);
 	delay_1us(300);
 	nu6801_vref =  hal_badc_meas(_BADC_CH_PD3_ADC9);
 
@@ -514,7 +578,7 @@ uint16_t hal_nu6801_buckboost_get_bat_voltage(void)
 	}
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x00);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x00);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 
@@ -527,7 +591,7 @@ uint16_t hal_nu6801_buckboost_get_bus_voltage(void)
 {
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x04);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x04);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t vbat = row* 120  * 100 / nu6801_vref;
@@ -540,7 +604,7 @@ uint16_t hal_nu6801_buckboost_get_bat_temperature(void)  //return 0.1K/bit
 	uint8_t read;
 
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0xE0) | 0x010 | 0x0d | 0x00);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL, (read & 0x80) | 0x010 | 0x0d | 0x00);
 	delay_1us(300);
 	uint32_t row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 	uint32_t adc_value = row* 120  * 10 / nu6801_vref;
@@ -633,24 +697,24 @@ void hal_nu6801_deadbat_patch(void)
 	}
 	last_vbat = g_buckboost.adc_vbat;
 
-	static uint8_t delay_cnt = 0;
-	if(g_buckboost.adc_ibus < 200  && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-	{
-		uint8_t ret = hal_nu6801_buckboost_get_main_stat();
-		if(ret & 0x08 || !(ret & 0x03))
-		{
-			printk("main = 0x%x \n",ret);
-			delay_cnt++;
-			if(delay_cnt >= 100)
-			{
-				g_buckboost.vsnkdisconnect_flag = 1;
-				delay_cnt = 0;
-			}
-
-		}
-		else
-			delay_cnt = 0;
-	}
+//	static uint8_t delay_cnt = 0;
+//	if(g_buckboost.adc_ibus < 200  && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+//	{
+//		uint8_t ret = hal_nu6801_buckboost_get_main_stat();
+//		if(ret & 0x08 || !(ret & 0x03))
+//		{
+//			printk("main = 0x%x \n",ret);
+//			delay_cnt++;
+//			if(delay_cnt >= 100)
+//			{
+//				g_buckboost.vsnkdisconnect_flag = 1;
+//				delay_cnt = 0;
+//			}
+//
+//		}
+//		else
+//			delay_cnt = 0;
+//	}
 
 
 }

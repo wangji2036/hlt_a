@@ -162,7 +162,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				}
 				if(gd->adp.pwr_high >= 30)
 				{
-					if (com_ask->msg.xid.selector == 0xFE && gd->rx_infos.qi_version >= 0x20)
+					if (com_ask->msg.xid.selector == 0xFE)
 					{
 						gd->rx_infos.power_profile_mode = MPP;
 

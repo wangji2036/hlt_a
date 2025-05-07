@@ -242,6 +242,8 @@ typedef struct {
 	__IO TS_DPDM_SOURCE_AFC_TX_2 			AFC_TX_2; 		//4000_C0b8
 } TS_DPDM;
 
+
+
 #define  DPDM_APB_ADDR_OFFSET                (                         0xC080)
 #define  DPDM_BASE                           (APB_BASE +  DPDM_APB_ADDR_OFFSET)
 #define  DPDM                                (          (TS_DPDM *) DPDM_BASE)
@@ -280,9 +282,11 @@ void usb_dpdm_select(uint8_t tc_index);
 #define DPDM_EVT_SNK_HVDCP_FAIL    		osal_event_declare(22)
 #define DPDM_EVT_SNK_QC12V_DONE    		osal_event_declare(23)
 
-
-
-#define DPDM_EVT_TIMER_PERIOD    	osal_event_declare(31)
+#define DPDM_EVT_UFCS_INT    			osal_event_declare(24)
+#define DPDM_EVT_UFCS_RX_PACKET    		osal_event_declare(25)
+#define DPDM_EVT_UFCS_PSREADY    		osal_event_declare(26)
+#define DPDM_EVT_UFCS_RX_RESET    		osal_event_declare(27)
+#define DPDM_EVT_TIMER_PERIOD    		osal_event_declare(31)
 
 enum dpdm_snk_type
 {

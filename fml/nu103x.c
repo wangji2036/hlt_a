@@ -8,7 +8,7 @@
 void fml_nu103x_config(enum nu103x_cmd_t cmd)
 {
 	uint8_t comm_pulse = (uint8_t)cmd;
-
+	VIC_vModuleDisable();
 	GPC->O_EN.BITS.PIN2 = 0; GPC->DOUT.BITS.PIN2 = 0; GPC->I_EN.BITS.PIN2 = 1;
 //	delay_1us(1);
 
@@ -24,7 +24,7 @@ void fml_nu103x_config(enum nu103x_cmd_t cmd)
 	}
 
 	GPC->O_EN.BITS.PIN2 = 0; GPC->DOUT.BITS.PIN2 = 0; GPC->I_EN.BITS.PIN2 = 1;
-
+	VIC_vModuleEnable();
 	gd->nu103x_sts_last.WORD = gd->nu103x_sts_curr.WORD;
 
 	switch (cmd)

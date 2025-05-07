@@ -86,7 +86,8 @@ void hal_nu6801_buckboost_set_adc_channel(uint8_t channel);
 void hal_nu6801_deadbat_patch(void);
 void hal_nu6801_get_charge_state(void);
 void nu6801_deadbat_patch(void);
-
+extern uint16_t ntc_v_switch;
+void hal_nu6801_buckboost_switch_isrc(void);
 extern bool nu6801_dead_bat;
 
-#endif /* NU6805_H_ */
+#endif /* NU6801_H_ */

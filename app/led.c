@@ -17,12 +17,14 @@ static uint8_t ui_scan_index;// for scan index
 #ifdef LED_DISPLAY
 static uint8_t soc_show_ram_led = 0;//Temporary variable,represents the display of LED lights, indicating whether each LED needs to be illuminated.
 static uint8_t flash_flag_wls;//wireless LED flag, indicating flashing or not
+
 #else
 static uint32_t soc_show_ram = 0;//temporary variable, where each bit is used to represent each segment of the 188 digital display.
 #endif
 
 #define WAIT_IN_250MS 20
 
+static uint8_t ui_no_timer_scan = 0;
 
 static void drv_IO_control(uint8_t pinx, bool status)
 {
@@ -214,32 +216,11 @@ typedef enum
 ui_data_t       gram[LED_END];
 
 volatile const uint8_t display_num_tab[10]={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f};
-static const uint8_t disp_map[18][2]=
+
+uint8_t bit_is_set(uint32_t input,uint8_t bit)
 {
-    //H, L hundred bit
-    {3, 4},   //!< led 0 light //
-    {2, 4},   //!< led 1 light //
-
-    {2, 3},   //!< led 2 light //
-    {3, 2},   //!< led 3 light //
-    {4, 3},   //!< led 4 light //
-    {4, 2},   //!< led 5 light //
-    {5, 2},   //!< led 6 light //
-    {5, 3},   //!< led 7 light //
-    {5, 4},   //!< led 8 light //
-
-    {1, 2},   //!< led 9 light //
-    {2, 1},   //!< led 10 light //
-    {1, 3},   //!< led 11 light //
-    {3, 1},   //!< led 12 light //
-    {1, 4},   //!< led 13 light //
-    {4, 1},   //!< led 14 light //
-    {5, 1},   //!< led 15 light //
-
-    {3, 5},   //!< led 16 light //
-    {2, 5},   //!< led 17 light //
-};
-
+	return (uint8_t)((input >> bit) & 0x1);
+}
 static void ui_update_digital(void)
 {
 	gram[LED_HUNDREDS].byte = 0;//3;
@@ -294,6 +275,12 @@ static void ui_update_digital(void)
 /*********************************************************************/
 void ui_display (void)
 {
+
+	if(ui_no_timer_scan)
+	{
+		return;
+	}
+
 #ifdef LED_DISPLAY
 //	_SET_ALL_PINS_IN_PUT();// reserved for multi IO control method
     // led map scan,如果用快速扫描方式
@@ -316,20 +303,47 @@ void ui_display (void)
 	 }
 
 #else
-		_SET_ALL_PINS_IN_PUT();
-		if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0])))
-		{
-			ui_scan_index = 0;
+	 _SET_ALL_PINS_IN_PUT();
+	 if(ui_scan_index >4) ui_scan_index = 0;
+	 switch (ui_scan_index)
+	 {
+	     case 0:
+		     if(bit_is_set(soc_show_ram,10)) drv_IO_control(2,true);
+		     if(bit_is_set(soc_show_ram,12)) drv_IO_control(3,true);
+		     if(bit_is_set(soc_show_ram,14)) drv_IO_control(4,true);
+		     if(bit_is_set(soc_show_ram,15)) drv_IO_control(5,true);
+		     drv_IO_control(1,false);
+		     break;
+	     case 1:
+		     if(bit_is_set(soc_show_ram,3)) drv_IO_control(3,true);
+		     if(bit_is_set(soc_show_ram,5)) drv_IO_control(4,true);
+		     if(bit_is_set(soc_show_ram,6)) drv_IO_control(5,true);
+		     if(bit_is_set(soc_show_ram,9)) drv_IO_control(1,true);
+		     drv_IO_control(2,false);
+		     break;
+	     case 2:
+		     if(bit_is_set(soc_show_ram,2)) drv_IO_control(2,true);
+		     if(bit_is_set(soc_show_ram,4)) drv_IO_control(4,true);
+		     if(bit_is_set(soc_show_ram,7)) drv_IO_control(5,true);
+		     if(bit_is_set(soc_show_ram,11)) drv_IO_control(1,true);
+		     drv_IO_control(3,false);
+		     break;
+	     case 3:
+		     if(bit_is_set(soc_show_ram,0)) drv_IO_control(3,true);
+		     if(bit_is_set(soc_show_ram,1)) drv_IO_control(2,true);
+		     if(bit_is_set(soc_show_ram,8)) drv_IO_control(5,true);
+		     if(bit_is_set(soc_show_ram,13)) drv_IO_control(1,true);
+		     drv_IO_control(4,false);
+		     break;
+	     case 4:
+		     if(bit_is_set(soc_show_ram,16)) drv_IO_control(3,true);
+		     if(bit_is_set(soc_show_ram,17)) drv_IO_control(2,true);
+		     drv_IO_control(5,false);
+		     break;
+	     default:
+	    	 break;
 		}
-
-		bool _sw;
-		_sw = (bool)((soc_show_ram >> ui_scan_index) & 0x0001);
-
-		if (_sw == true)
-		{
-			drv_IO_control(disp_map[ui_scan_index][0], true);
-			drv_IO_control(disp_map[ui_scan_index][1], false);
-		}
+	 ui_scan_index++;
 
 #endif
 }
@@ -342,6 +356,8 @@ void ui_display (void)
 
 void ui_update(void)
 {
+	ui_no_timer_scan = 1;
+
 	static uint8_t cnt = 0;
 	static uint8_t one_min_cnt = 0;
  //   if(ui_wait_cnt< WAIT_IN_250MS) ui_wait_cnt++;
@@ -428,7 +444,7 @@ void ui_update(void)
     	}
     }
 
- //   printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
+    //printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
     //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
     //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
 
@@ -439,6 +455,8 @@ void ui_update(void)
 #else
 	ui_update_digital();
 #endif
+
+	ui_no_timer_scan = 0;
 
 }
 
@@ -478,18 +496,20 @@ void detectSingleKey() {
             uint16_t press_duration = release_time - key.press_start_time;
             if (press_duration < LONG_PRESS_TIME_MS) {
                 if (key.click_count == 1) {
-                    if (release_time - key.last_release_time < DOUBLE_CLICK_TIME_MS) {
+                	 if ((uint16_t)(release_time - key.last_release_time) < DOUBLE_CLICK_TIME_MS){
                         if (!key.is_single_click) {
                             key.is_single_click = 1;
                             key_ui_cnt = 20;
                             printk("\r\n ----------------------------//-------key single click");
                         }
+                        else{
                         key.click_count = 0;
                         key.is_single_click = 0;
                         printk("\r\n --------------------------------//-------key double click");
+                        }
                     } else {
                         key.click_count = 0;
-                        key.is_single_click = 0;
+                        key.is_single_click = 1;
                         key_ui_cnt = 20;
                         printk("\r\n ---------------------------------//------key single click");
                     }

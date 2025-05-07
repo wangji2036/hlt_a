@@ -4,7 +4,7 @@
 #include "osal.h"
 #include "port_manager.h"
 #include "pd.h"
-//#include "typec.h"
+#include "config.h"
 #include "buckboost.h"
 #include "pdlib.h"
 #include "adp.h"
@@ -40,7 +40,7 @@ void port_manager_task_init(void)
 	hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 	hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
 
-	tcpm_stop_wpc(WPC_DELAY);
+	//tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
 
 }
@@ -155,7 +155,7 @@ void port_enum_port0_connect_closed(void)
 			}
 			else
 			{
-				if(bc12_type == BC1P2_QC9V)
+				if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
 				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
@@ -296,7 +296,7 @@ void port_enum_port1_connect_closed(void)
 			}
 			else
 			{
-				if(bc12_type == BC1P2_QC9V)
+				if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
 				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
@@ -403,7 +403,7 @@ void port_enum_port2_connect_closed(void)
 			}
 			else
 			{
-				if(bc12_type == BC1P2_QC9V)
+				if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
 				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
@@ -511,7 +511,7 @@ void port_enum_port3_connect_closed(void)
 			}
 			else
 			{
-				if(bc12_type == BC1P2_QC9V)
+				if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_ADP_FIX);
 				else if(bc12_type > BC1P2_CDP)
 					tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
@@ -674,7 +674,7 @@ void port_enum_port_enum_done(void)
 
 void port_enum_port_snk_setcharge(void)
 {
-	printk("%s!\n",__func__);
+	printk("%s vbus=%d!\n",__func__,g_buckboost.adc_vbus);
 
 	hal_tcpc_set_gate_en(g_port.incharge_port,true);
 
@@ -685,14 +685,17 @@ void port_enum_port_snk_setcharge(void)
 		if(g_buckboost.adc_vbus<5500)// 5v
 		{
 			g_port.ibat_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
+			g_port.ibus_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
 		}
 		else if (g_buckboost.adc_vbus<9500)// 9v
 		{
 			g_port.ibat_limit = (g_port.adpater_power > 11000)? (g_port.adpater_power - 11000)/9:500;
+			g_port.ibus_limit = (g_port.adpater_power > 11000)? (g_port.adpater_power - 11000)/9:500;
 		}
 		else//12v, reserved for future 12 use.
 		{
 			g_port.ibat_limit = (g_port.adpater_power > 12000)? (g_port.adpater_power - 12000)/12:500;
+			g_port.ibus_limit = (g_port.adpater_power > 12000)? (g_port.adpater_power - 12000)/12:500;
 		}
 		//g_port.ibat_limit = g_port.ibat_limit < 500 ? g_port.ibat_limit : 500;
 		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
@@ -707,7 +710,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit;
 		g_port.ibus_limit = g_port.ibus_limit;
 
-		if(g_buckboost.adc_vbus<5500)// 5v
+		if(g_buckboost.adc_vbus < 5500)// 5v
 		{
 		#if(BUCKBOOST_USED_NU6801 == 1)
 			g_port.ibus_limit = g_port.ibus_limit < 3000 ? g_port.ibus_limit : 3000;
@@ -754,10 +757,10 @@ void port_enum_port_snk_setcharge(void)
 	#endif
 #endif
 
-#if(BUCKBOOST_USED_NU6801 == 1)
-
-	buckboost_ops.set_ovp(g_port.snk_set_volt);
-#endif
+	if(pdlib_is_pps_sink())
+		buckboost_ops.set_ovp(20000);
+	else
+		buckboost_ops.set_ovp(g_port.snk_set_volt);
 
 	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
 
@@ -770,8 +773,8 @@ void port_enum_port_snk_setvolt(void)
 	hal_tcpc_set_gate_en(g_port.incharge_port,false);
 	printk("[%d]%s!\n",g_port.inhandle_port,__func__);
 
-	g_port.ibus_limit = 1000;
-	g_port.ibat_limit = 1000;
+	g_port.ibus_limit = 3000;
+	g_port.ibat_limit = 3000;
 #if(BUCKBOOST_USED_NU6801 == 1)
 	buckboost_ops.set_ovp(20000);
 #endif
@@ -785,9 +788,9 @@ void port_enum_port_snk_setvolt(void)
 			source_pdo = pdlib_snk_get_pdo_by_index(pdlib_snk_get_pdo_amount());
 			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
 			{
-				pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount(),VOLTAGE_PPS,pdo_max_current(source_pdo));
+				pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount(),VOLTAGE_PPS,pdo_pps_apdo_max_current(source_pdo));
 				g_port.ibus_limit =  pdo_pps_apdo_max_current(source_pdo);
-
+				g_port.snk_set_volt = VOLTAGE_PPS;
 				//g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage(source_pdo) / 1000;
 				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * 11000 / 1000;
 			}
@@ -894,6 +897,9 @@ void port_enum_port_snk_setvolt(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETCHARGE);
 
 	printk("sdp_type = %d\n",bc12_type);
+#if(CONFIG_USE_TYPEC_DOUBLE_MOS == 1)
+	hal_tcpc_set_gate_en(g_port.incharge_port,true);
+#endif
 	//printk("I[bat]=%dmA I[bus]=%dmA!\n",g_port.ibat_limit,g_port.ibus_limit);
 }
 
@@ -910,7 +916,7 @@ void port_enum_port0_connect_success(void)
 			else
 				g_port.snk_5v_only = 0;
 
-			if(!pdlib_is_connect() && bc12_type != BC1P2_QC9V)
+			if(!pdlib_is_connect() && !(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V))
 			{
 				usb_dpdm_select(PORT0_INDEX);
 				pdlib_set_pd_port(PORT0_INDEX);
@@ -939,7 +945,7 @@ void port_enum_port0_connect_success(void)
 			else
 				g_port.snk_5v_only = 0;
 
-			if(!pdlib_is_connect() && bc12_type != BC1P2_QC9V)
+			if(!pdlib_is_connect() && !(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V))
 			{
 				usb_dpdm_select(PORT0_INDEX);
 				pdlib_set_pd_port(PORT0_INDEX);
@@ -982,7 +988,7 @@ void port_enum_port1_connect_success(void)
 			else
 				g_port.snk_5v_only = 0;
 
-			if(!pdlib_is_connect() && bc12_type != BC1P2_QC9V)
+			if(!pdlib_is_connect() && !(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V))
 			{
 				usb_dpdm_select(PORT1_INDEX);
 				pdlib_set_pd_port(PORT1_INDEX);
@@ -1011,7 +1017,7 @@ void port_enum_port1_connect_success(void)
 			else
 				g_port.snk_5v_only = 0;
 
-			if(!pdlib_is_connect() && bc12_type != BC1P2_QC9V)
+			if(!pdlib_is_connect() && !(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V))
 			{
 				usb_dpdm_select(PORT1_INDEX);
 				pdlib_set_pd_port(PORT1_INDEX);

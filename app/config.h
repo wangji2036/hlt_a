@@ -6,7 +6,7 @@
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
 #define RELE_DATE                             0x53127	//update 20250325
-#define TX_FW_VER                               0x10
+#define TX_FW_VER                               0x11
 
 
 #define BATTERY_CV_VALUE					4200
@@ -30,6 +30,10 @@
 
 #define CONFIG_USE_NTC_FOR_CHAGER			1
 #define CONFIG_SUPPORT_PPS_CHAGER			0
+
+#define CONFIG_USE_TYPEC_DOUBLE_MOS			1
+
+#define CONFIG_UFCS_SOURCE_SUPPORT			0
 
 
 #define CONFIG_USBPD_ACCEPT_PRSWAP			0

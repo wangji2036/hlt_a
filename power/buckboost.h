@@ -48,6 +48,7 @@ struct buckboost_s
 	uint16_t adc_tbat;
 	uint16_t adc_vbus;
 	uint16_t ir_drop;
+	uint16_t ovp_value;
 	uint8_t ibus_cc_flag;
 #if(BUCKBOOST_USED_NU6801 == 1)
 	int16_t adc_iac1;
@@ -87,13 +88,12 @@ struct buckboost_operations
 	uint16_t (*get_bat_temperature)(void);
 	uint8_t (*get_protect_status)(void);
 	uint8_t (*is_ibus_loop)(void);
-
+	void (*set_ovp)(uint16_t volt);
 #if(BUCKBOOST_USED_NU6801 == 1)
 	uint16_t (*get_typeca_vbus_present)(void);
 	uint16_t (*get_typecb_vbus_present)(void);
 	uint8_t (*get_charge_flag)(void);
 	uint16_t (*get_adc_iac1)(void);
-	void (*set_ovp)(uint16_t volt);
 #endif
 
 };

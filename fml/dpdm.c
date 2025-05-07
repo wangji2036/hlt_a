@@ -8,10 +8,9 @@
 #include "tcpm.h"
 #include "pd.h"
 #include "pdlib.h"
-//#include "typec.h"
+#include "ufcs.h"
 #include "afc_scp.h"
 #include "usb_qc.h"
-//#include "usb_pd.h"
 #include "port_manager.h"
 
 void dpdm_source_init(void);
@@ -41,6 +40,7 @@ void dpdm_source_init(void)
 
 void usb_dpdm_port0_switch(bool en)
 {
+	VIC_vModuleDisable();
 	if(en)
 	{
 		GPA->MODE.BITS.PIN0 = 3; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
@@ -51,6 +51,7 @@ void usb_dpdm_port0_switch(bool en)
 		GPA->MODE.BITS.PIN0 = 0; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
 		GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
 	}
+	VIC_vModuleEnable();
 }
 
 void usb_dpdm_select(uint8_t tc_index)
@@ -74,9 +75,14 @@ void usb_dpdm_select(uint8_t tc_index)
 
 	dpdm_sink_deinit();
 
-	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
-	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
-	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+//	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+//	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+//	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+
+	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 1;
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 1;
+
 	bc12_type = 0;
 	dpdm_map = tc_index;
 	printk("dpdm_map=%d\n",dpdm_map);
@@ -91,6 +97,9 @@ void usb_dpdm_autodcp_en(void)
 	DPDM->SOURCE_CTRL.BITS.EN_AUTO_DCP = 1;
 	DPDM->SOURCE_CTRL.BITS.EN_AFC_SRC_DET = 1;
 	DPDM->SOURCE_CTRL.BITS.EN_SCP_SRC_DET = 1;
+#if(CONFIG_UFCS_SOURCE_SUPPORT == 1)
+	DPDM->SOURCE_CTRL.BITS.EN_UFCS_SRC_DET = 1;
+#endif
 	DPDM->SOURCE_CTRL.BITS.EN_900K_PD = 1;
 
 	//
@@ -123,12 +132,18 @@ void usb_dpdm_task_event_handler(uint32_t event)
 	{
 		case DPDM_EVT_SRC_ATTACHED:
 			usb_dpdm_autodcp_en();
+		#if(CONFIG_UFCS_SOURCE_SUPPORT == 1)
+			dpdm_ufcs_init();
+		#endif
 			is_enter_dpdm_prot = false;
 			//printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
 			break;
 		case DPDM_EVT_SRC_UNATTCHED:
 			is_enter_dpdm_prot = false;
 			dpdm_source_init();
+		#if(CONFIG_UFCS_SOURCE_SUPPORT == 1)
+			dpdm_ufcs_deinit();
+		#endif
 			break;
 		case DPDM_EVT_ENTER_DCP:
 			if(is_enter_dpdm_prot) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
@@ -277,10 +292,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
-#if(BUCKBOOST_USED_NU6801 == 1)
-
 			buckboost_ops.set_ovp(20000);
-#endif
 			bc12_type = BC1P2_HVDCP;
 			qc2_set_volt(12000);
 			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);
@@ -311,6 +323,20 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			qc2_set_volt(5000);
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
+#if(CONFIG_UFCS_SOURCE_SUPPORT == 1)
+		case DPDM_EVT_UFCS_INT:
+			break;
+		case DPDM_EVT_UFCS_RX_PACKET:
+			ufcs_rx_packet_handle();
+			break;
+		case DPDM_EVT_UFCS_PSREADY:
+			ufcs_psread_handle();
+			break;
+		case DPDM_EVT_UFCS_RX_RESET:
+			printk("UFCS HARDRESET\n");
+			ufcs_exit_handle();
+			break;
+#endif
 		default:
 			break;
 	}

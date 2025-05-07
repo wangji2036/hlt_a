@@ -76,4 +76,6 @@ uint16_t hal_nu6805_buckboost_get_bat_temperature(void);
 void hal_nu6805_buckboost_set_cv(void);
 uint8_t hal_nu6805_buckboost_get_protect(void);
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void);
+void hal_nu6805_buckboost_set_ovp(uint16_t set_volt);
+void hal_nu6805_buckboost_disable_62368(void);
 #endif /* NU6805_H_ */

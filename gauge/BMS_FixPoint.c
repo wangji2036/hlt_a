@@ -83,7 +83,7 @@ int32_T P_SOCSlope_mpctPermV[12] = { 25, 25, 114, 282, 226, 99, 109, 99, 106, 98
 
 #if(BUCKBOOST_USED_NU6805 == 1)
 /* Exported block parameters */
-int32_T P_AtRateCurrent_mA = 1000;     /* Variable: P_AtRateCurrent_mA
+int32_T P_AtRateCurrent_mA = 5000;     /* Variable: P_AtRateCurrent_mA
                                         * Referenced by: '<S4>/At_Rate_Current_mA'
                                         */
 int32_T P_EmptyVoltage_mV = 6000;      /* Variable: P_EmptyVoltage_mV

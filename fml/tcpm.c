@@ -90,6 +90,11 @@ void tcpm_update_pdo_for_ntc(void)
 	pdlib_update_source_pdo(source_pdo_ntc,sizeof(source_pdo_ntc)/4);
 }
 
+void tcpm_update_pdo_for_normal(void)
+{
+	pdlib_update_source_pdo(source_pdo,sizeof(source_pdo)/4);
+}
+
 void tcpm_task_init(void)
 {
 	osal_task_handler_reg(USB_TASK, tcpm_task_event_handler);
@@ -286,11 +291,18 @@ void tcpm_task_event_handler(uint32_t event)
 			else
 				qi_cnt = 0;
 			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
-		#if(BUCKBOOST_USED_NU6801 == 1)
+		#if(CONFIG_TYPECA_SUPPORT == 1)
+
+			printk("[%d]ibus = %d\n",g_port.light0_cnt,g_buckboost.adc_ibus);
+
 			if(pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
 			{
+#if(BUCKBOOST_USED_NU6805 == 1)
+				if(g_buckboost.adc_ibus >= -120 && g_buckboost.adc_ibus <= 0 )
+#else
 				if(g_buckboost.adc_iac2 < 60)
+#endif
 				{
 					g_port.light0_cnt++;
 					if(g_port.light0_cnt >= 25 * 10)
@@ -311,16 +323,20 @@ void tcpm_task_event_handler(uint32_t event)
 			{
 				g_port.light0_cnt = 0;
 			}
-
-
+		#endif
+	#if(CONFIG_TYPECB_SUPPORT == 1)
 			if(pdlib_get_tc_state(PORT1_INDEX) == TC_SRC_Attached && g_port.port_state[0] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE)
 			{
+#if(BUCKBOOST_USED_NU6805 == 1)
+				if(g_buckboost.adc_ibus >= -120 && g_buckboost.adc_ibus <= 0 )
+#else
 			#ifdef POWERBANK_BUCK_EVK_V02
 				if(g_buckboost.adc_iac1 < 60)
 			#else
 				if(g_buckboost.adc_ibus > -60  && g_buckboost.adc_ibus <0 )
 			#endif
+#endif
 				{
 					g_port.light1_cnt++;
 					if(g_port.light1_cnt >= 25 * 10)
@@ -342,9 +358,7 @@ void tcpm_task_event_handler(uint32_t event)
 			{
 				g_port.light1_cnt = 0;
 			}
-
-		#endif
-
+	#endif
 			break;
 
 		case TCPM_EVT_USBA_REDETECT:
