@@ -233,18 +233,18 @@ static void ui_update_digital(void)
 		gram[LED_PRCNT].byte = 1;
 		gram[LED_FAST_CH].byte = 1;
 	}
-	if(soc_show < 100)
+	if(gd->real_soc_show < 100)
 	{
 		uint8_t data_temp = 0;
 		gram[LED_HUNDREDS].byte = 0;
-		data_temp = soc_show % 10;
+		data_temp = gd->real_soc_show % 10;
 
 		if(!(!flash_light_on && flash_flag!=0)) gram[LED_UNITS].byte = display_num_tab[data_temp];
-		if(soc_show < 10)
+		if(gd->real_soc_show < 10)
 		{
 			gram[LED_TENS].byte = 0;
 		}else{
-			data_temp = soc_show / 10;
+			data_temp = gd->real_soc_show / 10;
 			if(!(!flash_light_on && flash_flag == 2)) gram[LED_TENS].byte = display_num_tab[data_temp];
 		}
 	}
