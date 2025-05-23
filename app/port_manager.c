@@ -754,7 +754,32 @@ void port_enum_port_snk_setcharge(void)
 
 
 #if(BUCKBOOST_USED_NU6801 == 1)
-	if(nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
+	if(nu6801_dead_bat)
+	{
+	#if(CONFIG_DEADBATT_SLEEP_SUPPORT == 1)
+		if(pdlib_is_connect() )
+		{
+			uint32_t source_pdo = pdlib_snk_get_pdo_by_index(1);
+			printk("source_pdo = 0x%x adc_vbat= %d\n",source_pdo,g_buckboost.adc_vbat);
+			if(source_pdo & PDO_FIXED_DUAL_ROLE && g_buckboost.adc_vbat < CONFIG_DEADBATT_VOLTAGE)
+			{
+				printk("disable bobu\n");
+				hal_nu6801_disable_bubo();
+			}
+			else
+			{
+				if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
+			}
+
+		} else
+		{
+
+			if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
+		}
+	#else
+		if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
+	#endif
+	}
 	#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(ntc_stop_chrg_flag) hal_nu6801_disable_bubo();
 	#endif
@@ -964,6 +989,7 @@ void port_enum_port0_connect_success(void)
 		}
 		else  //TC_SRC_Attached
 		{
+			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,4500);
 			hal_tcpc_set_gate_en(PORT0_INDEX,true);
 			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 			{
@@ -972,7 +998,8 @@ void port_enum_port0_connect_success(void)
 				pdlib_set_pd_event(PORT0_INDEX,USB_PD_EVT_SRC_ATTACHED);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
+			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,3500);
 		}
 	}
 

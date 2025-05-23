@@ -49,7 +49,7 @@ void hal_nu6801_buckboost_init(void)
 	{
 		hal_nu6801_buckboost_wake_up();
 
-		hal_nu6801_buckboost_set_busiv(5000,3000);  //5v3a
+		hal_nu6801_buckboost_set_busiv(5000,3300);  //5v3a
 		hal_nu6801_buckboost_bat_ivcfg();
 		hal_nu6801_buckboost_set_cv(BATTERY_CV_VALUE);
 		hal_nu6801_buckboost_typeca_gate_en(false);
@@ -230,7 +230,7 @@ void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode)
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
 		read = (read & 0xF3) | 0x08;
-		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(0x05 << 5));
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(CONFIG_DISCHG_IBAT_LIMIT << 5));
 	}
 	else if(woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -258,7 +258,7 @@ void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 	if(g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE) return;
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H, (0x1C)|(vbus >> 8));
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,vbus & 0xFF);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(0x05 << 5));
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(CONFIG_DISCHG_IBAT_LIMIT << 5));
 
 	if(ibus < 150) ibus = 150;
 	ibus = (ibus - 150) / 50;
@@ -268,7 +268,7 @@ void hal_nu6801_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
 	if(pdlib_is_pps_source())
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x00);
 	else
-		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x02);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x00);
 }
 
 void hal_nu6801_buckboost_typeca_gate_en(bool en)
@@ -326,7 +326,7 @@ void hal_nu6801_buckboost_charge_ibus_limit(uint16_t ibus_limit)
 	ibus_limit = (ibus_limit - 150) / 50;
 	printk("ibus_limit = %d\n",ibus_limit);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBUS_SET,ibus_limit);
-	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x02);
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IR_COMP,0x00);
 }
 
 void hal_nu6801_buckboost_charge_ibat_limit(uint16_t ibat_limit)

@@ -348,7 +348,7 @@ void buckboost_protection_handle(void)
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
-			buckboost_set_bus_iv(5000,3000,0,0);
+			buckboost_set_bus_iv(5000,3300,0,0);
 			pdlib_clear_typec_prswap(PORT0_INDEX);
 			pdlib_clear_typec_prswap(PORT1_INDEX);
 			pdlib_disable_usbpd();
@@ -384,7 +384,7 @@ void buckboost_protection_handle(void)
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			hal_tcpc_set_gate_en(PORT2_INDEX,false);
-			buckboost_set_bus_iv(5000,3000,0,0);
+			buckboost_set_bus_iv(5000,3300,0,0);
 			pdlib_clear_typec_prswap(PORT0_INDEX);
 			pdlib_clear_typec_prswap(PORT1_INDEX);
 			pdlib_disable_usbpd();
@@ -412,7 +412,7 @@ void buckboost_protection_handle(void)
 			printk("protect unlock\n");
 			//buckboost_ops.init();
 			buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
-			buckboost_set_bus_iv(5000,3000,0,0);
+			buckboost_set_bus_iv(5000,3300,0,0);
 		}
 	}
 
@@ -430,7 +430,7 @@ void buckboost_fault_restore(void)
 	printk("protect unlock\n");
 	buckboost_ops.init();
 	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
-	buckboost_set_bus_iv(5000,3000,0,0);
+	buckboost_set_bus_iv(5000,3300,0,0);
 }
 
 void buckboost_ir_drop_handle(void)
@@ -450,7 +450,7 @@ void buckboost_ir_drop_handle(void)
 			{
 				g_buckboost.ir_drop = ir_drop;
 				printk("ir drop = %d\n",g_buckboost.ir_drop);
-				buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current);
+				buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current_actual);
 			}
 		}
 		else
@@ -567,6 +567,7 @@ void buckboost_task_event_handler(uint32_t event)
 				buckboost_ir_drop_handle();
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			#else
+				buckboost_ir_drop_handle();
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_VBAT);
 			#endif
 			}
@@ -612,8 +613,10 @@ void buckboost_task_event_handler(uint32_t event)
 				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
 				if(g_buckboost.adc_vbus < g_buckboost.buckboost_out_voltage * 80 / 100 || g_buckboost.adc_vbus > g_buckboost.buckboost_out_voltage * 115 / 100)
 				{
+					printk("adc vbus = %d\n",g_buckboost.adc_vbus);
+
 					adc_protect_cnt++;
-					if(adc_protect_cnt >= 5)
+					if(adc_protect_cnt >= 50)
 					{
 						adc_protect_cnt = 0;
 						adc_protect_flag = true;
