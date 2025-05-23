@@ -14,6 +14,7 @@
 #include "mpp.h"
 #include "tcpm.h"
 #include"sleep.h"
+#include "port_manager.h"
 
 static uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
@@ -680,9 +681,10 @@ void wpc_idle_phase_process(void)
 	if(gd->bat_dead_flag)
 	{
 		bat_low_sleep++;
+		if(g_port.port_state[0] == PORT_STATE_SINK) {gd->bat_dead_flag = 0;bat_low_sleep =0;}
 
 		printk("low cnt [%d]",bat_low_sleep);
-		if(bat_low_sleep >= 5)
+		if(bat_low_sleep >= 50)
 		{
 			bat_low_sleep = 0;
 			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
@@ -725,7 +727,7 @@ void wpc_idle_phase_process(void)
 		tcpm_qi_work_delay--;
 		return;
 	}
-	if(wpc_mode == TCPM_WPC_WORK_DISABLE) return;
+	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01) return;
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
 		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag)

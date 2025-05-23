@@ -121,8 +121,12 @@ volatile uint32_t tc_sys_ticks = 0;
  * @param  	void
  * @return 	void
  */
+
+static uint8_t ms_10_cnt = 0;
+
 void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 {
+
 	sys_ticks++;
 
 	tc_sys_ticks++;
@@ -151,6 +155,16 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
 	ui_display();
+
+	ms_10_cnt++;
+
+	if(ms_10_cnt >= 10)
+	{
+		ms_10_cnt  = 0;
+		extern void key_handle_10ms(void);
+		key_handle_10ms();
+	}
+
 }
 
 /**

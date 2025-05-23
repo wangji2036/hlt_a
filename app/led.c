@@ -4,10 +4,16 @@
 #include "delay.h"
 #include "led.h"
 #include"_wpc.h"
+#include "tcpm.h"
 #include"BMS_FixPoint.h"
 #include "port_manager.h"
 extern volatile uint16_t sys_ticks;
 #define LED_DISPLAY
+
+void key_sigle_click_process(void);
+void key_double_click_process(void);
+void key_long_click_process(void);
+uint8_t key_flag = 0;
 
 // following variable will be update to be GB data.
 //uint8_t soc_show = 0;// SOC value, for display
@@ -362,6 +368,28 @@ void ui_update(void)
 	static uint8_t one_min_cnt = 0;
  //   if(ui_wait_cnt< WAIT_IN_250MS) ui_wait_cnt++;
 
+	if(key_flag == 1)
+	{
+		key_sigle_click_process();
+		gd->idle_to_sleep_cnt = 0;
+		printk("\r\n ----------222------------------//-------key single click");
+	}
+	else if(key_flag == 2)
+	{
+		key_double_click_process();
+		gd->idle_to_sleep_cnt = 0;
+		printk("\r\n ----------222------------------//-------key double click");
+	}
+	else if(key_flag == 3)
+	{
+		gd->idle_to_sleep_cnt = 0;
+		key_long_click_process();
+		printk("\r\n ----------222------------------//-------key long click");
+	}
+
+	key_flag = 0;
+
+
 	if(gd->real_soc_obtained == 0 )
 	{
 		if(SOCPack_DisplaySOC_pct >0)
@@ -395,10 +423,10 @@ void ui_update(void)
 	{
 		gd->real_soc_show = 100;
 	}
-	else if ((gd->real_soc_show > SOCPack_DisplaySOC_pct+15 || gd->real_soc_show+15 < SOCPack_DisplaySOC_pct) && SOCPack_DisplaySOC_pct >0)
-	{
-		gd->real_soc_show = SOCPack_DisplaySOC_pct;
-	}
+//	else if ((gd->real_soc_show > SOCPack_DisplaySOC_pct+15 || gd->real_soc_show+15 < SOCPack_DisplaySOC_pct) && SOCPack_DisplaySOC_pct >0)
+//	{
+//		gd->real_soc_show = SOCPack_DisplaySOC_pct;
+//	}
 	if(gd->real_soc_show>0) zero_soc_cnt = 0;
     //static uint8_t cnt_2s;
 	cnt++;
@@ -444,6 +472,8 @@ void ui_update(void)
     	}
     }
 
+
+
     //printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
     //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
     //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
@@ -460,70 +490,178 @@ void ui_update(void)
 
 }
 
-// structure for key information
-typedef struct KeyInfo {
-    uint8_t press_status;  // 0 means release,1 means press down
-    uint8_t is_single_click;
-    uint8_t click_count;  // click count
-    uint8_t is_double_click_pending;
-    uint16_t last_release_time;
-    uint16_t press_start_time;
-}KeyInfo;
-KeyInfo key;
+void key_sigle_click_process(void)
+{
+	if(buckboost_protection_flag) buckboost_fault_restore();
 
-void initKey(void) {
-    key.press_status = 0;
-    key.press_start_time = 0;
-    key.click_count = 0;
-    key.last_release_time = 0;
-    key.is_single_click = 0;
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	if(gd->tc0_lighting_mode) gd->tc0_lighting_mode = 0;
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	if(gd->tc1_lighting_mode) gd->tc1_lighting_mode = 0;
+#endif
+
+#if(CONFIG_WPC_SUPPORT == 1)
+	if(gd->wpc_disable) gd->wpc_disable = 0;
+#endif
+
+	g_port.light0_cnt = 0;
 }
+
+void key_double_click_process(void)
+{
+	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	{
+	#if(CONFIG_TYPECA_SUPPORT == 1)
+		if(g_port.port_state[0] == PORT_STATE_SOURCE) gd->tc0_lighting_mode = 1;
+	#endif
+
+	#if(CONFIG_TYPECB_SUPPORT == 1)
+		if(g_port.port_state[1] == PORT_STATE_SOURCE) gd->tc1_lighting_mode = 1;
+	#endif
+
+	#if(CONFIG_WPC_SUPPORT == 1)
+		gd->wpc_disable = 1;
+		tcpm_stop_wpc(WPC_DELAY);
+	#endif
+		g_port.is_mini_current_mode = 0;
+		g_port.light0_cnt = 0;
+	}
+}
+
+void key_long_click_process(void)
+{
+	if(g_port.port_state[0] == PORT_STATE_SOURCE)
+	{
+		if(g_port.is_mini_current_mode)
+			g_port.is_mini_current_mode = 0;
+		else
+		{
+			g_port.is_mini_current_mode = 1;
+			printk("is_mini_current mode\n");
+		}
+
+		g_port.light0_cnt = 0;
+	}
+}
+
+//// structure for key information
+//typedef struct KeyInfo {
+//    uint8_t press_status;  // 0 means release,1 means press down
+//    uint8_t is_single_click;
+//    uint8_t click_count;  // click count
+//    uint8_t is_double_click_pending;
+//    uint16_t last_release_time;
+//    uint16_t press_start_time;
+//}KeyInfo;
+//KeyInfo key;
+//
+//void initKey(void) {
+//    key.press_status = 0;
+//    key.press_start_time = 0;
+//    key.click_count = 0;
+//    key.last_release_time = 0;
+//    key.is_single_click = 0;
+//}
 
 uint16_t key_ui_cnt = 0;
 // double click, needs detect single click first.
-void detectSingleKey() {
-    int currentLevel = _KEY_LEVEL;
+static uint16_t key_cnt = 0;
+static uint16_t key_delay_ms = 0;
+static uint8_t key_click_cnt = 0;
 
-    if (currentLevel == 0) {
-        if (key.press_status == 0) {
-            key.press_start_time = sys_ticks;
-            key.press_status = 1;
-            key.click_count++;
-        }
-    } else {
-        if (key.press_status == 1) {
-            uint16_t release_time = sys_ticks;
-            uint16_t press_duration = release_time - key.press_start_time;
-            if (press_duration < LONG_PRESS_TIME_MS) {
-                if (key.click_count == 1) {
-                	 if ((uint16_t)(release_time - key.last_release_time) < DOUBLE_CLICK_TIME_MS){
-                        if (!key.is_single_click) {
-                            key.is_single_click = 1;
-                            key_ui_cnt = 20;
-                            printk("\r\n ----------------------------//-------key single click");
-                        }
-                        else{
-                        key.click_count = 0;
-                        key.is_single_click = 0;
-                        printk("\r\n --------------------------------//-------key double click");
-                        }
-                    } else {
-                        key.click_count = 0;
-                        key.is_single_click = 1;
-                        key_ui_cnt = 20;
-                        printk("\r\n ---------------------------------//------key single click");
-                    }
-                }
-            } else {
-                key.click_count = 0;
-                key.is_single_click = 0;
-                printk("\r\n ------------------------//----------key long press");
-            }
-            key.last_release_time = release_time;
-        }
-        key.press_status = 0;
-    }
+void key_handle_10ms()
+{
+	if(!_KEY_LEVEL)
+	{
+		key_cnt++;
+		if(key_cnt == 150)
+		{
+			key_flag = 3; //long press
+			key_click_cnt = 0;
+		}
+		if(key_cnt >= 1000) key_cnt = 1000;
+	}
+	else
+	{
+		if(key_cnt >= 3 && key_cnt <= 50)
+		{
+			if(key_click_cnt == 0)
+			{
+				key_delay_ms = 50;
+				key_click_cnt = 1;
+			}
+			else
+			{
+				key_click_cnt = 0;
+				key_delay_ms = 0;
+				key_flag = 2;
+			}
+		}
+		key_cnt = 0;
+	}
+
+	if(key_delay_ms)
+	{
+		key_delay_ms--;
+		if(key_delay_ms == 0)
+		{
+			if(key_click_cnt)
+			{
+				key_flag = 1;
+				key_click_cnt = 0;
+			}
+		}
+	}
 }
+
+//void detectSingleKey() {
+//    int currentLevel = _KEY_LEVEL;
+//
+//    if (currentLevel == 0) {
+//        if (key.press_status == 0) {
+//            key.press_start_time = sys_ticks;
+//            key.press_status = 1;
+//            key.click_count++;
+//        }
+//    } else {
+//        if (key.press_status == 1) {
+//            uint16_t release_time = sys_ticks;
+//            uint16_t press_duration = release_time - key.press_start_time;
+//            if (press_duration < LONG_PRESS_TIME_MS) {
+//                if (key.click_count == 1) {
+//                	 if ((uint16_t)(release_time - key.last_release_time) < DOUBLE_CLICK_TIME_MS){
+//                        if (!key.is_single_click) {
+//                            key.is_single_click = 1;
+//                            key_ui_cnt = 20;
+//                            //key_sigle_click_process();
+//                            printk("\r\n ----------222------------------//-------key single click");
+//                        }
+//                        else{
+//                        	//key_double_click_process();
+//                        key.click_count = 0;
+//                        key.is_single_click = 0;
+//                        printk("\r\n --------------111------------------//-------key double click");
+//                        }
+//                    } else {
+//                        key.click_count = 0;
+//                        key.is_single_click = 1;
+//                        //key_sigle_click_process();
+//                        key_ui_cnt = 20;
+//                        printk("\r\n -------------333--------------------//------key single click");
+//                    }
+//                }
+//            } else {
+//                key.click_count = 0;
+//                key.is_single_click = 0;
+//                printk("\r\n ---------------444---------//----------key long press");
+//            }
+//            key.last_release_time = release_time;
+//        }
+//        key.press_status = 0;
+//    }
+//}
 
 
 

@@ -742,6 +742,9 @@ void port_enum_port_snk_setcharge(void)
 #endif
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
 
+
+	g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
+
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
 
 	if(g_port.inhandle_port == PORT0_INDEX)
@@ -837,31 +840,33 @@ void port_enum_port_snk_setvolt(void)
 		}
 		else
 		{
-			if(bc12_type >= BC1P2_HVDCP)
-			{
-				g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
-				g_port.ibus_limit = 3000;
-				g_port.ibat_limit = 5000;
-			}
-			else if(bc12_type > BC1P2_CDP)
-			{
-
-				if(bc12_type == BC1P2_DCP)
-				{
-					g_port.ibus_limit = 1500;
-					g_port.ibat_limit = 5000;
-					g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
-				}
-				else if(bc12_type == BC1P2_APPLE)
-				{
-					g_port.ibus_limit = 1950;
-					g_port.ibat_limit = 5000;
-					g_port.adpater_power =  (uint32_t)1950 * VOLTAGE_5V / 1000;
-				}
-			}
-			else
-				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
-
+//			if(bc12_type >= BC1P2_HVDCP)
+//			{
+//				g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
+//				g_port.ibus_limit = 3000;
+//				g_port.ibat_limit = 5000;
+//			}
+//			else if(bc12_type > BC1P2_CDP)
+//			{
+//
+//				if(bc12_type == BC1P2_DCP)
+//				{
+//					g_port.ibus_limit = 1500;
+//					g_port.ibat_limit = 5000;
+//					g_port.adpater_power =  (uint32_t)1500 * VOLTAGE_5V / 1000;
+//				}
+//				else if(bc12_type == BC1P2_APPLE)
+//				{
+//					g_port.ibus_limit = 1950;
+//					g_port.ibat_limit = 5000;
+//					g_port.adpater_power =  (uint32_t)1950 * VOLTAGE_5V / 1000;
+//				}
+//			}
+//			else
+//				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
+			g_port.ibus_limit = 3000;
+			g_port.ibat_limit = 5000;
+			g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 			g_port.snk_set_volt = VOLTAGE_5V;
 		}
 	}

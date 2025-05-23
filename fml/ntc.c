@@ -29,7 +29,7 @@ void buckboost_ntc_handle(void)
 	static uint8_t ntc_ot_cnt = 0;
 	static uint8_t ntc_stop_chg_cnt = 0;
 	//static uint8_t ntc_lock_cnt = 0;
-	printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat,ntc_ut_flag,ntc_ot_flag);
+	printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat1,ntc_ut_flag,ntc_ot_flag);
 
 	uint16_t ntc_ut_value;
 	uint16_t ntc_ut_restore_value;
@@ -53,7 +53,7 @@ void buckboost_ntc_handle(void)
 
 	if(ntc_ut_flag == 0)
 	{
-		if(g_buckboost.adc_tbat > ntc_ut_value)
+		if(g_buckboost.adc_tbat1 > ntc_ut_value)
 		{
 			ntc_ut_cnt++;
 			if(ntc_ut_cnt >= 10)
@@ -67,15 +67,7 @@ void buckboost_ntc_handle(void)
 				}
 				else
 				{
-					if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
-					{
-						tcpm_update_pdo_for_ntc();
-						pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
-					}
-					else
-					{
-						buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-					}
+					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
 				}
 
 				printk("\nR_ntc ut\n");
@@ -88,7 +80,7 @@ void buckboost_ntc_handle(void)
 	}
 	else
 	{
-		if(g_buckboost.adc_tbat < ntc_ut_restore_value)
+		if(g_buckboost.adc_tbat1 < ntc_ut_restore_value)
 		{
 			ntc_ut_cnt++;
 			if(ntc_ut_cnt >= 10)
@@ -101,15 +93,7 @@ void buckboost_ntc_handle(void)
 				}
 				else
 				{
-					if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
-					{
-						tcpm_update_pdo_for_normal();
-						pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
-					}
-					else
-					{
-						buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-					}
+					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
 				}
 				printk("\nR_ntc utrestore\n");
 			}
@@ -122,7 +106,7 @@ void buckboost_ntc_handle(void)
 
 	if(ntc_ot_flag == 0)
 	{
-		if(g_buckboost.adc_tbat < ntc_ot_value)
+		if(g_buckboost.adc_tbat1 < ntc_ot_value)
 		{
 			ntc_ot_cnt++;
 			if(ntc_ot_cnt >= 10)
@@ -136,15 +120,7 @@ void buckboost_ntc_handle(void)
 				}
 				else
 				{
-					if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
-					{
-						tcpm_update_pdo_for_ntc();
-						pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
-					}
-					else
-					{
-						buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-					}
+					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
 				}
 
 				printk("\nR_ntc Ot\n");
@@ -157,7 +133,7 @@ void buckboost_ntc_handle(void)
 	}
 	else
 	{
-		if(g_buckboost.adc_tbat > ntc_ot_restore_value)
+		if(g_buckboost.adc_tbat1 > ntc_ot_restore_value)
 		{
 			ntc_ot_cnt++;
 			if(ntc_ot_cnt >= 10)
@@ -170,15 +146,7 @@ void buckboost_ntc_handle(void)
 				}
 				else
 				{
-					if(pdlib_is_connect() && pdlib_get_pwr_role() == TYPEC_SOURCE)
-					{
-						tcpm_update_pdo_for_normal();
-						pdlib_set_pd_event(pdlib_get_port_map(),USB_PD_EVT_SOURCE_SOFTRESET);
-					}
-					else
-					{
-						buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-					}
+					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
 				}
 				printk("\nR_ntc otrestore\n");
 			}
@@ -193,7 +161,7 @@ void buckboost_ntc_handle(void)
 	{
 		if(ntc_stop_chrg_flag == 0)
 		{
-			if(g_buckboost.adc_tbat < CHRG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat> CHRG_NTC_UT_LOCK_VALUE)
+			if(g_buckboost.adc_tbat1 < CHRG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat1> CHRG_NTC_UT_LOCK_VALUE)
 			{
 				ntc_stop_chg_cnt++;
 				if(ntc_stop_chg_cnt >= 20)
@@ -206,7 +174,7 @@ void buckboost_ntc_handle(void)
 		}
 		else
 		{
-			if(g_buckboost.adc_tbat > CHRG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat< CHRG_NTC_UT_LOCK_RESTORE_VALUE)
+			if(g_buckboost.adc_tbat1 > CHRG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat1< CHRG_NTC_UT_LOCK_RESTORE_VALUE)
 			{
 				ntc_stop_chg_cnt++;
 				if(ntc_stop_chg_cnt >= 20)
@@ -222,7 +190,7 @@ void buckboost_ntc_handle(void)
 	{
 		if(ntc_lock_flag == 0)
 		{
-			if(g_buckboost.adc_tbat < DISG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat> DISG_NTC_UT_LOCK_VALUE)
+			if(g_buckboost.adc_tbat1 < DISG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat1> DISG_NTC_UT_LOCK_VALUE)
 			{
 				ntc_lock_cnt++;
 				if(ntc_lock_cnt >= 20)
@@ -234,7 +202,7 @@ void buckboost_ntc_handle(void)
 		}
 		else
 		{
-			if(g_buckboost.adc_tbat > DISG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat< DISG_NTC_UT_LOCK_RESTORE_VALUE)
+			if(g_buckboost.adc_tbat1 > DISG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat1< DISG_NTC_UT_LOCK_RESTORE_VALUE)
 			{
 				ntc_lock_cnt++;
 				if(ntc_lock_cnt >= 20)

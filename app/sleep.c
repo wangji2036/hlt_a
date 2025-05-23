@@ -51,9 +51,11 @@ void SLP_vNormalToSleep(void)
 	sleep_printk("\r\n enter sleep");
 	hal_wdt_feed();
 	fm1210_sleep();
-   SYS->PWR_CTRL.WORD = 0;
+	SYS->PWR_CTRL.WORD = 0;
 	gd->rd0_cnt = 0;
 	gd->rd1_cnt = 0;
+	gd->light0_cnt = 0;
+	gd->light1_cnt = 0;
 	gd->SOC_SleepTime_s = 0;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
@@ -75,7 +77,16 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,0x50);//0D
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x0D);//09
 	hal_wdt_feed();
-	delay_1ms(500);
+	for(uint8_t i = 0; i < 50; i++)
+	{
+		if(!_KEY_LEVEL)
+		{
+			printk("mcu reset\n");
+			SYS->RST_CTRL.BITS.MCU_RST = 1;
+		}
+		delay_1ms(10);
+	}
+	//delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x65);//
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x37);//
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x50,0x2D);//
@@ -86,13 +97,40 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0x6A);//
 
 	hal_wdt_feed();
-	delay_1ms(500);
+	for(uint8_t i = 0; i < 50; i++)
+	{
+		if(!_KEY_LEVEL)
+		{
+			printk("mcu reset\n");
+			SYS->RST_CTRL.BITS.MCU_RST = 1;
+		}
+		delay_1ms(10);
+	}
+	//delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x63,0x01);//
 	hal_wdt_feed();
-	delay_1ms(500);
+	for(uint8_t i = 0; i < 50; i++)
+	{
+		if(!_KEY_LEVEL)
+		{
+			printk("mcu reset\n");
+			SYS->RST_CTRL.BITS.MCU_RST = 1;
+		}
+		delay_1ms(10);
+	}
+	//delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x01);//09
 	hal_wdt_feed();
-	delay_1ms(500);
+	for(uint8_t i = 0; i < 50; i++)
+	{
+		if(!_KEY_LEVEL)
+		{
+			printk("mcu reset\n");
+			SYS->RST_CTRL.BITS.MCU_RST = 1;
+		}
+		delay_1ms(10);
+	}
+	//delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,0x41);//10
 
 	/* 6801 sleep function and firmware work-round end*/
@@ -155,7 +193,7 @@ void SLP_vNormalToSleep(void)
 	}
 	else
 	{
-		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 1;
+		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		sleep_printk("\r\n sleep Rd");
 	}
@@ -184,7 +222,7 @@ void SLP_vNormalToSleep(void)
 	}
 	else
 	{
-		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 1;
+		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		sleep_printk("\r\n sleep Rd");
 	}
@@ -279,13 +317,16 @@ void SLP_vSleepToSleep(void)
 	    else
 	#endif
 	    {
-		    TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
+			if(gd->light0_cnt == 0)
+				TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
+			else
+				TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
     	}
 
     }
 	else
 	{
-		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 1;
+		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		sleep_printk("\r\n batlow");
 		if(gd->rd0_cnt == 0)
@@ -600,11 +641,17 @@ void RST_vCheck(void)
 						sleep_printk("\r\n 0cc:[%d %d]\n",cc1,cc2);
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
-							gd->tc0_lighting_mode = 0;
-							sleep_printk("\r\n lighting_mode exit");
-							break;
+							gd->light0_cnt++;
+							if(gd->light0_cnt >= 5)
+							{
+								gd->tc0_lighting_mode = 0;
+								sleep_printk("\r\n lighting_mode exit");
+								break;
+							}
 						}
-
+						else
+							gd->light0_cnt = 0;
+					#if(CONFIG_TYPECB_SUPPORT == 1)
 						if(!gd->tc1_lighting_mode)
 						{
 							if(pdlib_get_drp_toggle_result(1) == TYPEC_DRP_SNK_CONNECTED)
@@ -616,7 +663,9 @@ void RST_vCheck(void)
 								break;
 							}
 						}
+					#endif
 					}
+
 				#endif
 
 				#if(CONFIG_TYPECB_SUPPORT == 1)
@@ -631,10 +680,16 @@ void RST_vCheck(void)
 						sleep_printk("\r\n [%d]cc:[%d %d]\n",1,cc1,cc2);
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
-							gd->tc1_lighting_mode = 0;
-							sleep_printk("\r\n lighting_mode exit");
-							break;
+							gd->light1_cnt++;
+							if(gd->light1_cnt >= 5)
+							{
+								gd->tc1_lighting_mode = 0;
+								sleep_printk("\r\n lighting_mode exit");
+								break;
+							}
 						}
+						else
+							gd->light1_cnt = 0;
 
 						if(!gd->tc0_lighting_mode)
 						{
@@ -685,16 +740,31 @@ void RST_vCheck(void)
 				}
 				break;
 			case RST_SRC_GPIO:
-				sleep_printk("\r\n sleep check- GPIO");
+
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
-				if(gd->bat_dead_flag)
+				if(_KEY_LEVEL)
 				{
 					SLP_vSleepToSleep();
 				}
+			#if(CONFIG_TYPECA_SUPPORT == 1)
+				if(gd->tc0_lighting_mode) gd->tc0_lighting_mode = 0;
+			#endif
+
+			#if(CONFIG_TYPECB_SUPPORT == 1)
+				if(gd->tc1_lighting_mode) gd->tc1_lighting_mode = 0;
+			#endif
+
+			#if(CONFIG_WPC_SUPPORT == 1)
+				gd->wpc_disable = 0;
+			#endif
 				key_ui_cnt = 20;
+				sleep_printk("\r\n sleep check- GPIO");
 				break;
 			case RST_SRC_WARMUP_DONE:
 			default:
+				sleep_printk("\r\n wake_up");
+				gd->power_on_magic = 0x00;
+				sleep_printk("sleep power on\n");
 				break;
 
 		}

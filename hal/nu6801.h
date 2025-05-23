@@ -5,6 +5,9 @@
 
 #define NU6801_I2C_DEV_ADDR		0x66
 
+#define VERSION_A0 	0x00
+#define VERSION_A1 	0x01
+
 extern uint8_t nu6801_adc_chennel;
 extern uint16_t nu6801_vref;
 enum
@@ -15,7 +18,8 @@ enum
 	NU6801_ADC_IBUS,
 	NU6801_ADC_IAC1,
 	NU6801_ADC_IAC2,
-	NU6801_ADC_RNTC,
+	NU6801_ADC_RNTC1,
+	NU6801_ADC_RNTC2,
 	NU6801_ADC_VREF,
 	NU6801_ADC_OTHER,
 };

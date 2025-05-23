@@ -380,15 +380,19 @@ struct gd_t
 	 uint8_t rd0_cnt;
 	 uint8_t rd1_cnt;
 
-	 uint8_t bat_dead_flag;
+	 uint8_t light0_cnt;
+	 uint8_t light1_cnt;
+
 	 uint8_t charger_is_6801_flag;// not delete,for gauge
 	 uint8_t resverd_reset;
 	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;
 	 uint8_t tc1_lighting_mode;
+	 uint8_t wpc_disable;
 	 uint8_t real_soc_show;
 	 uint8_t real_soc_obtained;
 	 uint8_t dp_result;
+	 uint8_t bat_dead_flag;
 
 
 	 int32_t SOC_RawSOC_mpct;
@@ -396,11 +400,22 @@ struct gd_t
 
 
 };
+uint16_t dead_battery_voltage;
+struct lib_para_sts{
+	uint16_t typec_a_support : 1;
+	uint16_t typec_b_support : 1;
+	uint16_t ufcs_source_support : 1;
+	uint16_t afc_source_support : 1;
+	uint16_t fcp_source_support : 1;
+	uint16_t scp_source_support : 1;
+ }lib_para;
+
 
 extern volatile struct ap_t *ap;
 extern volatile struct gd_t *gd;
 
 void ap_data_init(void);
+void lib_para_init(void);
 void gd_data_init(void);
 
 #endif /* G_DATA_H_ */

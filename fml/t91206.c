@@ -195,6 +195,8 @@ int t91206_get_tbs_auth(uint8_t *signature , uint8_t *array_random)
     // signature[0] = CERTIFICATE_RESPONSE;
     int ret = TMC_SignChallenge(array_random, LEN_OF_CHALLENGE, slotNumReq, signature, &len_Resp);
 
+    ret = ret;
+
     printk("\r\n CHALL_AUTH");
 
     for (int i = 0; i < len_Resp; i++)

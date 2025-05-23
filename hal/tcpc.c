@@ -60,6 +60,9 @@ bool hal_tcpc_pd_bus_ready(uint8_t tc_index)
 bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 {
 #if(BUCKBOOST_USED_NU6801 == 1)
+#if(CONFIG_NU6801_A0 == 1)
+	return true;
+#else
 	static uint8_t delay_cnt = 0;
 	if(delay_cnt == 0)
 	{
@@ -76,6 +79,7 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 	delay_cnt++;
 	if(delay_cnt >= 10) delay_cnt = 0;
 	return false;
+#endif
 #else
 	return true;
 #endif

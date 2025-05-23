@@ -15,7 +15,7 @@
 #define _UI_PIN4_PINx     PIN4
 #define _UI_PIN5_PINx     PIN6
 
-#define _KEY_PORT     GPC
+#define _KEY_PORT    GPC
 #define _KEY_PINx    PIN6
 #define _PIN_LEVEL_HI     (1)
 #define _PIN_LEVEL_LO     (0)

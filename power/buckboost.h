@@ -9,8 +9,7 @@
 	#define BAT_DEAD_BATTER_V   	6000
 	#define BAT_ACTIVE_RBATTER_V   	6500
 #elif(BUCKBOOST_USED_NU6801 == 1)
-	#define BAT_DEAD_BATTER_V   	2900
-	#define BAT_ACTIVE_RBATTER_V   	3100
+	#define BAT_ACTIVE_RBATTER_V   	3000
 #endif
 
 enum buckboost_mode
@@ -33,6 +32,7 @@ struct buckboost_s
 
 	uint16_t buckboost_out_voltage;
 	uint16_t buckboost_out_current;
+	uint16_t buckboost_out_current_actual;
 	uint16_t out_voltage_wait;
 	uint16_t out_voltage_delay;
 	uint16_t regulator_state;
@@ -45,7 +45,8 @@ struct buckboost_s
 	int16_t adc_ibat;
 
 	uint16_t adc_vbat;
-	uint16_t adc_tbat;
+	uint16_t adc_tbat1;
+	uint16_t adc_tbat2;
 	uint16_t adc_vbus;
 	uint16_t ir_drop;
 	uint16_t ovp_value;
@@ -100,7 +101,7 @@ struct buckboost_operations
 
 
 #define BUCKBOOST_TIME_PERIOD									17
-#define BUCKBOOST_VBUS_PERIOD									9
+#define BUCKBOOST_VBUS_PERIOD									20
 #define BUCKBOOST_CHAG_PERIOD									500
 
 #define BUCKBOOST_EVT_SWITCH_WORK_MODE    						osal_event_declare(0)
@@ -138,7 +139,7 @@ void buckboost_set_typeca_gate_en(bool en);
 void buckboost_set_typecb_gate_en(bool en);
 void buckboost_set_usb_a_gate_en(bool en);
 bool buckboost_regulator_done(void);
-
+void buckboost_fault_restore(void);
 extern struct buckboost_s  g_buckboost;
 extern const struct buckboost_operations buckboost_ops;
 extern uint8_t buckboost_protection_flag;

@@ -319,8 +319,6 @@ void hal_nu6805_buckboost_dis_indetb(void)
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting3,&read);
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting3,read | 0x02);
-
-
 }
 
 void hal_nu6805_buckboost_charge_vbus_uv(uint16_t vbus_uv)

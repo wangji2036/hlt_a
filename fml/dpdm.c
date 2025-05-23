@@ -8,6 +8,7 @@
 #include "tcpm.h"
 #include "pd.h"
 #include "pdlib.h"
+#include "nu6801.h"
 #include "ufcs.h"
 #include "afc_scp.h"
 #include "usb_qc.h"
@@ -258,7 +259,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				bc12_type = BC1P2_CDP;
 			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
 				bc12_type = BC1P2_DCP;
-			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.UNSTANDARD_TYPE & 0x03 )
+			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x06)
 			{
 				bc12_type = BC1P2_APPLE; //APPLE 2.4A 2.1A
 			}

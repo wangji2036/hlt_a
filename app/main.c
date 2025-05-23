@@ -42,7 +42,7 @@ int main(void)
 
 	ap_data_init();
 	gd_data_init();
-
+	lib_para_init();// do not delete.
 	fml_bsp_init();
 	apl_gui_init();
 

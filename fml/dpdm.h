@@ -242,8 +242,6 @@ typedef struct {
 	__IO TS_DPDM_SOURCE_AFC_TX_2 			AFC_TX_2; 		//4000_C0b8
 } TS_DPDM;
 
-
-
 #define  DPDM_APB_ADDR_OFFSET                (                         0xC080)
 #define  DPDM_BASE                           (APB_BASE +  DPDM_APB_ADDR_OFFSET)
 #define  DPDM                                (          (TS_DPDM *) DPDM_BASE)

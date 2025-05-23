@@ -141,6 +141,8 @@ void gd_data_init(void)
 	{
 		gd->tc0_lighting_mode = 0x00;
 		gd->tc1_lighting_mode = 0x00;
+		gd->bat_dead_flag = 0x00;
+		gd->wpc_disable = 0x00;
 		gd->real_soc_show = 0;
 		gd->real_soc_obtained = 0;
 		gd->SOC_RawSOC_mpct = 0;
@@ -155,4 +157,44 @@ void gd_data_init(void)
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
 //	gd->tx_infos.fo_exist = 1;
 	gd->tx_infos.fo_exist = 0;
+}
+
+void lib_para_init(void)
+{
+	#if(CONFIG_TYPECA_SUPPORT == 1)
+		lib_para.typec_a_support = 1;
+	#else
+		lib_para.typec_a_support = 0;
+	#endif
+
+	#if(CONFIG_TYPECB_SUPPORT == 1)
+		lib_para.typec_b_support = 1;
+	#else
+		lib_para.typec_b_support = 0;
+	#endif
+
+	#if(CONFIG_UFCS_SOURCE_SUPPORT == 1)
+		lib_para.ufcs_source_support = 1;
+	#else
+		lib_para.ufcs_source_support = 0;
+	#endif
+
+	#if(CONFIG_AFC_SOURCE_SUPPORT == 1)
+		lib_para.afc_source_support = 1;
+	#else
+		lib_para.afc_source_support = 0;
+	#endif
+
+	#if(CONFIG_FCP_SOURCE_SUPPORT == 1)
+		lib_para.fcp_source_support = 1;
+	#else
+		lib_para.fcp_source_support = 0;
+	#endif
+
+	#if(CONFIG_SCP_SOURCE_SUPPORT == 1)
+		lib_para.scp_source_support = 1;
+	#else
+		lib_para.scp_source_support = 0;
+	#endif
+		dead_battery_voltage = CONFIG_NU6801_BATLOW_VOLT;
 }

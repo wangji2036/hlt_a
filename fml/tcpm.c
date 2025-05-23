@@ -301,18 +301,29 @@ void tcpm_task_event_handler(uint32_t event)
 #if(BUCKBOOST_USED_NU6805 == 1)
 				if(g_buckboost.adc_ibus >= -120 && g_buckboost.adc_ibus <= 0 )
 #else
-				if(g_buckboost.adc_iac2 < 60)
+				if(g_buckboost.adc_iac2 < CONFIG_TYPEC_LIGHT_CURRENT)
 #endif
 				{
 					g_port.light0_cnt++;
-					if(g_port.light0_cnt >= 25 * 10)
+					if(g_port.is_mini_current_mode)
 					{
-						g_port.light0_cnt = 0;
-						gd->tc0_lighting_mode = 1;
-						//tcpm_dp_set_10uA();
-						//gd->dp_result = tcpm_dp_get_result();
-						printk("TC[0] light = 0x%x\n",gd->dp_result);
+						if(g_port.light0_cnt >= 60000) //120ms * N
+						{
+							g_port.light0_cnt = 0;
+							gd->tc0_lighting_mode = 1;
+							printk("TC[0] light = 0x%x\n",gd->dp_result);
+						}
 					}
+					else
+					{
+						if(g_port.light0_cnt >= 250)
+						{
+							g_port.light0_cnt = 0;
+							gd->tc0_lighting_mode = 1;
+							printk("TC[0] light = 0x%x\n",gd->dp_result);
+						}
+					}
+
 				}
 				else
 				{
