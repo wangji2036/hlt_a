@@ -59,6 +59,7 @@ struct buckboost_s
 	uint8_t vsnkdisconnect_flag;
 #endif
 	uint8_t protect_status;
+	uint8_t ibat_level;
 };
 
 struct buckboost_operations

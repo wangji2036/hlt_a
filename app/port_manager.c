@@ -573,7 +573,10 @@ void port_enum_port_enum_done(void)
 	{
 		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA·Åµç
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
+		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,6500);
+		printk("mos0");
 		hal_tcpc_set_gate_en(PORT0_INDEX,true);
+		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current_actual);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
@@ -669,6 +672,13 @@ void port_enum_port_enum_done(void)
 	    printk("%s\n",__func__);
 	}
 
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
+	{
+		g_buckboost.buckboost_out_current = 4500;
+		g_buckboost.buckboost_out_current_actual = 4500;
+		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
+	}
+
 	port_manager_set_state(PORT_IDLE_OR_READY);
 }
 
@@ -741,8 +751,9 @@ void port_enum_port_snk_setcharge(void)
 #endif
 #endif
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
+	printk("charg set %d %d", g_port.ibus_limit,g_port.ibat_limit);
 
-
+	if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
 	g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
 
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
@@ -798,7 +809,7 @@ void port_enum_port_snk_setvolt(void)
 {
 
 	uint32_t source_pdo;
-	hal_tcpc_set_gate_en(g_port.incharge_port,false);
+	//hal_tcpc_set_gate_en(g_port.incharge_port,false);
 	printk("[%d]%s!\n",g_port.inhandle_port,__func__);
 
 	g_port.ibus_limit = 3000;
@@ -891,7 +902,7 @@ void port_enum_port_snk_setvolt(void)
 //				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 			g_port.ibus_limit = 3000;
 			g_port.ibat_limit = 5000;
-			g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
+			g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
 			g_port.snk_set_volt = VOLTAGE_5V;
 		}
 	}
@@ -928,8 +939,11 @@ void port_enum_port_snk_setvolt(void)
 
 	printk("sdp_type = %d\n",bc12_type);
 #if(CONFIG_USE_TYPEC_DOUBLE_MOS == 1)
-	hal_tcpc_set_gate_en(g_port.incharge_port,true);
+	//hal_tcpc_set_gate_en(g_port.incharge_port,true);
 #endif
+
+	hal_tcpc_set_gate_en(g_port.incharge_port,true);
+
 	//printk("I[bat]=%dmA I[bus]=%dmA!\n",g_port.ibat_limit,g_port.ibus_limit);
 }
 
@@ -968,7 +982,7 @@ void port_enum_port0_connect_success(void)
 	{
 		if(pdlib_get_tc_state(PORT0_INDEX) == TC_SNK_Attached)
 		{
-			hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+			hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
 
 			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
 				g_port.snk_5v_only = 1;
@@ -989,7 +1003,8 @@ void port_enum_port0_connect_success(void)
 		}
 		else  //TC_SRC_Attached
 		{
-			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,4500);
+			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,6500);
+			printk("mos-1");
 			hal_tcpc_set_gate_en(PORT0_INDEX,true);
 			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 			{
@@ -1042,7 +1057,7 @@ void port_enum_port1_connect_success(void)
 	{
 		if(pdlib_get_tc_state(PORT1_INDEX) == TC_SNK_Attached)
 		{
-			hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+			hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
 
 			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
 				g_port.snk_5v_only = 1;
@@ -1100,10 +1115,11 @@ void port_enum_port0_connect_start(void)
 	printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n",g_port.port_state[1],g_port.port_state[2],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
+	g_port.snk_set_volt = VOLTAGE_5V;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	tcpm_disable_usba_detect();
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT1_INDEX);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT1_INDEX,false);
@@ -1134,7 +1150,7 @@ void port_enum_port1_connect_start(void)
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_disable_usba_detect();
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT0_INDEX);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT0_INDEX,false);
@@ -1163,8 +1179,8 @@ void port_enum_port2_connect_start(void)
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_disable_usba_detect();
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT0_INDEX);
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT1_INDEX);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		hal_tcpc_set_gate_en(PORT2_INDEX,false);
@@ -1193,8 +1209,8 @@ void port_enum_port3_connect_start(void)
 
 	printk("PORT3 START! PORT0=[%d] PORT1=[%d] PORT2=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[2]);
 	tcpm_disable_usba_detect();
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT0_INDEX);
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_restart_typec(PORT1_INDEX);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -1226,13 +1242,13 @@ void port_enum_scan_handle(void)
 		if(g_port.port_event & PORT0_EVENT_UNCONNECT && g_port.inhandle_port != PORT0_INDEX)				//TTPEC0
 		{
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
-			pdlib_restart_typec(PORT0_INDEX);
+			pdlib_disable_typec(PORT0_INDEX);
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 		}
 		else if(g_port.port_event & PORT1_EVENT_UNCONNECT && g_port.inhandle_port != PORT1_INDEX) 			//TYPEC1
 		{
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
-			pdlib_restart_typec(PORT1_INDEX);
+			pdlib_disable_typec(PORT1_INDEX);
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 		}
 		return;

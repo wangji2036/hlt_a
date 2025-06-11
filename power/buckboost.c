@@ -712,16 +712,34 @@ void buckboost_task_event_handler(uint32_t event)
 					printk("adc_vbat = %d\n",g_buckboost.adc_vbat);
 					break;
 				case NU6801_ADC_IBAT:
-                  #if 1
+                  #if 0
 					g_buckboost.adc_ibat = ibus_to_ibat(g_buckboost.adc_ibus,g_buckboost.adc_vbus,g_buckboost.adc_vbat);
                   #else
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
-					uint32_t ibat = row* 120  * 100 / nu6801_vref;
+					uint32_t ibat = 0;
+					if(g_buckboost.ibat_level == 0)
+					{
+						ibat = row* 120  * 100 / nu6801_vref; // 1/125k
+						if(ibat < 6000 )
+						{
+							g_buckboost.ibat_level = 1;
+							break;
+						}
+					}
+					else  //level == 1
+					{
+						ibat = row* 120  * 10 * 4 / nu6801_vref; // 1/50k
+					}
+					//uint32_t ibat = row* 120  * 100 / nu6801_vref;
+
+					ibat = ibat + 90;
 					if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 						g_buckboost.adc_ibat = ibat;
 					else
 						g_buckboost.adc_ibat = -ibat;
 					//printk("adc_ibat = %d\n",g_buckboost.adc_ibat);
+					printk("\r\n adc_ibat = %d row:%d 6801_vref:%d ibat_level:%d  \r\n",g_buckboost.adc_ibat,row,nu6801_vref,g_buckboost.ibat_level);
+					g_buckboost.ibat_level = 0;
                  #endif
 					break;
 				case NU6801_ADC_VBUS:

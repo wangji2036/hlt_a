@@ -46,6 +46,8 @@ void hal_nu6801_buckboost_enter_force_trickle(bool enter)
 void hal_nu6801_buckboost_init(void)
 {
 	uint8_t revision = hal_nu6801_buckboost_get_verision();
+	g_buckboost.ibat_level = 0;
+
 	{
 		hal_nu6801_buckboost_wake_up();
 
@@ -96,7 +98,7 @@ void hal_nu6801_buckboost_init(void)
 		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x50,&read);
 
 		hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,0x6D,&read);
-		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x6D,read | 0x02);
+		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x6D,read & ~0x02);
 
 		printk("LOCK6801 =0x%x\n",read);
 
@@ -106,6 +108,8 @@ void hal_nu6801_buckboost_init(void)
 
 void hal_nu6801_buckboost_wake_up(void)
 {
+	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,0x10); //RESET
+	delay_1ms(2);
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,&read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,read | 0x02);
@@ -232,7 +236,7 @@ void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode)
 		read = (read & 0xF3) | 0x08;
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_IBAT_CTRL,(CONFIG_DISCHG_IBAT_LIMIT << 5));
 	}
-	else if(woke_mode == BUCKBOOST_CHAGER_MODE)
+	else// if(woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		read = (read & 0xF3);
 		uint16_t vbus = (4400 -4400) / 20;
@@ -403,7 +407,15 @@ void hal_nu6801_buckboost_set_adc_channel(uint8_t channel)
 			read = (read & 0x80) | 0x010 | 0x00 | 0x80;
 			break;
 		case NU6801_ADC_IBAT:
-			read = (read & 0x80) | 0x010 | 0x07;
+			printk("\r\n LEVEL:%d \r\n",g_buckboost.ibat_level);
+			if(g_buckboost.ibat_level == 0)
+			{
+			  read = (read & 0x80) | 0x010 | 0x07; // 1/125k
+			}
+			else //level == 1
+			{
+			  read = (read & 0x80) | 0x010 | 0x07 | 0x20; // 1/50k
+			}
 			break;
 		case NU6801_ADC_VBUS:
 			read = (read & 0x80) | 0x010 | 0x04;
