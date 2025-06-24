@@ -23,8 +23,8 @@
 #endif
 
 
-#define BUCKBOOST_USED_NU6805				1
-#define BUCKBOOST_USED_NU6801				0
+#define BUCKBOOST_USED_NU6805				0
+#define BUCKBOOST_USED_NU6801				1
 
 #define CONFIG_NU6801_A0					0 // no not active
 
@@ -35,7 +35,7 @@
 
 #define CONFIG_USE_TYPEC_DOUBLE_MOS			1
 
-#define CONFIG_DISCHG_IBAT_LIMIT			0x03 // 0:2A 1:3A 2:4A 3:6A 4:8A 5:10A 6:12A 7:LIMIT OFF
+#define CONFIG_DISCHG_IBAT_LIMIT			0x04 // 0:2A 1:3A 2:4A 3:6A 4:8A 5:10A 6:12A 7:LIMIT OFF
 #define CONFIG_USBPD_ACCEPT_PRSWAP			0
 
 #define CONFIG_TYPEC_MOS_R					8//   in m ohm,

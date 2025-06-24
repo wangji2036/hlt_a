@@ -96,6 +96,15 @@ void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint1
 {
 
 	printk("OUT = %d %d\n",voltage,current);
+
+	if(voltage != g_buckboost.buckboost_out_voltage)
+	{
+		osal_start_timerEx(BUCKBOOST_VBUS_DISG_TIMER, 300, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_DUMMYLOADOVER);
+		buckboost_ops.vbus_dischg_en(true);
+		buckboost_ops.set_ovp(20000);
+		printk("vbus disg start\n");
+	}
+
 	osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
 	g_buckboost.out_voltage_wait = wait;
 	g_buckboost.out_voltage_delay = delay;
@@ -224,6 +233,8 @@ void buckboost_protection_handle(void)
 	uint16_t status = 0;
 
 	status = buckboost_ops.get_protect_status();
+	
+	printk("Flaut State = 0x%x\n",status);
 
 #if(BUCKBOOST_USED_NU6805 == 1)
 	if(g_buckboost.adc_vbus > g_buckboost.ovp_value) status |= VBUS_FUALT_VBUS_OVP;
@@ -282,6 +293,14 @@ void buckboost_protection_handle(void)
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(ntc_lock_flag) status |= NTC_PCT;
 #endif
+
+	if(g_port.port_state[0] == PORT_STATE_SOURCE && status &VBAT_LOW_FLAG)
+	{
+		gd->bat_dead_flag = 1;
+		status |= DIS_VBAT_LOW;
+		printk("BATLOW =[%d]\n",g_buckboost.adc_vbat);
+	}
+
 
 	if(g_buckboost.adc_vbat < CONFIG_NU6801_BATLOW_VOLT)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
@@ -361,7 +380,7 @@ void buckboost_protection_handle(void)
 		}
 #elif(BUCKBOOST_USED_NU6801 == 1)
 		//static bool protection_lock = false;
-		if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT | ADC_ERR | VBUS_SOFT_PROTECT))
+		if(status & (BST_UV_FLAG | URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT | ADC_ERR | VBUS_SOFT_PROTECT))
 		{
 			printk("protect lock =0x%x\n",status);
 
@@ -653,7 +672,7 @@ void buckboost_task_event_handler(uint32_t event)
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //
 			break;
 		case BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT:
-			buckboost_ops.set_ovp(20000);
+
 			g_buckboost.regulator_state = 0;
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_wait, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_WAITDONE);
 			break;
@@ -675,9 +694,7 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.regulator_state = 1;
 			g_buckboost.out_voltage_wait = 0;
 			g_buckboost.out_voltage_delay = 0;
-		#if(BUCKBOOST_USED_NU6801 == 1)
-			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) buckboost_ops.set_ovp(g_buckboost.buckboost_out_voltage);
-		#endif
+
 			osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
 			break;
 		case BUCKBOOST_EVT_SET_CHARGER_CURRENT:
@@ -699,6 +716,13 @@ void buckboost_task_event_handler(uint32_t event)
 			break;
 		case BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS:
 			buckboost_ops.typcb_dischg_en(false);
+			break;
+		case BUCKBOOST_EVT_DUMMYLOADOVER:
+			buckboost_ops.vbus_dischg_en(false);
+			#if(BUCKBOOST_USED_NU6801 == 1)
+				if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) buckboost_ops.set_ovp(g_buckboost.buckboost_out_voltage);
+			#endif
+			printk("vbus disg end\n");
 			break;
 		case BUCKBOOST_EVT_ADC_PERIOD:
 		#if(BUCKBOOST_USED_NU6801 == 1)

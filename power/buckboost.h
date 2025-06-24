@@ -123,6 +123,7 @@ struct buckboost_operations
 #define BUCKBOOST_EVT_SET_TYPECA_DUMMYLOAD_DIS    				osal_event_declare(14)
 #define BUCKBOOST_EVT_SET_TYPECB_DUMMYLOAD_DIS    				osal_event_declare(15)
 
+#define BUCKBOOST_EVT_DUMMYLOADOVER    							osal_event_declare(27)
 #define BUCKBOOST_EVT_CHAG_PERIOD    							osal_event_declare(28)
 #define BUCKBOOST_EVT_ADC_PERIOD    							osal_event_declare(29)
 #define BUCKBOOST_EVT_VBUS_PERIOD    							osal_event_declare(30)
