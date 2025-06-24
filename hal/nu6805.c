@@ -186,12 +186,22 @@ void hal_nu6805_buckboost_typecb_gate_en(bool en)
 //void hal_nu6805_buckboost_usb_a_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
+#ifdef POWERBANK_BUCK_EVK_V02
+	uint8_t read;
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
+	if(en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x01);
+	else
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
+#else
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
 	if(en)
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x04);
 	else
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x04));
+
+#endif
 }
 
 void hal_nu6805_buckboost_charge_ibus_limit(uint16_t ibus_limit)

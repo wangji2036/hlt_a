@@ -765,8 +765,6 @@ void port_enum_port_snk_setcharge(void)
 
 
 #if(BUCKBOOST_USED_NU6801 == 1)
-	if(nu6801_dead_bat)
-	{
 	#if(CONFIG_DEADBATT_SLEEP_SUPPORT == 1)
 		if(pdlib_is_connect() )
 		{
@@ -779,18 +777,18 @@ void port_enum_port_snk_setcharge(void)
 			}
 			else
 			{
-				if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
+				if(!ntc_stop_chrg_flag && nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
 			}
 
-		} else
+		}
+		else
 		{
 
-			if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
+			if(!ntc_stop_chrg_flag && nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
 		}
 	#else
 		if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
 	#endif
-	}
 	#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(ntc_stop_chrg_flag) hal_nu6801_disable_bubo();
 	#endif
