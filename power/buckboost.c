@@ -13,6 +13,7 @@
 #include "led.h"
 #include "bat.h"
 #include "ntc.h"
+#include "typec.h"
 
 uint8_t buckboost_protection_flag = false;
 uint8_t zero_soc_cnt =0;
@@ -294,7 +295,7 @@ void buckboost_protection_handle(void)
 	if(ntc_lock_flag) status |= NTC_PCT;
 #endif
 
-	if(g_port.port_state[0] == PORT_STATE_SOURCE && status &VBAT_LOW_FLAG)
+	if((g_port.port_state[0] == PORT_STATE_SOURCE || g_port.port_state[1] == PORT_STATE_SOURCE) &&g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE  && status &VBAT_LOW_FLAG)
 	{
 		gd->bat_dead_flag = 1;
 		status |= DIS_VBAT_LOW;
@@ -306,9 +307,9 @@ void buckboost_protection_handle(void)
 	{
 
 		cnt++;
-		if(cnt >= 10)
+		if(cnt >= 20)
 		{
-			if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
+			if(g_port.port_state[0] != PORT_STATE_SINK && g_port.port_state[1] != PORT_STATE_SINK)
 			{
 				gd->bat_dead_flag = 1;
 				status |= DIS_VBAT_LOW;
@@ -329,6 +330,13 @@ void buckboost_protection_handle(void)
 	{
 		cnt = 0;
 	}
+
+
+
+	if((pdlib_get_tc_state(0) == TC_SRC_AttachWait || pdlib_get_tc_state(0)  == TC_SRC_Attached) && gd->bat_dead_flag) gd->bat_dead_flag_with_snk0 = 1;
+	if((pdlib_get_tc_state(1) == TC_SRC_AttachWait || pdlib_get_tc_state(1)  == TC_SRC_Attached) && gd->bat_dead_flag) gd->bat_dead_flag_with_snk1 = 1;
+
+	if(gd->bat_dead_flag ) status &= ~NTC_PCT;
 
 	if(adc_protect_flag)
 	{

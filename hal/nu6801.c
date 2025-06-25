@@ -183,12 +183,14 @@ void hal_nu6801_buckboost_typecb_dischg(bool en) //vac3
 }
 void hal_nu6801_buckboost_usb_a_dischg(bool en)  //vac1
 {
+#ifndef POWERBANK_BUCK_EVK_V02
 	uint8_t read;
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,&read);
 	if(en)
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read | 0x40);
 	else
 		hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VAC_DRV_CTRL,read & (~0x40));
+#endif
 }
 
 void hal_nu6801_buckboost_vbus_dischg(bool en)

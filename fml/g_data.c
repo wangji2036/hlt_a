@@ -141,9 +141,11 @@ void gd_data_init(void)
 	{
 		gd->tc0_lighting_mode = 0x00;
 		gd->tc1_lighting_mode = 0x00;
-		gd->bat_dead_flag = 0x00;
+		gd->bat_dead_flag_with_snk0 = 0;
+		gd->bat_dead_flag_with_snk1 = 0;
 		gd->wpc_disable = 0x00;
 		gd->real_soc_show = 0;
+		gd->bat_dead_flag = 0;
 		gd->real_soc_obtained = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;

@@ -393,6 +393,8 @@ struct gd_t
 	 uint8_t real_soc_obtained;
 	 uint8_t dp_result;
 	 uint8_t bat_dead_flag;
+	 uint8_t bat_dead_flag_with_snk0;
+	 uint8_t bat_dead_flag_with_snk1;
 
 
 	 int32_t SOC_RawSOC_mpct;

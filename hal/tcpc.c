@@ -64,15 +64,46 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 	return true;
 #else
 	static uint8_t delay_cnt = 0;
+	static uint8_t timeout0 = 0;
+	static uint8_t timeout1 = 0;
 	if(delay_cnt == 0)
 	{
 		if(tc_index == 0)
 		{
-			if(buckboost_ops.get_typeca_vbus_present() < 2000 ) return true;
+			if(buckboost_ops.get_typeca_vbus_present() < 2000 )
+			{
+				timeout0 = 0;
+				return true;
+			}
+			else
+			{
+				timeout0++;
+				if(timeout0 >= 100)
+				{
+					timeout0 = 0;
+					printk("vbus0 timeout\n");
+					return true;
+				}
+			}
 		}
 		else if(tc_index == 1)
 		{
-			if(buckboost_ops.get_typecb_vbus_present() < 2000 ) return true;
+			if(buckboost_ops.get_typecb_vbus_present() < 2000 )
+			{
+				timeout1 = 0;
+				return true;
+			}
+			else
+			{
+				timeout0++;
+				if(timeout0 >= 100)
+				{
+					timeout0 = 0;
+					printk("vbus1 timeout\n");
+					return true;
+				}
+			}
+
 		}
 		return false;
 	}

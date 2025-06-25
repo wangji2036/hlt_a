@@ -6,11 +6,11 @@
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
 #define RELE_DATE                               0x5624	//update 20250325
-#define TX_FW_VER                               0x14
+#define TX_FW_VER                               0x15
 
 
-#define BATTERY_CV_VALUE					4250
-#define CONFIG_NU6801_BATLOW_VOLT			2750 // bat low, bat dead
+#define BATTERY_CV_VALUE					4200
+#define CONFIG_NU6801_BATLOW_VOLT			2800 // bat low, bat dead
 #define POWERBANK_BUCK_EVK_V02
 
 /*.....7.5w Debug......*/
@@ -23,8 +23,8 @@
 #endif
 
 
-#define BUCKBOOST_USED_NU6805				1
-#define BUCKBOOST_USED_NU6801				0
+#define BUCKBOOST_USED_NU6805				0
+#define BUCKBOOST_USED_NU6801				1
 
 #define CONFIG_NU6801_A0					0 // no not active
 
@@ -39,7 +39,7 @@
 #define CONFIG_USBPD_ACCEPT_PRSWAP			0
 
 #define CONFIG_DEADBATT_SLEEP_SUPPORT		1
-#define CONFIG_DEADBATT_VOLTAGE				3200
+#define CONFIG_DEADBATT_VOLTAGE				2900
 
 
 #define CONFIG_TYPEC_MOS_R					8//   in m ohm,

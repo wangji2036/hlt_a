@@ -60,11 +60,11 @@ void SLP_vNormalToSleep(void)
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
 #if(CONFIG_TYPECA_SUPPORT == 1)
-	if(!gd->tc0_lighting_mode) pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
+	if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0)) pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_OPEN);
 	else pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RP_DEF);
 #endif
 #if(CONFIG_TYPECB_SUPPORT == 1)
-	if(!gd->tc1_lighting_mode) pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
+	if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1)) pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_OPEN);
 	else pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RP_DEF);
 #endif
 #if(BUCKBOOST_USED_NU6801 == 1)
@@ -172,59 +172,44 @@ void SLP_vNormalToSleep(void)
 	//CCA
 	  //(Enable CC, Disable RDB, Enter low power mode)
 #if(CONFIG_TYPECA_SUPPORT == 1)
-	if(!gd->bat_dead_flag)
+
+	if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
 	{
-		if(!gd->tc0_lighting_mode)
-		{
-			TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-			TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-			TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-			  //(Enable DRP)
-			TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
-			TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
-			TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
-			TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
-		}
-		else
-		{
-			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
-			sleep_printk("\r\n lighting sleep");
-		}
+		TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+		TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+		TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+		  //(Enable DRP)
+		TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
+		TCPC->CCA_ROLE.BITS.CC1_ROLE = 1;
+		TCPC->CCA_ROLE.BITS.CC2_ROLE = 1;
+		TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
+		sleep_printk("\r\n no with snk sleep");
 	}
 	else
 	{
-		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
-		sleep_printk("\r\n sleep Rd");
+		sleep_printk("\r\n with snk sleep");
 	}
+
 #endif
 	//CCB
 	  //(Enable CC, Disable RDB, Enter low power mode)
 #if(CONFIG_TYPECB_SUPPORT == 1)
-	if(!gd->bat_dead_flag)
+	if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk1))
 	{
-		if(!gd->tc1_lighting_mode)
-		{
-			TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-			TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-			TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
-			  //(Enable DRP)
-			TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
-			TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
-			TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
-			TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
-		}
-		else
-		{
-			sleep_printk("\r\n lighting sleep");
-			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
-		}
+		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+		  //(Enable DRP)
+		TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
+		TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
+		TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
+		TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
 	}
 	else
 	{
-		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
+		sleep_printk("\r\n lighting sleep");
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
-		sleep_printk("\r\n sleep Rd");
 	}
 #endif
 	_SET_ALL_PINS_IN_PUT();
@@ -271,7 +256,12 @@ void SLP_vNormalToSleep(void)
 	TMR3->GEN_CTRL.WORD = 0;
 	TMR0->GEN_CTRL.WORD = 0;
 	TMR0->LOAD_CNT.WORD = 16 * 100 * 1 - 1; //first Q,100ms start.
-	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
+
+	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
+	else
+		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
+
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 	UART1->GEN_CTRL.WORD = 0;
 	UART1->BRG_CTRL.WORD = 0;
@@ -307,7 +297,7 @@ void SLP_vSleepToSleep(void)
 
 	if(gd->SOC_SleepTime_s < 10000) gd->SOC_SleepTime_s++;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
-	if(!gd->bat_dead_flag)
+	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1))
 	{
 	#if SLEEPQ_WAKEUP_ENABLE
 		if(gd->sleep_q_times <20)
@@ -317,7 +307,7 @@ void SLP_vSleepToSleep(void)
 	    else
 	#endif
 	    {
-			if(gd->light0_cnt == 0)
+	    	if(gd->rd0_cnt == 0 && gd->rd1_cnt == 0 && gd->light0_cnt == 0 && gd->light1_cnt == 0)
 				TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
 			else
 				TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
@@ -329,12 +319,15 @@ void SLP_vSleepToSleep(void)
 		SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		sleep_printk("\r\n batlow");
-		if(gd->rd0_cnt == 0)
+		if(gd->rd0_cnt == 0 && gd->rd1_cnt == 0 && gd->light0_cnt == 0 && gd->light1_cnt == 0)
 			TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
 		else
 			TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
 	}
-	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
+	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
+		else
+			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 
     SYS->CLK_CTRL.WORD = 0;
@@ -554,7 +547,6 @@ uint8_t SLP_u8SleepModeQDetect(void)
 #define RST_SRC_PROTOCOL        4
 uint8_t reset_cnt;
 
-extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
@@ -569,62 +561,64 @@ void RST_vCheck(void)
 					gd->reset_magicode = 0;
 					sleep_printk("\r\n reset go on");
 				}
-				else if(gd->bat_dead_flag)
+				else if(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1)
 				{
 					sleep_printk("\r\n set Rd");
 				#if(CONFIG_TYPECA_SUPPORT == 1)
 					TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
 					TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
-					pdlib_tcpc_set_cc(TYPEC_PORT_A,TYPEC_CC_RD);
 				#endif
 				#if(CONFIG_TYPECB_SUPPORT == 1)
 					TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
 					TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
-					pdlib_tcpc_set_cc(TYPEC_PORT_B,TYPEC_CC_RD);
 				#endif
 					delay_1us(1000);
 					enum tc_cc_status cc1,cc2;
 				#if(CONFIG_TYPECA_SUPPORT == 1)
-					pdlib_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
-					sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCA_STAT.WORD);
-					extern bool tc_snk_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
-				    if (tc_snk_is_connected(cc1,cc2))
-				    {
-				    	gd->rd0_cnt++;
-				    	sleep_printk("\r\n rd0_cnt = %d\n",gd->rd0_cnt);
-				    	if(gd->rd0_cnt >= 10) break;
-				    	else
-						{
-				    		TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1;
-						}
-				    }
-				    else
-				    {
-				    	gd->rd0_cnt = 0;
-				    	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1;
-				    }
 
+					if(gd->bat_dead_flag_with_snk0)
+					{
+						pdlib_tcpc_get_cc(TYPEC_PORT_A,&cc1,&cc2);
+						sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCA_STAT.WORD);
+						extern bool tc_src_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
+						if (!tc_src_is_connected(cc1,cc2))
+						{
+							gd->rd0_cnt++;
+							sleep_printk("\r\n rd0_cnt = %d\n",gd->rd0_cnt);
+							if(gd->rd0_cnt >= 10) {gd->bat_dead_flag_with_snk0 = 0;gd->bat_dead_flag_with_snk1 = 0;break;}
+							else
+							{
+								TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1;
+							}
+						}
+						else
+						{
+							gd->rd0_cnt = 0;
+						}
+					}
 				#endif
 
 				#if(CONFIG_TYPECB_SUPPORT == 1)
-					pdlib_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
-					//sleep_printk("\r\n 1cc:[%d %d]\n",cc1,cc2);
-					sleep_printk("\r\n 1cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCB_STAT.WORD);
-				    if (tc_snk_is_connected(cc1,cc2))
-				    {
-				    	gd->rd1_cnt++;
-				    	sleep_printk("\r\n rd1_cnt = %d\n",gd->rd1_cnt);
-				    	if(gd->rd1_cnt >= 10) break;
-				    	else
+					if(gd->bat_dead_flag_with_snk1)
+					{
+						pdlib_tcpc_get_cc(TYPEC_PORT_B,&cc1,&cc2);
+						sleep_printk("\r\n 0cc:[%d %d 0x%x]\n",cc1,cc2,TCPC->CCB_STAT.WORD);
+						extern bool tc_src_is_connected(enum tc_cc_status cc1,enum tc_cc_status cc2);
+						if (!tc_src_is_connected(cc1,cc2))
 						{
-				    		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1;
+							gd->rd1_cnt++;
+							sleep_printk("\r\n rd1_cnt = %d\n",gd->rd1_cnt);
+							if(gd->rd1_cnt >= 10) {gd->bat_dead_flag_with_snk0 = 0;gd->bat_dead_flag_with_snk1 = 0;;break;}
+							else
+							{
+								TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1;
+							}
 						}
-				    }
-				    else
-				    {
-				    	gd->rd1_cnt = 0;
-				    	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1;
-				    }
+						else
+						{
+							gd->rd1_cnt = 0;
+						}
+					}
 				#endif
 				    SLP_vSleepToSleep();
 				}
@@ -642,10 +636,10 @@ void RST_vCheck(void)
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
 							gd->light0_cnt++;
-							if(gd->light0_cnt >= 5)
+							if(gd->light0_cnt >= 10)
 							{
 								gd->tc0_lighting_mode = 0;
-								sleep_printk("\r\n lighting_mode exit");
+								sleep_printk("\r\n lighting_mode0 exit");
 								break;
 							}
 						}
@@ -681,10 +675,10 @@ void RST_vCheck(void)
 						if(cc1 != TYPEC_CC_RD && cc2 != TYPEC_CC_RD)
 						{
 							gd->light1_cnt++;
-							if(gd->light1_cnt >= 5)
+							if(gd->light1_cnt >= 10)
 							{
 								gd->tc1_lighting_mode = 0;
-								sleep_printk("\r\n lighting_mode exit");
+								sleep_printk("\r\n lighting_mode1 exit");
 								break;
 							}
 						}
@@ -734,10 +728,6 @@ void RST_vCheck(void)
 			case RST_SRC_PROTOCOL:
 				sleep_printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
-				if(gd->bat_dead_flag)
-				{
-					SLP_vSleepToSleep();
-				}
 				break;
 			case RST_SRC_GPIO:
 
@@ -757,7 +747,6 @@ void RST_vCheck(void)
 			#if(CONFIG_WPC_SUPPORT == 1)
 				gd->wpc_disable = 0;
 			#endif
-				key_ui_cnt = 20;
 				sleep_printk("\r\n sleep check- GPIO");
 				break;
 			case RST_SRC_WARMUP_DONE:

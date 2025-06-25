@@ -126,7 +126,9 @@ void usb_dpdm_autodcp_en(void)
 
 extern union scp_packet_t scp_tx;
 bool is_enter_dpdm_prot = false;
-
+#if(BUCKBOOST_USED_NU6801 == 1)
+uint16_t adc_input = 0;
+#endif
 void usb_dpdm_task_event_handler(uint32_t event)
 {
 	switch (event)
@@ -299,8 +301,17 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);
 			break;
 		case DPDM_EVT_SNK_QC12V_DONE:
+		#if(BUCKBOOST_USED_NU6801 == 1 && 0)
+			if(dpdm_map == 0)
+				adc_input = hal_nu6801_buckboost_typeca_vbus_present();
+			else
+				adc_input = hal_nu6801_buckboost_typecb_vbus_present();
+			printk("Set Qc 12V=%d\n",adc_input);
+			if(adc_input >= 10500)
+		#else
 			printk("Set Qc 12V=%d\n",g_buckboost.adc_vbus);
 			if(g_buckboost.adc_vbus >= 10500)
+		#endif
 			{
 				bc12_type = BC1P2_QC12V;
 				qc2_set_volt(5000);
