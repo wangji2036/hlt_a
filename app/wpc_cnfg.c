@@ -12,6 +12,7 @@
 #include "pkt_type.h"
 #include "wpc_ping.h"
 #include "wpc_cnfg.h"
+#include "wpc_nego.h"
 #include "debug.h"
 #include "config.h"
 
@@ -249,6 +250,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 				wpc_stop_to_idle(ESYS_ERR_CODE_IDCFG_PHASE_PCH_PKT_TIME_ERR);
 				goto __CNFG_PHASE_ERR__;
 			}
+			prx_power_contract.pch_delay = ptx_power_contract.pch_delay = com_ask->msg.pch.pch_time;
 			++gd->rx_infos.opt_cnt;
 			break;
 		case WPC_PRx_PKT_TYP_CFG_51:
@@ -346,7 +348,9 @@ goto __CNFG_PHASE_ERR__;
 
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 				osal_start_timerEx(WPC_NEXT_TIMER, T_NEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
-				pid_set_freq_limit(144000000/110500, 144000000/127772, 144000000/147000);
+
+				pid_set_freq_limit(144000000/112000, 144000000/127772, 144000000/147000);
+
 goto __CNFG_PHASE_ERR__;
 			}
 #endif
@@ -382,10 +386,20 @@ goto __CNFG_PHASE_ERR__;
 				else
 				{
 //					if (gd->rx_infos.rx_type != EPRX_TYPE_APPLE_STD && gd->rx_infos.rx_type != EPRX_TYPE_APPLE_MAG)
-					if (!(gd->adp.pwr_high >= 20 && (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG || gd->rx_infos.rx_type == EPRX_TYPE_APPLE_STD)))
+					if (!(gd->adp.pwr_high >= 20 && (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG || gd->rx_infos.rx_type == EPRX_TYPE_APPLE_STD || gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)))
 					{
-						pid_set_freq_limit(144000000/110500, 144000000/147000, 144000000/147000);
+						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/147000);
 					}
+
+
+#if ONLY7_5W_ENALBE
+					if(gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
+					{
+
+						pid_set_freq_limit(144000000/127772, 144000000/127772, 144000000/127772);
+					}
+#endif
+
 
 					/*+++++++++++++++++++++ ATL TPR#1C 6.2.09 Test#23 workaround +++++++++++++++++++++*/
 /*					if (gd->rx_infos.ssp_value > 200) //for IOC test, TPR#1C, 6.2.09 Test#23

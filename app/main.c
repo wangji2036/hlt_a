@@ -38,6 +38,10 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
+	VIC_vModuleDisable();
+
+	hal_wdt_init();
+
 	RST_vCheck();
 
 	ap_data_init();
@@ -62,8 +66,10 @@ int main(void)
 //	fml_usbqc_init();
 
 	fml_nu103x_por_init();
+	hal_wdt_feed();
 #if(BUCKBOOST_USED_NU6805 == 1)
 	delay_1ms(500);
+	hal_wdt_feed();
 #endif
 //	WPC_vInit();
 
@@ -74,10 +80,12 @@ int main(void)
 	printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
     printk("system state---> %x",SYS->OPR_STAT.WORD);
 	//SLP_vNormalToSleep();
+
 	if (ap->auth_seic_type == 1)
 	{
 		t91206_init();
 		delay_1ms(100);
+		hal_wdt_feed();
 //		t91206_get_qi_id(adt_data_recv_buf);
 		t91206_read_cert_hash(array_digest + 1);
 		t91206_read_se_cert(cert_chain, &rrlen);
@@ -87,11 +95,12 @@ int main(void)
 	{
 		fm1210_init();
 		delay_1ms(100);
+		hal_wdt_feed();
 		fm1210_get_qi_id(adt_data_recv_buf);
 		fm1210_read_cert_hash(array_digest + 1);
 		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 328 need outside config, using sizeof arr
 	}
-
+	hal_wdt_feed();
 	fml_adp_init();
 
 	osal_init();

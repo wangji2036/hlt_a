@@ -66,11 +66,19 @@ bool pdlib_is_pps_source(void)
 void pdlib_disable_typec(uint8_t index)
 {
 	usb_tc_set_state(&g_tc[index],TC_Disable,enter_state);
+	g_tc[index].typec_delay_ms = 0xffff;
 }
 
 void pdlib_restart_typec(uint8_t index)
 {
 	usb_tc_set_state(&g_tc[index],TC_DRP_TOGGLE,enter_state);
+	g_tc[index].typec_delay_ms = 0x00;
+}
+
+void pdlib_delayms_restart_typec(uint8_t index,uint16_t delay_ms)
+{
+	g_tc[index].typec_delay_ms = delay_ms;
+	usb_tc_set_state(&g_tc[index],TC_Disable,enter_state);
 }
 
 void pdlib_disable_usbpd(void)

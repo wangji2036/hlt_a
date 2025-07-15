@@ -27,7 +27,7 @@ void fml_ask_decode(void);
  * @param  None.
  * @return None.
  */
-void fml_ask_enbale(void);
+void fml_ask_enable(void);
 
 /**
  * @brief  disable ask decode function.

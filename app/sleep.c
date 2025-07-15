@@ -31,9 +31,9 @@
 #include "sleep.h"
 #include "tcpm.h"
 #include "pdlib.h"
+#include "port_manager.h"
 //#include "typec.h"
 //uint8_t reset_magic_code;
-
 #if ONLY7_5W_ENALBE
 static uint16_t sleep_q_68nf_thd = 0;
 static uint16_t sleep_f_68nf_thd = 0;
@@ -48,6 +48,7 @@ static uint16_t sleep_f_68nf_thd = 1317;// sleep F -normal F,
 #endif
 void SLP_vNormalToSleep(void)
 {
+	VIC_vModuleDisable();
 	sleep_printk("\r\n enter sleep");
 	hal_wdt_feed();
 	fm1210_sleep();
@@ -76,9 +77,9 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_H,0x1C);//0C
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_VBUS_SET_L,0x50);//0D
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x0D);//09
-	hal_wdt_feed();
 	for(uint8_t i = 0; i < 50; i++)
 	{
+		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
 			printk("mcu reset\n");
@@ -96,9 +97,9 @@ void SLP_vNormalToSleep(void)
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0xE2);//
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,0x51,0x6A);//
 
-	hal_wdt_feed();
 	for(uint8_t i = 0; i < 50; i++)
 	{
+		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
 			printk("mcu reset\n");
@@ -111,6 +112,7 @@ void SLP_vNormalToSleep(void)
 	hal_wdt_feed();
 	for(uint8_t i = 0; i < 50; i++)
 	{
+		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
 			printk("mcu reset\n");
@@ -120,9 +122,10 @@ void SLP_vNormalToSleep(void)
 	}
 	//delay_1ms(500);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,0x01);//09
-	hal_wdt_feed();
+
 	for(uint8_t i = 0; i < 50; i++)
 	{
+		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
 			printk("mcu reset\n");
@@ -145,6 +148,10 @@ void SLP_vNormalToSleep(void)
 	hal_wdt_feed();
 
 	uint8_t read;
+
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_EN_1,&read);
+    hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_EN_1,read & (~0x0C));// disable B port.
+
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
     hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
 //	uint8_t read;
@@ -261,7 +268,12 @@ void SLP_vNormalToSleep(void)
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
 	else
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
-
+#if(CONFIG_SHIP_MODE_ENABLE_DEBUG ==1)
+	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
+	{
+	    TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
+	}
+#endif
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 	UART1->GEN_CTRL.WORD = 0;
 	UART1->BRG_CTRL.WORD = 0;
@@ -288,7 +300,8 @@ void SLP_vNormalToSleep(void)
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_DIS);
 	fml_nu103x_config(_1030_CFG_LPM_EN_);
 
-	WDT->CTRL.WORD = 0;
+
+	hal_wdt_feed();
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
 
 }
@@ -308,7 +321,7 @@ void SLP_vSleepToSleep(void)
 	#endif
 	    {
 	    	if(gd->rd0_cnt == 0 && gd->rd1_cnt == 0 && gd->light0_cnt == 0 && gd->light1_cnt == 0)
-				TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
+				TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
 			else
 				TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
     	}
@@ -320,7 +333,7 @@ void SLP_vSleepToSleep(void)
 		SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS = 1;
 		sleep_printk("\r\n batlow");
 		if(gd->rd0_cnt == 0 && gd->rd1_cnt == 0 && gd->light0_cnt == 0 && gd->light1_cnt == 0)
-			TMR0->LOAD_CNT.WORD = 16 * 1000 * 1 - 1; //500ms
+			TMR0->LOAD_CNT.WORD = 16 * 800 * 1 - 1; //500ms
 		else
 			TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
 	}
@@ -386,28 +399,30 @@ void SLP_vSleepToSleep(void)
 		GPD->ITEN.BITS.PIN1 = 1;
 		GPD->ITTP.BITS.PIN1 = 0;
 	}
-#endif
-#if(BUCKBOOST_USED_NU6805 == 1)
-	hal_wdt_feed();
-	_SET_I2CM_SDA_OUTPUT();
-	_SET_I2CM_SCL_OUTPUT();
-	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-    hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
-//	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
-	hal_wdt_feed();
+	//if(gd->SOC_SleepTime_s <=25)
+	else
+	{
+		hal_wdt_feed();
+		_SET_I2CM_SDA_OUTPUT();
+		_SET_I2CM_SCL_OUTPUT();
+		uint8_t read;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
+	//	uint8_t read;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
+		hal_wdt_feed();
 
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
-    hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
 
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
 
-/*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
-    hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+	/*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+	}
 #endif
     GPA->PDEN.BITS.PIN0 = 1;
     GPA->MODE.BITS.PIN0 = 0;
@@ -417,7 +432,8 @@ void SLP_vSleepToSleep(void)
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_DIS);
 	fml_nu103x_config(_1030_CFG_LPM_EN_);
 
-	WDT->CTRL.WORD = 0;
+    VIC_vModuleDisable();
+    hal_wdt_feed();
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
 
 }
@@ -550,6 +566,17 @@ uint8_t reset_cnt;
 
 void RST_vCheck(void)
 {
+#if SUPPORT_SLEEP_LOG
+	/* PB7 */
+	GPB->I_EN.BITS.PIN7 = 0;
+	GPB->O_EN.BITS.PIN7 = 1;
+	GPB->DOUT.BITS.PIN7 = 1;
+	GPB->ODEN.BITS.PIN7 = 0;
+	GPB->PUEN.BITS.PIN7 = 1;
+	GPB->PDEN.BITS.PIN7 = 0;
+	GPB->MODE.BITS.PIN7 = 1; //00:PB7 01:UART1_TXD 10:RESERVED 11:RESERVED
+	hal_uart_init(UART1);
+#endif
 		sleep_printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
@@ -563,6 +590,7 @@ void RST_vCheck(void)
 				}
 				else if(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1)
 				{
+					hal_wdt_feed();
 					sleep_printk("\r\n set Rd");
 				#if(CONFIG_TYPECA_SUPPORT == 1)
 					TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
@@ -624,6 +652,7 @@ void RST_vCheck(void)
 				}
 				else
 				{
+					hal_wdt_feed();
 				#if(CONFIG_TYPECA_SUPPORT == 1)
 					if(gd->tc0_lighting_mode)
 					{
@@ -713,6 +742,9 @@ void RST_vCheck(void)
 							delay_1ms(1000);
 						}while (reset_cnt<4);*/
 						sleep_printk("\r\n wake-up");
+#if(CONFIG_SHIP_MODE_ENABLE_DEBUG ==1)
+						if(++gd->ship_mode_cnt > SHIP_MODE_CNT)  gd->ship_mode_cnt= SHIP_MODE_CNT;
+#endif
 					}
 					else
 					{
@@ -726,11 +758,12 @@ void RST_vCheck(void)
 				}
 				break;
 			case RST_SRC_PROTOCOL:
+				gd ->ship_mode_cnt = 0;
 				sleep_printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				break;
 			case RST_SRC_GPIO:
-
+                gd ->ship_mode_cnt = 0;
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				if(_KEY_LEVEL)
 				{

@@ -82,8 +82,8 @@
 #include "ask.h"
 
 /* Typedefs and Macros ------------------------------------------------------*/
-typedef void (*pfn_ecap_cb)(uint8_t, uint16_t);
-static volatile pfn_ecap_cb ecap_callback = NULL;
+//typedef void (*pfn_ecap_cb)(uint8_t, uint16_t);
+volatile pfn_ecap_cb ecap_callback = NULL;
 
 /* Function Definitions -----------------------------------------------------*/
 

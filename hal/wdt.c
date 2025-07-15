@@ -48,7 +48,7 @@
   ******************************************************************************
 */ 
 
-
+#include "printk.h"
 #include "regdef.h"
 #include "wdt.h"
 
@@ -89,6 +89,7 @@ void hal_wdt_feed(void)
 	if (SYS->PID_INFO.BITS.VER != CHIP_VER_A0)
 	{
 		WDT->CTRL.WORD |= WDT_CTRL_LOAD_EN_Msk;
+		TMR2->LOAD_CNT.WORD = 1125 * 850 - 1; //850ms
 	}
 }
 

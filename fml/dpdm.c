@@ -326,8 +326,17 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 
 		case DPDM_EVT_SNK_QC_DONE:
+		#if(BUCKBOOST_USED_NU6801 == 1 && 0)
+			if(dpdm_map == 0)
+				adc_input = hal_nu6801_buckboost_typeca_vbus_present();
+			else
+				adc_input = hal_nu6801_buckboost_typecb_vbus_present();
+			printk("Set Qc 9V=%d\n",adc_input);
+			if(adc_input >= 7500)
+		#else
 			printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
 			if(g_buckboost.adc_vbus >= 7500)
+		#endif
 			{
 				bc12_type = BC1P2_QC9V;
 				pdlib_disable_usbpd();
@@ -358,7 +367,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 {
-    uint32_t int_flag = (DPDM->HVDCP_FLAG.WORD);
+    uint32_t int_flag = (DPDM->HVDCP_FLAG.WORD) & 0b00001100;
     do
     {
 		if(int_flag & (0x01<<2))
@@ -373,7 +382,7 @@ void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_ENTER_HVDCP);
 		}
 
-		int_flag = (DPDM->HVDCP_FLAG.WORD);
+		int_flag = (DPDM->HVDCP_FLAG.WORD) & 0b00001100;
 
     } while(int_flag);
 }

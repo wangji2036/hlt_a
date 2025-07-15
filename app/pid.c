@@ -7,7 +7,7 @@
 #include "pid.h"
 #include "_wpc.h"
 #include "delay.h"
-//#include "usb_pd.h"
+#include "pfod.h"
 
 enum pid_ctrl_mode_t {
 	EPID_CTRL_MODE_VOLT = 0,
@@ -505,15 +505,31 @@ static void pid_ctrl_mode_sel(int8_t cep)
 		if (cep < 0)
 		{
 			m_u8PositiveCevSum = 0;
-			if (gd->pid_perd > gd->pid_limit.perd_lim_mi)
+			if (gd->rx_infos.rx_type == EPRX_TYPE_SAMSUNG)
 			{
-				m_pid_ctrl_mode = EPID_CTRL_MODE_FREQ;
-				break;
+				if (gd->pid_volt > gd->pid_limit.volt_lim_lo)
+				{
+					m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
+					break;
+				}
+				if (gd->pid_perd > gd->pid_limit.perd_lim_mi)
+				{
+					m_pid_ctrl_mode = EPID_CTRL_MODE_FREQ;
+					break;
+				}
 			}
-			if (gd->pid_volt > gd->pid_limit.volt_lim_lo)
+			else
 			{
-				m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
-				break;
+				if (gd->pid_perd > gd->pid_limit.perd_lim_mi)
+				{
+					m_pid_ctrl_mode = EPID_CTRL_MODE_FREQ;
+					break;
+				}
+				if (gd->pid_volt > gd->pid_limit.volt_lim_lo)
+				{
+					m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
+					break;
+				}
 			}
 			if (gd->pid_perd > gd->pid_limit.perd_lim_lo)
 			{

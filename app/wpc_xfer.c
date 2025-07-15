@@ -12,13 +12,14 @@
 #include "qfod.h"
 #include "epp.h"
 #include "wpc_5_xfer_4_dstrm.h"
+#include "wpc_6_test_1_ioc.h"
+
+uint8_t samsungNeedFSK_Flag = 0, samsungPrivateFastChargeFlag = 0;
+static uint8_t samsung_ackmsg[2] = {0x02, 0x01};
 
 static uint8_t need_cloak_atn;
 static uint8_t cnt_cep0 = 0;
 static uint8_t cnt_cloak_pkt = 0;
-
-uint8_t samsungNeedFSK_Flag = 0, samsungPrivateFastChargeFlag = 0;
-static uint8_t samsung_ackmsg[2] = {0x02, 0x01};
 
 uint8_t need_atn_cnt;
 uint8_t need_atn_evt;
@@ -49,7 +50,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 	{
 		case 0x18:
 #if OPTION_SAMSUNG_PPDE
-			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20)
+			if (gd->rx_infos.prmc == 0x0042/* && gd->rx_infos.qi_version < 0x20*/)
 			{
 				if (com_ask->msg.prop.data[0] == 0xFF)
 				{
@@ -60,7 +61,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case 0x28:
 #if OPTION_SAMSUNG_PPDE
-			if (gd->rx_infos.prmc == 0x0042 && gd->rx_infos.qi_version < 0x20 && gd->adp.pwr_high >= 20)
+			if (gd->rx_infos.prmc == 0x0042 && gd->adp.pwr_high >= 20) // && gd->rx_infos.qi_version < 0x20 
 			{
 				if (com_ask->msg.prop.data[0] == 0x01 && com_ask->msg.prop.data[1] == 0x00)
 				{
@@ -71,7 +72,32 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 					if (samsungPrivateFastChargeFlag == 0)
 					{
 						samsungPrivateFastChargeFlag = 1;
-						//TODO: May need switch half to full bridge
+
+						if (gd->pid_duty + 200 < gd->pid_limit.duty_lim_hi)
+						{
+							gd->pid_duty += 200;
+						}
+						else if (gd->pid_duty < gd->pid_limit.duty_lim_hi)
+						{
+							gd->pid_duty = gd->pid_limit.duty_lim_hi;
+							gd->pid_volt += 1000;
+							if (gd->pid_volt > gd->pid_limit.volt_lim_hi)
+							{
+								gd->pid_volt = gd->pid_limit.volt_lim_hi;
+							}
+						}
+						else
+						{
+							gd->pid_volt += 2000;
+							if (gd->pid_volt > gd->pid_limit.volt_lim_hi)
+							{
+								gd->pid_volt = gd->pid_limit.volt_lim_hi;
+							}
+							fml_adp_volt_set(gd->pid_volt);
+						}
+
+						hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+						fml_adp_volt_set(gd->pid_volt);
 					}
 				}
 				else if (com_ask->msg.prop.data[0] == 0x06 && com_ask->msg.prop.data[1] == 0x05)
@@ -133,62 +159,11 @@ static uint8_t is_cloak_phase_illegal_pkt(uint8_t hdr)
 
 void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	osal_start_timerEx(WPC_DDM_TIMER, T_COM_DDM_TO, 0, WPC_TASK, WPC_EVT_DDM);
 	switch (com_ask->hdr)
 	{
 		case WPC_PRx_PKT_TYP_CE_03:
 			gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
-			if (samsungPrivateFastChargeFlag)// samsumg
-			{
-				if (gd->tx_power > 13000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
-				{
-					gd->rx_infos.mpp_restricted_power_limit = 1;
-				}
-				else if (gd->tx_power < 8000)
-				{
-					gd->rx_infos.mpp_restricted_power_limit = 0;
-				}
-			}
-			else
-			{
-				if (gd->tx_power > 8000)//10000) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
-				{
-					gd->rx_infos.mpp_restricted_power_limit = 1;
-				}
-				else if (gd->tx_power < 6000)//8000)
-				{
-					gd->rx_infos.mpp_restricted_power_limit = 0;
-				}
-			}
-
-			if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
-			{
-				gd->rx_infos.cep_val = 0;
-				printk("#");
-			}
-			
-#if OPTION_SAMSUNG_PPDE
-			static uint8_t samsungFSKWaitCnt = 0;
-			if (samsungNeedFSK_Flag)
-			{
-				if (samsungFSKWaitCnt++ < 5)
-				{
-					if (gd->rx_infos.cep_val >= -5 && gd->rx_infos.cep_val <= 5)
-					{
-						gd->rx_infos.cep_val = 0; //good for fsk demo on Rx side
-					}
-					fml_fsk_data_send(EPWM1, T_RESPONSE, samsung_ackmsg, 2);
-				}
-				else
-				{
-					samsungNeedFSK_Flag = 0;			
-				}
-
-			}
-			else
-			{
-				samsungFSKWaitCnt = 0;
-			}
-#endif
 
 			if (gd->rx_infos.pch_t_delay == 0x32)
 			{
@@ -204,44 +179,68 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				}
 			}
 
+			if (samsungPrivateFastChargeFlag == 0)
+			{
+				if (gd->rx_power > 6800) //8.4.21/8.4.22/8.4.23 need Vr = target Vr
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 1;
+					if (gd->rx_infos.pch_t_delay == 0x32)
+					{
+						gd->rx_infos.mpp_restricted_power_limit = 0;
+					}
+				}
+				else if (gd->rx_power < 6700)
+				{
+					gd->rx_infos.mpp_restricted_power_limit = 0;
+				}
+
+				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
+				{
+					gd->rx_infos.cep_val = 0;
+					printk("#");
+				}
+			}
+
+#if OPTION_SAMSUNG_PPDE
+			static uint8_t samsungFSKWaitCnt = 0;
+			if (samsungNeedFSK_Flag)
+			{
+				if (samsungFSKWaitCnt++ < 5)
+				{
+				/*
+					if (gd->rx_infos.cep_val >= -5 && gd->rx_infos.cep_val <= 5)
+					{
+						gd->rx_infos.cep_val = 0; //good for fsk demo on Rx side
+					}
+					*/
+					fml_fsk_data_send(EPWM1, T_RESPONSE, samsung_ackmsg, 2);
+				}
+				else
+				{
+					samsungNeedFSK_Flag = 0;
+				}
+			}
+			else
+			{
+				samsungFSKWaitCnt = 0;
+			}
+#endif
+
 			osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 			osal_start_timerEx(WPC_NEXT_TIMER, gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 			break;
 		case WPC_PRx_PKT_TYP_RP8_04:
 			gd->rx_power = (com_ask->msg.rp8.rp_value * (uint32_t)gd->rx_infos.max_power * 1000) >> 8;
+			if (++gd->recv_rpp_count > 200) gd->recv_rpp_count = 200;
+			ioc_bpp_fod_handler(com_ask->msg.rp8.rp_value, gd->last_rpp_value, gd->recv_rpp_count);
+			gd->last_rpp_value = com_ask->msg.rp8.rp_value;
 			osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
-			osal_start_timerEx(WPC_NEXT_TIMER, 0, 0, WPC_TASK, WPC_EVT_PFOD);
+			osal_start_timerEx(WPC_NEXT_TIMER,          0, 0, WPC_TASK, WPC_EVT_PFOD);
+
 #if OPTION_SAMSUNG_PPDE
 			if (samsungPrivateFastChargeFlag)
 				gd->rx_power <<= 1;
 #endif
-			if (++gd->alt_test_resv_rp8_cnt > 200)
-			{
-				gd->alt_test_resv_rp8_cnt = 200;
-			}
-
-			if (gd->alt_test_resv_rp8_cnt == 1)
-			{
-				gd->alt_test_1st_rp8_value = com_ask->msg.rp8.rp_value;
-			}
-
-			if (gd->alt_test_resv_rp8_cnt < 50)
-			{
-				if (gd->alt_test_1st_rp8_value <= 0x10 && com_ask->msg.rp8.rp_value + 2 >= gd->alt_test_last_rp8_value && com_ask->msg.rp8.rp_value <= gd->alt_test_last_rp8_value + 8)
-				{
-					if (++gd->alt_test_continous_cnt >= 3)
-					{
-						gd->rx_infos.rx_type = EPRX_TYPE_NOK9_BPP_FOD_TPR_5;
-						gd->alt_test_continous_cnt = 3;
-						printk(" [BPP_TPR#5_FOD]");
-					}
-				}
-				else
-				{
-					gd->alt_test_continous_cnt = 0;
-				}
-			}
-			gd->alt_test_last_rp8_value = com_ask->msg.rp8.rp_value;
 			break;
 		case WPC_PRx_PKT_TYP_CHS_05:
 			gd->rx_infos.chr_status = com_ask->msg.chs.chs_value;
@@ -371,13 +370,11 @@ void mpp_dsr_poll_handler(void)
 
 		fsk_pkt.mpp_fsk.ecap.hdr_8F = MPP_PTx_PKT_TYP_ECAP_8F;
 		fsk_pkt.mpp_fsk.ecap.selector = 0x01;
-		fsk_pkt.mpp_fsk.ecap.potential_power_bit0_1 = (gd->tx_infos.max_cap >> 8) & 0b11;//100mW/bit
-		fsk_pkt.mpp_fsk.ecap.potential_power_bit2_9 = gd->tx_infos.max_cap & 0xFF;
-		fsk_pkt.mpp_fsk.ecap.nego_power_bit0_1      = (gd->tx_infos.nego_cap >> 8) & 0b11;
-		fsk_pkt.mpp_fsk.ecap.nego_power_bit2_9      =  gd->tx_infos.nego_cap & 0xFF;
-		fsk_pkt.mpp_fsk.ecap.pow_limit_reason = gd->tx_infos.power_limit_reason; //fo presence
-		fsk_pkt.mpp_fsk.ecap.concurrent_data_stream = 2;//TODO:
-		fsk_pkt.mpp_fsk.ecap.buffer_size = 3;
+		fsk_pkt.mpp_fsk.ecap.ptx_potential_power = gd->tx_infos.max_cap;
+		fsk_pkt.mpp_fsk.ecap.prx_negotiable_power =  gd->tx_infos.nego_cap;
+		fsk_pkt.mpp_fsk.ecap.power_limit_reason = gd->tx_infos.power_limit_reason; //fo presence
+		fsk_pkt.mpp_fsk.ecap.concurrent_data_stream = 2;
+		fsk_pkt.mpp_fsk.ecap.data_stream_buffer_size = 3;
 		fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 	}
 	else if (need_atn_evt == 1)
@@ -445,18 +442,18 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-				if (gd->tx_power > 6800)//7500)//IOC 7.9 test:7.8W
+				if (gd->tx_power > 7500)
 				{
 					gd->rx_infos.mpp_restricted_power_limit = 1;
 				}
-				else if (gd->tx_power < 6300)//7000)
+				else if (gd->tx_power < 7000)
 				{
 					gd->rx_infos.mpp_restricted_power_limit = 0;
 				}
 
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val >= 0)
 				{
-					gd->rx_infos.cep_val = -4;//-2
+					gd->rx_infos.cep_val = -2;
 					printk("#");
 				}
 

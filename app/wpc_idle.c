@@ -15,6 +15,8 @@
 #include "tcpm.h"
 #include"sleep.h"
 #include "port_manager.h"
+#include "wpc_nego.h"
+
 
 static uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
@@ -252,9 +254,10 @@ uint8_t qfod_detect(void)
 			idle_obj_remove_detect();
 			break;
 	}
+	// modified to force digital ping after several Q, even though no objects was detected.
+//	if (qdt_have_obj_count > 1)
+	if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
 
-	//if (qdt_try_ping_count >= ap->pin_max_cnt || qdt_have_obj_count > 1)
-	if (qdt_have_obj_count > 1)
 	{
 		no_obj = 0;
 		qdt_try_ping_count = 0;
@@ -472,14 +475,26 @@ void wpc_idle_dig_ping_init_128K(void)
 			gd->dig_ping_phas = 0;
 		}*/
 		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
-	//	fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_AUTO, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
-		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
-
 		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
-		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-//		fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X36, _1030_CFG_DMO2_VCAP_RATIO_K1);
+
+		gd->dmo1_phase = _NU103x_DM_PHASE_DIG_PING;
 		gd->dmo2_phase = _NU103x_DM_PHASE_DIG_PING;
+
+		static uint8_t ddm_ping_cfg = 0;
+		switch (ddm_ping_cfg)
+		{
+		case 0:
+			ddm_ping_cfg = 1;
+			fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_IAVG, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X60);
+			fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
+			break;
+		case 1:
+		default:
+			ddm_ping_cfg = 0;
+			fml_nu103x_dmo1_param_set(_1030_CFG_DMO1_DDM_SRC_EVDM, _1030_CFG_DMO1_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO1_DDM_FIXED_GAIN_X36);
+			fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K2);
+			break;
+		}
 	}
 
 	gd->pid_volt = gd->dig_ping_volt;
@@ -592,12 +607,12 @@ void wpc_idle_cloak_phase_process(void)
 			cnt_cloak_dig_ping = 0;
 			cnt_cloak_det_ping = 0;
 
+			fml_ask_enable();
+
 			wpc_idle_dig_ping_init_360K();
 
 			printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
 					gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
-
-			fml_ask_enbale();
 
 			gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
 			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
@@ -661,18 +676,34 @@ void wpc_idle_cloak_phase_process(void)
 			gd->dig_ping_duty = 500;
 			gd->dig_ping_phas =  40;
 
-
-			gd->pid_volt = gd->dig_ping_volt;
 			gd->pid_perd = gd->dig_ping_perd;
-			gd->pid_duty = 100;
-			gd->pid_phas = gd->dig_ping_phas;
+			gd->pid_duty = gd->dig_ping_duty;
+			gd->pid_phas = 180;
 
-			hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+			while (gd->pid_phas > gd->dig_ping_phas)//phase ramp up, ~250us
+			{
+				if (gd->pid_phas > gd->dig_ping_phas + 10)
+				{
+					gd->pid_phas -= 10;
+				}
+				else
+				{
+					gd->pid_phas = gd->dig_ping_phas;
+				}
+				hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+//				delay_1us(2);
+			}
 			delay_1us(2000);
 			hal_epwm_pwm_stop(EPWM1);
 		}
 	}
 }
+
+uint8_t adp_ready;
+uint32_t rrlen;
+extern uint8_t array_digest[];
+extern uint8_t adt_data_recv_buf[18];
+extern uint8_t cert_chain[];
 
 void wpc_idle_phase_process(void)
 {
@@ -782,6 +813,8 @@ void wpc_idle_phase_process(void)
 		return;
 	}
 
+	fml_ask_enable();
+
 	if (gd->tx_infos.dig_ping_type == _128K_HB)
 	{
 		wpc_idle_dig_ping_init_128K();
@@ -802,8 +835,8 @@ void wpc_idle_phase_process(void)
 	printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
 		gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
 
-	fml_ask_enbale();
-	gd->idle_to_sleep_cnt = 0;
+//	fml_ask_enable();
+	power_contract_init();
 	gd->ptx_protocol_phase = WPC_PHASE_PING;
 	osal_start_timerEx(WPC_NEXT_TIMER, T_PING, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 	osal_stop_timerEx(WPC_PING_TIMER);

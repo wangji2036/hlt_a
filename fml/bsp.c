@@ -21,7 +21,7 @@ void fml_bsp_init(void)
 	hal_eadc_init();
 	hal_i2cs_init();
 	hal_i2cm_init(400000);
-	hal_wdt_init();
+
 // Nu17113, power bank application ,no needed.
 /*	hal_bpwm_start(BPWM7, 1500, 1500); //led control, 24KHz
 	if (SYS->PID_INFO.BITS.PID == NU17111)

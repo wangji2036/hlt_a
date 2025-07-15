@@ -58,7 +58,9 @@
 void __attribute__((isr, weak)) default_IRQHandler(uint32_t vector, uint32_t pc, uint32_t sp)
 {
 	printk("\r\n IRQn-> default_exception_handler: %d %x %x", vector, pc, sp);
-	while (1);
+	printk("mcu reset\n");
+	SYS->RST_CTRL.BITS.MCU_RST = 1;
+	//while (1);
 }
 
 void __attribute__((isr, weak)) PROT_IRQHandler(void)

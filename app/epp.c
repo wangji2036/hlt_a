@@ -264,7 +264,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
                             {
                                 contract.wait_update = 1; // Update the content in PTC only after Nego Done
                             }
-                            gd->rx_infos.max_power = contract.ref_power;
+//                            gd->rx_infos.max_power = contract.ref_power;
                             EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         				}
         			}
@@ -275,7 +275,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
                     {
                         contract.wait_update = 1; // Update the content in PTC only after Nego Done
                     }
-                    gd->rx_infos.max_power = contract.ref_power;
+//                    gd->rx_infos.max_power = contract.ref_power;
                     EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         		}
         	}
@@ -285,7 +285,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
                 {
                     contract.wait_update = 1; // Update the content in PTC only after Nego Done
                 }
-                gd->rx_infos.max_power = contract.ref_power;
+//                gd->rx_infos.max_power = contract.ref_power;
                 EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
         	}
 
@@ -302,7 +302,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         //TODO: 优化，根据协商的功率决定切到多少duty。
         if (gd->rx_infos.power_profile_mode == EPP)
         {
-        	if (gd->rx_infos.qi_version == 0x13)
+        	if (gd->rx_infos.qi_version <= 0x13)
         	{
         		if (gd->pid_duty < 350)
         		{
@@ -392,10 +392,9 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         // b0-b1（Depth）
         // b2（Pol）
         // b3-b4（NCycles）
-        if((epp_ask->msg.srq.parameter & 0x03) != contract.fsk_params.depth ||   \
-           ((epp_ask->msg.srq.parameter >> 2) & 0x01) != contract.fsk_params.pola || \
-           ((epp_ask->msg.srq.parameter >> 3) & 0x03) != contract.fsk_params.Ncycles
-        )
+        if ((epp_ask->msg.srq.parameter & 0x03) != contract.fsk_params.depth || \
+            ((epp_ask->msg.srq.parameter >> 2) & 0x01) != contract.fsk_params.pola || \
+            ((epp_ask->msg.srq.parameter >> 3) & 0x03) != contract.fsk_params.Ncycles)
         {
             BIT_SET(&contract.nego_mask, EPP_SRQ_fsk_03);
             EPP_Debug("\r\n MASK fsk");
@@ -819,23 +818,25 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
         fml_fsk_param_set(EPWM1, gd->fsk_cfg.polar, gd->fsk_cfg.depth, gd->fsk_cfg.cycle, gd->fsk_cfg.prmbl);
     }
     
+    gd->rx_infos.max_power = contract.ref_power;
+
     if (is_ADT_valid_packet_type(com_ask->hdr)) // EPP ADT Packet 0x16-0x77
     {
         //epp_ADT_pkt_process(com_ask);
         wpc_epp_ADT_pkt_process(com_ask);
         return;
     }
-
+    osal_start_timerEx(WPC_DDM_TIMER, T_COM_DDM_TO, 0, WPC_TASK, WPC_EVT_DDM);
     switch (com_ask->hdr)
     {
     case EPP_PRx_PKT_TYP_CE:
 		gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 
-		if (gd->rx_power > gd->rx_infos.max_power * 5000 / 8) //1.2 * max_power
+		if (gd->rx_power > gd->rx_infos.max_power * 500 * 140 / 100 || gd->rx_power > gd->adp.pwr_high * 500 * 120 / 100) //1.3 * max_power
 		{
 			gd->rx_infos.mpp_restricted_power_limit = 1;
 		}
-		else if (gd->rx_power < gd->rx_infos.max_power * 4000 / 8)
+		else if (gd->rx_power < gd->rx_infos.max_power * 500 * 120 / 100 && gd->rx_power < gd->adp.pwr_high * 500 * 110 / 100)
 		{
 			gd->rx_infos.mpp_restricted_power_limit = 0;
 		}

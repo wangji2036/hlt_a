@@ -15,7 +15,7 @@
 #include "tcpm.h"
 #include "nu6801.h"
 #include "ntc.h"
-
+#include "pd_tc.h"
 void port_manager_set_event(uint32_t event)
 {
 	g_port.port_event |= event;
@@ -62,7 +62,7 @@ void port_enum_port0_connect_closed(void)
 			if(g_port.port_state[PORT1_INDEX] != PORT_STATE_NONE )
 			{
 				hal_tcpc_set_gate_en(PORT1_INDEX,false);
-				pdlib_restart_typec(PORT1_INDEX);
+				pdlib_delayms_restart_typec(PORT1_INDEX,200);
 				pdlib_disable_usbpd();
 				usb_dpdm_select(DPDM_PHY_OFF);
 				g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
@@ -98,7 +98,8 @@ void port_enum_port0_connect_closed(void)
 		{
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
 			pdlib_disable_usbpd();
-			pdlib_restart_typec(PORT1_INDEX);
+			//pdlib_restart_typec(PORT1_INDEX);
+			pdlib_delayms_restart_typec(PORT1_INDEX,200);
 			usb_dpdm_select(DPDM_PHY_OFF);
 		}
 #if(CONFIG_USBA_SUPPORT == 1)
@@ -114,12 +115,14 @@ void port_enum_port0_connect_closed(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT0_INDEX);
+		//pdlib_restart_typec(PORT0_INDEX);
+		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT1_INDEX)  == TC_Disable)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT1_INDEX);
+		//pdlib_restart_typec(PORT1_INDEX);
+		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
@@ -176,7 +179,9 @@ void port_enum_port0_connect_closed(void)
 		{
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
-			pdlib_restart_typec(PORT1_INDEX);
+			//pdlib_restart_typec(PORT1_INDEX);
+			pdlib_delayms_restart_typec(PORT1_INDEX,200);
+
 		}
 
 		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
@@ -194,6 +199,13 @@ void port_enum_port0_connect_closed(void)
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 		}
 	}
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	lib_para.typec_a_support = 1;
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	lib_para.typec_b_support = 1;
+#endif
 }
 
 void port_enum_port1_connect_closed(void)
@@ -212,7 +224,8 @@ void port_enum_port1_connect_closed(void)
 			if(g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE )
 			{
 				hal_tcpc_set_gate_en(PORT0_INDEX,false);
-				pdlib_restart_typec(PORT0_INDEX);
+				//pdlib_restart_typec(PORT0_INDEX);
+				pdlib_delayms_restart_typec(PORT0_INDEX,200);
 				pdlib_disable_usbpd();
 				usb_dpdm_select(DPDM_PHY_OFF);
 				g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
@@ -246,7 +259,8 @@ void port_enum_port1_connect_closed(void)
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
 		{
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
-			pdlib_restart_typec(PORT0_INDEX);
+			//pdlib_restart_typec(PORT0_INDEX);
+			pdlib_delayms_restart_typec(PORT0_INDEX,200);
 			pdlib_disable_usbpd();
 			usb_dpdm_select(DPDM_PHY_OFF);
 		}
@@ -263,12 +277,14 @@ void port_enum_port1_connect_closed(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT0_INDEX);
+		//pdlib_restart_typec(PORT0_INDEX);
+		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT1_INDEX);
+		//pdlib_restart_typec(PORT1_INDEX);
+		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
@@ -319,7 +335,8 @@ void port_enum_port1_connect_closed(void)
 		{
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
-			pdlib_restart_typec(PORT0_INDEX);
+			//pdlib_restart_typec(PORT0_INDEX);
+			pdlib_delayms_restart_typec(PORT0_INDEX,200);
 		}
 
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
@@ -339,6 +356,12 @@ void port_enum_port1_connect_closed(void)
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 		}
 	}
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	lib_para.typec_a_support = 1;
+#endif
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	lib_para.typec_b_support = 1;
+#endif
 }
 
 void port_enum_port2_connect_closed(void)
@@ -352,12 +375,14 @@ void port_enum_port2_connect_closed(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT0_INDEX);
+		//pdlib_restart_typec(PORT0_INDEX);
+		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT1_INDEX);
+		//pdlib_restart_typec(PORT1_INDEX);
+		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
@@ -386,8 +411,6 @@ void port_enum_port2_connect_closed(void)
 			g_port.inhandle_port = g_port.incharge_port;
 		}
 	}
-
-
 
 	tcpm_stop_wpc(WPC_DELAY);
 
@@ -427,7 +450,8 @@ void port_enum_port2_connect_closed(void)
 		{
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
-			pdlib_restart_typec(PORT0_INDEX);
+			//pdlib_restart_typec(PORT0_INDEX);
+			pdlib_delayms_restart_typec(PORT0_INDEX,200);
 
 		}
 
@@ -435,7 +459,8 @@ void port_enum_port2_connect_closed(void)
 		{
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
-			pdlib_restart_typec(PORT1_INDEX);
+			//pdlib_restart_typec(PORT1_INDEX);
+			pdlib_delayms_restart_typec(PORT1_INDEX,200);
 		}
 
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE
@@ -448,7 +473,13 @@ void port_enum_port2_connect_closed(void)
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 		}
 	}
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	lib_para.typec_a_support = 1;
+#endif
 
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	lib_para.typec_b_support = 1;
+#endif
 	port_manager_set_state(PORT_IDLE_OR_READY);
 }
 
@@ -463,12 +494,14 @@ void port_enum_port3_connect_closed(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT0_INDEX);
+		//pdlib_restart_typec(PORT0_INDEX);
+		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT1_INDEX);
+		//pdlib_restart_typec(PORT1_INDEX);
+		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
@@ -533,14 +566,16 @@ void port_enum_port3_connect_closed(void)
 		{
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
-			pdlib_restart_typec(PORT0_INDEX);
+			//pdlib_restart_typec(PORT0_INDEX);
+			pdlib_delayms_restart_typec(PORT0_INDEX,200);
 		}
 
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)
 		{
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
-			pdlib_restart_typec(PORT1_INDEX);
+			//pdlib_restart_typec(PORT1_INDEX);
+			pdlib_delayms_restart_typec(PORT1_INDEX,200);
 		}
 #if(CONFIG_USBA_SUPPORT == 1)
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
@@ -561,8 +596,13 @@ void port_enum_port3_connect_closed(void)
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
 		}
 	}
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	lib_para.typec_a_support = 1;
+#endif
 
-
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	lib_para.typec_b_support = 1;
+#endif
 	port_manager_set_state(PORT_IDLE_OR_READY);
 }
 
@@ -570,8 +610,7 @@ void port_enum_port_enum_done(void)
 {
 	printk("%s!\n",__func__);
 
-
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
 		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA放电
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
@@ -581,14 +620,14 @@ void port_enum_port_enum_done(void)
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current_actual);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE)
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
 		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA放电
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		hal_tcpc_set_gate_en(PORT1_INDEX,true);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE)
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_usb_a_gate_en)
 	{
 		//if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA放电s
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
@@ -597,12 +636,14 @@ void port_enum_port_enum_done(void)
 #endif
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT0_INDEX);
+		//pdlib_restart_typec(PORT0_INDEX);
+		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 重新开启toogle
 	{
-		pdlib_restart_typec(PORT1_INDEX);
+		//pdlib_restart_typec(PORT1_INDEX);
+		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 重新开启A口检测
@@ -680,6 +721,12 @@ void port_enum_port_enum_done(void)
 		g_buckboost.buckboost_out_current_actual = 4500;
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
 	}
+#if(CONFIG_TYPECA_SUPPORT == 1)
+	lib_para.typec_a_support = 1;
+#endif
+#if(CONFIG_TYPECB_SUPPORT == 1)
+	lib_para.typec_b_support = 1;
+#endif
 
 	port_manager_set_state(PORT_IDLE_OR_READY);
 }
@@ -753,7 +800,8 @@ void port_enum_port_snk_setcharge(void)
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
 	printk("charg set %d %d", g_port.ibus_limit,g_port.ibat_limit);
 
-	if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+	//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
 	g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
 
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
@@ -762,6 +810,7 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+
 
 
 #if(BUCKBOOST_USED_NU6801 == 1)
@@ -783,7 +832,6 @@ void port_enum_port_snk_setcharge(void)
 		}
 		else
 		{
-
 			if(!ntc_stop_chrg_flag && nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
 		}
 	#else
@@ -799,7 +847,8 @@ void port_enum_port_snk_setcharge(void)
 	else
 		buckboost_ops.set_ovp(g_port.snk_set_volt);
 
-	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA!\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,g_port.ibus_limit);
+	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA V[bat] = %d !\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,
+			g_port.ibus_limit,g_buckboost.adc_vbat);
 
 }
 
@@ -1009,7 +1058,7 @@ void port_enum_port0_connect_success(void)
 				pdlib_set_pd_event(PORT0_INDEX,USB_PD_EVT_SRC_ATTACHED);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
+			osal_start_timerEx(PORT_CONNECT_TIMER, 200, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,3500);
 		}
 	}
@@ -1085,7 +1134,7 @@ void port_enum_port1_connect_success(void)
 				pdlib_set_pd_event(PORT1_INDEX,USB_PD_EVT_SRC_ATTACHED);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 10, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+			osal_start_timerEx(PORT_CONNECT_TIMER, 200, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
 		}
 	}
 
@@ -1119,6 +1168,7 @@ void port_enum_port0_connect_start(void)
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	tcpm_disable_usba_detect();
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
+	lib_para.typec_b_support = 0;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT1_INDEX,false);
@@ -1154,6 +1204,7 @@ void port_enum_port1_connect_start(void)
 	tcpm_disable_usba_detect();
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
+	lib_para.typec_a_support = 0;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT0_INDEX,false);
@@ -1186,6 +1237,8 @@ void port_enum_port2_connect_start(void)
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
+	lib_para.typec_a_support = 0;
+	lib_para.typec_b_support = 0;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		hal_tcpc_set_gate_en(PORT2_INDEX,false);
@@ -1214,8 +1267,9 @@ void port_enum_port3_connect_start(void)
 
 	printk("PORT3 START! PORT0=[%d] PORT1=[%d] PORT2=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[2]);
 	tcpm_disable_usba_detect();
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT0_INDEX);
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  pdlib_disable_typec(PORT1_INDEX);
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  {pdlib_disable_typec(PORT0_INDEX);lib_para.typec_a_support = 0;}
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  {pdlib_disable_typec(PORT1_INDEX);lib_para.typec_b_support = 0;}
+
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -1246,23 +1300,26 @@ void port_enum_port3_connect_start(void)
 void port_enum_scan_handle(void)
 {
 
+
 	if(g_port.state != PORT_IDLE_OR_READY)
 	{
 		if(g_port.port_event & PORT0_EVENT_UNCONNECT && g_port.inhandle_port != PORT0_INDEX)				//TTPEC0
 		{
+			g_port.port_event &= ~PORT0_EVENT_UNCONNECT;
 			hal_tcpc_set_gate_en(PORT0_INDEX,false);
 			pdlib_disable_typec(PORT0_INDEX);
 			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 		}
 		else if(g_port.port_event & PORT1_EVENT_UNCONNECT && g_port.inhandle_port != PORT1_INDEX) 			//TYPEC1
 		{
+			g_port.port_event &= ~PORT1_EVENT_UNCONNECT;
 			hal_tcpc_set_gate_en(PORT1_INDEX,false);
-
 			pdlib_disable_typec(PORT1_INDEX);
 			g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 		}
 		return;
 	}
+
 
 	if(g_port.port_event & PORT0_EVENT_UNCONNECT)				//TTPEC0
 	{

@@ -50,7 +50,7 @@
 #include "g_data.h"
 #include "led.h"
 #include "pdlib.h"
-
+#include "printk.h"
 /**
  * @brief Timer 0/1/2/3 initialization. 
  * 		  You can initialize one of the timer according to your needs.
@@ -77,7 +77,7 @@ void hal_timer_init(TS_TMR *timer)
 
 	if (timer == TMR2)
 	{
-		timer->LOAD_CNT.WORD = 1125 * 250 - 1; //250ms
+		timer->LOAD_CNT.WORD = 1125 * 850 - 1; //850ms
 		timer->GEN_CTRL.WORD = (5 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_PERIODIC << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk;; //1.125MHz
 	}
 
@@ -104,9 +104,55 @@ void hal_timer_stop(TS_TMR *timer)
  * @retval	void
  * @todo This function is not implemented yet.
  */
-void __attribute__((isr)) TMR0_IRQHandler(void) //250ms
+void __attribute__((isr)) TMR0_IRQHandler(void)
 {
+	if (ECAP1->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
+	{
+		if (ecap_callback != NULL)
+		{
+			ecap_callback(0, ECAP1->EDGE_CNT.BITS.EDGE_DET_CNT);
+		}
+		ECAP1->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
+	}
+
+	if (ECAP1->STS_FLAG.WORD & ECAP_STS_FLAG_OVERFLOW_FLAG_Msk)
+	{
+		ECAP1->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
+	}
+
+
+
+	if (ECAP2->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
+	{
+		if (ecap_callback != NULL)
+		{
+			ecap_callback(1, ECAP2->EDGE_CNT.BITS.EDGE_DET_CNT);
+		}
+		ECAP2->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
+	}
+
+	if (ECAP2->STS_FLAG.WORD & ECAP_STS_FLAG_OVERFLOW_FLAG_Msk)
+	{
+		ECAP2->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
+	}
+
+
+
+	if (ECAP4->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
+	{
+		if (ecap_callback != NULL)
+		{
+			ecap_callback(2, ECAP4->EDGE_CNT.BITS.EDGE_DET_CNT);
+		}
+		ECAP4->STS_FLAG.WORD = ECAP_STS_FLAG_EDGE_DET_FLAG_Msk;
+	}
+
+	if (ECAP4->STS_FLAG.WORD & ECAP_STS_FLAG_OVERFLOW_FLAG_Msk)
+	{
+		ECAP4->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
+	}
 }
+
 
 volatile uint8_t g_u8Tmr0IntHaved_USBPD;
 volatile uint16_t g_u16Tmr0IntCnt_USBPD;
@@ -173,10 +219,20 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
  * @param  	void
  * @return 	void
  */
+
+void soft_wdt_reset()
+{
+	printk("\r\n !!!soft_wdt_reset \r\n");
+	gd->power_on_magic = 0x00;
+	SYS->RST_CTRL.BITS.MCU_RST = 1;
+}
+
+
 volatile uint8_t tmr2_250ms_int_flag;
 void __attribute__((isr)) TMR2_IRQHandler(void) //250ms
 {
 	tmr2_250ms_int_flag++;
+	soft_wdt_reset();
 }
 
 /**

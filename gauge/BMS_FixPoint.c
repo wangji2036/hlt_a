@@ -49,7 +49,7 @@ uint16_T SOC_ModelOCV_mV;              /* '<S23>/Switch1' */
 
 #if(BUCKBOOST_USED_NU6801 == 1)
 /* Exported block parameters */
-int32_T P_AtRateCurrent_mA = 5000;     /* Variable: P_AtRateCurrent_mA
+int32_T P_AtRateCurrent_mA = 3000;     /* Variable: P_AtRateCurrent_mA
                                         * Referenced by: '<S4>/At_Rate_Current_mA'
                                         */
 int32_T P_EmptyVoltage_mV = 3000;      /* Variable: P_EmptyVoltage_mV

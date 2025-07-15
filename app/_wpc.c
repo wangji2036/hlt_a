@@ -180,10 +180,7 @@ void wpc_stop_power(void)
 	gd->atl_test_ldstp_epp_N60 = 0;
 	gd->atl_test_ldstp_bpp_N60 = 0;
 	gd->atl_test_ldstp_bpp_P60 = 0;
-	gd->alt_test_resv_rp8_cnt = 0;
-	gd->alt_test_last_rp8_value = 0;
-	gd->alt_test_1st_rp8_value = 0;
-	gd->alt_test_continous_cnt = 0;
+
 
 	special_cep_cnt = 0;
 
@@ -305,9 +302,9 @@ void wpc_pkt_hdr_handler(void)
 {
 	if (gd->ptx_protocol_phase == WPC_PHASE_PING)
 	{
-//		osal_start_timerEx(WPC_NEXT_TIMER, T_FIRST_LIMIT, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-		printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
+		osal_start_timerEx(WPC_NEXT_TIMER, T_FIRST_LIMIT, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
+//		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
+		printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, T_FIRST_LIMIT, gd->wpc_pkt.src);
 	}
 	else if (gd->ptx_protocol_phase == WPC_PHASE_CNFG)
 	{
@@ -354,6 +351,9 @@ void wpc_task_event_handler(uint32_t event)
 {
 	switch (event)
 	{
+	    case WPC_EVT_DDM:
+	    	PID_vDDMEventHandler();
+		    break;
 		case WPC_EVT_CLOAK_PING:
 			wpc_idle_cloak_phase_process();
 			break;
@@ -550,12 +550,12 @@ void wpc_task_event_handler(uint32_t event)
 			{
 				fm1210_get_tbs_auth(array_chall);
 			}
-			printk("\r\n tbs_hash:");
-			for (int i=0; i<64; i++)
-			{
-				printk(" %02X", array_chall[i]);
-			}
-			printk("\r\n");
+//			printk("\r\n tbs_hash:");
+//			for (int i=0; i<64; i++)
+//			{
+//				printk(" %02X", array_chall[i]);
+//			}
+//			printk("\r\n");
 			break;
 		case WPC_EVT_FOD_REPORTED:
 			pfod_log_print();

@@ -109,7 +109,7 @@ void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint1
 	osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
 	g_buckboost.out_voltage_wait = wait;
 	g_buckboost.out_voltage_delay = delay;
-	g_buckboost.buckboost_out_voltage = voltage;
+	g_buckboost.buckboost_out_voltage = voltage+150;
 	g_buckboost.buckboost_out_current = current;
 	g_buckboost.regulator_state = 0;
 	osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT);
@@ -120,13 +120,13 @@ void buckboost_set_charge_current(uint16_t ibat,uint16_t ibus)
 	g_buckboost.chager_ibus_limit = ibus;
 	g_buckboost.chager_ibat_limit = ibat;
 
-	g_buckboost.woke_mode = BUCKBOOST_SHUTDOWM_MODE;
-	buckboost_ops.set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-	g_buckboost.woke_mode = BUCKBOOST_CHAGER_MODE;
-	buckboost_ops.set_work_mode(g_buckboost.woke_mode);
-	buckboost_ops.set_chager_ibus_limit(200);
+//	g_buckboost.woke_mode = BUCKBOOST_SHUTDOWM_MODE;
+//	buckboost_ops.set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+//	g_buckboost.woke_mode = BUCKBOOST_CHAGER_MODE;
+//	buckboost_ops.set_work_mode(g_buckboost.woke_mode);
+	buckboost_ops.set_chager_ibus_limit(300);
 	buckboost_ops.set_chager_ibat_limit(ibat);
-	g_buckboost.chager_ibus_value = 200;
+	g_buckboost.chager_ibus_value = 300;
 	g_buckboost.chager_ibus_start = 1;
 	printk("Charging = [%d %d]!\n",ibat,ibus);
 }
@@ -137,8 +137,8 @@ void buckboost_set_work_mode(enum buckboost_mode mode)
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
-		g_buckboost.chager_ibat_limit = 100;
-		g_buckboost.chager_ibus_limit = 100;
+		g_buckboost.chager_ibat_limit = 300;
+		g_buckboost.chager_ibus_limit = 300;
 		buckboost_ops.set_chager_ibat_limit(g_buckboost.chager_ibat_limit);
 		buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_limit);
 	}
@@ -515,6 +515,8 @@ void buckboost_task_event_handler(uint32_t event)
 			{
 			#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
+			#else
+				printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
 			#endif
 			}
 			else if(get_info_step == 1)
@@ -569,12 +571,12 @@ void buckboost_task_event_handler(uint32_t event)
 					printk("charge flag = 0x%x\n",flag);
 
 					if(flag & 0x02) g_buckboost.bat_full_flag = 1;
-					if(g_buckboost.bat_full_flag && (flag & 0x01|| g_buckboost.adc_vbat < 4000))
+					if((g_buckboost.bat_full_flag && g_buckboost.adc_vbat < 4000) || (flag & 0x01 ))
 					{
 						g_buckboost.bat_full_flag = 0;
 						buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-						printk("------------------------- rechage \n");
+//						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+//						printk("------------------------- rechage \n");
 					}
 				}
 				else

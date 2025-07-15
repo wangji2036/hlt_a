@@ -231,8 +231,10 @@ bool hal_nu6801_buckboost_get_usba_state(void)
 void hal_nu6801_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
 	uint8_t read;
+
 	hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,&read);
 	hal_i2cm_wirte_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_CTRL,read & 0xF3);
+	printk("%s= %d\n",__func__,woke_mode);
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
 		read = (read & 0xF3) | 0x08;

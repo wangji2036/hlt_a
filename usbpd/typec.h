@@ -34,6 +34,7 @@ struct tc_s
 	uint32_t tc_timer_cnt;
 	uint8_t try_snk_cnt;
 	uint8_t try_src_cnt;
+	uint16_t typec_delay_ms;
 	uint16_t snk_voltage;
 };
 

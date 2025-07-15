@@ -457,18 +457,7 @@ void ui_update(void)
 
     	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] != PORT_STATE_SOURCE)
     	{
-    		extern uint16_t key_ui_cnt;
-    		if(key_ui_cnt)
-			{
-				flash_flag = 0;
-				key_ui_cnt--;
-			}
-    		else flash_flag = 3; // 灭灯
-    	}
-    	else
-    	{
-    		if(buckboost_protection_flag) flash_flag = 3;
-    		else flash_flag = 0;
+    		flash_flag = 0;
     	}
     }
 
@@ -506,6 +495,7 @@ void key_sigle_click_process(void)
 	if(gd->wpc_disable) gd->wpc_disable = 0;
 #endif
 
+	g_port.is_mini_current_mode = 0;
 	g_port.light0_cnt = 0;
 }
 
@@ -581,7 +571,13 @@ void key_handle_10ms()
 			key_flag = 3; //long press
 			key_click_cnt = 0;
 		}
-		if(key_cnt >= 1000) key_cnt = 1000;
+		if(key_cnt == 1200)
+		{
+			SYS->RST_CTRL.BITS.MCU_RST = 1;
+			gd->power_on_magic = 0x00;
+		}
+
+		if(key_cnt >= 1800) key_cnt = 1800;
 	}
 	else
 	{

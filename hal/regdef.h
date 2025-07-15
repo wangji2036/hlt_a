@@ -591,6 +591,8 @@ typedef union {
 	 * |        |             |BIT[19]: major version, 0-A, 1-B
 	 * |        |             |BIT[18-16]: minor version
 	 * |        |             |BIT[19:16] = 0, A0
+	 * |[31:24] |DFT          |I2C designed for testing address
+	 * |        |             |0x41(7bit)
 	 */
 	struct {
 		uint32_t PID :16;
@@ -608,8 +610,54 @@ typedef union {
 	 * ---------------------------------------------------------------------------------------------------
 	 * |Bits    |Field        |Descriptions
 	 * | :----: | :----:      | :---- |
-	 * |[31:0]  |UID          |unique ID, read only.
-	 * |        |             |32-bit chip unique identification code
+	 * |[25:0]  |UID_CODE     |unique ID
+	 * |        |             |26-bit chip unique identification code
+	 * |[28:26] |SUB_CODE     |sub serial number information
+	 * |        |             |if DIE_CODE = 000 = mason + NU1030A0
+	 * |        |             |   000 = NU17111/SP3811
+	 * |        |             |   001 = NU17112/SP3820
+	 * |        |             |   010 = NU17121/SP3820
+	 * |        |             |   011 = NU17113/SP3820
+	 * |        |             |   100 = NU17122/SP3820
+	 * |        |             |   101 = NU17123/SP3820
+	 * |        |             |   110 = reserved
+	 * |        |             |   111 = reserved
+	 * |        |             |if DIE_CODE = 001 = mason + NU10300A0
+	 * |        |             |   000 = NU17100/SP3800
+	 * |        |             |   001 = NU17102/SP3802
+	 * |        |             |   010 = NU17103/SP3803
+	 * |        |             |   011 = reserved
+	 * |        |             |   100 = reserved
+	 * |        |             |   101 = reserved
+	 * |        |             |   110 = reserved
+	 * |        |             |   111 = reserved
+	 * |        |             |if DIE_CODE = 011 = mason + extend PS
+	 * |        |             |   000 = NUQ17112
+	 * |        |             |   001 = NUQ1520
+	 * |        |             |   010 = reserved
+	 * |        |             |   011 = reserved
+	 * |        |             |   100 = reserved
+	 * |        |             |   101 = reserved
+	 * |        |             |   110 = reserved
+	 * |        |             |   111 = reserved
+	 * |        |             |if DIE_CODE = 100 = mason + NU1030A1
+	 * |        |             |   000 = NU17111/SP3811
+	 * |        |             |   001 = NU17112/SP3820
+	 * |        |             |   010 = NU17121/SP3820
+	 * |        |             |   011 = NU17113/SP3820
+	 * |        |             |   100 = NU17122/SP3820
+	 * |        |             |   101 = NU17123/SP3820
+	 * |        |             |   110 = reserved
+	 * |        |             |   111 = reserved
+	 * |[31:29] |DIE_CODE     |system in chip die(s) information
+	 * |        |             |000 = mason + NU1030A0
+	 * |        |             |001 = mason + NU10300A0
+	 * |        |             |010 = reserved
+	 * |        |             |011 = mason + extend PS
+	 * |        |             |100 = mason + NU1030A1
+	 * |        |             |101 = reserved
+	 * |        |             |110 = reserved
+	 * |        |             |111 = reserved
 	 */
 	struct {
 		uint32_t UID_CODE :26;
@@ -826,11 +874,48 @@ enum {
 #define CHIP_VER_A1     (    1)
 
 #define NU103X_VER_A0   (    0)
-#define NU103X_VER_A1   (    1)
+#define NU103X_VER_A1   (    4)
 /*------------------------------------------ SYS define ------------------------------------------*/
 
 /*++++++++++++++++++++++++++++++++++++++++++ TCPC define +++++++++++++++++++++++++++++++++++++++++*/
 typedef union {
+	/**
+	 * @var TS_TCPC::INT_FLAG
+	 * Offset: 0x00  TCPC and USBPD module status flag Register, all bits W1C
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[2]     |PHY_RX_DATA_ERROR_FLAG |PD_PHY receive data fail flag
+	 * |        |                       |0 = receive data no error
+	 * |        |                       |1 = (1)5b4b decode fail in data message receive phase; (2)receive GD_CRC fail;
+	 * |[5]     |PHY_RX_BUFF_UPDAT_FLAG |PD_PHY receive buffer update flag
+	 * |        |                       |0 = receive buffer no data transfer in
+	 * |        |                       |1 = receive buffer have new data transfer in
+	 * |[6]     |PHY_TX_BUFF_EMPTY_FLAG |PD_PHY transmit buffer data transfer to shadow buffer flag
+	 * |        |                       |0 = transmit buffer data has not been transmitted to shadow register yet
+	 * |        |                       |1 = transmit buffer data has been transmitted to shadow register
+	 * |[8]     |CCA_STATUS_CHANGE_FLAG |TCPC_PHY CCA port status changed flag
+	 * |        |                       |0 = CCA port status not changed
+	 * |        |                       |1 = CCA port status changed
+	 * |[9]     |CCB_STATUS_CHANGE_FLAG |TCPC_PHY CCB port status changed flag
+	 * |        |                       |0 = CCB port status not changed
+	 * |        |                       |1 = CCB port status changed
+	 * |[10]    |PHY_RX_SUCCESSFUL_FLAG |PD_PHY receive data finished flag
+	 * |        |                       |0 = receive data not finished
+	 * |        |                       |1 = receive data finished and already reply GD_CRC
+	 * |[11]    |PHY_RX_HARD_RESET_FLAG |PD_PHY received Hard_Reset flag
+	 * |        |                       |0 = not received Hard_Reset
+	 * |        |                       |1 = received Hard_Reset
+	 * |[12]    |PHY_TX_NO_GOODCRC_FLAG |PD_PHY transmit not successful flag
+	 * |        |                       |0 = transmit no error occurs
+	 * |        |                       |1 = SOP* message transmission not successful, no GoodCRC response received on SOP* message transmission
+	 * |[13]    |PHY_TX_CC_DISCARD_FLAG |PD_PHY transmit discard flag
+	 * |        |                       |0 = no discard during transmit
+	 * |        |                       |1 = Reset or SOP* message transmission not sent due to incoming receive message
+	 * |[14]    |PHY_TX_SUCCESSFUL_FLAG |PD_PHY transmit successful flag
+	 * |        |                       |0 = transmit not successful
+	 * |        |                       |1 = Reset or SOP* message transmission successful
+	 */
 	struct {
 		uint32_t                        : 1;
 		uint32_t                        : 1;
@@ -840,8 +925,8 @@ typedef union {
 		uint32_t PHY_RX_BUFF_UPDAT_FLAG : 1; //USBPD_INT_FLAG
 		uint32_t PHY_TX_BUFF_EMPTY_FLAG : 1; //USBPD_INT_FLAG
 		uint32_t                        : 1;
-		uint32_t CCA_STATUS_CHANGE_FLAG : 1; //TCPC_INT_FLAG
-		uint32_t CCB_STATUS_CHANGE_FLAG : 1; //TCPC_INT_FLAG
+		uint32_t CCA_STATUS_CHANGE_FLAG : 1; // TCPC_INT_FLAG
+		uint32_t CCB_STATUS_CHANGE_FLAG : 1; // TCPC_INT_FLAG
 		uint32_t PHY_RX_SUCCESSFUL_FLAG : 1; //USBPD_INT_FLAG
 		uint32_t PHY_RX_HARD_RESET_FLAG : 1; //USBPD_INT_FLAG
 		uint32_t PHY_TX_NO_GOODCRC_FLAG : 1; //USBPD_INT_FLAG
@@ -853,6 +938,43 @@ typedef union {
 } TS_TCPC_INT_FLAG;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::INT_CTRL
+	 * Offset: 0x04  TCPC and USBPD module interrupt enable control Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[2]     |PHY_RX_DATA_ERROR_INTE |PD_PHY receive data fail interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[5]     |PHY_RX_BUFF_UPDAT_INTE |PD_PHY receive buffer update interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[6]     |PHY_TX_BUFF_EMPTY_INTE |PD_PHY transmit buffer data transfer to shadow buffer interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[8]     |CCA_STATUS_CHANGE_INTE |TCPC_PHY CCA port status changed interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[9]     |CCB_STATUS_CHANGE_INTE |TCPC_PHY CCB port status changed interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[10]    |PHY_RX_SUCCESSFUL_INTE |PD_PHY receive data finished interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[11]    |PHY_RX_HARD_RESET_INTE |PD_PHY received Hard_Reset interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[12]    |PHY_TX_NO_GOODCRC_INTE |PD_PHY transmit not successful interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[13]    |PHY_TX_CC_DISCARD_INTE |PD_PHY transmit discard interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[14]    |PHY_TX_SUCCESSFUL_INTE |PD_PHY transmit successful interrupt enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 */
 	struct {
 		uint32_t                        : 1;
 		uint32_t                        : 1;
@@ -862,8 +984,8 @@ typedef union {
 		uint32_t PHY_RX_BUFF_UPDAT_INTE : 1; //USBPD_INT_EN
 		uint32_t PHY_TX_BUFF_EMPTY_INTE : 1; //USBPD_INT_EN
 		uint32_t                        : 1;
-		uint32_t CCA_STATUS_CHANGE_TNTE : 1; //TCPC_INT_EN
-		uint32_t CCB_STATUS_CHANGE_INTE : 1; //TCPC_INT_EN
+		uint32_t CCA_STATUS_CHANGE_TNTE : 1; // TCPC_INT_EN
+		uint32_t CCB_STATUS_CHANGE_INTE : 1; // TCPC_INT_EN
 		uint32_t PHY_RX_SUCCESSFUL_INTE : 1; //USBPD_INT_EN
 		uint32_t PHY_RX_HARD_RESET_INTE : 1; //USBPD_INT_EN
 		uint32_t PHY_TX_NO_GOODCRC_INTE : 1; //USBPD_INT_EN
@@ -875,6 +997,35 @@ typedef union {
 } TS_TCPC_INT_CTRL;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::CCx_ROLE, x = A, B
+	 * Offset: 0x08, 0x14  TCPC module CC role control Register, default and reset value is 0x0000000A
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[1:0]   |CC1_ROLE               |TCPC_PHY CC1 role control
+	 * |        |                       |00 = Ra
+	 * |        |                       |01 = Rp (Use Rp definition in BIT[5:4]::RP_VALUE
+	 * |        |                       |10 = Rd (default value)
+	 * |        |                       |11 = Open (Disconnect or don't care
+	 * |[3:2]   |CC2_ROLE               |TCPC_PHY CC2 role control
+	 * |        |                       |00 = Ra
+	 * |        |                       |01 = Rp (Use Rp definition in BIT[5:4]::RP_VALUE
+	 * |        |                       |10 = Rd (default value)
+	 * |        |                       |11 = Open (Disconnect or don't care
+	 * |[5:4]   |RP_VALUE               |TCPC_PHY Rp value control
+	 * |        |                       |00 = Rp default (default value)
+	 * |        |                       |01 = Rp 1.5A
+	 * |        |                       |10 = Rd 3.0A
+	 * |        |                       |11 = reserved
+	 * |[6]     |DRP_MODE               |TCPC_PHY DRP control bit
+	 * |        |                       |0 = No DRP, BIT[3:0] determine Rp/Rd/Ra or open settings (default)
+	 * |        |                       |1 = DRP
+	 * |        |                       |    The TCPC shall use the Rp value defined in BIT[5:4] when a connection is resolved.
+	 * |        |                       |    The TCPC toggles CC1 & CC2 after receiving COMMAND. Start DRP and until a connection is detected.
+	 * |        |                       |    Upon connection, the TCPC shall resolve to either an Rp or Rd and report the CC1/CC2 State in the CCx_STAT register.
+	 * |        |                       |    The TCPC shall stay in Potential_Connect_as_Src or Potential_Connect_as_Sink until directed otherwise.
+	 */
 	struct {
 		uint32_t CC1_ROLE : 2;
 		uint32_t CC2_ROLE : 2;
@@ -886,6 +1037,51 @@ typedef union {
 } TS_TCPC_CCx_ROLE;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::CCx_STAT, x = A, B
+	 * Offset: 0x0C, 0x18  TCPC module CC status Register, read only
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[1:0]   |CC1_STATUS             |TCPC_PHY CC1 status
+	 * |        |                       |if (CCx_ROLE.CC1_ROLE == Rp) or (DRP_RESULT == 0)
+	 * |        |                       |  00 = SRC.Open
+	 * |        |                       |  01 = SRC.Ra
+	 * |        |                       |  10 = SRC.Rd
+	 * |        |                       |  11 = reserved
+	 * |        |                       |if (CCx_ROLE.CC1_ROLE == Rd) or (DRP_RESULT == 1)
+	 * |        |                       |  00 = SNK.Open
+	 * |        |                       |  01 = SNK.Rp_0P5A
+	 * |        |                       |  10 = SNK.Rp_1P5A
+	 * |        |                       |  11 = SNK.Rp_3P0A
+	 * |        |                       |Note:
+	 * |        |                       |  1. if (CCx_ROLE.CC1_ROLE == Ra), this field is set to 00b;
+	 * |        |                       |  2. if (CCx_ROLE.CC1_ROLE == Open), this field is set to 00b;
+	 * |        |                       |  3. if (DRP_STATUS == 1), this field is set to 00b;
+	 * |        |                       |  4. otherwise the returned value depends upon CCx_ROLE.CC1_ROLE
+	 * |[3:2]   |CC2_STATUS             |TCPC_PHY CC2 status
+	 * |        |                       |if (CCx_ROLE.CC2_ROLE == Rp) or (DRP_RESULT == 0)
+	 * |        |                       |  00 = SRC.Open
+	 * |        |                       |  01 = SRC.Ra
+	 * |        |                       |  10 = SRC.Rd
+	 * |        |                       |  11 = reserved
+	 * |        |                       |if (CCx_ROLE.CC2_ROLE == Rd) or (DRP_RESULT == 1)
+	 * |        |                       |  00 = SNK.Open
+	 * |        |                       |  01 = SNK.Rp_0P5A
+	 * |        |                       |  10 = SNK.Rp_1P5A
+	 * |        |                       |  11 = SNK.Rp_3P0A
+	 * |        |                       |Note:
+	 * |        |                       |  1. if (CCx_ROLE.CC2_ROLE == Ra), this field is set to 00b;
+	 * |        |                       |  2. if (CCx_ROLE.CC2_ROLE == Open), this field is set to 00b;
+	 * |        |                       |  3. if (DRP_STATUS == 1), this field is set to 00b;
+	 * |        |                       |  4. otherwise the returned value depends upon CCx_ROLE.CC2_ROLE
+	 * |[4]     |DRP_RESULT             |TCPC_PHY DRP result
+	 * |        |                       |0 = TCPC is presenting Rp (default)
+	 * |        |                       |1 = TCPC is presenting Rd
+	 * |[5]     |DRP_STATUS             |TCPC_PHY DRP status
+	 * |        |                       |0 = CC is not looking for the connection
+	 * |        |                       |1 = CC is looking for the connection
+	 */
 	struct {
 		uint32_t CC1_STATUS : 2;
 		uint32_t CC2_STATUS : 2;
@@ -900,6 +1096,18 @@ typedef union {
 } TS_TCPC_CCx_STAT;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::CCx_CMD_, x = A, B
+	 * Offset: 0x10, 0x1C  TCPC module command control Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[7:0]   |CMD_TYPE               |TCPC_PHY command
+	 * |        |                       |10011001b: Start DRP.
+	 * |        |                       |  Forced FSM enter to unattached state from any state, and the DRP/unattache.SNK/SRC mode depend on the CCx_ROLE control register.
+     * |        |                       |  If the TCPC is already in the unattached state, the command is required while the DRP changed to SNK/SRC only state.
+	 * |        |                       |others: reserved
+	 */
 	struct {
 		uint32_t CMD_TYPE : 8;
 		uint32_t          :24;
@@ -908,6 +1116,48 @@ typedef union {
 } TS_TCPC_CCx_CMD_;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::RXD_CTRL
+	 * Offset: 0x20  USBPD module detect message control Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[0]     |RXD_SOP_EN             |PD_PHY detect SOP message control bit
+	 * |        |                       |0 = PD_PHY does not detect SOP message (default)
+	 * |        |                       |1 = PD_PHY detects SOP message
+	 * |[1]     |RXD_SOP1_EN            |PD_PHY detect SOP' message control bit
+	 * |        |                       |0 = PD_PHY does not detect SOP' message (default)
+	 * |        |                       |1 = PD_PHY detects SOP' message
+	 * |[2]     |RXD_SOP2_EN            |PD_PHY detect SOP'' message control bit
+	 * |        |                       |0 = PD_PHY does not detect SOP'' message (default)
+	 * |        |                       |1 = PD_PHY detects SOP'' message
+	 * |[3]     |RXD_SOP1_DBG_EN        |PD_PHY detect SOP'_Debug message control bit
+	 * |        |                       |0 = PD_PHY does not detect SOP'_Debug message (default)
+	 * |        |                       |1 = PD_PHY detects SOP'_Debug message
+	 * |[4]     |RXD_SOP2_DBG_EN        |PD_PHY detect SOP''_Debug message control bit
+	 * |        |                       |0 = PD_PHY does not detect SOP''_Debug message (default)
+	 * |        |                       |1 = PD_PHY detects SOP''_Debug message
+	 * |[5]     |RXD_HARD_RST_EN        |PD_PHY detect Hard_Reset control bit
+	 * |        |                       |0 = PD_PHY does not detect Hard Reset signaling (default)
+	 * |        |                       |1 = PD_PHY detects Hard Reset signaling
+	 * |[6]     |RXD_CABLERST_EN        |PD_PHY detect Cable_Reset control bit
+	 * |        |                       |0 = PD_PHY does not detect Cable Reset signaling (default)
+	 * |        |                       |1 = PD_PHY detects Cable Reset signaling
+	 * |[7]     |RXD_DET_EOP_DIS        |PD_PHY disable detect EOP control bit
+	 * |        |                       |0 = PD_PHY detects EOP signaling (default)
+	 * |        |                       |1 = PD_PHY does not detect EOP signaling
+	 * |[8]     |PHY_GDCRC_PPR          |PD_PHY reply GoodCRC port power role control
+	 * |        |                       |0 = SNK (default)
+	 * |        |                       |1 = SRC
+	 * |[10:9]  |PHY_GDCRC_REV          |PD_PHY reply GoodCRC USBPD specification version control
+	 * |        |                       |0 = revision 1.0
+	 * |        |                       |1 = revision 2.0 (default)
+	 * |        |                       |2 = revision 3.0
+	 * |        |                       |3 = reserved
+	 * |[11]    |PHY_GDCRC_PDR          |PD_PHY reply GoodCRC port data role control
+	 * |        |                       |0 = UFP (default)
+	 * |        |                       |1 = DFP
+	 */
 	struct {
 		uint32_t RXD_SOP_EN      : 1;
 		uint32_t RXD_SOP1_EN     : 1;
@@ -927,6 +1177,26 @@ typedef union {
 } TS_TCPC_RXD_CTRL;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::RXD_INFO
+	 * Offset: 0x24  USBPD module received message information Register, read only
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[15:0]  |RXD_MSG_HDR            |PD_PHY received message header
+	 * |        |                       |  16-bit Message Header
+	 * |[23:16] |RXD_FRM_TYP            |PD_PHY received frame type
+	 * |        |                       |0 = SOP (default)
+	 * |        |                       |1 = SOP'
+	 * |        |                       |2 = SOP''
+	 * |        |                       |3 = SOP'_Debug
+	 * |        |                       |4 = SOP''_Debug
+	 * |        |                       |6 = Cable Reset
+	 * |        |                       |others = reserved
+	 * |[31:24] |RXD_OBJ_CNT            |PD_PHY detect message byte count
+	 * |        |                       | 2(header) + 4*NDO
+	 * |        |                       |
+	 */
 	struct {
 		uint32_t RXD_MSG_HDR :16;
 		uint32_t RXD_SOP_TYP : 8;
@@ -936,6 +1206,21 @@ typedef union {
 } TS_TCPC_RXD_INFO;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::RXD_BUFF
+	 * Offset: 0x28  USBPD module received data objects Register, read only
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[7:0]   |BYTE0                  |PD_PHY received data objects
+	 * |        |                       |
+	 * |[15:8]  |BYTE1                  |PD_PHY received data objects
+	 * |        |                       |
+	 * |[23:16] |BYTE2                  |PD_PHY received data objects
+	 * |        |                       |
+	 * |[31:24] |BYTE3                  |PD_PHY received data objects
+	 * |        |                       |
+	 */
 	struct {
 		uint32_t BYTE0 : 8;
 		uint32_t BYTE1 : 8;
@@ -946,6 +1231,22 @@ typedef union {
 } TS_TCPC_RXD_BUFF;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::TXD_CTRL
+	 * Offset: 0x2C  USBPD module transmit frame type control register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[2:0]   |TXD_FRM_TYP            |PD_PHY transmit frame type
+	 * |        |                       |0 = SOP (default)
+	 * |        |                       |1 = SOP'
+	 * |        |                       |2 = SOP''
+	 * |        |                       |3 = SOP'_Debug
+	 * |        |                       |4 = SOP''_Debug
+	 * |        |                       |5 = Hard Reset
+	 * |        |                       |6 = Cable Reset
+	 * |        |                       |7 = BIST Carrier Mode 2
+	 */
 	struct {
 		uint32_t TXD_SOP_TYP : 3;
 		uint32_t             :29;
@@ -954,16 +1255,49 @@ typedef union {
 } TS_TCPC_TXD_CTRL;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::TXD_INFO
+	 * Offset: 0x30  USBPD module transmit message information register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[16:0]  |TXD_MSG_HDR            |PD_PHY transmit message header
+	 * |        |                       | 16-bit message header
+	 * |[23:16] |TXD_OBJ_CNT            |PD_PHY transmit message data objects count
+	 * |        |                       | byte count
+	 * |[24]    |TXD_ERR_IGG            |PD_PHY transmit message ignoring FAIL flag
+	 * |        |                       |0 = TX could send message while FAIL_FLAG = 0
+	 * |        |                       |1 = TX could send message ignoring the FAIL_FLAG
+	 * |[25]    |TXD_ERR_OPT            |PD_PHY transmit no GoodCRC response error interrupt option
+	 * |        |                       |0 = PHY_TX_NO_GOODCRC_FLAG interrupt will set after GoodCRC timeout even PD_PHY already received an error GoodCRC
+	 * |        |                       |1 = PHY_TX_NO_GOODCRC_FLAG interrupt will set immediately if PD_PHY received an error GoodCRC
+	 */
 	struct {
 		uint32_t TXD_MSG_HDR :16;
 		uint32_t TXD_OBJ_CNT : 8; //byte count
 		uint32_t TXD_ERR_IGG : 1;
-		uint32_t             : 7;
+		uint32_t TXD_ERR_OPT : 1;
+		uint32_t             : 6;
 	} BITS;
 	uint32_t WORD;
 } TS_TCPC_TXD_INFO;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::TXD_BUFF
+	 * Offset: 0x34  USBPD module transmit data objects Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[7:0]   |BYTE0                  |PD_PHY transmit data objects
+	 * |        |                       |
+	 * |[15:8]  |BYTE1                  |PD_PHY transmit data objects
+	 * |        |                       |
+	 * |[23:16] |BYTE2                  |PD_PHY transmit data objects
+	 * |        |                       |
+	 * |[31:24] |BYTE3                  |PD_PHY transmit data objects
+	 * |        |                       |
+	 */
 	struct {
 		uint32_t BYTE0 : 8;
 		uint32_t BYTE1 : 8;
@@ -974,6 +1308,36 @@ typedef union {
 } TS_TCPC_TXD_BUFF;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::PHY_CTRL
+	 * Offset: 0x38  USBPD PHY control Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[0]     |PD_PHY_EN              |USB PD_PHY enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[3:1]   |PD_RX_VREF_SEL         |USB PD_PHY reference voltage for RX comparator
+	 * |        |                       |0 = 0.30V
+	 * |        |                       |1 = 0.36V
+	 * |        |                       |2 = 0.43V
+	 * |        |                       |3 = 0.50V
+	 * |        |                       |4 = 0.56V
+	 * |        |                       |5 = 0.62V
+	 * |        |                       |6 = 0.68V
+	 * |        |                       |7 = 0.75V
+	 * |[5:4]   |PD_CC_PORT_SEL         |USB PD_PHY connect to which port channel
+	 * |        |                       |0 = reserved
+	 * |        |                       |1 = USB PD_PHY connect to CC_A port channel (default)
+	 * |        |                       |2 = USB PD_PHY connect to CC_B port channel
+	 * |        |                       |3 = reserved
+	 * |[6]     |PD_RX_DEBOUNCE         |USB PD_PHY debounce rising or falling time of CC RXD
+	 * |        |                       |0 = 150ns (default)
+	 * |        |                       |1 =  75ns
+	 * |[7]     |CC_RX_TBMC_SEL         |USB PD_PHY the minimum time of a BMC bit
+	 * |        |                       |0 = 500ns (default)
+	 * |        |                       |1 =1000ns
+	 */
 	struct {
 		uint32_t PD_PHY_EN      : 1;
 		uint32_t PD_RX_VREF_SEL : 3;
@@ -986,6 +1350,31 @@ typedef union {
 } TS_TCPC_PHY_CTRL;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::FSM_STAT
+	 * Offset: 0x3C  TCPC CC_A and CC_B Finite State Machine status Register, read only
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[2:0]   |CCA_STAT               |TCPC CC_A port Finite State Machine status
+	 * |        |                       |0 = idle
+	 * |        |                       |1 = unattached.snk
+	 * |        |                       |2 = unattached.src
+	 * |        |                       |3 = attached.wait.snk
+	 * |        |                       |4 = attached.wait.src
+	 * |        |                       |5 = manual mode
+	 * |        |                       |6 = reserved
+	 * |        |                       |7 = reserved
+	 * |[5:3]   |CCB_STAT               |TCPC CC_B port Finite State Machine status
+	 * |        |                       |0 = idle
+	 * |        |                       |1 = unattached.snk
+	 * |        |                       |2 = unattached.src
+	 * |        |                       |3 = attached.wait.snk
+	 * |        |                       |4 = attached.wait.src
+	 * |        |                       |5 = manual mode
+	 * |        |                       |6 = reserved
+	 * |        |                       |7 = reserved
+	 */
 	struct {
 		uint32_t CCA_STAT : 3;
 		uint32_t CCB_STAT : 3;
@@ -995,6 +1384,38 @@ typedef union {
 } TS_TCPC_CCx_FSM_;
 
 typedef union {
+	/**
+	 * @var TS_TCPC::CCx_CTRL, x= A, B
+	 * Offset: 0x40, 0x44  TCPC CC block control Register
+	 * ---------------------------------------------------------------------------------------------------
+	 * |Bits    |Field                  |Descriptions
+	 * | :----: | :----:                | :---- |
+	 * |[0]     |CC_BLOCK_DIS           |TCPC CC block disable control bit
+	 * |        |                       |0 = CC block enable
+	 * |        |                       |1 = CC blocl disable (default)
+	 * |[1]     |CC_LPMODE_EN           |TCPC CC low power mode enable control bit
+	 * |        |                       |0 = disable
+	 * |        |                       |1 = enable
+	 * |[3]     |CC_DB_RD_DIS           |TCPC CC dead battery pull down resistor control bit
+	 * |        |                       |0 = Dead battery Resistor pull down to ground
+	 * |        |                       |1 = Dead battery Resistor off
+	 * |[9:8]   |CC_T_DRP_SEL           |TCPC CC Logic DRP operation period (tDRP):
+	 * |        |                       |0 = 60ms
+	 * |        |                       |1 = 70ms
+	 * |        |                       |2 = 80ms
+	 * |        |                       |3 = 90ms
+	 * |[11:10] |CC_DCSRC_DRP           |TCPC CC Logic Source duty cycle during DRP operation (dcSRC.DRP)
+	 * |        |                       |0 = 33% SRC, 67% SNK
+	 * |        |                       |1 = 50% SRC, 50% SNK
+	 * |        |                       |2 = 67% SRC, 33% SNK
+	 * |        |                       |3 = reserved
+	 * |[16]    |CC_LPMODE_RP           |TCPC CC standby mode Rp source select
+	 * |        |                       |0 = 80uA current src pull to AVDD in standby mode
+	 * |        |                       |1 = Rp(17.3K) pull up to 1.8V in standby mode
+	 * |[17]    |CC_PD_CH_SEL           |TCPC CC PD commucation channel select
+	 * |        |                       |0 = CC1
+	 * |        |                       |1 = CC2
+	 */
 	struct {
 		uint32_t CC_BLOCK_DIS : 1;
 		uint32_t CC_LPMODE_EN : 1; //0-Low_Power Mode disable, the TCPC enter to manual mode, all comp and  Rp/Ip/Rd is controlled by Register
@@ -1693,11 +2114,13 @@ typedef union {
 	 * |        |                  |0 = No valid edge change is detected
 	 * |        |                  |1 =  A valid edge change is detected
 	 * |        |                  |Note: This bit is only cleared by writing 1 to itself through software.
+	 * |        |                  |Note: Clearing FLAG will also clear the captured values in the register.
 	 * |[1]     |OVERFLOW_FLAG     |ECAPx input capture counter overflow flag
 	 * |        |                  |0 = disable
 	 * |        |                  |1 = enable
 	 * |        |                  |Note: The overflow function is only available when ECAPx is working in DDM mode.
 	 * |        |                  |Note: This bit is only cleared by writing 1 to itself through software.
+	 * |        |                  |Note: Clearing FLAG will also clear the captured values in the register.
 	 */
 	struct {
 		uint32_t EDGE_DET_FLAG : 1;
@@ -1718,6 +2141,7 @@ typedef union {
 	 * |        |                  |ECAP3: 0->not done, 1->QDT resonance frequency measures done
 	 * |        |                  |ECAP5: 0->not done, 1->QDT Q-factor decay time measures done
 	 * |        |                  |Note: This bit is only cleared by writing 1 to itself through software.
+	 * |        |                  |Note: Clearing FLAG will also clear the captured values in the register.
 	 */
 	struct {
 		uint32_t QDT_DONE_FLAG : 1;

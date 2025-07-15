@@ -98,6 +98,7 @@ enum EPT_CODE {
 #define T_ACTIVE           20
 #define T_XCE_RESP_TO      20
 #define T_COM_CE_TO    1600
+#define T_COM_DDM_TO    600
 #define T_MPP_CE_TO    2050
 #define T_COM_RP_TO   20000
 #define T_MPP_RP_TO    7900

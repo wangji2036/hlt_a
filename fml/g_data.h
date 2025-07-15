@@ -365,11 +365,8 @@ struct gd_t
 	 uint8_t atl_test_ldstp_bpp_N60;
 	 uint8_t atl_test_ldstp_bpp_P60;
 
-	 uint8_t alt_test_resv_rp8_cnt;
-	 uint8_t alt_test_continous_cnt;
-	 uint8_t alt_test_last_rp8_value;
-	 uint8_t alt_test_1st_rp8_value;
-
+	 uint16_t recv_rpp_count;
+	 uint16_t last_rpp_value;
 
 
 	 uint8_t reset_magicode;
@@ -379,7 +376,6 @@ struct gd_t
 	 uint8_t sleep_q_times;
 	 uint8_t rd0_cnt;
 	 uint8_t rd1_cnt;
-
 	 uint8_t light0_cnt;
 	 uint8_t light1_cnt;
 
@@ -400,6 +396,7 @@ struct gd_t
 	 int32_t SOC_RawSOC_mpct;
 	 uint32_t SOC_SleepTime_s;
 
+	 uint8_t ship_mode_cnt;
 
 };
 uint16_t dead_battery_voltage;

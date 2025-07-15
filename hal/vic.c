@@ -70,7 +70,7 @@ void hal_vic_init(void)
 
 //	VIC_vEnableIRQ(IRQn_PROT  ); VIC_vSetPriority(IRQn_PROT,   0);
 //	VIC_vEnableIRQ(IRQn_WDT   ); VIC_vSetPriority(IRQn_WDT,    3);
-	VIC_vEnableIRQ(IRQn_TMR0  ); VIC_vSetPriority(IRQn_TMR0,   3);
+	VIC_vEnableIRQ(IRQn_TMR0  ); VIC_vSetPriority(IRQn_TMR0,   2);
 	VIC_vEnableIRQ(IRQn_TMR1  ); VIC_vSetPriority(IRQn_TMR1,   1);
 	VIC_vEnableIRQ(IRQn_TMR2  ); VIC_vSetPriority(IRQn_TMR2,   3);
 	VIC_vEnableIRQ(IRQn_TMR3  ); VIC_vSetPriority(IRQn_TMR3,   3);

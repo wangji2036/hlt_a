@@ -45,6 +45,7 @@ extern int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *dat
 #define REG_Charger_Ibat_Limit 					0x3A
 #define REG_Discharge_Setting4 					0x40
 #define REG_Ntc_Setting1 						0x43
+#define REG_Ntc_Setting2 						0x44
 
 
 void hal_nu6805_buckboost_init(void);

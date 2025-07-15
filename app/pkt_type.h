@@ -685,7 +685,8 @@ struct mpp_ptx_fsk_pkt_err_t
 {
 	uint8_t hdr_01;
 	uint8_t error : 2;
-	uint8_t       : 6;
+	uint8_t       : 3;
+	uint8_t info  : 3; //support after qi22
 } __attribute__ ((packed));
 
 struct mpp_ptx_fsk_pkt_cloak_t
@@ -796,19 +797,18 @@ struct mpp_ptx_fsk_pkt_ecap_t
 	uint8_t hdr_8F;
 	uint8_t          : 4;
 	uint8_t selector : 4;
-	uint8_t potential_power_bit0_1 : 2;
-	uint8_t          		 	   : 6;
-	uint8_t potential_power_bit2_9;
-	uint8_t nego_power_bit0_1 : 2;
-	uint8_t 				  : 6;
-	uint8_t nego_power_bit2_9;
-	uint8_t pow_limit_reason : 4;
-	uint8_t 			: 2;
-	uint8_t cal_support : 1;
-	uint8_t 			: 1;
-	uint8_t concurrent_data_stream : 3;
-	uint8_t buffer_size            : 3;
-	uint8_t                        : 2;
+	uint8_t          : 8;
+	uint8_t ptx_potential_power;
+	uint8_t 		 : 8;
+	uint8_t prx_negotiable_power;
+	uint8_t power_limit_reason : 4;
+	uint8_t 				   : 2;
+	uint8_t cal_support 	   : 1; //support after qi22
+	uint8_t 				   : 1;
+	uint8_t concurrent_data_stream  : 3;
+	uint8_t data_stream_buffer_size : 3;
+	uint8_t                         : 1;
+	uint8_t power_src               : 1; //support after qi22
 	uint8_t          : 8;
 	uint8_t          : 8;
 } __attribute__ ((packed));

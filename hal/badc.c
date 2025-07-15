@@ -122,9 +122,7 @@ void hal_badc_init(void)
 {
 	//(4+1)*(3+3)*250ns = 7.5us
 	BADC->CTRL.WORD = (_BADC_SAMPLE_AVG_4 << BADC_CTRL_SAMPLE_AVG_SEL_Pos) | (_BADC_SAMPLE_DLY_1 << BADC_CTRL_SAMPLE_DLY_SEL_Pos) |
-			          (_BADC_SAMPLE_CLK_3 << BADC_CTRL_SAMPLE_CLK_SEL_Pos) | (_BADC_VREF_V3P3 << BADC_CTRL_VREF_SEL_Pos) | BADC_CTRL_ADC_EN_Msk|
-			          (_BADC_ISNS_PGA_GAIN_40<<BADC_CTRL_ISNS_PAG_GAIN_SEL_Pos) | (_BADC_ISNS_PGA_PHAS_08K<<BADC_CTRL_ISNS_PAG_PHAS_SEL_Pos) |
-			          BADC_CTRL_ISNS_PAG_EN_Msk;
+			          (_BADC_SAMPLE_CLK_3 << BADC_CTRL_SAMPLE_CLK_SEL_Pos) | (_BADC_VREF_V3P3 << BADC_CTRL_VREF_SEL_Pos) | BADC_CTRL_ADC_EN_Msk;
 
 	hal_badc_cali();
 }
@@ -231,8 +229,7 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 
 	uint16_t BDAC_VREF_V3P3 = hal_badc_vref_update();
 
-	int tmp1 = hal_badc_average_meas(channel, 4);
-	int tmp = (BDAC_VREF_V3P3 * tmp1) >> 12; //100us
+	int tmp = (BDAC_VREF_V3P3 * hal_badc_average_meas(channel, 4)) >> 12; //100us
 
 	switch (channel)
 	{
@@ -314,7 +311,8 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			break;
 		}
 		case _BADC_CH_PGA_ISNS:
-			rst = tmp1;
+		     rst = tmp;
+			//rst = tmp1;
 			//rst = (tmp1*25)/10;// gain = 40,  sense R:10 mohm, and changed to be mA. so Ibus = adc value*2.5 ( mA)
 			break;
 		default:

@@ -123,6 +123,8 @@ void ap_data_init(void)
 	printk("\r\n base_fre [%d]", ap->fs_base_value);
 }
 
+bool tc_power_on = false;
+
 void gd_data_init(void)
 {
 	uint32_t addr;
@@ -149,6 +151,8 @@ void gd_data_init(void)
 		gd->real_soc_obtained = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;
+		tc_power_on = true;
+		gd ->ship_mode_cnt = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

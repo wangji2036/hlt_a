@@ -280,7 +280,7 @@ void tcpm_task_event_handler(uint32_t event)
 			if(qi_state == 1 && gd->ptx_protocol_phase <= WPC_PHASE_PING)
 			{
 				qi_cnt++;
-				if(qi_cnt >= 100)
+				if(qi_cnt >= 30)
 				{
 					qi_state = 0;
 					qi_cnt = 0;

@@ -138,7 +138,7 @@ void hal_epwm_pwm_update(TS_EPWM *epwm, uint16_t perd_cycle, uint16_t duty_ratio
     	if (duty_ctrl.BITS.CH0_DUTY > duty_min && duty_ctrl.BITS.CH0_DUTY < duty_max)
     	{
     		duty_ctrl.BITS.CH0_DUTY = (perd_ctrl.BITS.PWM_PERD < epwm->PWM_PERD.BITS.PWM_PERD) ? duty_min : duty_max;
-    		printk("\r\n xxxxxxxxxxxxxxxxxxxxxxxxx");
+//    		printk("\r\n xxxxxxxxxxxxxxxxxxxxxxxxx");
     	}
     }
     /*--------------------- EPWM design issue workaround ---------------------*/
