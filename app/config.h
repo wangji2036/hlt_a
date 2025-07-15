@@ -6,7 +6,7 @@
 #define PROJ_CODE                               0x00
 #define PHAS_CODE                               0x01
 #define RELE_DATE                               0x5715	//update 20250325
-#define TX_FW_VER                               0x16
+#define TX_FW_VER                               0x15
 
 
 #define BATTERY_CV_VALUE					4200
