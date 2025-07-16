@@ -265,7 +265,10 @@ void SLP_vNormalToSleep(void)
 	TMR0->LOAD_CNT.WORD = 16 * 100 * 1 - 1; //first Q,100ms start.
 
 	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+	{
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
+		hal_wdt_stop();
+	}
 	else
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 #if(CONFIG_SHIP_MODE_ENABLE_DEBUG ==1)
@@ -299,10 +302,11 @@ void SLP_vNormalToSleep(void)
 	fml_nu103x_config(_1030_CFG_ALL_RST);
 	fml_nu103x_config(_1030_CFG_VDD_V5V_BUCK_DIS);
 	fml_nu103x_config(_1030_CFG_LPM_EN_);
-
-
 	hal_wdt_feed();
+
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
+	delay_1ms(10);
+	SYS->RST_CTRL.BITS.MCU_RST = 1;
 
 }
 void SLP_vSleepToSleep(void)
@@ -338,7 +342,10 @@ void SLP_vSleepToSleep(void)
 			TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
 	}
 	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
-			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
+	{
+			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K'
+			hal_wdt_stop();
+	}
 		else
 			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
@@ -435,6 +442,8 @@ void SLP_vSleepToSleep(void)
     VIC_vModuleDisable();
     hal_wdt_feed();
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
+	delay_1ms(10);
+	SYS->RST_CTRL.BITS.MCU_RST = 1;
 
 }
 void SLP_vSleepQToSleep(void)

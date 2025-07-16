@@ -195,6 +195,7 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 		if (ret)
 		{
 			printk("\r\n fm1210 %d", ret);
+
 		}
 		else
 		{
