@@ -11,204 +11,285 @@
 #include "g_data.h"
 #include "ntc.h"
 
-uint8_t ntc_lock_flag = 0;
-bool ntc_ut_flag = false;
-bool ntc_ot_flag = false;
+bool bat_ntc_ut_flag = false;
+bool bat_charge_ntc_ot_flag = false;
 bool ntc_stop_chrg_flag = false;
-
+bool typec_ntc_ot_flag = false;
 extern const uint32_t source_pdo[];
 extern const uint32_t source_pdo_ntc[];
 
-#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
+#if(BUCKBOOST_USED_NU6805 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 
 
 void buckboost_ntc_handle(void)
 {
-	static uint8_t ntc_lock_cnt = 0;
-	static uint8_t ntc_ut_cnt = 0;
-	static uint8_t ntc_ot_cnt = 0;
+	static uint8_t bat_ntc_lock_cnt = 0;
+	static uint8_t bat_ntc_ut_cnt = 0;
+	static uint8_t bat_ntc_ot_cnt = 0;
 	static uint8_t ntc_stop_chg_cnt = 0;
-	//static uint8_t ntc_lock_cnt = 0;
-	printk("\nR_ntc=%d %d %d\n",g_buckboost.adc_tbat1,ntc_ut_flag,ntc_ot_flag);
-
-	uint16_t ntc_ut_value;
-	uint16_t ntc_ut_restore_value;
-	uint16_t ntc_ot_value;
-	uint16_t ntc_ot_restore_value;
-
-	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	static uint8_t typec_ntc_ot_cnt = 0;
+	//bat
 	{
-		ntc_ut_value = 			CHRG_NTC_UT_VALUE;
-		ntc_ut_restore_value = 	CHRG_NTC_UT_RESTORE_VALUE;
-		ntc_ot_value = 			CHRG_NTC_OT_VALUE;
-		ntc_ot_restore_value = 	CHRG_NTC_OT_RESTORE_VALUE;
-	}
-	else
-	{
-		ntc_ut_value = 			DISG_NTC_UT_VALUE;
-		ntc_ut_restore_value = 	DISG_NTC_UT_RESTORE_VALUE;
-		ntc_ot_value = 			DISG_NTC_OT_VALUE;
-		ntc_ot_restore_value = 	DISG_NTC_OT_RESTORE_VALUE;
-	}
-
-	if(ntc_ut_flag == 0)
-	{
-		if(g_buckboost.adc_tbat1 > ntc_ut_value)
+		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			ntc_ut_cnt++;
-			if(ntc_ut_cnt >= 10)
+			gd->bat_ntc_lock_flag = 0;
+			if(!ntc_stop_chrg_flag)
 			{
-				ntc_ut_cnt = 0;
-				ntc_ut_flag = 1;
-
-				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				//3度  52度
+				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_50 || g_buckboost.adc_tbat1> NTC_10K_3435_REAL_RT_3 || g_buckboost.adc_tbat1 == 470)
 				{
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					ntc_stop_chg_cnt++;
+					if(ntc_stop_chg_cnt >= 20)
+					{
+						ntc_stop_chg_cnt = 0;
+						ntc_stop_chrg_flag = 1;
+						// hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x00);
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
 				}
 				else
-				{
-					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-				}
-
-				printk("\nR_ntc ut\n");
-			}
-		}
-		else
-		{
-			ntc_ut_cnt = 0;
-		}
-	}
-	else
-	{
-		if(g_buckboost.adc_tbat1 < ntc_ut_restore_value)
-		{
-			ntc_ut_cnt++;
-			if(ntc_ut_cnt >= 10)
-			{
-				ntc_ut_cnt = 0;
-				ntc_ut_flag = 0;
-				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-				{
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-				else
-				{
-					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-				}
-				printk("\nR_ntc utrestore\n");
-			}
-		}
-		else
-		{
-			ntc_ut_cnt = 0;
-		}
-	}
-
-	if(ntc_ot_flag == 0)
-	{
-		if(g_buckboost.adc_tbat1 < ntc_ot_value)
-		{
-			ntc_ot_cnt++;
-			if(ntc_ot_cnt >= 10)
-			{
-				ntc_ot_cnt = 0;
-				ntc_ot_flag = 1;
-
-				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-				{
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-				else
-				{
-					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-				}
-
-				printk("\nR_ntc Ot\n");
-			}
-		}
-		else
-		{
-			ntc_ot_cnt = 0;
-		}
-	}
-	else
-	{
-		if(g_buckboost.adc_tbat1 > ntc_ot_restore_value)
-		{
-			ntc_ot_cnt++;
-			if(ntc_ot_cnt >= 10)
-			{
-				ntc_ot_cnt = 0;
-				ntc_ot_flag = 0;
-				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-				{
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-				else
-				{
-					buckboost_set_bus_iv(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current,0,0);
-				}
-				printk("\nR_ntc otrestore\n");
-			}
-		}
-		else
-		{
-			ntc_ot_cnt = 0;
-		}
-	}
-
-	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //ntc_stop_chg_cnt
-	{
-		if(ntc_stop_chrg_flag == 0)
-		{
-			if(g_buckboost.adc_tbat1 < CHRG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat1> CHRG_NTC_UT_LOCK_VALUE)
-			{
-				ntc_stop_chg_cnt++;
-				if(ntc_stop_chg_cnt >= 20)
 				{
 					ntc_stop_chg_cnt = 0;
-					ntc_stop_chrg_flag = 1;
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+			else
+			{
+				//8度  47度
+				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_47 && g_buckboost.adc_tbat1< NTC_10K_3435_REAL_RT_8)
+				{
+					ntc_stop_chg_cnt++;
+					if(ntc_stop_chg_cnt >= 20)
+					{
+						ntc_stop_chg_cnt = 0;
+						ntc_stop_chrg_flag = 0;
+						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					ntc_stop_chg_cnt = 0;
+				}
+			}
+			if(!bat_ntc_ut_flag)
+			{
+				//15度
+				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_15)
+				{
+					if(bat_ntc_ut_cnt++>10)
+					{
+						bat_ntc_ut_cnt = 0;
+						bat_ntc_ut_flag = 1;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					bat_ntc_ut_cnt = 0;
+				}
+			}
+			else
+			{
+				//20度
+				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_20)
+				{
+					if(bat_ntc_ut_cnt++>10)
+					{
+						bat_ntc_ut_cnt = 0;
+						bat_ntc_ut_flag = 0;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					bat_ntc_ut_cnt = 0;
+				}
+			}
+			if(!bat_charge_ntc_ot_flag)
+			{
+				//45度
+				if(g_buckboost.adc_tbat1<NTC_10K_3435_REAL_RT_43)
+				{
+					if(g_buckboost.adc_vbat>=8400)
+					{
+						if(bat_ntc_ot_cnt++>10)
+						{
+							bat_ntc_ot_cnt = 0;
+							bat_charge_ntc_ot_flag = 1;
+							// hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x00);
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
+					{
+						bat_ntc_ot_cnt = 0;
+					}
+				}
+				else
+				{
+					bat_ntc_ot_cnt = 0;
+				}
+			}
+			else
+			{
+				//40度
+				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_40||g_buckboost.adc_vbat<8400)
+				{
+					if(bat_ntc_ot_cnt++>10)
+					{
+						bat_ntc_ot_cnt = 0;
+						bat_charge_ntc_ot_flag = 0;
+						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					bat_ntc_ot_cnt = 0;
 				}
 			}
 		}
-		else
+
+		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			if(g_buckboost.adc_tbat1 > CHRG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat1< CHRG_NTC_UT_LOCK_RESTORE_VALUE)
+			ntc_stop_chrg_flag = 0;
+			bat_charge_ntc_ot_flag = 0;
+			if(gd->bat_ntc_lock_flag == 0)
 			{
-				ntc_stop_chg_cnt++;
-				if(ntc_stop_chg_cnt >= 20)
+				//-15度 57度
+				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_54 || g_buckboost.adc_tbat1> NTC_10K_3435_REAL_RT_N15||g_buckboost.adc_tbat1==470)
 				{
-					ntc_stop_chg_cnt = 0;
-					ntc_stop_chrg_flag = 0;
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					bat_ntc_lock_cnt++;
+					if(bat_ntc_lock_cnt >= 20)
+					{
+						bat_ntc_lock_cnt = 0;
+						gd->bat_ntc_lock_flag = 1;
+					}
+				}
+				else
+				{
+					bat_ntc_lock_cnt = 0;
+				}
+			}
+			else
+			{
+				//-10度 52度
+				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_52 && g_buckboost.adc_tbat1< NTC_10K_3435_REAL_RT_N10)
+				{
+					bat_ntc_lock_cnt++;
+					if(bat_ntc_lock_cnt >= 20)
+					{
+						bat_ntc_lock_cnt = 0;
+						gd->bat_ntc_lock_flag = 0;
+						gd->ntc_led_off = 1;
+					}
+				}
+				else
+				{
+					bat_ntc_lock_cnt = 0;
 				}
 			}
 		}
 	}
-	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	//typec
 	{
-		if(ntc_lock_flag == 0)
+		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			if(g_buckboost.adc_tbat1 < DISG_NTC_OT_LOCK_VALUE || g_buckboost.adc_tbat1> DISG_NTC_UT_LOCK_VALUE)
+			if(!gd->typec_ntc_lock)
 			{
-				ntc_lock_cnt++;
-				if(ntc_lock_cnt >= 20)
+				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<-15)
 				{
-					ntc_lock_cnt = 0;
-					ntc_lock_flag = 1;
+					gd->typec_ntc_lock = 1;
+					gd->recharge_flag = 1;
+				}
+			}
+			else
+			{
+				if(gd->sys_infos.ntc_temp_typec <= 82 && gd->sys_infos.ntc_temp_typec >-15)
+				{
+					gd->ntc_led_off = 1;
+					gd->typec_ntc_lock = 0;
+					gd->recharge_flag = 0;
+				}
+			}
+			
+			if(!typec_ntc_ot_flag)
+			{
+				if(gd->sys_infos.ntc_temp_typec >= 81)
+				{
+					if(typec_ntc_ot_cnt++>10)
+					{
+						typec_ntc_ot_flag = 1;
+					}
+				}
+				else
+				{
+					typec_ntc_ot_cnt = 0;
+				}
+			}
+			else
+			{
+				if(gd->sys_infos.ntc_temp_typec < 35)
+				{
+					if(typec_ntc_ot_cnt++>10)
+					{
+						typec_ntc_ot_flag = 0;
+					}
+				}
+				else
+				{
+					typec_ntc_ot_cnt = 0;
 				}
 			}
 		}
-		else
+		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			if(g_buckboost.adc_tbat1 > DISG_NTC_OT_LOCK_RESTORE_VALUE && g_buckboost.adc_tbat1< DISG_NTC_UT_LOCK_RESTORE_VALUE)
+			if(!gd->typec_charge_ntc_lock)
 			{
-				ntc_lock_cnt++;
-				if(ntc_lock_cnt >= 20)
+				if(gd->sys_infos.ntc_temp_typec >81 || gd->sys_infos.ntc_temp_typec<-15)
 				{
-					ntc_lock_cnt = 0;
-					ntc_lock_flag = 0;
+					gd->typec_charge_ntc_lock = 1;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+			else
+			{
+				if(gd->sys_infos.ntc_temp_typec <= 68 && gd->sys_infos.ntc_temp_typec>-15)
+				{
+					gd->typec_charge_ntc_lock = 0;
+					hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+
+			if(!typec_ntc_ot_flag)
+			{
+				if(gd->sys_infos.ntc_temp_typec > 68)
+				{
+					if(typec_ntc_ot_cnt++>10)
+					{
+						typec_ntc_ot_flag = 1;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					typec_ntc_ot_cnt = 0;
+				}
+			}
+			else
+			{
+				if(gd->sys_infos.ntc_temp_typec < 30)
+				{
+					if(typec_ntc_ot_cnt++>10)
+					{
+						typec_ntc_ot_flag = 0;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				else
+				{
+					typec_ntc_ot_cnt = 0;
 				}
 			}
 		}

@@ -1,7 +1,8 @@
 #ifndef PROT_H_
 #define PROT_H_
 
-int16_t fml_ntc_temp_get(void);
+int16_t fml_ntc_temp_get_typec(void);
+int16_t fml_ntc_temp_get_wpc(void);
 int16_t fml_die_temp_get(void);
 /*--------------------------------------------------------------------------*/
 void fml_tntc_otp_init(void);

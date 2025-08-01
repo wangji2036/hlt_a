@@ -90,7 +90,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
-		ap->q_factor_base_value = 161;
+		ap->q_factor_base_value = 137;
 	}
 	else
 	{
@@ -102,7 +102,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
-		ap->fs_base_value = 818;
+		ap->fs_base_value = 979;
 	}
 	else
 	{
@@ -153,6 +153,16 @@ void gd_data_init(void)
 		gd->SOC_SleepTime_s = 2000;
 		tc_power_on = true;
 		gd ->ship_mode_cnt = 0;
+		gd->led_fault = 0;
+		gd->led_fault1 = 0;
+		gd->ntc_typec_restore = 0;
+		gd->ntc_led_off = 0;
+		gd->recharge_flag = 0;
+		gd->wirless_ntc_lock = 0;
+		gd->bat_ntc_lock_flag = 0;
+		gd->typec_ntc_lock = 0;
+		gd->typec_charge_ntc_lock = 0;
+		gd->flash_times = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

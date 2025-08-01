@@ -24,7 +24,8 @@ void port_manager_set_event(uint32_t event)
 
 	printk("%s=0x%x!\n",__func__,event);
 }
-
+extern uint8_t charge_led_finish;
+extern uint8_t charge_led_run;
 
 void port_manager_set_state(enum port_state_e state)
 {
@@ -113,19 +114,19 @@ void port_enum_port0_connect_closed(void)
 		port_manager_set_state(PORT_IDLE_OR_READY);
 	}
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT1_INDEX)  == TC_Disable)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT1_INDEX)  == TC_Disable)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -275,19 +276,19 @@ void port_enum_port1_connect_closed(void)
 		port_manager_set_state(PORT_IDLE_OR_READY);
 	}
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -373,19 +374,19 @@ void port_enum_port2_connect_closed(void)
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -492,19 +493,19 @@ void port_enum_port3_connect_closed(void)
 	tcpm_disable_usba_detect();
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -612,7 +613,7 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
-		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA·Åµç
+		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mAï¿½Åµï¿½
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,6500);
 		printk("mos0\n");
@@ -622,31 +623,31 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
-		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA·Åµç
+		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mAï¿½Åµï¿½
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		hal_tcpc_set_gate_en(PORT1_INDEX,true);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_usb_a_gate_en)
 	{
-		//if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA·Åµçs
+		//if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mAï¿½Åµï¿½s
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		hal_tcpc_set_gate_en(PORT2_INDEX,true);
 	}
 #endif
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôtoogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ÖØÐÂ¿ªÆôA¿Ú¼ì²â
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½Aï¿½Ú¼ï¿½ï¿½
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -758,9 +759,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
 		g_port.ibat_limit = g_port.ibat_limit < 2000 ? g_port.ibat_limit : 2000;
 
-	#if(BUCKBOOST_USED_NU6801 == 1)
 		g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
-	#endif
 	}
 	else
 	{
@@ -769,34 +768,36 @@ void port_enum_port_snk_setcharge(void)
 
 		if(g_buckboost.adc_vbus < 5500)// 5v
 		{
-		#if(BUCKBOOST_USED_NU6801 == 1)
 			g_port.ibus_limit = g_port.ibus_limit < 3000 ? g_port.ibus_limit : 3000;
-		#endif
 		}
 		else if(g_buckboost.adc_vbus < 9500)// 5v
 		{
-		#if(BUCKBOOST_USED_NU6801 == 1)
+			g_port.ibus_limit = g_port.ibus_limit < 3000 ? g_port.ibus_limit : 3000;
+		}
+		else if(g_buckboost.adc_vbus < 12500)
+		{
+			g_port.ibus_limit = g_port.ibus_limit < 2500 ? g_port.ibus_limit : 2500;
+		}
+		else if(g_buckboost.adc_vbus < 15500)
+		{
 			g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
-		#endif
 		}
 		else
 		{
-		#if(BUCKBOOST_USED_NU6801 == 1)
 			g_port.ibus_limit = g_port.ibus_limit < 1500 ? g_port.ibus_limit : 1500;
-		#endif
 		}
 	}
 
-#if(BUCKBOOST_USED_NU6801 == 1)
-	g_port.ibat_limit = g_port.ibat_limit < 5000 ? g_port.ibat_limit : 5000;
-#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
-	if(ntc_ut_flag | ntc_ot_flag)
+	if(typec_ntc_ot_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit / 2;
-		g_port.ibus_limit = g_port.ibus_limit / 2;
+		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
 	}
-#endif
-#endif
+	if(bat_ntc_ut_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit<(7000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:7000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(7000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:7000*1000/g_buckboost.adc_vbus;
+	}
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
 	printk("charg set %d %d", g_port.ibus_limit,g_port.ibat_limit);
 
@@ -810,45 +811,15 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
-
-
-
-#if(BUCKBOOST_USED_NU6801 == 1)
-	#if(CONFIG_DEADBATT_SLEEP_SUPPORT == 1)
-		if(pdlib_is_connect() )
-		{
-			uint32_t source_pdo = pdlib_snk_get_pdo_by_index(1);
-			printk("source_pdo = 0x%x adc_vbat= %d\n",source_pdo,g_buckboost.adc_vbat);
-			if(source_pdo & PDO_FIXED_DUAL_ROLE && g_buckboost.adc_vbat < CONFIG_DEADBATT_VOLTAGE)
-			{
-				printk("disable bobu\n");
-				hal_nu6801_disable_bubo();
-			}
-			else
-			{
-				if(!ntc_stop_chrg_flag && nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
-			}
-
-		}
-		else
-		{
-			if(!ntc_stop_chrg_flag && nu6801_dead_bat) hal_nu6801_buckboost_enter_force_trickle(true);
-		}
-	#else
-		if(!ntc_stop_chrg_flag) hal_nu6801_buckboost_enter_force_trickle(true);
-	#endif
-	#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
-	if(ntc_stop_chrg_flag) hal_nu6801_disable_bubo();
-	#endif
-#endif
+	if(ntc_stop_chrg_flag||bat_charge_ntc_ot_flag||gd->typec_charge_ntc_lock) buckboost_ops.set_work_mode(0x00);
 
 	if(pdlib_is_pps_sink())
 		buckboost_ops.set_ovp(20000);
 	else
 		buckboost_ops.set_ovp(g_port.snk_set_volt);
 
-	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA V[bat] = %d !\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,
-			g_port.ibus_limit,g_buckboost.adc_vbat);
+	printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA V[bat] = %d  V[set] = %d !\n",g_port.inhandle_port,g_port.adpater_power,g_port.ibat_limit,
+			g_port.ibus_limit,g_buckboost.adc_vbat,g_port.snk_set_volt);
 
 }
 
@@ -863,27 +834,13 @@ void port_enum_port_snk_setvolt(void)
 
 	g_port.ibus_limit = 3000;
 	g_port.ibat_limit = 3000;
-#if(BUCKBOOST_USED_NU6801 == 1)
 	buckboost_ops.set_ovp(20000);
-#endif
 	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE
 			&& g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && (!pdlib_get_deadbat()))
 	{
 
 		if(pdlib_is_connect())
 		{
-#if(CONFIG_SUPPORT_PPS_CHAGER == 1)
-			source_pdo = pdlib_snk_get_pdo_by_index(pdlib_snk_get_pdo_amount());
-			if(pdo_type(source_pdo) == PDO_TYPE_APDO && pdo_pps_apdo_max_voltage(source_pdo) >= 16000 && pdo_pps_apdo_max_current(source_pdo) >= 2500)
-			{
-				pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount(),VOLTAGE_PPS,pdo_pps_apdo_max_current(source_pdo));
-				g_port.ibus_limit =  pdo_pps_apdo_max_current(source_pdo);
-				g_port.snk_set_volt = VOLTAGE_PPS;
-				//g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_pps_apdo_max_voltage(source_pdo) / 1000;
-				g_port.adpater_power =  (uint32_t)g_port.ibus_limit * 11000 / 1000;
-			}
-			else
-#endif
 			{
 				for(uint8_t i = 0; i< pdlib_snk_get_pdo_amount(); i++)
 				{
@@ -892,13 +849,32 @@ void port_enum_port_snk_setvolt(void)
 
 					if(pdo_type(source_pdo) == PDO_TYPE_FIXED)
 					{
-						if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
+						if(gd->sigle_clicked)
 						{
-							pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
-							g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
-							g_port.ibus_limit = pdo_max_current(source_pdo);
-							g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
-							break;
+							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
+							{
+								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
+								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
+								g_port.ibus_limit = pdo_max_current(source_pdo);
+								g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
+								break;
+							}
+							//gd->sigle_clicked = 0;
+
+						}
+						else
+						{
+							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_20V)
+							{
+								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
+								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
+								g_port.ibus_limit = pdo_max_current(source_pdo);
+								if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1500? 1500:g_port.ibus_limit;
+								else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2000? 2000:g_port.ibus_limit;
+								g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
+								break;
+							}
+
 						}
 					}
 				}
@@ -910,16 +886,16 @@ void port_enum_port_snk_setvolt(void)
 			if(bc12_type == BC1P2_QC12V)
 			{
 				qc2_set_volt(VOLTAGE_12V);
-				g_port.ibus_limit = 1500;
+				g_port.ibus_limit = 1500;  // 12V 2.5A
 				g_port.snk_set_volt = VOLTAGE_12V;
-				g_port.adpater_power =  (uint32_t)2000 * VOLTAGE_12V / 1000;
+				g_port.adpater_power =  (uint32_t)2500 * VOLTAGE_12V / 1000;
 			}
 			else
 			{
 				qc2_set_volt(VOLTAGE_9V);
 				g_port.snk_set_volt = VOLTAGE_9V;
-				g_port.ibus_limit = 2000;
-				g_port.adpater_power =  (uint32_t)2000 * VOLTAGE_9V / 1000;
+				g_port.ibus_limit = 2000;  // 9V 3A
+				g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_9V / 1000;
 			}
 			g_port.ibat_limit = 5000;
 		}
@@ -951,7 +927,7 @@ void port_enum_port_snk_setvolt(void)
 //				g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 			g_port.ibus_limit = 3000;
 			g_port.ibat_limit = 5000;
-			g_port.adpater_power =  (uint32_t)3000 * VOLTAGE_5V / 1000;
+			g_port.adpater_power =  (uint32_t)500 * VOLTAGE_5V / 1000;
 			g_port.snk_set_volt = VOLTAGE_5V;
 		}
 	}
@@ -1042,6 +1018,10 @@ void port_enum_port0_connect_success(void)
 				pdlib_set_pd_event(PORT0_INDEX,USB_PD_EVT_SNK_ATTACHED);
 				//hal_tcpc_set_gate_en(PORT0_INDEX,true);
 				g_port.incharge_port = PORT0_INDEX;
+			}
+			if (charge_led_finish == 0)
+			{
+				charge_led_run = 1;
 			}
 			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
 		}
@@ -1163,6 +1143,8 @@ void port_enum_port0_connect_start(void)
 	printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n",g_port.port_state[1],g_port.port_state[2],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
+	gd->ntc_led_off = 0;
+	gd->sigle_clicked = 0;
 	g_port.snk_set_volt = VOLTAGE_5V;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -1179,9 +1161,9 @@ void port_enum_port0_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		//
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ÉèÖÃ³äµçµçÁ÷µ½×îÐ¡
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ÓÐsnk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ï¿½ï¿½snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1213,9 +1195,9 @@ void port_enum_port1_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		//hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ÉèÖÃ³äµçµçÁ÷µ½×îÐ¡
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ÓÐsnk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ï¿½ï¿½snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1246,9 +1228,9 @@ void port_enum_port2_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,100);
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ÉèÖÃ³äµçµçÁ÷µ½×îÐ¡
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ÓÐsnk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //Ã»ï¿½ï¿½snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1273,7 +1255,7 @@ void port_enum_port3_connect_start(void)
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ÉèÖÃ³äµçµçÁ÷µ½×îÐ¡
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //ï¿½ï¿½ï¿½Ã³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡
 	}
 	else
 	{
@@ -1300,7 +1282,10 @@ void port_enum_port3_connect_start(void)
 void port_enum_scan_handle(void)
 {
 
-
+	if(gd->recharge_flag)
+	{
+		g_port.port_state[PORT0_INDEX] = PORT_STATE_SOURCE;
+	}
 	if(g_port.state != PORT_IDLE_OR_READY)
 	{
 		if(g_port.port_event & PORT0_EVENT_UNCONNECT && g_port.inhandle_port != PORT0_INDEX)				//TTPEC0
@@ -1354,7 +1339,7 @@ void port_enum_scan_handle(void)
 	else if(g_port.port_event & PORT0_EVENT_TRY_CONNECT)				//TTPEC0
 	{
 		g_port.port_event &= ~PORT0_EVENT_TRY_CONNECT;
-		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)
+		if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE&&!gd->recharge_flag)
 		{
 			port_manager_set_state(PORT_INHANDLING);
 			g_port.inhandle_port = 0;

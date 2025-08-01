@@ -8,12 +8,13 @@
 #include"BMS_FixPoint.h"
 #include "port_manager.h"
 extern volatile uint16_t sys_ticks;
+extern uint16_t key_ui_cnt;
 #define LED_DISPLAY
 
 void key_sigle_click_process(void);
 void key_double_click_process(void);
 void key_long_click_process(void);
-uint8_t key_flag = 0;
+volatile uint8_t key_flag = 0;
 
 // following variable will be update to be GB data.
 //uint8_t soc_show = 0;// SOC value, for display
@@ -36,6 +37,11 @@ static void drv_IO_control(uint8_t pinx, bool status)
 {
 	switch (pinx)
 	{
+	case 6:
+		_UI_PIN6_PORT->I_EN.BITS._UI_PIN6_PINx = 0;
+		_UI_PIN6_PORT->DOUT.BITS._UI_PIN6_PINx = status;
+		_UI_PIN6_PORT-> O_EN.BITS._UI_PIN6_PINx = 1;
+		break;
 	case 5:
 		_UI_PIN5_PORT->I_EN.BITS._UI_PIN5_PINx = 0;
 		_UI_PIN5_PORT->DOUT.BITS._UI_PIN5_PINx = status;
@@ -90,8 +96,18 @@ static uint8_t batt_level_table[6]=
     LED_FLOW_2,             //!< level 2        //
     LED_FLOW_3,             //!< level 3        //
     LED_FLOW_4,             //!< level 4        //
- //   LED_FLOW_5,             //!< level 4        //
+ //   LED_FLOW_5,           //!< level 4        //
 };
+
+// For single light horse race effect in mini current mode
+static const uint8_t horse_race_led_table[] = {
+	0x00, // All off
+	0x01, // LED 1
+	0x02, // LED 2
+	0x04, // LED 3
+	0x08, // LED 4
+};
+
 typedef enum
 {
     LEVEL_NULL = (uint8_t)0x00,
@@ -107,7 +123,9 @@ typedef enum
 #define BATT_ENERGY_LEVEL2              (50)
 #define BATT_ENERGY_LEVEL3              (75)
 #define BATT_ENERGY_LEVEL4              (100)
-
+uint8_t charge_led_run = 0;
+uint8_t charge_led_finish = 0;
+uint8_t button_led_run = 0;
 static batt_level_t drv_ui_coulomb(void)
 {
      uint8_t _batt_energy_table[]=
@@ -127,149 +145,237 @@ static batt_level_t drv_ui_coulomb(void)
      }
      return LEVEL_4;
 }
-/*
-// reserved for future use,  3 gpios to control more LEDs.
-static uint8_t disp_map[7][2]=
-{
-    // H, L
-    {1, 2},   //!< led 0 light
-    {2, 1},   //!< led 1 light
-    {3, 1},   //!< led 2 light
-    {2, 3},   //!< led 3 light
-    {1, 3},   //!< led 4 light
-    {3, 1},   //!< led 5 light
-    {4, 3},   //!< led 6 light//key
-};
-*/
-static uint8_t disp_map[5]={1,2,3,4,5};
+static uint8_t disp_map[6]={1,2,3,4,5,6};
 
 static void ui_update_led(void)
 {
-	 soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
+	static uint8_t charge_cnt = 0;
+	static uint8_t charge_index = 0;
+	static uint8_t button_cnt = 0;
+	static uint8_t flash_light = 0;
+	 static uint8_t horse_index = 0;
+	 static uint8_t cnt_time = 0;
+	 static uint16_t cycle_count = 0;  // 循环计数器，最多 3600 次 (2 h)
 
 //	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
-	 if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
-	 {
-	     flash_flag_wls = 1;
-	 }
-	 else
-	 {
-		 flash_flag_wls = 0;
-	 }
-	 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
-	 {
-		 soc_show_ram_led |= 0x10;// wireless LED is on
-	 }
-     uint8_t _index= 3;// to get the highest bit to blink.
-     for(; _index> 0; _index--)
-     {
-         if((soc_show_ram_led & (1<< _index))!= 0)
-         {
-             break;
-         }
-     }
-	 if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
-	 {
-		 soc_show_ram_led ^= (1 << 4);// for blink-off
-	 }
-     if(flash_flag == 2)
-     {
-    	 if(flash_light_on) soc_show_ram_led = 0x1F;
-    	 else soc_show_ram_led = 0;
-     }
-     else if(flash_flag ==3)
-     {
-    	 soc_show_ram_led = 0;
-     }
-     else if (flash_flag == 1)
-     {
-		 if (!flash_light_on) // if needs blink, and it is blink-off
-		 {
-			soc_show_ram_led ^= (1 << _index);// // for blink-off
-		 }
-     }
+     if(g_port.is_mini_current_mode)
+     	{
+     		 cnt_time++;
+     		 if(cnt_time >= 2) // 2 * 250ms = 500ms
+     		 {
+     			 cnt_time = 0; // Reset for a consistent 500ms interval
+      			 /* 小电流模式：固定循环显示，不依赖电量 */
+      			 horse_index++;
+      			 if(horse_index > 4)  // 固定4个LED循环 (1,2,3,4)
+      			 {
+      				 horse_index = 1; // Loop back to the first LED
+      				 // 注意：不再限制 cycle_count 到 9，而是一直累加，用于 2h 超时判断
+      				 cycle_count++;  // 完成一次完整循环 (约 2 s)
+      			 }
 
-   //  printk("\r\n LED ram-> %d SOC %d",soc_show_ram_led,soc_show);
-}
-#else
+      			 // 2h(=7200 s) / 2 s per cycle = 3600 cycles
+      			 if(cycle_count >= 3600)
+      			 {
+     				 /* 2 小时到达：1) 熄灯 2) 退出小电流模式 -> 允许进入休眠 */
+     				 soc_show_ram_led = 0;
+     				 g_port.is_mini_current_mode = 0;  // 解除小电流模式
+     			 }
+      		 }
 
-typedef union
-{
-    uint8_t byte;
-    struct
-    {
-        uint8_t led_0: 1;               //!< led_0 display data //
-        uint8_t led_1: 1;               //!< led_1 display data //
-        uint8_t led_2: 1;               //!< led_2 display data //
-        uint8_t led_3: 1;               //!< led_3 display data //
-        uint8_t led_4: 1;               //!< led_4 display data //
-        uint8_t led_5: 1;               //!< led_5 display data //
-        uint8_t led_6: 1;               //!< led_6 display data //
-        uint8_t led_7: 1;               //!< led_7 display data //
-    }bit;
-}ui_data_t;
-typedef enum
-{
-    LED_HUNDREDS    = (uint8_t)0x00,
-    LED_TENS,
-    LED_UNITS,
-    LED_FAST_CH,
-    LED_PRCNT,
-    LED_END,
-}led_partition_t;
+      		 // If we just entered the mode, start the light immediately
+      		 if(horse_index == 0)
+      		 {
+      			 horse_index = 1;
+      		 }
 
+      		 if(cycle_count < 3600) // 仅在 2h 超时前显示跑马灯
+      		 {
+      			 soc_show_ram_led = horse_race_led_table[horse_index];
+      			 /* 防止 2h 内被 idle_to_sleep_cnt 触发休眠 */
+      			 gd->idle_to_sleep_cnt = 0;
+      		 }
 
-ui_data_t       gram[LED_END];
+     		 /* 2h 内保持唤醒 */
+     		 if(cycle_count < 3600)
+     		 {
+     			 gd->SOC_SleepTime_s = 0;
+     		 }
 
-volatile const uint8_t display_num_tab[10]={0x3f,0x06,0x5b,0x4f,0x66,0x6d,0x7d,0x07,0x7f,0x6f};
-
-uint8_t bit_is_set(uint32_t input,uint8_t bit)
-{
-	return (uint8_t)((input >> bit) & 0x1);
-}
-static void ui_update_digital(void)
-{
-	gram[LED_HUNDREDS].byte = 0;//3;
-	gram[LED_TENS].byte = 0;//display_num_tab[0];
-	gram[LED_UNITS].byte = 0;//display_num_tab[0];
-	gram[LED_PRCNT].byte = 0;
-	gram[LED_FAST_CH].byte = 0;
-	if(!(!flash_light_on && flash_flag == 2))
-	{
-		gram[LED_PRCNT].byte = 1;
-		gram[LED_FAST_CH].byte = 1;
-	}
-	if(gd->real_soc_show < 100)
-	{
-		uint8_t data_temp = 0;
-		gram[LED_HUNDREDS].byte = 0;
-		data_temp = gd->real_soc_show % 10;
-
-		if(!(!flash_light_on && flash_flag!=0)) gram[LED_UNITS].byte = display_num_tab[data_temp];
-		if(gd->real_soc_show < 10)
+      	 }
+      else if(gd->led_fault)
 		{
-			gram[LED_TENS].byte = 0;
-		}else{
-			data_temp = gd->real_soc_show / 10;
-			if(!(!flash_light_on && flash_flag == 2)) gram[LED_TENS].byte = display_num_tab[data_temp];
+			if(flash_light%2)
+			{
+				soc_show_ram_led =0x0F;
+			}
+			else
+			{
+				soc_show_ram_led = 0;
+				flash_flag = 0;
+			}
+			flash_light++;
 		}
-	}
-	else{
-		//if(flash_light_on)
-		if(!(!flash_light_on && flash_flag == 2))
+		else if(gd->led_fault1)
 		{
-			gram[LED_HUNDREDS].byte = 3;
-			gram[LED_TENS].byte = display_num_tab[0];
-			gram[LED_UNITS].byte = display_num_tab[0];
+			if(gd->flash_times<=6)
+			{
+				if(flash_light%2)
+				{
+					soc_show_ram_led =0x0F;
+				}
+				else
+				{
+					gd->flash_times++;
+					soc_show_ram_led = 0;
+					flash_flag = 0;
+				}
+				flash_light++;
+			}
+			else
+			{
+				soc_show_ram_led = 0;
+			}
+		}	
+		 else if (charge_led_run)
+		{
+			if (button_led_run)
+			{
+				button_led_run = 0;
+				button_cnt = 0;
+			}
+			if (charge_cnt++ >= 2)
+			{
+				charge_cnt = 0;
+				if(charge_index==0)
+				{
+					soc_show_ram_led = 0;
+				}
+				if (charge_index < 4)
+				{
+					soc_show_ram_led |= 1 << charge_index;
+					charge_index++;
+				}
+				else if(charge_index < 5)
+				{
+					soc_show_ram_led = LED_FLOW_4;
+					charge_index++;
+				}
+				else
+				{
+					charge_led_run = 0;
+					charge_led_finish = 1;
+					charge_index = 0;
+					charge_cnt = 0;
+				}
+			}
 		}
-//		else if(flash_flag == 1)
-//		{
-//			gram[LED_HUNDREDS].byte = 3;
-//			gram[LED_TENS].byte = display_num_tab[0];
-//		}
-	}
-	soc_show_ram = ((gram[LED_PRCNT].byte & 0x01) << 17) | ((gram[LED_FAST_CH].byte & 0x01) << 16) | \
-	            ((gram[LED_UNITS].byte & 0x7F) << 9) | ((gram[LED_TENS].byte & 0x7F) << 2) | ((gram[LED_HUNDREDS].byte & 0x03)) ; // Save the GRAM data into a temporary variable
+		else if (button_led_run)
+		{
+			if (gd->real_soc_show > 5)
+			{
+				soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
+				// 5S后或端口有变化退出
+				if ((gd->idle_to_sleep_cnt > 50) || (g_port.port_state[0] != PORT_STATE_NONE) || (g_port.port_state[3] != PORT_STATE_NONE))
+				{
+					button_led_run = 0;
+				}
+			}
+			else
+			{
+				if (button_cnt <= 18)
+				{
+					if(button_cnt == 0)
+					{
+						soc_show_ram_led = 0;
+					}
+					if(button_cnt%2==0)
+					{
+						soc_show_ram_led ^= 1;
+					}
+					// soc_show_ram_led|=0x10;
+					if(button_cnt == 18)
+					{
+						soc_show_ram_led = 0;
+					}
+					button_cnt++;
+				}
+				else
+				{
+					soc_show_ram_led = 0;
+					button_led_run = 0;
+					button_cnt = 0;
+				}
+			}
+		}	 
+	else
+     	 {
+			gd->flash_times = 0;
+     		cnt_time = 0;
+     		horse_index = 0;
+     		cycle_count = 0;  // 退出小电流模式时重置循环计数器
+     		soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
+     		 if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
+     		 {
+     		     flash_flag_wls = 1;
+     		 }
+     		 else
+     		 {
+     			 flash_flag_wls = 0;
+     		 }
+     		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
+     		 {
+     			 soc_show_ram_led |= 0x20;// wireless LED is on
+     		 }
+     		 // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+     		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
+     		 if (gd->vpwr > 6200 &&
+     		     (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE ||  // 放电模式
+     		      g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK ||   // 充电模式
+     		      g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE || // 放电模式
+     		      g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK ||   // 充电模式
+     		      g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE || // 放电模式
+     		      g_port.port_state[PORT2_INDEX] == PORT_STATE_SINK)&&!buckboost_protection_flag)    // 充电模式
+     		 {
+     			 soc_show_ram_led |= 0x10;// fast LED is on
+     		 }
+     	     uint8_t _index= 3;// to get the highest bit to blink.
+     	     for(; _index> 0; _index--)
+     	     {
+     	         if((soc_show_ram_led & (1<< _index))!= 0)
+     	         {
+     	             break;
+     	         }
+     	     }
+     		 if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
+     		 {
+     			 soc_show_ram_led ^= (1 << 5);// for blink-off
+     		 }
+     	     if(flash_flag == 1 && flash_light_on)
+     	     {
+     	        uint8_t _index= 3;// to get the highest bit to blink.
+     	         for(; _index> 0; _index--)
+     	         {
+     	             if((soc_show_ram_led & (1<< _index))!= 0)
+     	             {
+     	                 break;
+     	             }
+     	         }
+     	        soc_show_ram_led ^= (1 << _index);// for blink-off
+     	     }
+     		 else if(flash_flag == 2)
+     	     {
+     	    	 if(flash_light_on) soc_show_ram_led = 0x0F;
+     	    	 else soc_show_ram_led = 0;
+     	     }else if (flash_flag == 4){
+     	    	if(flash_light_on) soc_show_ram_led = 0x01;
+     	    	 else soc_show_ram_led = 0;
+     	     }
+
+     	     else if(flash_flag ==3)
+     	     {
+     	    	 soc_show_ram_led = 0;
+     	     }
+     	}
 }
 #endif
 
@@ -307,50 +413,6 @@ void ui_display (void)
 	 {
 		 drv_IO_control(disp_map[ui_scan_index], true);
 	 }
-
-#else
-	 _SET_ALL_PINS_IN_PUT();
-	 if(ui_scan_index >4) ui_scan_index = 0;
-	 switch (ui_scan_index)
-	 {
-	     case 0:
-		     if(bit_is_set(soc_show_ram,10)) drv_IO_control(2,true);
-		     if(bit_is_set(soc_show_ram,12)) drv_IO_control(3,true);
-		     if(bit_is_set(soc_show_ram,14)) drv_IO_control(4,true);
-		     if(bit_is_set(soc_show_ram,15)) drv_IO_control(5,true);
-		     drv_IO_control(1,false);
-		     break;
-	     case 1:
-		     if(bit_is_set(soc_show_ram,3)) drv_IO_control(3,true);
-		     if(bit_is_set(soc_show_ram,5)) drv_IO_control(4,true);
-		     if(bit_is_set(soc_show_ram,6)) drv_IO_control(5,true);
-		     if(bit_is_set(soc_show_ram,9)) drv_IO_control(1,true);
-		     drv_IO_control(2,false);
-		     break;
-	     case 2:
-		     if(bit_is_set(soc_show_ram,2)) drv_IO_control(2,true);
-		     if(bit_is_set(soc_show_ram,4)) drv_IO_control(4,true);
-		     if(bit_is_set(soc_show_ram,7)) drv_IO_control(5,true);
-		     if(bit_is_set(soc_show_ram,11)) drv_IO_control(1,true);
-		     drv_IO_control(3,false);
-		     break;
-	     case 3:
-		     if(bit_is_set(soc_show_ram,0)) drv_IO_control(3,true);
-		     if(bit_is_set(soc_show_ram,1)) drv_IO_control(2,true);
-		     if(bit_is_set(soc_show_ram,8)) drv_IO_control(5,true);
-		     if(bit_is_set(soc_show_ram,13)) drv_IO_control(1,true);
-		     drv_IO_control(4,false);
-		     break;
-	     case 4:
-		     if(bit_is_set(soc_show_ram,16)) drv_IO_control(3,true);
-		     if(bit_is_set(soc_show_ram,17)) drv_IO_control(2,true);
-		     drv_IO_control(5,false);
-		     break;
-	     default:
-	    	 break;
-		}
-	 ui_scan_index++;
-
 #endif
 }
 
@@ -366,22 +428,30 @@ void ui_update(void)
 
 	static uint8_t cnt = 0;
 	static uint8_t one_min_cnt = 0;
+	static uint8_t prev_woke_mode = 0; // Requirement 6: Track previous mode for unplug detection
  //   if(ui_wait_cnt< WAIT_IN_250MS) ui_wait_cnt++;
+
+	// Requirement 6: Unplug during charge detection
+	if (prev_woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) {
+		key_ui_cnt = 4; // 4 * 250ms = 1s display
+	}
 
 	if(key_flag == 1)
 	{
 		key_sigle_click_process();
 		gd->idle_to_sleep_cnt = 0;
 		printk("\r\n ----------222------------------//-------key single click");
+		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if(key_flag == 2)
 	{
 		key_double_click_process();
 		gd->idle_to_sleep_cnt = 0;
-		printk("\r\n ----------222------------------//-------key double click");
+		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if(key_flag == 3)
 	{
+		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 		gd->idle_to_sleep_cnt = 0;
 		key_long_click_process();
 		printk("\r\n ----------222------------------//-------key long click");
@@ -433,42 +503,65 @@ void ui_update(void)
 	if(cnt > 1)//1hz
 	{
 		cnt = 0;
-		flash_light_on ^= 1;
+		flash_light_on ^= 1;  //qu fan
 	}
-    if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
+	 if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
-    	zero_soc_cnt = 0;
-#if(BUCKBOOST_USED_NU6801 == 1)
-    	if(g_buckboost.charging_stat == 0)
-    		flash_flag = 3;  // 灭灯
-    	else
-#endif
-    		flash_flag = 1;
+        zero_soc_cnt = 0;
+		if (gd->real_soc_show >= 100) 
+		{
+			// Requirement 5: Fully charged, solid lights
+        flash_flag = 0;
+		} else {
+			// Requirement 4: Charging, last LED blinks
+			flash_flag = 1;
+		}
+		// if(bat_charge_ntc_ot_flag)
+		// {
+		// 	flash_flag = 3;
+		// }
     }
    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show<=5))
     {
-    	flash_flag = 1;// low SOC state,flash
+		charge_led_finish = 0;
+    	flash_flag = 4;// low SOC state, all leds flash
     	if(gd->real_soc_show<=0)
     	{
     		if(zero_soc_cnt< 250) zero_soc_cnt++;
     	}
     }
     else{
-
+		charge_led_finish = 0;
     	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT1_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT2_INDEX] != PORT_STATE_SOURCE && g_port.port_state[PORT3_INDEX] != PORT_STATE_SOURCE)
     	{
-    		flash_flag = 0;
+    		//extern uint16_t key_ui_cnt;
+    		if(key_ui_cnt)
+			{
+				flash_flag = 0;
+				key_ui_cnt--;
+			}
+    		else flash_flag = 3; // 灭灯
     	}
+    	else
+    	{
+    		// if(buckboost_protection_flag) flash_flag = 2;
+    		// else 
+			flash_flag = 0;
+    	}
+		if(gd->ntc_led_off)
+		{
+			flash_flag = 3;
+		}
     }
-
-
-
-    //printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
-    //printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_RawSOC_mpct--> %d SOC_VirtOCVSOC_mpct-> %d ",
-    //		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct, SOC_RawSOC_mpct, SOC_VirtOCVSOC_mpct);
-
-    //printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
-    //		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
+	// printk("\r\n gd->ntc_led_off %d\r\n",gd->ntc_led_off);
+	prev_woke_mode = g_buckboost.woke_mode;
+//	printk("flash_flag = %d",flash_flag);
+//    printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
+//    printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
+//    		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
+//
+//    printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
+//    		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
 #ifdef LED_DISPLAY
 	ui_update_led();
 #else
@@ -497,43 +590,90 @@ void key_sigle_click_process(void)
 
 	g_port.is_mini_current_mode = 0;
 	g_port.light0_cnt = 0;
+	// if(gd->sigle_clicked)
+	// {
+	// 	gd->sigle_clicked =0;
+	// }
+	// else
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE)
+	{
+		gd->sigle_clicked =1;
+	}
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && (gd->vpwr >13000)&&gd->sigle_clicked)
+	{
+		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+	}
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
+	{
+		flash_flag = 3; 
+		button_led_run = 1;
+	}
+	gd->ntc_led_off = 0;
 }
 
 void key_double_click_process(void)
 {
 	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
-	#if(CONFIG_TYPECA_SUPPORT == 1)
-		if(g_port.port_state[0] == PORT_STATE_SOURCE) gd->tc0_lighting_mode = 1;
-	#endif
+#if(CONFIG_TYPECA_SUPPORT == 1)
+		if(g_port.port_state[0] == PORT_STATE_SOURCE) gd->tc0_lighting_mode = 0;
+#endif
 
-	#if(CONFIG_TYPECB_SUPPORT == 1)
-		if(g_port.port_state[1] == PORT_STATE_SOURCE) gd->tc1_lighting_mode = 1;
-	#endif
+#if(CONFIG_TYPECB_SUPPORT == 1)
+		if(g_port.port_state[1] == PORT_STATE_SOURCE) gd->tc1_lighting_mode = 0;
+#endif
 
-	#if(CONFIG_WPC_SUPPORT == 1)
-		gd->wpc_disable = 1;
-		tcpm_stop_wpc(WPC_DELAY);
-	#endif
-		g_port.is_mini_current_mode = 0;
+#if(CONFIG_WPC_SUPPORT == 1)
+		 //gd->wpc_disable = 1;
+		//tcpm_stop_wpc(WPC_DELAY);
+	   //#endif
+	  //	g_port.is_mini_current_mode = 0;  //0623
+#endif // CONFIG_WPC_SUPPORT
+
+
+		/* 双击切换小电流模式 */
+		//if(g_port.port_state[0] == PORT_STATE_SOURCE)
+		/* 双击切换小电流模式：SOURCE 或 NONE 均可 */
+		if(g_port.port_state[0] != PORT_STATE_SINK)
+		{
+			g_port.is_mini_current_mode ^= 1;
+			printk("mini_current mode -> %d\n", g_port.is_mini_current_mode);
+
+		}
+//		pdlib_restart_typec(PORT0_INDEX);
+//		osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_CONNECT_START);
+//		osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
+
 		g_port.light0_cnt = 0;
 	}
+	gd->sigle_clicked =0;
 }
 
 void key_long_click_process(void)
 {
-	if(g_port.port_state[0] == PORT_STATE_SOURCE)
-	{
-		if(g_port.is_mini_current_mode)
-			g_port.is_mini_current_mode = 0;
-		else
-		{
-			g_port.is_mini_current_mode = 1;
-			printk("is_mini_current mode\n");
-		}
 
-		g_port.light0_cnt = 0;
-	}
+    {
+        printk("\r\n long press power-off - no input detected, wpc_mode=%d\n", wpc_mode);
+
+        if(g_port.port_state[0] == PORT_STATE_SOURCE) gd->tc0_lighting_mode = 1;
+
+        SLP_vNormalToSleep();
+        return;
+    }
+    // ==== 修改 Victor 2024-12-19 end ====
+//
+//    if(g_port.port_state[0] == PORT_STATE_SOURCE)
+//    {
+//        if(g_port.is_mini_current_mode)
+//            g_port.is_mini_current_mode = 0;
+//        else
+//        {
+//            g_port.is_mini_current_mode = 1;
+//            printk("is_mini_current mode\n");
+//        }
+//
+//        g_port.light0_cnt = 0;
+//    }
 }
 
 //// structure for key information
@@ -566,7 +706,7 @@ void key_handle_10ms()
 	if(!_KEY_LEVEL)
 	{
 		key_cnt++;
-		if(key_cnt == 150)
+		if(key_cnt == 300)   // [NEW-VICTOR] 增加长按关机时间 150->300
 		{
 			key_flag = 3; //long press
 			key_click_cnt = 0;

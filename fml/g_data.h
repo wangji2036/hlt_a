@@ -177,7 +177,8 @@ struct gd_t
 		uint8_t tim3_evnt;
 		 uint8_t led_status;
 		 int16_t die_temp;
-		 int16_t ntc_temp;
+		 int16_t ntc_temp_wpc;
+		 int16_t ntc_temp_typec;
 	} sys_infos;
 
 	struct {
@@ -397,6 +398,19 @@ struct gd_t
 	 uint32_t SOC_SleepTime_s;
 
 	 uint8_t ship_mode_cnt;
+	 uint8_t sigle_clicked;
+
+	 uint8_t led_fault;
+	 uint8_t led_fault1;
+	 uint8_t ntc_typec_restore;
+	 uint8_t ntc_led_off;
+	 uint8_t recharge_flag;
+	 uint8_t wirless_ntc_lock;
+	 uint8_t bat_ntc_lock_flag;
+	 uint8_t typec_ntc_lock;
+	 uint8_t typec_charge_ntc_lock;
+	 uint8_t flash_times;
+	 
 
 };
 uint16_t dead_battery_voltage;

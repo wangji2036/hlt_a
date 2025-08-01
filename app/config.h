@@ -9,8 +9,8 @@
 #define TX_FW_VER                               0x15
 
 
-#define BATTERY_CV_VALUE					4200
-#define CONFIG_NU6801_BATLOW_VOLT			2800 // bat low, bat dead
+#define BATTERY_CV_VALUE					4400  // [NEW-VICTOR] 07/16
+#define CONFIG_NU6801_BATLOW_VOLT			2500 // bat low, bat dead   [NEW-VICTOR]
 #define POWERBANK_BUCK_EVK_V02
 
 /*.....7.5w Debug......*/
@@ -23,8 +23,8 @@
 #endif
 
 
-#define BUCKBOOST_USED_NU6805				0
-#define BUCKBOOST_USED_NU6801				1
+#define BUCKBOOST_USED_NU6805				1
+#define BUCKBOOST_USED_NU6801				0
 
 #define CONFIG_NU6801_A0					0 // no not active
 
@@ -46,10 +46,10 @@
 #define CONFIG_TYPEC_LIGHT_CURRENT			60   // in mA, for light load detect
 
 #define CAPACITOR_300_NF         			1    // 400 or 300 nF, the value will affects the Q and f, for sleep function wake-up
-#define ENABLE_EPP_FUNC                     1   //1: enable epp, 0: disable epp
+#define ENABLE_EPP_FUNC                     0   //1: enable epp, 0: disable epp
 #define OPTION_SAMSUNG_PPDE                 1   // samsung PPDE protocol, 1 to enable.
 #define OPTION_FOD_ENABLE                   1   // power transfer FOD enable.
-#define SLEEPQ_WAKEUP_ENABLE                1   // sleep Q wake up funtion, set 0 means no sleep Q function. when set 0,the sleep timer
+#define SLEEPQ_WAKEUP_ENABLE                0   // sleep Q wake up funtion, set 0 means no sleep Q function. when set 0,the sleep timer
 #define SUPPORT_SLEEP_LOG                   1   // sleep print log enable,
 
 /***********Very important for Nuvolata internal engineers!***/
@@ -60,7 +60,7 @@
 /*********** lib config ***************/
 
 #define CONFIG_TYPECA_SUPPORT				1
-#define CONFIG_TYPECB_SUPPORT				1
+#define CONFIG_TYPECB_SUPPORT				0
 #define CONFIG_UFCS_SOURCE_SUPPORT			0 // current lib not included, contact nuvolta for support if needed.
 #define CONFIG_AFC_SOURCE_SUPPORT			1
 #define CONFIG_FCP_SOURCE_SUPPORT			1

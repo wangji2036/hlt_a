@@ -21,20 +21,34 @@
 const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
-	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 3000, 0),
-	[2] = PDO_FIXED(12000, 3000, 0),
-	[3] = PDO_FIXED(15000, 3000, 0),
-	[4] = PDO_PPS_APDO(5000,16000,3000),
+		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+			[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
+			[2] = PDO_FIXED(12000, 2500, 0),                      // 12 V 2.5 A
+			[3] = PDO_FIXED(15000, 2000, 0),                      // 15 V 2 A
+			[4] = PDO_FIXED(20000, 1500, 0),                      // 20 V 1.5 A
+			[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
+};
+
+const uint32_t source_pdo1[] =
+{
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+			[1] = PDO_FIXED(9000, 2200, 0),                      // 9 V 3 A
+			[2] = PDO_FIXED(12000, 1670, 0),                      // 12 V 2.5 A
+			[3] = PDO_FIXED(15000, 1330, 0),                      // 15 V 2 A
+			[4] = PDO_FIXED(20000, 1000, 0),                      // 20 V 1.5 A
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
-	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 2000, 0),
-	[2] = PDO_FIXED(12000, 1500, 0),
-	[3] = PDO_PPS_APDO(5000,11000,2000),
+
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2500, 0),                      // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                      // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                      // 20 V 1.5 A
+	[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
 };
 #endif
 
@@ -46,8 +60,11 @@ const uint32_t source_pdo_ntc[] =
 const uint32_t sink_pdo[] =
 {
 	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
-	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
-	[1] = PDO_FIXED(9000, 2000, 0),
+	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2500, 0),                     // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                     // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                     // 20 V 1.5 A
 };
 
 uint16_t port_vbus = 5000;
@@ -93,6 +110,11 @@ void tcpm_update_pdo_for_ntc(void)
 void tcpm_update_pdo_for_normal(void)
 {
 	pdlib_update_source_pdo(source_pdo,sizeof(source_pdo)/4);
+}
+
+void tcpm_update_pdo_for_limit(void)
+{
+	pdlib_update_source_pdo(source_pdo1,sizeof(source_pdo1)/4);
 }
 
 void tcpm_task_init(void)
@@ -283,6 +305,7 @@ void tcpm_task_event_handler(uint32_t event)
 				if(qi_cnt >= 30)
 				{
 					qi_state = 0;
+					gd->sigle_clicked = 0;
 					qi_cnt = 0;
 					printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					port_manager_set_event(PORT3_EVENT_UNCONNECT);
@@ -298,16 +321,30 @@ void tcpm_task_event_handler(uint32_t event)
 			if(pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
 			{
-#if(BUCKBOOST_USED_NU6805 == 1)
-				if(g_buckboost.adc_ibus >= -120 && g_buckboost.adc_ibus <= 0 )
-#else
-				if(g_buckboost.adc_iac2 < CONFIG_TYPEC_LIGHT_CURRENT)
-#endif
+				if(g_buckboost.adc_ibus >= -220 && g_buckboost.adc_ibus <= 0 )
 				{
 					g_port.light0_cnt++;
 					if(g_port.is_mini_current_mode)
 					{
-						if(g_port.light0_cnt >= 60000) //120ms * N
+						// ==== ?? Victor 2024-06-23 start ====
+						if(g_port.light0_cnt >= 60000) //120 ms ï¿½ 60000 ï¿½ 2 h
+						{
+						g_port.light0_cnt = 0;
+						gd->tc0_lighting_mode = 1;
+						printk("TC[0] light = 0x%x\n",gd->dp_result);
+
+						/* AUTO POWER-OFF AFTER 2 H LOW-CURRENT */
+						port_manager_set_event(PORT0_EVENT_UNCONNECT);   // ?? Type-C A ???
+						g_port.is_mini_current_mode = 0;                 // ???????
+						// ???????????,??? WPC;????
+						if(wpc_mode != TCPM_WPC_WORK_BOOST)
+						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+						printk("mini-current 2H timeout -> power-off\n");
+												}
+					else if(g_port.light0_cnt >= 60000) // fallback for non-mini current
+
+						// ==== ?? Victor 2024-06-23 end ====
+
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
@@ -316,7 +353,7 @@ void tcpm_task_event_handler(uint32_t event)
 					}
 					else
 					{
-						if(g_port.light0_cnt >= 250)
+						if(g_port.light0_cnt >= 150)
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
@@ -413,7 +450,7 @@ void tcpm_task_event_handler(uint32_t event)
 			printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
 			break;
 		case TCPM_EVT_QI_WORK:
-			if(qi_state == 0)   //ÎÞÏß³ä½ÓÈëÊÂ¼þ·¢Éú
+			if(qi_state == 0)   //ï¿½ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½
 			{
 				qi_state = 1;
 				port_manager_set_event(PORT3_EVENT_TRY_CONNECT);

@@ -81,8 +81,8 @@ void usb_dpdm_select(uint8_t tc_index)
 //	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 
 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;
-	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 1;
-	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 1;
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 
 	bc12_type = 0;
 	dpdm_map = tc_index;
@@ -186,7 +186,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 					qc_volt = 12000;
 					break;
 				case QC_FIX_20V_MODE:
-					//qc_volt = 20000;  //not support qc 20v
+					qc_volt = 20000;  //not support qc 20v
 					break;
 				case QC_CONTINUOUS_MODE:
 					break;
@@ -295,7 +295,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			osal_set_event(USB_TASK,TCPM_EVT_DPDM_DONE);
 			break;
 		case DPDM_EVT_SNK_QC_START:
-			buckboost_ops.set_ovp(20000);
+			buckboost_ops.set_ovp(21000);//20000
 			bc12_type = BC1P2_HVDCP;
 			qc2_set_volt(12000);
 			osal_start_timerEx(DPDM_SINK_TIMER, 200, 0, USB_DPDM_TASK, DPDM_EVT_SNK_QC12V_DONE);

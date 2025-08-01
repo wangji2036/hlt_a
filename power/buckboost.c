@@ -202,10 +202,11 @@ void buckboost_protection_handle(void)
 	#define VBUS_FUALT_VBAT_UVP			BIT(3)
 	#define VBUS_FUALT_VBAT_OVP			BIT(4)
 	#define VBUS_FUALT_VBUS_OVP			BIT(5)
-
+	#define VBUS_FAULT_VBUS_NTC         BIT(6)
 	#define PPS_UV						BIT(9)
 	#define NTC_PCT						BIT(10)
 	#define VBUS_SOFT_PROTECT			BIT(13)
+    #define VBUS_FAULT_VBUS_UVP			BIT(14)
 #elif(BUCKBOOST_USED_NU6801 == 1)
 	#define URB_DET						BIT(0)
 	#define BST_UV_FLAG					BIT(1)
@@ -236,10 +237,21 @@ void buckboost_protection_handle(void)
 	status = buckboost_ops.get_protect_status();
 	
 	printk("Flaut State = 0x%x\n",status);
-
+	printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
-	if(g_buckboost.adc_vbus > g_buckboost.ovp_value) status |= VBUS_FUALT_VBUS_OVP;
-
+	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value) status |= VBUS_FUALT_VBUS_OVP;
+	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	{
+		status |= VBUS_FAULT_VBUS_UVP;
+	}
+	if(!gd->led_fault&&((status & 0x6066)||ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)))
+	{
+		gd->led_fault = 1;
+	}
+	if(!gd->led_fault1&&(gd->bat_ntc_lock_flag||gd->wirless_ntc_lock||gd->typec_ntc_lock))
+	{
+		gd->led_fault1 = 1;
+	}
 	if(g_buckboost.adc_vbat < 6000)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
 		cnt++;
@@ -248,75 +260,11 @@ void buckboost_protection_handle(void)
 			if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
 			{
 				status |= VBUS_FUALT_VBAT_UVP;
-
-			}
-			else
-			{
-				if(pdlib_get_deadbat() == 0)
-				{
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-			}
-			pdlib_set_deadbat(true);
-			cnt = 0;
-		}
-	}
-	else
-	{
-		cnt = 0;
-	}
-
-	if(adc_protect_flag)
-	{
-		adc_protect_flag = false;
-		status |= VBUS_SOFT_PROTECT;
-	}
-#elif(BUCKBOOST_USED_NU6801 == 1)
-	if(g_buckboost.adc_vbus > NU6801_VBUS_OVP_TH )
-	{
-		status |= VBUS_OV_FLAG;
-	}
-
-	//if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-	if(!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE ||g_port.port_state[1] == PORT_STATE_SOURCE)))
-	{
-		status &= ~VBUS_UV_FLAG;
-	}
-
-//	if(g_buckboost.vsnkdisconnect_flag)
-//	{
-//		g_buckboost.vsnkdisconnect_flag = 0;
-//		status |= SWITCH_ERR;
-//	}
-
-	if(adc_err_flag) status |= ADC_ERR;
-
-#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
-	if(ntc_lock_flag) status |= NTC_PCT;
-#endif
-
-	if((g_port.port_state[0] == PORT_STATE_SOURCE || g_port.port_state[1] == PORT_STATE_SOURCE) &&g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE  && status &VBAT_LOW_FLAG)
-	{
-		gd->bat_dead_flag = 1;
-		status |= DIS_VBAT_LOW;
-		printk("BATLOW =[%d]\n",g_buckboost.adc_vbat);
-	}
-
-
-	if(g_buckboost.adc_vbat < CONFIG_NU6801_BATLOW_VOLT)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
-	{
-
-		cnt++;
-		if(cnt >= 20)
-		{
-			if(g_port.port_state[0] != PORT_STATE_SINK && g_port.port_state[1] != PORT_STATE_SINK)
-			{
 				gd->bat_dead_flag = 1;
-				status |= DIS_VBAT_LOW;
-				printk("BATLOW =[%d %d]\n",g_buckboost.adc_vbat,zero_soc_cnt);
 			}
 			else
 			{
+				gd->bat_dead_flag = 0;
 				if(pdlib_get_deadbat() == 0)
 				{
 					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -331,32 +279,33 @@ void buckboost_protection_handle(void)
 		cnt = 0;
 	}
 
-
-
-	if((pdlib_get_tc_state(0) == TC_SRC_AttachWait || pdlib_get_tc_state(0)  == TC_SRC_Attached) && gd->bat_dead_flag) gd->bat_dead_flag_with_snk0 = 1;
-	if((pdlib_get_tc_state(1) == TC_SRC_AttachWait || pdlib_get_tc_state(1)  == TC_SRC_Attached) && gd->bat_dead_flag) gd->bat_dead_flag_with_snk1 = 1;
-
-	if(gd->bat_dead_flag ) status &= ~NTC_PCT;
-
 	if(adc_protect_flag)
 	{
 		adc_protect_flag = false;
 		status |= VBUS_SOFT_PROTECT;
 	}
+#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
+	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag) status|=VBUS_FAULT_VBUS_NTC;
 #endif
-
+#endif
+	if(gd->led_fault&&!(status&0x6066)&&!ntc_stop_chrg_flag&&!(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
+	{
+		gd->led_fault = 0;
+	}
+	if(gd->led_fault1&&!gd->bat_ntc_lock_flag&&!gd->wirless_ntc_lock&&!gd->typec_ntc_lock)
+	{
+		gd->led_fault1 = 0;
+	}
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)
-		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT))
+		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC))
 		{
 			printk("protect lock =0x%x\n",status);
 
 			printk("vbus = %d\n",g_buckboost.adc_vbus);
 
-			if(status & VBUS_FUALT_VBAT_UVP) gd->bat_dead_flag = 1;
-
-			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT))
+			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT |VBUS_FAULT_VBUS_NTC))
 			{
 				//lock
 				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE) pdlib_disable_typec(PORT0_INDEX);
@@ -381,6 +330,7 @@ void buckboost_protection_handle(void)
 			pdlib_disable_usbpd();
 			tcpm_stop_wpc(WPC_DELAY);
 			qi_state = 0;
+			gd->sigle_clicked = 0;
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			tcpm_disable_usba_detect();
 			buckboost_ops.init();
@@ -517,6 +467,8 @@ void buckboost_task_event_handler(uint32_t event)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
 			#else
 				printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
+				g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature()/100;
+				buckboost_ntc_handle();
 			#endif
 			}
 			else if(get_info_step == 1)
@@ -687,15 +639,7 @@ void buckboost_task_event_handler(uint32_t event)
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_wait, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_WAITDONE);
 			break;
 		case BUCKBOOST_EVT_REGULATOR_WAITDONE:
-			if(ntc_ut_flag || ntc_ot_flag)
-			{
-				out_ibus = 2500 * 4000 / g_buckboost.buckboost_out_voltage;
-				out_ibus = g_buckboost.buckboost_out_current > out_ibus ? out_ibus : g_buckboost.buckboost_out_current;
-			}
-			else
-			{
-				out_ibus = g_buckboost.buckboost_out_current;
-			}
+			out_ibus = g_buckboost.buckboost_out_current;
 			g_buckboost.buckboost_out_current_actual = out_ibus;
 			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,out_ibus);
 			osal_start_timerEx(BUCKBOOST_REGULATOR_TIMER, g_buckboost.out_voltage_delay + 10, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_REGULATOR_DELAYDONE);

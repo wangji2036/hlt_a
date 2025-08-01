@@ -175,8 +175,8 @@ void iic_read_info_sync(void)
 	app_reg_buff[tx_working_current_h] = (gd->isns >> 8) & 0xFF;
 	app_reg_buff[tx_working_current_l] = gd->isns & 0xFF;
 
-	app_reg_buff[tx_ntc_tempr_h] = (gd->sys_infos.ntc_temp >> 8) & 0xFF;
-	app_reg_buff[tx_ntc_tempr_l] = gd->sys_infos.ntc_temp & 0xFF;
+	app_reg_buff[tx_ntc_tempr_h] = (gd->sys_infos.ntc_temp_wpc >> 8) & 0xFF;
+	app_reg_buff[tx_ntc_tempr_l] = gd->sys_infos.ntc_temp_wpc & 0xFF;
 
 	app_reg_buff[tx_q_value] = (gd->tx_infos.q_fact >> 8) & 0xFF;
 

@@ -40,25 +40,31 @@ static const uint16_t ntc_tbl[] =
 //Nu17112 IC NTC resistance is 10/NTC
 static const uint16_t ntc_tbl[] =
 {
-	 3022, 3008, 2994, 2980, 2965, 2949, 2933, 2917, 2899, 2882, //-29 ~ -20
-	 2864, 2845, 2826, 2806, 2786, 2765, 2743, 2722, 2699, 2676, //-19 ~ -10
-	 2653, 2628, 2604, 2579, 2553, 2527, 2501, 2474, 2446, 2419, // -9 ~   0
-	 2390, 2362, 2333, 2304, 2274, 2244, 2214, 2183, 2153, 2122, //  1 ~  10
-	 2091, 2059, 2028, 1997, 1965, 1933, 1902, 1870, 1838, 1807, // 11 ~  20
-	 1775, 1744, 1712, 1681, 1650, 1619, 1588, 1558, 1528, 1498, // 21 ~  30
-	 1468, 1438, 1409, 1380, 1352, 1324, 1296, 1268, 1241, 1215, // 31 ~  40
-	 1188, 1162, 1137, 1112, 1087, 1063, 1039, 1015,  992,  969, // 41 ~  50
-	  947,  926,  904,  883,  863,  843,  823,  804,  785,  766, // 51 ~  60
-	  748,  730,  713,  696,  679,  663,  647,  632,  617,  602, // 61 ~  70
-	  588,  574,  560,  547,  534,  521,  508,  496,  484,  473, // 71 ~  80
-	  462,  451,  440,  429,  419,  409,  399,  390,  381,  372, // 81 ~  90
-	  363,  355,  346,  338,  330,  322,  315,  308,  301,  293, // 91 ~ 100
-	  287,  280,  274,  267,  261,  255,  250,  244,  238,  233, //101 ~ 110
-	  228,  223,  218,  213,  208,  203,  199,  194,  190,  186, //111 ~ 120
+3937, //-40
+3927, 3917, 3906, 3895, 3883, 3870, 3857, 3843, 3829, 3814, //-39 ~ -30
+3799, 3783, 3766, 3748, 3730, 3711, 3691, 3671, 3650, 3628, //-29 ~ -20
+3605, 3582, 3558, 3533, 3508, 3481, 3454, 3426, 3398, 3369, //-19 ~ -10
+3338, 3308, 3276, 3244, 3211, 3178, 3144, 3109, 3074, 3038, //-9 ~ 0
+3001, 2965, 2927, 2889, 2851, 2812, 2773, 2734, 2694, 2654, //1 ~ 10
+2614, 2574, 2533, 2493, 2452, 2411, 2370, 2330, 2289, 2248, //11 ~ 20
+2208, 2167, 2127, 2087, 2048, 2008, 1969, 1930, 1892, 1853, //21 ~ 30
+1816, 1778, 1741, 1705, 1669, 1633, 1598, 1564, 1529, 1496, //31 ~ 40
+1463, 1430, 1398, 1367, 1336, 1306, 1276, 1247, 1218, 1190, //41 ~ 50
+1163, 1136, 1109, 1083, 1058, 1033, 1009, 985, 962, 940, //51 ~ 60
+917, 896, 875, 854, 834, 814, 795, 776, 757, 740, //61 ~ 70
+722, 705, 688, 672, 656, 641, 626, 611, 597, 583, //71 ~ 80
+569, 556, 543, 530, 518, 506, 495, 483, 472, 461, //81 ~ 90
+451, 440, 430, 421, 411, 402, 393, 384, 376, 367, //91 ~ 100
+359, 351, 343, 336, 328, 321, 314, 307, 301, 294, //101 ~ 110
+288, 282, 276, 270, 264, 259, 253, 248, 243, 238, //111 ~ 120
+233, 228, 223, 219, 214, 210, 205, 200, 195, 190, //121 ~ 130
+186, 182, 178, 175, 172, 168, 165, 162, 159, 156, //131 ~ 140
+153, 150, 147, 144, 142, 139, 136, 134, 131 //141 ~ 150
 };
 #endif
 
-int16_t fml_ntc_temp_get(void)
+//type c
+int16_t fml_ntc_temp_get_typec(void)
 {
 	static uint8_t  vntc_idx = 0;
 
@@ -76,7 +82,7 @@ int16_t fml_ntc_temp_get(void)
 	}
 	else
 	{
-		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB2_ADC2);
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB5_ADC6);
 	}
 
 
@@ -98,8 +104,51 @@ int16_t fml_ntc_temp_get(void)
 		}
 		++i;
 	}
+	return ((int)i - 40-11);
+}
 
-	return ((int)i - 29);
+//wpc
+int16_t fml_ntc_temp_get_wpc(void)
+{
+	static uint8_t  vntc_idx = 0;
+
+#if IC_PN_17111
+		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1813, 1813, 1813, 1813, 1813, 1813, 1813, 1813 };
+#else
+		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650 };
+#endif
+
+	uint16_t i, v_ntc = 0;
+
+	if (SYS->PID_INFO.BITS.PID == NU17111)
+	{
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB5_ADC6);
+	}
+	else
+	{
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PD3_ADC9);
+	}
+
+
+	vntc_idx &= NTC_TEMP_BUFF_SIZE_Msk;
+
+	for (i=0; i<NTC_TEMP_BUFF_SIZE_Max; ++i)
+	{
+		v_ntc += vntc_buf[i];
+	}
+
+	v_ntc /= NTC_TEMP_BUFF_SIZE_Max;
+
+	i = 0;
+	while (i < sizeof(ntc_tbl)/sizeof(ntc_tbl[0]))
+	{
+		if (v_ntc >= ntc_tbl[i])
+		{
+			break;
+		}
+		++i;
+	}
+	return ((int)i - 50+18);
 }
 
 int16_t fml_die_temp_get(void)
@@ -121,6 +170,7 @@ int16_t fml_die_temp_get(void)
 
 	return t_die;
 }
+uint8_t wirless_ntc_power_reduce = 0;
 
 /*+++++++++++++++++++++++++++++++++++++++++++ TNTC_OTP +++++++++++++++++++++++++++++++++++++++++++*/
 void fml_tntc_otp_limit_power(int16_t tntc)
@@ -130,53 +180,57 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 	//flg_action = 1;//cep=-5, reduce power
 	//flg_action = 2;//go to send ATN and update the nego cap
 //	uint8_t flg_action = 0;
-
-	if (tntc >= 72)
+	static uint8_t cnt = 0;
+	if(!gd->wirless_ntc_lock)
 	{
-		gd->prot_sts.tntc_otp_flag = 1;
-		gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
-		wpc_stop_to_idle(ESYS_ERR_CODE_NTC_OTP);
-		return;
-	}
-	else if (tntc > 55)
-	{
-		DeltaTemp = tntc - 55;
+		if (tntc >= 75|| tntc <= 2)
+		{
+			gd->wirless_ntc_lock = 1;
+			gd->wpc_disable = 1;
+			tcpm_stop_wpc(10);
+			return;
+		}
 	}
 	else
 	{
-		DeltaTemp = 0;
-		DeltaTemp_N_1 = 0;
-		//re-initial parameter value
-		gd->tx_infos.power_limit_reason = power_limit_reason_no;
-		gd->tx_infos.tar_cap_otp = gd->tx_infos.max_cap;
-		gd->power_limit_sts.tntc_ot_flag = 0;
-		gd->tntc_ot_flag_atn = 0;
-		gd->prot_sts.tntc_otp_flag = 0;
-	}
-
-	if ((DeltaTemp_N_1 != DeltaTemp) && (DeltaTemp != 0))
-	{
-		DeltaTemp_N_1 = DeltaTemp;
-		gd->tx_infos.tar_cap_otp = gd->tx_infos.max_cap - (10 * DeltaTemp);
-
-		if (power_limit_reason_ot == gd->tx_infos.power_limit_reason)
+		if(tntc<66&&tntc>5)
 		{
-			goto __NTC_OT_Limit_Handle__;
+			gd->wirless_ntc_lock = 0;
+			gd->wpc_disable = 0;
+		}
+	}
+	if(!gd->wirless_ntc_lock)
+	{
+		if(!wirless_ntc_power_reduce)
+		{
+			if(tntc>=64)
+			{
+				if(cnt++>10)
+				wirless_ntc_power_reduce = 1;
+				// tcpm_stop_wpc(10);
+			}
+			else
+			{
+				cnt = 0;
+			}
 		}
 		else
 		{
-			if (gd->tx_infos.tar_cap_otp < gd->tx_infos.nego_cap)
+			if(tntc<=40)
 			{
-	__NTC_OT_Limit_Handle__:
-				gd->tx_infos.nego_cap = gd->tx_infos.tar_cap_otp;
-				gd->tx_infos.power_limit_reason = power_limit_reason_ot;
-				gd->power_limit_sts.tntc_ot_flag = 1;
-				gd->tntc_ot_flag_atn = 1;
+				if(cnt++>10)
+				{
+					wirless_ntc_power_reduce = 0;
+					// tcpm_stop_wpc(10);
+				}
+			}
+			else
+			{
+				cnt = 0;
 			}
 		}
 	}
 }
-
 
 /*
 static struct tntc_otp_t

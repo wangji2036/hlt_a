@@ -17,13 +17,25 @@
 const uint32_t source_pdo_default[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
-	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),
+		// === 修改 默认 Sink PDO 2024-06-22 Victor ===
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2500, 0),                      // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                      // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                      // 20 V 1.5 A
+	[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
+	   // ====  修改 Victor 2024-06-22 end ====
 };
 
 const uint32_t sink_pdo_default[] =
 {
 	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
-	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),
+	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2500, 0),                     // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                     // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                     // 20V 1.5 A
+	[5] = PDO_PPS_APDO(5000,11000,2700),	// 5V-11V 2.70A
 };
 
 
@@ -40,12 +52,29 @@ void pdlib_init(void)
 	pdlib_update_source_pdo(source_pdo_default,sizeof(source_pdo_default)/4);
 	pdlib_update_sink_pdo(sink_pdo_default,sizeof(sink_pdo_default) /4);
 }
-
+extern bool typec_ntc_ot_flag;
 void pdlib_run(void)
 {
+	static uint8_t pre_flag = 0;
 	usb_pdevt_run();
 	usb_pd_run();
 	usb_tc_run();
+	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	{
+		if(pre_flag != typec_ntc_ot_flag)
+		{
+			pre_flag = typec_ntc_ot_flag;
+			if (typec_ntc_ot_flag)
+			{
+				tcpm_update_pdo_for_limit();
+			}
+			else
+			{
+				tcpm_update_pdo_for_normal();
+			}
+			pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+		}
+	}
 }
 
 bool pdlib_is_connect(void)

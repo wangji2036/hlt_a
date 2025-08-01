@@ -79,6 +79,8 @@ struct tcpc_s
 #define VOLTAGE_5V 	 	5000
 #define VOLTAGE_9V  	9000
 #define VOLTAGE_12V  	12000
+#define VOLTAGE_15V   	15000   //Victor  15v
+#define VOLTAGE_20V   	20000   //Victor  20v
 #define VOLTAGE_PPS  	11000
 
 
@@ -133,6 +135,7 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit);
 void tcpm_update_wpc_work_mode(enum wpc_work_mode mode);
 void tcpm_disable_usba_detect(void);
 void tcpm_update_pdo_for_ntc(void);
+void tcpm_update_pdo_for_limit(void);
 void tcpm_dp_set_10uA(void);
 uint32_t tcpm_dp_get_result(void);
 

@@ -155,7 +155,7 @@ uint8_t qfod_detect(void)
 			gd->ptx_idle_phase_status,
 			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
 			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre,
-			gd->sys_infos.ntc_temp, gd->sys_infos.die_temp, qdt_have_obj_count, ap->pin_fod_cnt);
+			gd->sys_infos.ntc_temp_wpc, gd->sys_infos.die_temp, qdt_have_obj_count, ap->pin_fod_cnt);
 
 	switch (gd->ptx_idle_phase_status)
 	{
@@ -611,7 +611,7 @@ void wpc_idle_cloak_phase_process(void)
 
 			wpc_idle_dig_ping_init_360K();
 
-			printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp, gd->sys_infos.die_temp,
+			printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp_wpc, gd->sys_infos.die_temp,
 					gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
 
 			gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
@@ -725,10 +725,12 @@ void wpc_idle_phase_process(void)
 	{
 		bat_low_sleep = 0;
 	}
-
+	printk("sigle click %d \r\n",gd->sigle_clicked);
+	if(gd->vpwr >13000){
+		printk("no wpc due to vbus %d \r\n",gd->vpwr);
+		return;
+	}
 	if(gd->bat_dead_flag) return;
-
-
 	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && (gd->ptx_idle_phase_status == WPC_IDLE_STAT_STANDBY
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_XER_FOD || 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_QDT_FOD
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_LAR_MET))
@@ -748,7 +750,13 @@ void wpc_idle_phase_process(void)
 	{
 		gd->idle_to_sleep_cnt = 0;
 	}
-
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE)
+	{
+		if(!gd->sigle_clicked)
+		{
+			return;
+		}
+	}
 	if (gd->ptx_protocol_phase != WPC_PHASE_IDLE)
 	{
 		return;
@@ -758,14 +766,14 @@ void wpc_idle_phase_process(void)
 		tcpm_qi_work_delay--;
 		return;
 	}
-	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01) return;
+	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01||gd->wirless_ntc_lock) return;
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
 		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag)
 	{
 		printk("\r\n system protection ");
-		if (gd->prot_sts.tntc_otp_flag) printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp);
-		if (gd->prot_sts.tntc_utp_flag) printk("[tntc_utp:%d]", gd->sys_infos.ntc_temp);
+		if (gd->prot_sts.tntc_otp_flag) printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp_wpc);
+		if (gd->prot_sts.tntc_utp_flag) printk("[tntc_utp:%d]", gd->sys_infos.ntc_temp_wpc);
 		if (gd->prot_sts.tdie_otp_flag) printk("[tdie_otp:%d]", gd->sys_infos.die_temp);
 		if (gd->prot_sts.tdie_utp_flag) printk("[tdie_utp:%d]", gd->sys_infos.die_temp);
 		if (gd->prot_sts.isns_ocp_flag) printk("[isns_ocp:%d]", gd->isns);
@@ -812,7 +820,7 @@ void wpc_idle_phase_process(void)
 	{
 		return;
 	}
-
+	gd->ntc_led_off = 0;
 	fml_ask_enable();
 
 	if (gd->tx_infos.dig_ping_type == _128K_HB)

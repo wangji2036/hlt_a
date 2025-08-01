@@ -19,7 +19,8 @@
 #include "wpc_xfer.h"
 #include "g_data.h"
 #include "gui.h"
-
+#define YBZ_MPP_THD         2900
+#define YBZ_MPP_RECO         2700
 static const uint16_t u16_kp_tbl[][3] =
 {
 	//Unknown PRx, default coeff 0
@@ -102,6 +103,8 @@ uint8_t pfod_mpla(void)
 		//Fixtures' FOD adjust
 		if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
 		{
+			pfo_thd = YBZ_MPP_THD;
+			pfo_thd_reco = YBZ_MPP_RECO;
 			pfo_en_reco = 0;
 		}
 		else if (gd->rx_infos.rx_type == ERX_TYPE_NVT_MPP)
@@ -469,7 +472,7 @@ void pfod_log_print(void)// print long log and avoid the fsk window
 #ifdef _PRINT_FOD_MSG
 	printk("\r\n FOD-> %d %d %d %d t:%d %d ctx:%d v:%d %d i:%d %d p:%d %d(%d) r:%d %d pfo:%d %d %d",
 		   gd->rx_infos.rx_type, gd->tx_infos.nego_cap, 144000000 / gd->pid_perd, gd->pid_phas,
-		   gd->sys_infos.die_temp, gd->sys_infos.ntc_temp, gd->ctx,
+		   gd->sys_infos.die_temp, gd->sys_infos.ntc_temp_wpc, gd->ctx,
 		   gd->vbus, gd->vpwr_avg, gd->isns_avg, gd->icol_rms,
 		   gd->tx_power, gd->rx_power, gd->rx_prect,
 		   gd->rx_infos.pla_vrect, gd->rx_infos.pla_irect,

@@ -23,7 +23,8 @@ static uint8_t cnt_cloak_pkt = 0;
 
 uint8_t need_atn_cnt;
 uint8_t need_atn_evt;
-
+uint8_t renego_flag;
+extern uint8_t wirless_ntc_power_reduce;
 void auth_init(void)
 {
 	need_atn_cnt = 0;
@@ -196,7 +197,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
 				{
-					gd->rx_infos.cep_val = 0;
+					// gd->rx_infos.cep_val = 0;
 					printk("#");
 				}
 			}
@@ -291,6 +292,16 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 					gd->tntc_ot_flag_atn = 2;
 				}
 			}
+			else if(wirless_ntc_power_reduce == 1 && renego_flag == 1)
+			{
+				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ATN);
+				renego_flag = 2;
+			}
+			else if(wirless_ntc_power_reduce == 0 && renego_flag == 3)
+			{
+				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ATN);
+				renego_flag = 4;
+			}
 			else
 			{//no ntc ot, no fod
 				gd->p_rect_max_ntc_ot = 0;
@@ -363,9 +374,16 @@ void mpp_dsr_poll_handler(void)
 
 	need_atn_cnt = 0;
 
-	if (gd->tx_infos.need_renego_cap == 1)
+	if (gd->tx_infos.need_renego_cap == 1 || renego_flag == 2 || renego_flag == 4)
 	{
-		gd->tx_infos.need_renego_cap = 0;
+		if(gd->tx_infos.need_renego_cap == 1)
+		{
+			gd->tx_infos.need_renego_cap = 0;
+		}
+		else if(renego_flag == 4)
+		{
+			renego_flag = 0;
+		}
 		//gd->power_limit_sts.fop_flag = 0;
 
 		fsk_pkt.mpp_fsk.ecap.hdr_8F = MPP_PTx_PKT_TYP_ECAP_8F;
@@ -488,8 +506,32 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			printk(" %%: [charge status %d%%]", gd->rx_infos.chr_status);
 			break;
 		case MPP_PRx_PKT_TYP_XCE_19:
-			gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
-
+			if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
+			{
+				if(wirless_ntc_power_reduce)
+				{
+					if (gd->tx_power > 8500)
+					{
+						gd->rx_infos.cep_val = -4;
+					}
+					else if(gd->tx_power > 7500)
+					{
+						gd->rx_infos.cep_val = 0;
+					}
+					else
+					{
+						gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
+					}
+				}
+				else
+				{
+					gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
+				}
+			}
+			else
+			{
+				gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
+			}
 			if ((0 == gd->rx_infos.cep_val) && (TRUE == gd->tx_infos.flg_cloak_tx_init))//TODO: tx init cloak here, should not happen in a normal process
 			{
 				if (cnt_cep0++ > 20)
@@ -500,7 +542,16 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					need_cloak_atn = 1;
 				}
 			}
-
+			if(wirless_ntc_power_reduce == 1 && renego_flag == 0)
+			{
+				gd->tx_infos.nego_cap = 75;
+				renego_flag = 1;
+			}
+			else if(wirless_ntc_power_reduce == 0 && renego_flag == 2)
+			{
+				renego_flag = 3;
+				gd->tx_infos.nego_cap = 150;
+			}
 			osal_start_timerEx(WPC_CEP_TIMER, T_MPP_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 
 			if ((need_atn_cnt != 0) || (TRUE == gd->tx_infos.flg_cloak_tx_enter) /*|| (gd->tx_infos.need_renego_cap == 1)*/ || \

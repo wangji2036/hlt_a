@@ -34,13 +34,25 @@
 #include "port_manager.h"
 //#include "typec.h"
 //uint8_t reset_magic_code;
+
+// ==== 锟斤拷锟斤拷 Victor 2024-06-22 start ====
+// PB4锟斤拷锟斤拷锟斤拷锟窖硷拷锟疥定锟斤拷
+#define PB4_TOUCH_LEVEL    (GPB->D_IN.BITS.PIN4)
+#define PB4_TOUCH_PRESSED  (!PB4_TOUCH_LEVEL)  // 锟斤拷锟斤拷锟斤拷锟斤拷时为锟酵碉拷平
+
+// PC6锟结触锟斤拷锟斤拷锟斤拷锟疥定锟斤拷
+#define PC6_KEY_LEVEL      (GPC->D_IN.BITS.PIN6)
+#define PC6_KEY_PRESSED    (!PC6_KEY_LEVEL)    // 锟斤拷锟斤拷锟斤拷锟斤拷时为锟酵碉拷平
+// ==== 锟斤拷锟斤拷 Victor 2024-06-22 end ====
+
+#define SHIP_MODE_CNT  30
 #if ONLY7_5W_ENALBE
 static uint16_t sleep_q_68nf_thd = 0;
 static uint16_t sleep_f_68nf_thd = 0;
 #else
 #if CAPACITOR_300_NF
-static uint16_t sleep_q_68nf_thd = 115;
-static uint16_t sleep_f_68nf_thd = 1235;// sleep F -normal F,
+static uint16_t sleep_q_68nf_thd = 158;
+static uint16_t sleep_f_68nf_thd = 1340;// sleep F -normal F,
 #else
 static uint16_t sleep_q_68nf_thd = 166;
 static uint16_t sleep_f_68nf_thd = 1317;// sleep F -normal F,
@@ -289,8 +301,29 @@ void SLP_vNormalToSleep(void)
     // key wake up start
 	GPC->I_EN.BITS.PIN6 = 1;
 	GPC->O_EN.BITS.PIN6 = 0;
-	GPC->MODE.BITS.PIN6 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+	GPC->MODE.BITS.PIN6 = 0; //00:PC6 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
+	GPC->ITTP.BITS.PIN6 = 0;
+	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
+	{
+		// touch wake up start
+		GPB->I_EN.BITS.PIN4 = 1;
+		GPB->O_EN.BITS.PIN4 = 0;
+		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+		GPB->ITEN.BITS.PIN4 = 0;
+
+
+	}
+	else
+	{
+		// touch wake up start
+		GPB->I_EN.BITS.PIN4 = 1;
+		GPB->O_EN.BITS.PIN4 = 0;
+		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITTP.BITS.PIN4 = 2;
+	}
+
 #if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
 	GPD->I_EN.BITS.PIN1 = 1;
@@ -304,9 +337,9 @@ void SLP_vNormalToSleep(void)
 	fml_nu103x_config(_1030_CFG_LPM_EN_);
 	hal_wdt_feed();
 
+	WDT->CTRL.WORD = 0;
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
-	delay_1ms(10);
-	SYS->RST_CTRL.BITS.MCU_RST = 1;
+	SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;  // [NEW-VICTOR] 锟斤拷锟斤拷确锟斤拷GPIO锟斤拷锟窖癸拷锟斤拷使锟斤拷
 
 }
 void SLP_vSleepToSleep(void)
@@ -388,8 +421,28 @@ void SLP_vSleepToSleep(void)
     // key wake up start
 	GPC->I_EN.BITS.PIN6 = 1;
 	GPC->O_EN.BITS.PIN6 = 0;
-	GPC->MODE.BITS.PIN6 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+	GPC->MODE.BITS.PIN6 = 0; //00:PC6 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
+	GPC->ITTP.BITS.PIN6 = 0;
+	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
+	{
+		// touch wake up start
+		GPB->I_EN.BITS.PIN4 = 1;
+		GPB->O_EN.BITS.PIN4 = 0;
+		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+		GPB->ITEN.BITS.PIN4 = 0; // disable interrupt
+	}
+	else
+	{
+		// touch wake up start
+		GPB->I_EN.BITS.PIN4 = 1;      // 1. 使锟斤拷PB4锟斤拷锟诫功锟斤拷
+		GPB->O_EN.BITS.PIN4 = 0;      // 2. 锟截憋拷PB4锟斤拷锟斤拷锟斤拷锟�
+		GPB->MODE.BITS.PIN4 = 0;      // 3. 锟斤拷锟斤拷PB4为GPIO锟斤拷通锟斤拷锟斤拷
+		GPB->ITEN.BITS.PIN4 = 1;      // 4. 使锟斤拷PB4锟叫断癸拷锟斤拷
+		GPB->ITTP.BITS.PIN4 = 2;      // 5. 锟斤拷锟斤拷为锟铰斤拷锟截达拷锟斤拷锟斤拷锟斤拷锟斤拷=锟酵碉拷平锟斤拷
+
+	}
+
 #if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
 	GPD->I_EN.BITS.PIN1 = 1;
@@ -442,8 +495,7 @@ void SLP_vSleepToSleep(void)
     VIC_vModuleDisable();
     hal_wdt_feed();
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
-	delay_1ms(10);
-	SYS->RST_CTRL.BITS.MCU_RST = 1;
+	SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;        // [NEW-VICTOR] 锟斤拷锟斤拷确锟斤拷GPIO锟斤拷锟窖癸拷锟斤拷使锟斤拷
 
 }
 void SLP_vSleepQToSleep(void)
@@ -572,6 +624,7 @@ uint8_t SLP_u8SleepModeQDetect(void)
 #define RST_SRC_PROTOCOL        4
 uint8_t reset_cnt;
 
+extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
@@ -770,14 +823,28 @@ void RST_vCheck(void)
 				gd ->ship_mode_cnt = 0;
 				sleep_printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
+				gd->sigle_clicked = 0;
 				break;
 			case RST_SRC_GPIO:
-                gd ->ship_mode_cnt = 0;
+
+				if(++gd->ship_mode_cnt > SHIP_MODE_CNT) gd->ship_mode_cnt=0;
+
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
-				if(_KEY_LEVEL)
+
+				// 锟斤拷锟斤拷欠锟斤拷锟斤拷锟叫э拷陌锟斤拷锟�锟斤拷锟斤拷锟斤拷锟斤拷锟铰硷拷
+				if(PC6_KEY_PRESSED || PB4_TOUCH_PRESSED)
 				{
-					SLP_vSleepToSleep();
+				// 锟斤拷效锟侥伙拷锟斤拷锟铰硷拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
+				 sleep_printk("\r\n GPIO wake-up: PC6=%d PB4=%d", PC6_KEY_PRESSED, PB4_TOUCH_PRESSED);
 				}
+				else
+				{
+				// 锟斤拷锟斤拷锟斤拷锟襟触凤拷锟斤拷锟斤拷锟斤拷GPIO锟斤拷锟斤拷锟斤拷睡锟斤拷
+				sleep_printk("\r\n GPIO false wake-up, continue sleep");
+				SLP_vSleepToSleep();
+				break;
+			    }
+
 			#if(CONFIG_TYPECA_SUPPORT == 1)
 				if(gd->tc0_lighting_mode) gd->tc0_lighting_mode = 0;
 			#endif
@@ -789,6 +856,8 @@ void RST_vCheck(void)
 			#if(CONFIG_WPC_SUPPORT == 1)
 				gd->wpc_disable = 0;
 			#endif
+				//key_ui_cnt = 20;
+				key_ui_cnt = KEY_UI_DISPLAY_TICKS;
 				sleep_printk("\r\n sleep check- GPIO");
 				break;
 			case RST_SRC_WARMUP_DONE:

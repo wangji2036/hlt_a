@@ -51,6 +51,8 @@ typedef signed short int16_T;
 typedef unsigned short uint16_T;
 typedef signed long int32_T;
 typedef unsigned long uint32_T;
+typedef float real32_T;
+typedef double real64_T;
 
 /*===========================================================================*
  * Generic type definitions: boolean_T, char_T, byte_T, int_T, uint_T,       *
