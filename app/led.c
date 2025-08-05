@@ -328,13 +328,7 @@ static void ui_update_led(void)
      		 }
      		 // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
      		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
-     		 if (gd->vpwr > 6200 &&
-     		     (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE ||  // 放电模式
-     		      g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK ||   // 充电模式
-     		      g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE || // 放电模式
-     		      g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK ||   // 充电模式
-     		      g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE || // 放电模式
-     		      g_port.port_state[PORT2_INDEX] == PORT_STATE_SINK)&&!buckboost_protection_flag)    // 充电模式
+     		 if (gd->vpwr > 6200 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && !buckboost_protection_flag && gd->real_soc_show<100)
      		 {
      			 soc_show_ram_led |= 0x10;// fast LED is on
      		 }

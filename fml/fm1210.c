@@ -422,8 +422,8 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
         }
     }
 
-    cert_chain[0] = ((2 + 32 + 329 + *rlen) >> 8) & 0xff;
-    cert_chain[1] = ((2 + 32 + 329 + *rlen) >> 0) & 0xff;
+    cert_chain[0] = ((2 + 32 + 328 + *rlen) >> 8) & 0xff;
+    cert_chain[1] = ((2 + 32 + 328 + *rlen) >> 0) & 0xff;
 
     return (ret);
 }

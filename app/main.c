@@ -98,7 +98,7 @@ int main(void)
 		hal_wdt_feed();
 		fm1210_get_qi_id(adt_data_recv_buf);
 		fm1210_read_cert_hash(array_digest + 1);
-		fm1210_read_se_cert(cert_chain + 2 + 32 + 329, &rrlen);//TODO: mfr cert len 329 need outside config, using sizeof arr
+		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 329 need outside config, using sizeof arr
 	}
 	hal_wdt_feed();
 	fml_adp_init();

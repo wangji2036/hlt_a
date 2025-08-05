@@ -33,7 +33,7 @@ const uint32_t source_pdo1[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
 		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
-			[1] = PDO_FIXED(9000, 2200, 0),                      // 9 V 3 A
+			[1] = PDO_FIXED(9000, 2220, 0),                      // 9 V 3 A
 			[2] = PDO_FIXED(12000, 1670, 0),                      // 12 V 2.5 A
 			[3] = PDO_FIXED(15000, 1330, 0),                      // 15 V 2 A
 			[4] = PDO_FIXED(20000, 1000, 0),                      // 20 V 1.5 A
