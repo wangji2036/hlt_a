@@ -402,7 +402,6 @@ struct gd_t
 
 	 uint8_t led_fault;
 	 uint8_t led_fault1;
-	 uint8_t ntc_typec_restore;
 	 uint8_t ntc_led_off;
 	 uint8_t recharge_flag;
 	 uint8_t wirless_ntc_lock;

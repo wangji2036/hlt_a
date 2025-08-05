@@ -155,7 +155,6 @@ void gd_data_init(void)
 		gd ->ship_mode_cnt = 0;
 		gd->led_fault = 0;
 		gd->led_fault1 = 0;
-		gd->ntc_typec_restore = 0;
 		gd->ntc_led_off = 0;
 		gd->recharge_flag = 0;
 		gd->wirless_ntc_lock = 0;
