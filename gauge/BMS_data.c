@@ -1,17 +1,13 @@
 /*
  * BMS_data.c
  *
- * Academic License - for use in teaching, academic research, and meeting
- * course requirements at degree granting institutions only.  Not for
- * government, commercial, or other organizational use.
- *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 8.0
+ * Model version              : 8.40
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
-#include "regdef.h"
+
 #include "BMS_data.h"
 #include "rtwtypes.h"
 #include "multiword_types.h"

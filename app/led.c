@@ -505,8 +505,10 @@ void ui_update(void)
 		if (gd->real_soc_show >= 100) 
 		{
 			// Requirement 5: Fully charged, solid lights
+			buckboost_ops.set_work_mode(0x00);
         flash_flag = 0;
 		} else {
+			buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 			// Requirement 4: Charging, last LED blinks
 			flash_flag = 1;
 		}

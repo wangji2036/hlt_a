@@ -21,6 +21,8 @@ C_SRCS += \
 ../app/wpc_5_xfer_2_epp.c \
 ../app/wpc_5_xfer_3_mpp.c \
 ../app/wpc_5_xfer_4_dstrm.c \
+../app/wpc_6_test_1_ioc.c \
+../app/wpc_6_test_2_iop.c \
 ../app/wpc_cnfg.c \
 ../app/wpc_idle.c \
 ../app/wpc_nego.c \
@@ -45,6 +47,8 @@ OBJS += \
 ./app/wpc_5_xfer_2_epp.o \
 ./app/wpc_5_xfer_3_mpp.o \
 ./app/wpc_5_xfer_4_dstrm.o \
+./app/wpc_6_test_1_ioc.o \
+./app/wpc_6_test_2_iop.o \
 ./app/wpc_cnfg.o \
 ./app/wpc_idle.o \
 ./app/wpc_nego.o \
@@ -69,6 +73,8 @@ C_DEPS += \
 ./app/wpc_5_xfer_2_epp.d \
 ./app/wpc_5_xfer_3_mpp.d \
 ./app/wpc_5_xfer_4_dstrm.d \
+./app/wpc_6_test_1_ioc.d \
+./app/wpc_6_test_2_iop.d \
 ./app/wpc_cnfg.d \
 ./app/wpc_idle.d \
 ./app/wpc_nego.d \

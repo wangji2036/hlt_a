@@ -40,32 +40,32 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: PowerBankEvk.elf PowerBankEvk.ihex PowerBankEvk.bin PowerBankEvk.elf.asm
+all: PowerBankEvk_relsease.elf PowerBankEvk_relsease.ihex PowerBankEvk_relsease.bin PowerBankEvk_relsease.elf.asm
 
 # Output Target
-PowerBankEvk.ihex: PowerBankEvk.elf
+PowerBankEvk_relsease.ihex: PowerBankEvk_relsease.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objcopy -O ihex "$<" "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
-PowerBankEvk.bin: PowerBankEvk.elf
+PowerBankEvk_relsease.bin: PowerBankEvk_relsease.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objcopy -O binary "$<" "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
-PowerBankEvk.elf.asm: PowerBankEvk.elf
+PowerBankEvk_relsease.elf.asm: PowerBankEvk_relsease.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objdump -d "$<" > "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
 # Tool invocations
-PowerBankEvk.elf: $(OBJS) $(USER_OBJS) D:\Mason\power\ bank\nu17112_powerbank---6-11\ release\startup\ckcpu.ld
+PowerBankEvk_relsease.elf: $(OBJS) $(USER_OBJS) C:\Users\zexin.wu\Desktop\IP162_zx\IP162_NEW_725\PowerBankEvk_relsease\startup\ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"D:\Mason\power bank\nu17112_powerbank---6-11 release\startup\ckcpu.ld" -o "PowerBankEvk.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"C:\Users\zexin.wu\Desktop\IP162_zx\IP162_NEW_725\PowerBankEvk_relsease\startup\ckcpu.ld" -o "PowerBankEvk_relsease.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"
@@ -75,8 +75,8 @@ PowerBankEvk.elf: $(OBJS) $(USER_OBJS) D:\Mason\power\ bank\nu17112_powerbank---
 
 # Other Targets
 clean:
-	-$(RM) PowerBankEvk.ihex PowerBankEvk.bin PowerBankEvk.elf.asm PowerBankEvk.map
-	-$(RM) $(OBJS)$(C_DEPS)$(ASM_DEPS)$(S_DEPS)$(S_UPPER_DEPS) PowerBankEvk.elf
+	-$(RM) PowerBankEvk_relsease.ihex PowerBankEvk_relsease.bin PowerBankEvk_relsease.elf.asm PowerBankEvk_relsease.map
+	-$(RM) $(OBJS)$(C_DEPS)$(ASM_DEPS)$(S_DEPS)$(S_UPPER_DEPS) PowerBankEvk_relsease.elf
 	-@echo ' '
 
 .PHONY: all clean dependents
