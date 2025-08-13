@@ -23,44 +23,53 @@
 
 /* Const memory section */
 /* Declaration for custom storage class: Const */
-extern const int32_T Cfg_DefultInitR_mOhm;/* Referenced by: '<S21>/Constant2' */
+extern const int32_T Cfg_DefultInitR_mOhm;/* Referenced by: '<S22>/Constant2' */
 
 /* Volatile memory section */
 /* Declaration for custom storage class: Volatile */
-extern volatile int32_T Add2_DWORK1_s; /* '<S40>/Add2' */
-extern volatile int32_T Delay_DSTATE_s;/* '<S27>/Delay' */
-extern volatile int32_T DiscreteTimeIntegrator_DSTATE_s;/* '<S26>/Discrete-Time Integrator' */
-extern volatile int32_T DiscreteTimeIntegrator_PREV_U_s;/* '<S26>/Discrete-Time Integrator' */
-extern volatile int8_T DiscreteTimeIntegrator_PrevRe_s;/* '<S26>/Discrete-Time Integrator' */
-extern volatile uint8_T DiscreteTimeIntegrator_SYSTEM_s;/* '<S26>/Discrete-Time Integrator' */
+extern volatile real_T Acc_s;          /* '<S7>/OCV_Hysteresis' */
+extern volatile int32_T Add2_DWORK1_s; /* '<S41>/Add2' */
+extern volatile int32_T Delay_DSTATE_s;/* '<S28>/Delay' */
+extern volatile int32_T DiscreteTimeIntegrator_DSTATE_s;/* '<S27>/Discrete-Time Integrator' */
+extern volatile int32_T DiscreteTimeIntegrator_PREV_U_s;/* '<S27>/Discrete-Time Integrator' */
+extern volatile int8_T DiscreteTimeIntegrator_PrevRe_s;/* '<S27>/Discrete-Time Integrator' */
+extern volatile uint8_T DiscreteTimeIntegrator_SYSTEM_s;/* '<S27>/Discrete-Time Integrator' */
+extern volatile real_T Reset_Acc_s;    /* '<S7>/OCV_Hysteresis' */
 extern volatile uint32_T SOC_ELAPS_T_s;/* '<S1>/SOC' */
 extern volatile uint32_T SOC_PREV_T_s; /* '<S1>/SOC' */
 extern volatile boolean_T SOC_RESET_ELAPS_T_s;/* '<S1>/SOC' */
-extern volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S19>/Relational Operator1' */
+extern volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S20>/Relational Operator1' */
 extern volatile int32_T SOC_udInitValue_mpct_DSTATE_s;/* '<S6>/SOC_udInitValue_mpct' */
 extern volatile uint8_T SOHC_Trig_ZCE_s;
-extern volatile uint16_T SOH_capacity_mAh_s;/* '<S41>/Switch' */
+extern volatile uint16_T SOH_capacity_mAh_s;/* '<S42>/Switch' */
 extern volatile int32_T Switch_s;      /* '<S5>/Switch' */
 extern volatile uint8_T TimeSum_Reset_ZCE_s;
 extern volatile int32_T UnitDelay1_DSTATE_s;/* '<S9>/Unit Delay1' */
 extern volatile int32_T UnitDelay2_DSTATE_s;/* '<S9>/Unit Delay2' */
 extern volatile int32_T UnitDelay_DSTATE_s;/* '<S9>/Unit Delay' */
-extern volatile int32_T d_Delay_DSTATE_s;/* '<S28>/Delay' */
-extern volatile uint32_T h_m_bpIndex_s[2];/* '<S34>/OCV_DSG' */
-extern volatile uint32_T hj_m_bpIndex_s[2];/* '<S20>/OCV_DSG' */
-extern volatile uint32_T hjj_m_bpIndex_s;/* '<S20>/adaption in SOC range' */
-extern volatile uint32_T hjjp_m_bpIndex_s;/* '<S23>/SOC_Slope' */
-extern volatile uint32_T hjjpa_m_bpIndex_s;/* '<S20>/1-D Lookup Table1' */
-extern volatile uint32_T hjjpar_m_bpIndex_s[2];/* '<S24>/R0_Discharge' */
-extern volatile uint32_T hjjparn_m_bpIndex_s[2];/* '<S24>/DCIR_Discharge' */
-extern volatile uint32_T hjjparne_m_bpIndex_s[2];/* '<S24>/OCV_Discharge' */
-extern volatile uint32_T hjjparneo_m_bpIndex_s[2];/* '<S13>/OCV_DSG' */
-extern volatile boolean_T icLoad_s;    /* '<S37>/SOCPack_UdDisplaySOC_pct' */
-extern volatile boolean_T k34_icLoad_s;/* '<S28>/Delay' */
-extern volatile boolean_T k34f_icLoad_s;/* '<S21>/UdVirtualOcv' */
-extern volatile boolean_T k3_icLoad_s; /* '<S27>/Delay' */
-extern volatile boolean_T k_icLoad_s;  /* '<S33>/CellVoltsDelay' */
-extern volatile uint32_T m_bpIndex_s[2];/* '<S34>/DCIR_Discharge' */
+extern volatile int32_T d_Delay_DSTATE_s;/* '<S29>/Delay' */
+extern volatile uint32_T h_m_bpIndex_s[2];/* '<S35>/OCV_DSG' */
+extern volatile uint32_T hj_m_bpIndex_s;/* '<S21>/adaption in SOC range' */
+extern volatile uint32_T hjj_m_bpIndex_s;/* '<S24>/SOC_Slope' */
+extern volatile uint32_T hjjp_m_bpIndex_s;/* '<S21>/1-D Lookup Table1' */
+extern volatile uint32_T hjjpa_m_bpIndex_s[2];/* '<S25>/R0_Discharge' */
+extern volatile uint32_T hjjpar_m_bpIndex_s[2];/* '<S25>/R0_Charge' */
+extern volatile uint32_T hjjparn_m_bpIndex_s[2];/* '<S25>/DCIR_Discharge' */
+extern volatile uint32_T hjjparne_m_bpIndex_s[2];/* '<S25>/DCIR_Charge' */
+extern volatile uint32_T hjjparneo_m_bpIndex_s[2];/* '<S25>/OCV_Discharge' */
+extern volatile uint32_T hjjparneoc4_m_bpIndex_s[2];/* '<S21>/OCV_DSG' */
+extern volatile uint32_T hjjparneoc4x_m_bpIndex_s[2];/* '<S21>/OCV_CHG' */
+extern volatile uint32_T hjjparneoc4xy_m_bpIndex_s[2];/* '<S13>/OCV_DSG' */
+extern volatile uint32_T hjjparneoc4xyh_m_bpIndex_s[2];/* '<S13>/OCV_CHG' */
+extern volatile uint32_T hjjparneoc_m_bpIndex_s[2];/* '<S25>/OCV_Charge' */
+extern volatile boolean_T icLoad_s;    /* '<S38>/SOCPack_UdDisplaySOC_pct' */
+extern volatile uint8_T is_active_c14_BMS_FixPoint_s;/* '<S7>/OCV_Hysteresis' */
+extern volatile uint8_T is_c14_BMS_FixPoint_s;/* '<S7>/OCV_Hysteresis' */
+extern volatile boolean_T k34_icLoad_s;/* '<S29>/Delay' */
+extern volatile boolean_T k34f_icLoad_s;/* '<S22>/UdVirtualOcv' */
+extern volatile boolean_T k3_icLoad_s; /* '<S28>/Delay' */
+extern volatile boolean_T k_icLoad_s;  /* '<S34>/CellVoltsDelay' */
+extern volatile uint32_T m_bpIndex_s[2];/* '<S35>/DCIR_Discharge' */
 extern volatile boolean_T o_UnitDelay_DSTATE_s;/* '<S6>/Unit Delay' */
 extern volatile uint8_T voltage_time_judge_Trig_ZCE_s;
 

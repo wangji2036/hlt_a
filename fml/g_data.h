@@ -409,6 +409,8 @@ struct gd_t
 	 uint8_t typec_ntc_lock;
 	 uint8_t typec_charge_ntc_lock;
 	 uint8_t flash_times;
+	 uint8_t typec_scp;
+	 uint8_t vbus_ovp;
 	 
 
 };

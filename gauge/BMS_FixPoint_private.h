@@ -19,7 +19,6 @@
 #include "zero_crossing_types.h"
 #include "BMS_FixPoint_types.h"
 #include "BMS_FixPoint.h"
-#include "config.h"
 #ifndef UCHAR_MAX
 #include <limits.h>
 #endif
