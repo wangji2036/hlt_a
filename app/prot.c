@@ -129,7 +129,7 @@ int16_t fml_ntc_temp_get_typec(void)
 		}
 		++i;
 	}
-	return ((int)i - 41);
+	return ((int)i - 50);
 }
 
 //wpc
@@ -173,7 +173,7 @@ int16_t fml_ntc_temp_get_wpc(void)
 		}
 		++i;
 	}
-	return ((int)i - 42);
+	return ((int)i - 51);
 }
 
 int16_t fml_die_temp_get(void)
@@ -208,7 +208,7 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 	static uint8_t cnt = 0;
 	if(!gd->wirless_ntc_lock)
 	{
-		if (tntc >= 75|| tntc <= 2)
+		if (tntc >= 75|| tntc <= 2 || tntc == 12)
 		{
 			gd->wirless_ntc_lock = 1;
 			gd->wpc_disable = 1;
@@ -228,7 +228,7 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 	{
 		if(!wirless_ntc_power_reduce)
 		{
-			if(tntc>=64)
+			if(tntc>=46)
 			{
 				if(cnt++>10)
 				wirless_ntc_power_reduce = 1;
@@ -241,7 +241,7 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 		}
 		else
 		{
-			if(tntc<=40)
+			if(tntc<=33)
 			{
 				if(cnt++>10)
 				{

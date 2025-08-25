@@ -347,6 +347,7 @@ void SLP_vSleepToSleep(void)
 
 	if(gd->SOC_SleepTime_s < 10000) gd->SOC_SleepTime_s++;
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
+	//gd->tc0_lighting_mode = 0;
 	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1))
 	{
 	#if SLEEPQ_WAKEUP_ENABLE

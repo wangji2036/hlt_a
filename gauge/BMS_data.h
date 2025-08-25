@@ -23,7 +23,7 @@
 
 /* Const memory section */
 /* Declaration for custom storage class: Const */
-extern const int32_T Cfg_DefultInitR_mOhm;/* Referenced by: '<S22>/Constant2' */
+extern const int32_T Cfg_DefultInitR_mOhm;/* Referenced by: '<S20>/Constant2' */
 
 /* Volatile memory section */
 /* Declaration for custom storage class: Volatile */
@@ -38,10 +38,10 @@ extern volatile real_T Reset_Acc_s;    /* '<S7>/OCV_Hysteresis' */
 extern volatile uint32_T SOC_ELAPS_T_s;/* '<S1>/SOC' */
 extern volatile uint32_T SOC_PREV_T_s; /* '<S1>/SOC' */
 extern volatile boolean_T SOC_RESET_ELAPS_T_s;/* '<S1>/SOC' */
-extern volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S20>/Relational Operator1' */
+extern volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S18>/Relational Operator1' */
 extern volatile int32_T SOC_udInitValue_mpct_DSTATE_s;/* '<S6>/SOC_udInitValue_mpct' */
 extern volatile uint8_T SOHC_Trig_ZCE_s;
-extern volatile uint16_T SOH_capacity_mAh_s;/* '<S42>/Switch' */
+extern volatile uint16_T SOH_capacity_mAh_s;/* '<S40>/Switch' */
 extern volatile int32_T Switch_s;      /* '<S5>/Switch' */
 extern volatile uint8_T TimeSum_Reset_ZCE_s;
 extern volatile int32_T UnitDelay1_DSTATE_s;/* '<S9>/Unit Delay1' */

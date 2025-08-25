@@ -7,6 +7,7 @@
 #include "tcpm.h"
 #include"BMS_FixPoint.h"
 #include "port_manager.h"
+#include "nu6805.h"
 extern volatile uint16_t sys_ticks;
 extern uint16_t key_ui_cnt;
 #define LED_DISPLAY
@@ -15,7 +16,8 @@ void key_sigle_click_process(void);
 void key_double_click_process(void);
 void key_long_click_process(void);
 volatile uint8_t key_flag = 0;
-
+volatile uint8_t charge_read = 0;
+volatile uint8_t charge_flag = 0;
 // following variable will be update to be GB data.
 //uint8_t soc_show = 0;// SOC value, for display
 static uint8_t flash_flag;//1:charging flashing,2, Error - all flashing
@@ -328,7 +330,11 @@ static void ui_update_led(void)
      		 }
      		 // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
      		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
-     		 if (gd->vpwr > 6200 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && !buckboost_protection_flag && gd->real_soc_show<100)
+     		if (gd->vpwr > 6200
+     		    && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+     		    && !buckboost_protection_flag
+     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+
      		 {
      			 soc_show_ram_led |= 0x10;// fast LED is on
      		 }
@@ -363,6 +369,14 @@ static void ui_update_led(void)
      	     }else if (flash_flag == 4){
      	    	if(flash_light_on) soc_show_ram_led = 0x01;
      	    	 else soc_show_ram_led = 0;
+     	    	if (gd->vpwr > 6200
+     	    	     		    && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+     	    	     		    && !buckboost_protection_flag
+     	    	     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+
+     	    	     		 {
+     	    	     			 soc_show_ram_led |= 0x10;// fast LED is on
+     	    	     		 }
      	     }
 
      	     else if(flash_flag ==3)
@@ -434,7 +448,7 @@ void ui_update(void)
 	{
 		key_sigle_click_process();
 		gd->idle_to_sleep_cnt = 0;
-		printk("\r\n ----------222------------------//-------key single click");
+	//	printk("\r\n ----------222------------------//-------key single click");
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if(key_flag == 2)
@@ -448,7 +462,7 @@ void ui_update(void)
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 		gd->idle_to_sleep_cnt = 0;
 		key_long_click_process();
-		printk("\r\n ----------222------------------//-------key long click");
+	//  printk("\r\n ----------222------------------//-------key long click");
 	}
 
 	key_flag = 0;
@@ -471,10 +485,21 @@ void ui_update(void)
 #if(BUCKBOOST_USED_NU6801 == 1)
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.charging_stat)
 #else
+				//charge done
+			hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,&charge_read);
+			charge_flag = (charge_read&0x10)>>4;
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 #endif
 			{
-				if(gd->real_soc_show < SOCPack_DisplaySOC_pct) gd->real_soc_show +=1;
+				if(gd->real_soc_show < SOCPack_DisplaySOC_pct){
+					if(gd->real_soc_show < 99){
+						gd->real_soc_show +=1;
+					}else{
+						if(charge_flag == 1){
+							gd->real_soc_show +=1;
+						}
+					}
+				};
 			}
 			else if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 			{
@@ -505,10 +530,12 @@ void ui_update(void)
 		if (gd->real_soc_show >= 100) 
 		{
 			// Requirement 5: Fully charged, solid lights
-			// buckboost_ops.set_work_mode(0x00);
+			 buckboost_ops.set_work_mode(0x00);
+			 //clean full chaegr
+			 hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0x10);
         flash_flag = 0;
 		} else {
-			// buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
+			//buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 			// Requirement 4: Charging, last LED blinks
 			flash_flag = 1;
 		}
@@ -524,6 +551,7 @@ void ui_update(void)
     	if(gd->real_soc_show<=0)
     	{
     		if(zero_soc_cnt< 250) zero_soc_cnt++;
+    		else buckboost_ops.set_work_mode(0x00);
     	}
     }
     else{
@@ -551,13 +579,15 @@ void ui_update(void)
     }
 	// printk("\r\n gd->ntc_led_off %d\r\n",gd->ntc_led_off);
 	prev_woke_mode = g_buckboost.woke_mode;
-	printk("flash_flag = %d",flash_flag);
-  // printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
-  // printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
-   	//	SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
+	//printk("flash_flag = %d",flash_flag);
+//   printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
+//   printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
+//   		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
+//
+//   printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
+//   		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
+//   printk("\r\n ibat-->%d,vbat-->%d",g_buckboost.adc_ibat,g_buckboost.adc_vbat);
 
-  // printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
-  // 		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
 #ifdef LED_DISPLAY
 	ui_update_led();
 #else

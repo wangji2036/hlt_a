@@ -65,12 +65,12 @@ typedef struct {
      int32_T DCIR_Discharge_tableData[36];
 #endif
 #if(BUCKBOOST_USED_NU6805 == 1)
-  int32_T pooled6[12];
+  int32_T pooled6[20];
 
   /* Computed Parameter: DCIR_Discharge_tableData
    * Referenced by: '<S33>/DCIR_Discharge'
    */
-   int32_T DCIR_Discharge_tableData[36];
+  int32_T DCIR_Discharge_tableData[60];
 #endif
   /* Pooled Parameter (Expression: )
    * Referenced by:
@@ -170,18 +170,18 @@ extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
 #endif
 
 #if(BUCKBOOST_USED_NU6805 == 1)
-extern const int32_T P_OcvSOCChg_mpct[36];   /* Variable: P_OcvSOCChg_mpct
+extern const int32_T P_OcvSOCChg_mpct[60];   /* Variable: P_OcvSOCChg_mpct
                                         * Referenced by:
                                         *   '<S13>/OCV_CHG'
                                         *   '<S21>/OCV_CHG'
                                         */
-extern const int32_T P_OcvSOCDsg_mpct[36];   /* Variable: P_OcvSOCDsg_mpct
+extern const  int32_T P_OcvSOCDsg_mpct[60];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
                                         *   '<S35>/OCV_DSG'
                                         *   '<S13>/OCV_DSG'
                                         *   '<S21>/OCV_DSG'
                                         */
-extern const int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
+extern const int32_T P_SOCAxis_mpct[20];     /* Variable: P_SOCAxis_mpct
                                         * Referenced by:
                                         *   '<S35>/DCIR_Discharge'
                                         *   '<S25>/DCIR_Charge'
@@ -191,7 +191,7 @@ extern const int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
                                         *   '<S25>/R0_Charge'
                                         *   '<S25>/R0_Discharge'
                                         */
-extern const int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
+extern const int32_T P_SOCSlope_mpctPermV[20];/* Variable: P_SOCSlope_mpctPermV
                                          * Referenced by: '<S24>/SOC_Slope'
 
                                          */
@@ -225,16 +225,16 @@ extern const  uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
 
 #if(BUCKBOOST_USED_NU6805 == 1)
 
-extern const uint32_T P_DcirChg_mOhm[36];    /* Variable: P_DcirChg_mOhm
+extern const uint32_T P_DcirChg_mOhm[60];    /* Variable: P_DcirChg_mOhm
                                         * Referenced by: '<S25>/DCIR_Charge'
                                         */
-extern const uint32_T P_DcirDsg_mOhm[36];    /* Variable: P_DcirDsg_mOhm
+extern const uint32_T P_DcirDsg_mOhm[60];    /* Variable: P_DcirDsg_mOhm
                                         * Referenced by: '<S25>/DCIR_Discharge'
                                         */
-extern const uint32_T P_R0Chg_mOhm[36];      /* Variable: P_R0Chg_mOhm
+extern const uint32_T P_R0Chg_mOhm[60];      /* Variable: P_R0Chg_mOhm
                                         * Referenced by: '<S25>/R0_Charge'
                                         */
-extern const uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
+extern const uint32_T P_R0Dsg_mOhm[60];      /* Variable: P_R0Dsg_mOhm
                                         * Referenced by: '<S25>/R0_Discharge'
                                          */
 #endif
@@ -279,15 +279,15 @@ extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
 #endif
 
 #if(BUCKBOOST_USED_NU6805 == 1)
-extern const uint16_T P_OCVAxis_mV[12];      /* Variable: P_OCVAxis_mV
+extern const uint16_T P_OCVAxis_mV[20];      /* Variable: P_OCVAxis_mV
                                         * Referenced by:
                                         *   '<S13>/OCV_CHG'
                                         *   '<S13>/OCV_DSG'
                                         */
-extern const uint16_T P_OCVChg_mV[36];       /* Variable: P_OCVChg_mV
+extern const uint16_T P_OCVChg_mV[60];       /* Variable: P_OCVChg_mV
                                         * Referenced by: '<S25>/OCV_Charge'
                                         */
-extern const uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
+extern const uint16_T P_OCVDsg_mV[60];       /* Variable: P_OCVDsg_mV
                                         * Referenced by: '<S25>/OCV_Discharge'
                                         */
 

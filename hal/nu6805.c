@@ -37,6 +37,8 @@ void hal_nu6805_buckboost_init(void)
 		uint8_t read;
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,read|0x04);
+		//200ma
+		hal_nu6805_REG_Charger_Setting1();
 
 
 		//return;
@@ -53,6 +55,9 @@ void hal_nu6805_buckboost_disable_62368(void)
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,read | 0xC0);
 }
 
+void hal_nu6805_REG_Charger_Setting1(void){
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting1,0x05);
+}
 void hal_nu6805_buckboost_set_cv(void)
 {
 	uint8_t read;

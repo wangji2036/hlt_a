@@ -199,15 +199,15 @@
 								<option id="ckcoregcc.c.compiler.abiv2.exeWithoutOs.debug.option.optimization.level.73127703" name="Optimization Level" superClass="ckcoregcc.c.compiler.abiv2.exeWithoutOs.debug.option.optimization.level" value="ckcoregcc.c.compiler.optimization.level.os" valueType="enumerated"/>
 								<option id="ckcoregcc.c.compiler.abiv2.exeWithoutOs.debug.option.debugging.level.1069248508" name="Debug Level" superClass="ckcoregcc.c.compiler.abiv2.exeWithoutOs.debug.option.debugging.level" value="ckcoregcc.c.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="ckcoregcc.c.compiler.option.include.paths.1367266339" name="Include paths (-I)" superClass="ckcoregcc.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/app}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/osal}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/fml}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/hal}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/startup}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/util}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/gauge}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/power}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/PowerBankEvk_relsease/usbpd}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/app}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/osal}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/fml}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/hal}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/startup}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/util}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/gauge}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/power}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/usbpd}&quot;"/>
 								</option>
 								<option id="ckcoregcc.compiler.option.elf.abiv2.cputype.1251294873" name="CPUType" superClass="ckcoregcc.compiler.option.elf.abiv2.cputype" value="ck802" valueType="enumerated"/>
 								<option id="ckcoregcc.c.compiler.elf.optimization.isEnhancedLRW.1371439957" name="Enhanced LRW(-Wa,-melrw)" superClass="ckcoregcc.c.compiler.elf.optimization.isEnhancedLRW" value="true" valueType="boolean"/>
@@ -215,6 +215,7 @@
 									<listOptionValue builtIn="false" value="DEBUG_SWITCH"/>
 								</option>
 								<option id="ckcoregcc.c.compiler.option.other.other.995573190" name="Other flags" superClass="ckcoregcc.c.compiler.option.other.other" value="-c  -mistack -ffixed-r8 --std=c99" valueType="string"/>
+								<option id="ckcoregcc.c.compiler.option.preprocessor.nostdinc.895807577" name="Do not search system directories (-nostdinc)" superClass="ckcoregcc.c.compiler.option.preprocessor.nostdinc" value="false" valueType="boolean"/>
 								<inputType id="cds.managedbuild.tool.ckcoregcc.c.compiler.input.68529695" superClass="cds.managedbuild.tool.ckcoregcc.c.compiler.input"/>
 							</tool>
 							<tool id="cds.managedbuild.tool.ckcoregcc.binary.base.elf.linker.abiv2.1851126429" name="CSky Elf Binary Linker" superClass="cds.managedbuild.tool.ckcoregcc.binary.base.elf.linker.abiv2"/>

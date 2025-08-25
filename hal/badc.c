@@ -207,7 +207,7 @@ static int16_t hal_badc_average_meas(enum badc_chan_t channel, uint8_t times)
 	{
 		tmp = 0;
 	}
-	printk("\r\nraw_tmp%d",tmp);
+	//printk("\r\nraw_tmp%d",tmp);
 	return tmp;
 }
 
@@ -229,8 +229,8 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 
 	uint16_t BDAC_VREF_V3P3 = hal_badc_vref_update();
 
-	//int tmp = (BDAC_VREF_V3P3 * hal_badc_average_meas(channel, 4)) >> 12; //100us
-	int tmp = hal_badc_average_meas(channel, 4);
+	int tmp = (BDAC_VREF_V3P3 * hal_badc_average_meas(channel, 4)) >> 12; //100us
+	//int tmp = hal_badc_average_meas(channel, 4);
 	switch (channel)
 	{
 		case _BADC_CH_PC6_ADC1:

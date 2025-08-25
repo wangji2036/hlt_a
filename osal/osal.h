@@ -84,7 +84,10 @@ enum {
 #define WPC_EVT_STOP_AFTER_FSK    osal_event_declare(22)
 #define WPC_EVT_FOD_REPORTED	  osal_event_declare(23)
 #define WPC_EVT_RENEGO_TO         osal_event_declare(24)
-#define WPC_EVT_DDM               osal_event_declare(25)
+
+#define WPC_EVT_PWR_LIM_SYNC	  osal_event_declare(25)
+#define WPC_EVT_LOAD_JUMP		  osal_event_declare(26)
+//#define WPC_EVT_TEST_TASK		  osal_event_declare(30)
 
 void osal_init(void);
 void osal_start_system(void);
