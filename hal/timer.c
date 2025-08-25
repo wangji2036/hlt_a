@@ -196,7 +196,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 		g_u8Tmr0IntHaved_USBPD = 1;
 		g_u16Tmr0IntCnt_USBPD  = 1;
 	}
-
+	GPC->DOUT.BITS.PIN8 ^= 1;//1ms
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
@@ -276,4 +276,31 @@ void __attribute__((isr)) TMR3_IRQHandler(void)
 	{
 		hal_timer_stop(TMR3);
 	}
+}
+
+void hal_tmr2_delay_10ms_by_count(void)
+{
+
+
+    printk("\r\ntmr2_delay_start");
+    uint32_t start_count = TMR2->REAL_CNT.WORD;
+    uint32_t current_count;
+    uint32_t elapsed_count;
+
+       while (1) {
+           current_count = TMR2->REAL_CNT.WORD;
+
+           if (current_count <= start_count) {
+               elapsed_count = start_count - current_count;
+           } else {
+               elapsed_count = start_count + (0xFFFFFFFF - current_count + 1);
+           }
+
+           if (elapsed_count >= 20) {
+               break;
+           }
+           printk("\r\nelapsed_count[%d]",elapsed_count);
+
+       }
+
 }

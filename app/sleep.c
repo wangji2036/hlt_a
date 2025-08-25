@@ -399,6 +399,8 @@ void SLP_vSleepToSleep(void)
 
 	sleep_printk("\r\n sleep again  --- sleep time%d",gd->SOC_SleepTime_s);
 
+
+
 	hal_wdt_feed();
 	hal_epwm_pwm_stop(EPWM1);
 	GPC->I_EN.BITS.PIN0 = 1;
@@ -417,6 +419,7 @@ void SLP_vSleepToSleep(void)
 	/* PD5 */
 	GPD->I_EN.BITS.PIN5 = 1;
 	GPD->MODE.BITS.PIN5 = 0; //00:PD5 01:ECAP2 10:RESERVED 11:RESERVED
+	delay_1ms(3);
 	hal_gpio_init_default();
     // key wake up start
 	GPC->I_EN.BITS.PIN6 = 1;
@@ -496,6 +499,7 @@ void SLP_vSleepToSleep(void)
     hal_wdt_feed();
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
 	SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0;        // [NEW-VICTOR] 锟斤拷锟斤拷确锟斤拷GPIO锟斤拷锟窖癸拷锟斤拷使锟斤拷
+
 
 }
 void SLP_vSleepQToSleep(void)
@@ -639,6 +643,16 @@ void RST_vCheck(void)
 	GPB->MODE.BITS.PIN7 = 1; //00:PB7 01:UART1_TXD 10:RESERVED 11:RESERVED
 	hal_uart_init(UART1);
 #endif
+
+	/* PC8 */
+	GPC->I_EN.BITS.PIN8 = 0;
+	GPC->O_EN.BITS.PIN8 = 1;
+	GPC->DOUT.BITS.PIN8 = 1;
+	GPC->ODEN.BITS.PIN8 = 0;
+	GPC->PUEN.BITS.PIN8 = 0;
+	GPC->PDEN.BITS.PIN8 = 0;
+	GPC->MODE.BITS.PIN8 = 01; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
+
 		sleep_printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)

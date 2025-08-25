@@ -51,32 +51,36 @@ typedef struct {
 typedef struct {
   /* Pooled Parameter (Expression: P_OCVAxis_mV)
    * Referenced by:
-   *   '<S35>/OCV_DSG'
-   *   '<S21>/OCV_CHG'
-   *   '<S21>/OCV_DSG'
-   *   '<S24>/SOC_Slope'
+   *   '<S33>/OCV_DSG'
+   *   '<S19>/OCV_DSG'
+   *   '<S22>/SOC_Slope'
    */
+   
+#if(BUCKBOOST_USED_NU6801 == 1)
+     int32_T pooled7[12];
+
+  /* Computed Parameter: DCIR_Discharge_tableData
+   * Referenced by: '<S33>/DCIR_Discharge'
+   */
+     int32_T DCIR_Discharge_tableData[36];
+#endif
+#if(BUCKBOOST_USED_NU6805 == 1)
   int32_T pooled6[12];
 
   /* Computed Parameter: DCIR_Discharge_tableData
-   * Referenced by: '<S35>/DCIR_Discharge'
+   * Referenced by: '<S33>/DCIR_Discharge'
    */
-  int32_T DCIR_Discharge_tableData[36];
-
+   int32_T DCIR_Discharge_tableData[36];
+#endif
   /* Pooled Parameter (Expression: )
    * Referenced by:
-   *   '<S35>/DCIR_Discharge'
-   *   '<S35>/OCV_DSG'
-   *   '<S13>/OCV_CHG'
-   *   '<S13>/OCV_DSG'
-   *   '<S21>/OCV_CHG'
-   *   '<S21>/OCV_DSG'
-   *   '<S25>/DCIR_Charge'
-   *   '<S25>/DCIR_Discharge'
-   *   '<S25>/OCV_Charge'
-   *   '<S25>/OCV_Discharge'
-   *   '<S25>/R0_Charge'
-   *   '<S25>/R0_Discharge'
+   *   '<S33>/DCIR_Discharge'
+   *   '<S33>/OCV_DSG'
+   *   '<S12>/OCV_DSG'
+   *   '<S19>/OCV_DSG'
+   *   '<S23>/DCIR_Discharge'
+   *   '<S23>/OCV_Discharge'
+   *   '<S23>/R0_Discharge'
    */
   uint32_T pooled10[2];
 } ConstP;
@@ -119,17 +123,17 @@ extern int32_T SOCPack_RealSOC_pct;    /* '<Root>/SOCPack_RealSOC_pct' */
 extern int32_T SOCPack_EmptySOC_mpct;  /* '<Root>/SOCPack_EmptySOC_mpct' */
 extern int32_T SOCPack_DisplaySOC_pct; /* '<Root>/SOCPack_DisplaySOC_pct' */
 extern uint32_T Bal_BalTime_s;         /* '<Root>/Bal_BalTime_s' */
-extern uint32_T SOC_ModelR0_mOhm;      /* '<S25>/Switch3' */
-extern uint32_T SOC_ModelDCIR_mOhm;    /* '<S25>/Switch2' */
-extern int32_T SOCPack_UdEmptySOC_mpct;/* '<S35>/SOCPack_UdEmptySOC_mpct' */
-extern int32_T SOCPack_SatuarationSoc_mpct;/* '<S35>/Saturation' */
-extern int32_T SOCPack_EmptyDcr_mOhm;  /* '<S35>/DCIR_Discharge' */
-extern int32_T SOCPack_EmptyU_mV;      /* '<S35>/Add2' */
-extern int32_T SOCPack_PreEmptySOC_mpct;/* '<S35>/Saturation4' */
-extern int32_T SOC_VirtOCVSOC_mpct;    /* '<S21>/Saturation1' */
-extern int32_T SOC_VirtualOCV_mV;      /* '<S22>/UdVirtualOcv' */
-extern uint16_T BMS_SampleTime_ms;     /* '<S45>/Constant1' */
-extern uint16_T SOC_ModelOCV_mV;       /* '<S25>/Switch1' */
+extern uint32_T SOC_ModelR0_mOhm;      /* '<S23>/Switch3' */
+extern uint32_T SOC_ModelDCIR_mOhm;    /* '<S23>/Switch2' */
+extern int32_T SOCPack_UdEmptySOC_mpct;/* '<S33>/SOCPack_UdEmptySOC_mpct' */
+extern int32_T SOCPack_SatuarationSoc_mpct;/* '<S33>/Saturation' */
+extern int32_T SOCPack_EmptyDcr_mOhm;  /* '<S33>/DCIR_Discharge' */
+extern int32_T SOCPack_EmptyU_mV;      /* '<S33>/Add2' */
+extern int32_T SOCPack_PreEmptySOC_mpct;/* '<S33>/Saturation4' */
+extern int32_T SOC_VirtOCVSOC_mpct;    /* '<S19>/Saturation1' */
+extern int32_T SOC_VirtualOCV_mV;      /* '<S20>/UdVirtualOcv' */
+extern uint16_T BMS_SampleTime_ms;     /* '<S43>/Constant1' */
+extern uint16_T SOC_ModelOCV_mV;       /* '<S23>/Switch1' */
 
 /*
  * Exported Global Parameters
@@ -145,19 +149,40 @@ extern int32_T P_AtRateCurrent_mA;     /* Variable: P_AtRateCurrent_mA
 extern int32_T P_EmptyVoltage_mV;      /* Variable: P_EmptyVoltage_mV
                                         * Referenced by: '<S4>/Empty_Voltage_mV'
                                         */
-extern int32_T P_OcvSOCChg_mpct[36];   /* Variable: P_OcvSOCChg_mpct
-                                        * Referenced by:
-                                        *   '<S13>/OCV_CHG'
-                                        *   '<S21>/OCV_CHG'
-                                        */
+
+#if(BUCKBOOST_USED_NU6801 == 1)
 extern const  int32_T P_OcvSOCDsg_mpct[36];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
-                                        *   '<S35>/OCV_DSG'
-                                        *   '<S13>/OCV_DSG'
-                                        *   '<S21>/OCV_DSG'
+                                        *   '<S33>/OCV_DSG'
+                                        *   '<S12>/OCV_DSG'
+                                        *   '<S19>/OCV_DSG'
                                         */
 extern int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
                                         * Referenced by:
+                                        *   '<S33>/DCIR_Discharge'
+                                        *   '<S23>/DCIR_Discharge'
+                                        *   '<S23>/OCV_Discharge'
+                                        *   '<S23>/R0_Discharge'
+                                        */
+extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
+                                         * Referenced by: '<S22>/SOC_Slope'
+                                         */
+#endif
+
+#if(BUCKBOOST_USED_NU6805 == 1)
+extern const int32_T P_OcvSOCChg_mpct[36];   /* Variable: P_OcvSOCChg_mpct
+                                        * Referenced by:
+                                        *   '<S13>/OCV_CHG'
+                                        *   '<S21>/OCV_CHG'
+                                        */
+extern const int32_T P_OcvSOCDsg_mpct[36];   /* Variable: P_OcvSOCDsg_mpct
+                                        * Referenced by:
+                                        *   '<S35>/OCV_DSG'
+                                        *   '<S13>/OCV_DSG'
+                                        *   '<S21>/OCV_DSG'
+                                        */
+extern const int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
+                                        * Referenced by:
                                         *   '<S35>/DCIR_Discharge'
                                         *   '<S25>/DCIR_Charge'
                                         *   '<S25>/DCIR_Discharge'
@@ -166,93 +191,115 @@ extern int32_T P_SOCAxis_mpct[12];     /* Variable: P_SOCAxis_mpct
                                         *   '<S25>/R0_Charge'
                                         *   '<S25>/R0_Discharge'
                                         */
-extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
+extern const int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
                                          * Referenced by: '<S24>/SOC_Slope'
+
                                          */
-extern int32_T P_SocDeviationAxis_mpct[7];/* Variable: P_SocDeviationAxis_mpct
-                                           * Referenced by: '<S21>/1-D Lookup Table1'
+
+#endif
+extern const int32_T P_SocDeviationAxis_mpct[7];/* Variable: P_SocDeviationAxis_mpct
+                                           * Referenced by: '<S19>/1-D Lookup Table1'
                                            */
-extern int32_T P_SocDeviationCorrect_upct[7];/* Variable: P_SocDeviationCorrect_upct
-                                              * Referenced by: '<S21>/1-D Lookup Table1'
+extern const int32_T P_SocDeviationCorrect_upct[7];/* Variable: P_SocDeviationCorrect_upct
+                                              * Referenced by: '<S19>/1-D Lookup Table1'
                                               */
-extern int32_T P_SocRangeAxis_mpct[5]; /* Variable: P_SocRangeAxis_mpct
-                                        * Referenced by: '<S21>/adaption in SOC range'
+extern const int32_T P_SocRangeAxis_mpct[5]; /* Variable: P_SocRangeAxis_mpct
+                                        * Referenced by: '<S19>/adaption in SOC range'
                                         */
-extern int32_T P_SocRangeCorrect_mpct[5];/* Variable: P_SocRangeCorrect_mpct
-                                          * Referenced by: '<S21>/adaption in SOC range'
+extern const int32_T P_SocRangeCorrect_mpct[5];/* Variable: P_SocRangeCorrect_mpct
+                                          * Referenced by: '<S19>/adaption in SOC range'
                                           */
 extern uint32_T P_CurrentThresRelaxJudge_mA;/* Variable: P_CurrentThresRelaxJudge_mA
                                              * Referenced by:
-                                             *   '<S12>/Constant1'
-                                             *   '<S15>/Constant1'
+                                             *   '<S11>/Constant1'
+                                             *   '<S13>/Constant1'
                                              */
-extern uint32_T P_DcirChg_mOhm[36];    /* Variable: P_DcirChg_mOhm
-                                        * Referenced by: '<S25>/DCIR_Charge'
-                                        */
+#if(BUCKBOOST_USED_NU6801 == 1)
 extern const  uint32_T P_DcirDsg_mOhm[36];    /* Variable: P_DcirDsg_mOhm
-                                        * Referenced by: '<S25>/DCIR_Discharge'
-                                        */
-extern uint32_T P_R0Chg_mOhm[36];      /* Variable: P_R0Chg_mOhm
-                                        * Referenced by: '<S25>/R0_Charge'
+                                        * Referenced by: '<S23>/DCIR_Discharge'
                                         */
 extern const  uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
-                                        * Referenced by: '<S25>/R0_Discharge'
+                                        * Referenced by: '<S23>/R0_Discharge'
                                         */
+#endif
+
+#if(BUCKBOOST_USED_NU6805 == 1)
+
+extern const uint32_T P_DcirChg_mOhm[36];    /* Variable: P_DcirChg_mOhm
+                                        * Referenced by: '<S25>/DCIR_Charge'
+                                        */
+extern const uint32_T P_DcirDsg_mOhm[36];    /* Variable: P_DcirDsg_mOhm
+                                        * Referenced by: '<S25>/DCIR_Discharge'
+                                        */
+extern const uint32_T P_R0Chg_mOhm[36];      /* Variable: P_R0Chg_mOhm
+                                        * Referenced by: '<S25>/R0_Charge'
+                                        */
+extern const uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
+                                        * Referenced by: '<S25>/R0_Discharge'
+                                         */
+#endif
 extern uint32_T P_RelaxDurationExtremeLowTemp_s;
                                     /* Variable: P_RelaxDurationExtremeLowTemp_s
-                                     * Referenced by: '<S12>/P_RelaxDurationExtremeLowTemp_s'
+                                     * Referenced by: '<S11>/P_RelaxDurationExtremeLowTemp_s'
                                      */
 extern uint32_T P_RelaxDurationLowTemp_s;/* Variable: P_RelaxDurationLowTemp_s
-                                          * Referenced by: '<S12>/P_RelaxDurationLowTemp_s'
+                                          * Referenced by: '<S11>/P_RelaxDurationLowTemp_s'
                                           */
 extern uint32_T P_RelaxDurationNormalTemp_s;/* Variable: P_RelaxDurationNormalTemp_s
-                                             * Referenced by: '<S12>/P_RelaxDurationNormalTemp_s'
+                                             * Referenced by: '<S11>/P_RelaxDurationNormalTemp_s'
                                              */
 extern int16_T P_LowTemp_degC;         /* Variable: P_LowTemp_degC
-                                        * Referenced by: '<S17>/Constant'
+                                        * Referenced by: '<S15>/Constant'
                                         */
 extern int16_T P_NormalTemp_degC;      /* Variable: P_NormalTemp_degC
-                                        * Referenced by: '<S16>/Constant'
+                                        * Referenced by: '<S14>/Constant'
                                         */
 extern int16_T P_TAxis_degC[3];        /* Variable: P_TAxis_degC
                                         * Referenced by:
-                                        *   '<S35>/DCIR_Discharge'
-                                        *   '<S35>/OCV_DSG'
-                                        *   '<S13>/OCV_CHG'
-                                        *   '<S13>/OCV_DSG'
-                                        *   '<S21>/OCV_CHG'
-                                        *   '<S21>/OCV_DSG'
-                                        *   '<S25>/DCIR_Charge'
-                                        *   '<S25>/DCIR_Discharge'
-                                        *   '<S25>/OCV_Charge'
-                                        *   '<S25>/OCV_Discharge'
-                                        *   '<S25>/R0_Charge'
-                                        *   '<S25>/R0_Discharge'
+                                        *   '<S33>/DCIR_Discharge'
+                                        *   '<S33>/OCV_DSG'
+                                        *   '<S12>/OCV_DSG'
+                                        *   '<S19>/OCV_DSG'
+                                        *   '<S23>/DCIR_Discharge'
+                                        *   '<S23>/OCV_Discharge'
+                                        *   '<S23>/R0_Discharge'
                                         */
 extern uint16_T P_Capacity_mAh;        /* Variable: P_Capacity_mAh
                                         * Referenced by:
-                                        *   '<S42>/SOH_capacity_mAh'
-                                        *   '<S42>/Constant3'
+                                        *   '<S40>/SOH_capacity_mAh'
+                                        *   '<S40>/Constant3'
                                         */
+#if(BUCKBOOST_USED_NU6801 == 1)
 extern uint16_T P_OCVAxis_mV[12];      /* Variable: P_OCVAxis_mV
+                                        * Referenced by: '<S12>/OCV_DSG'
+                                        */
+extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
+                                        * Referenced by: '<S23>/OCV_Discharge'
+                                        */
+#endif
+
+#if(BUCKBOOST_USED_NU6805 == 1)
+extern const uint16_T P_OCVAxis_mV[12];      /* Variable: P_OCVAxis_mV
                                         * Referenced by:
                                         *   '<S13>/OCV_CHG'
                                         *   '<S13>/OCV_DSG'
                                         */
-extern uint16_T P_OCVChg_mV[36];       /* Variable: P_OCVChg_mV
+extern const uint16_T P_OCVChg_mV[36];       /* Variable: P_OCVChg_mV
                                         * Referenced by: '<S25>/OCV_Charge'
                                         */
-extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
+extern const uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
                                         * Referenced by: '<S25>/OCV_Discharge'
                                         */
+
+#endif
 extern uint16_T P_SampleTime_ms;       /* Variable: P_SampleTime_ms
-                                        * Referenced by: '<S45>/Constant1'
+                                        * Referenced by: '<S43>/Constant1'
                                         */
 extern boolean_T P_ModelCorrEnable_flg;/* Variable: P_ModelCorrEnable_flg
-                                        * Referenced by: '<S23>/Constant3'
+                                        * Referenced by: '<S21>/Constant3'
                                         */
 extern boolean_T P_VoltMatchEnable_flg;/* Variable: P_VoltMatchEnable_flg
-                                        * Referenced by: '<S15>/Constant2'
+                                        * Referenced by: '<S13>/Constant2'
                                         */
 
 /* Model entry point functions */
@@ -287,41 +334,39 @@ extern RT_MODEL *const M_s;
  * '<S8>'   : 'BMS_FixPoint/BMS/SOC/SOC_Correction'
  * '<S9>'   : 'BMS_FixPoint/BMS/SOC/AhIntegralSOC/Integraiton'
  * '<S10>'  : 'BMS_FixPoint/BMS/SOC/AhIntegralSOC/Integraiton/Over0.1mAh'
- * '<S11>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/Compare To Constant'
- * '<S12>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check'
- * '<S13>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/Lookup_OCVSOC'
- * '<S14>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/OCV_Hysteresis'
- * '<S15>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check'
- * '<S16>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/Compare To Constant'
- * '<S17>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/Compare To Constant1'
- * '<S18>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/debounce'
- * '<S19>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check/Over60s'
- * '<S20>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check/voltage_time_judge'
- * '<S21>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Correction_EachStep'
- * '<S22>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model'
- * '<S23>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model_Ah_Merge'
- * '<S24>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/StandardError'
- * '<S25>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/Impedance for Raw SOC'
- * '<S26>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current'
- * '<S27>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/Subsystem1'
- * '<S28>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/rolling average'
- * '<S29>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/rolling average2'
- * '<S30>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant'
- * '<S31>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant1'
- * '<S32>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant2'
- * '<S33>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant3'
- * '<S34>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/StandardError/rolling average'
- * '<S35>'  : 'BMS_FixPoint/BMS/SOCPack/Pack_Empty'
- * '<S36>'  : 'BMS_FixPoint/BMS/SOCPack/Pack_Full'
- * '<S37>'  : 'BMS_FixPoint/BMS/SOCPack/SOC Mapping'
- * '<S38>'  : 'BMS_FixPoint/BMS/SOCPack/SOC_Filter'
- * '<S39>'  : 'BMS_FixPoint/BMS/SOCPack/Unfiltered_SOCPack_RealSOC_pct'
- * '<S40>'  : 'BMS_FixPoint/BMS/SOCPack/SOC_Filter/Saturation Dynamic'
- * '<S41>'  : 'BMS_FixPoint/BMS/SOCPack/Unfiltered_SOCPack_RealSOC_pct/Pack_Weighting'
- * '<S42>'  : 'BMS_FixPoint/BMS/SOH/SOHC'
- * '<S43>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem'
- * '<S44>'  : 'BMS_FixPoint/Mode_Management/enable'
- * '<S45>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem/SimpleModeMangement'
- * '<S46>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem/SimpleModeMangement/Chart'
+ * '<S11>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check'
+ * '<S12>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/Lookup_OCVSOC'
+ * '<S13>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check'
+ * '<S14>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/Compare To Constant'
+ * '<S15>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/Compare To Constant1'
+ * '<S16>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/CurrentRelax_Check/debounce'
+ * '<S17>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check/Over60s'
+ * '<S18>'  : 'BMS_FixPoint/BMS/SOC/OCVSOC/VoltageRelax_Check/voltage_time_judge'
+ * '<S19>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Correction_EachStep'
+ * '<S20>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model'
+ * '<S21>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model_Ah_Merge'
+ * '<S22>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/StandardError'
+ * '<S23>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/Impedance for Raw SOC'
+ * '<S24>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current'
+ * '<S25>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/Subsystem1'
+ * '<S26>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/rolling average'
+ * '<S27>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/rolling average2'
+ * '<S28>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant'
+ * '<S29>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant1'
+ * '<S30>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant2'
+ * '<S31>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/Model/OCV adaption on current/Compare To Constant3'
+ * '<S32>'  : 'BMS_FixPoint/BMS/SOC/SOC_Correction/StandardError/rolling average'
+ * '<S33>'  : 'BMS_FixPoint/BMS/SOCPack/Pack_Empty'
+ * '<S34>'  : 'BMS_FixPoint/BMS/SOCPack/Pack_Full'
+ * '<S35>'  : 'BMS_FixPoint/BMS/SOCPack/SOC Mapping'
+ * '<S36>'  : 'BMS_FixPoint/BMS/SOCPack/SOC_Filter'
+ * '<S37>'  : 'BMS_FixPoint/BMS/SOCPack/Unfiltered_SOCPack_RealSOC_pct'
+ * '<S38>'  : 'BMS_FixPoint/BMS/SOCPack/SOC_Filter/Saturation Dynamic'
+ * '<S39>'  : 'BMS_FixPoint/BMS/SOCPack/Unfiltered_SOCPack_RealSOC_pct/Pack_Weighting'
+ * '<S40>'  : 'BMS_FixPoint/BMS/SOH/SOHC'
+ * '<S41>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem'
+ * '<S42>'  : 'BMS_FixPoint/Mode_Management/enable'
+ * '<S43>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem/SimpleModeMangement'
+ * '<S44>'  : 'BMS_FixPoint/Mode_Management/Variant Subsystem/SimpleModeMangement/Chart'
  */
 #endif                                 /* BMS_FixPoint_h_ */

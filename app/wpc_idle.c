@@ -169,6 +169,7 @@ uint8_t qfod_detect(void)
 				{
 					gd->ptx_idle_phase_status = WPC_IDLE_STAT_LAR_MET;
 				}
+				printk("111111");
 			}
 			else
 			{
@@ -179,6 +180,7 @@ uint8_t qfod_detect(void)
 					if (idle_qdt_back_to_normal())
 					{
 						qdt_have_obj_count = 0;
+
 					}
 					else
 					{
@@ -188,6 +190,7 @@ uint8_t qfod_detect(void)
 							gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_FOD;
 						}
 					}
+					printk("22222222");
 				}
 				else
 				{
@@ -202,6 +205,7 @@ uint8_t qfod_detect(void)
 						qdt_try_ping_count += (1 + rx_may_still_be_flag * ap->pin_max_cnt);
 						gd->tx_infos.fo_exist = 0;
 					}
+					printk("333333333");
 				}
 			}
 			break;

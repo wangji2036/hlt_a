@@ -1,13 +1,17 @@
 /*
  * BMS_data.c
  *
+ * Academic License - for use in teaching, academic research, and meeting
+ * course requirements at degree granting institutions only.  Not for
+ * government, commercial, or other organizational use.
+ *
  * Code generation for model "BMS_FixPoint".
  *
- * Model version              : 8.40
+ * Model version              : 8.0
  * Simulink Coder version : 24.2 (R2024b) 21-Jun-2024
  *
  */
-
+#include "regdef.h"
 #include "BMS_data.h"
 #include "rtwtypes.h"
 #include "multiword_types.h"
@@ -18,7 +22,7 @@
 
 /* Const memory section */
 /* Definition for custom storage class: Const */
-const int32_T Cfg_DefultInitR_mOhm = 240;/* Referenced by: '<S22>/Constant2' */
+const int32_T Cfg_DefultInitR_mOhm = 240;/* Referenced by: '<S20>/Constant2' */
 
 /* Volatile memory section */
 /* Definition for custom storage class: Volatile */
@@ -33,10 +37,10 @@ volatile real_T Reset_Acc_s;           /* '<S7>/OCV_Hysteresis' */
 volatile uint32_T SOC_ELAPS_T_s;       /* '<S1>/SOC' */
 volatile uint32_T SOC_PREV_T_s;        /* '<S1>/SOC' */
 volatile boolean_T SOC_RESET_ELAPS_T_s;/* '<S1>/SOC' */
-volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S20>/Relational Operator1' */
+volatile boolean_T SOC_VoltGradientMatch_flg_s;/* '<S18>/Relational Operator1' */
 volatile int32_T SOC_udInitValue_mpct_DSTATE_s;/* '<S6>/SOC_udInitValue_mpct' */
 volatile uint8_T SOHC_Trig_ZCE_s;
-volatile uint16_T SOH_capacity_mAh_s;  /* '<S42>/Switch' */
+volatile uint16_T SOH_capacity_mAh_s;  /* '<S40>/Switch' */
 volatile int32_T Switch_s;             /* '<S5>/Switch' */
 volatile uint8_T TimeSum_Reset_ZCE_s;
 volatile int32_T UnitDelay1_DSTATE_s;  /* '<S9>/Unit Delay1' */

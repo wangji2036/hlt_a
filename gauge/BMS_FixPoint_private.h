@@ -19,6 +19,7 @@
 #include "zero_crossing_types.h"
 #include "BMS_FixPoint_types.h"
 #include "BMS_FixPoint.h"
+#include "config.h"
 #ifndef UCHAR_MAX
 #include <limits.h>
 #endif
@@ -80,14 +81,14 @@ extern int32_T look2_is16u16lu32n32ts_lElusMKZ(int16_T u0, uint16_T u1, const
 extern int32_T look2_is16s32lu32n32ts_WwgFj0xk(int16_T u0, int32_T u1, const
   int16_T bp0[], const int32_T bp1[], const int32_T table[], uint32_T prevIndex[],
   const uint32_T maxIndex[], uint32_T stride);
+extern int32_T look1_is32lu32n32Du32_pbinlcase(int32_T u0, const int32_T bp0[],
+  const int32_T table[], uint32_T prevIndex[], uint32_T maxIndex);
 extern uint32_T look2_is16s32lu32n32tu_bvHCJPGn(int16_T u0, int32_T u1, const
   int16_T bp0[], const int32_T bp1[], const uint32_T table[], uint32_T
   prevIndex[], const uint32_T maxIndex[], uint32_T stride);
 extern uint16_T look2_is16s32lu16n16tu_EvbysC3W(int16_T u0, int32_T u1, const
   int16_T bp0[], const int32_T bp1[], const uint16_T table[], uint32_T
   prevIndex[], const uint32_T maxIndex[], uint32_T stride);
-extern int32_T look1_is32lu32n32Du32_pbinlcase(int32_T u0, const int32_T bp0[],
-  const int32_T table[], uint32_T prevIndex[], uint32_T maxIndex);
 extern int32_T look2_is16s32lu32n32ts_7E7IgjCI(int16_T u0, int32_T u1, const
   int16_T bp0[], const int32_T bp1[], const int32_T table[], uint32_T prevIndex[],
   const uint32_T maxIndex[], uint32_T stride);

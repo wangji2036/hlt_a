@@ -17,7 +17,6 @@ void hal_wdt_init_to_reset(void);
  * @retval void
  */
 void hal_wdt_feed(void);
-
 /**
  * @brief 	Stop the watchdog timer.
  * @details This function stops the watchdog timer.

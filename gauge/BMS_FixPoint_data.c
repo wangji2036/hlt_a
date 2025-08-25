@@ -30,11 +30,33 @@ const ConstB ConstB_s = {
 const ConstP ConstP_s = {
   /* Pooled Parameter (Expression: P_OCVAxis_mV)
    * Referenced by:
-   *   '<S35>/OCV_DSG'
-   *   '<S21>/OCV_CHG'
-   *   '<S21>/OCV_DSG'
-   *   '<S24>/SOC_Slope'
+   *   '<S33>/OCV_DSG'
+   *   '<S19>/OCV_DSG'
+   *   '<S22>/SOC_Slope'
    */
+   #if(BUCKBOOST_USED_NU6801 == 1)
+     { 2989, 3492, 3601, 3645, 3700, 3825, 3939, 4045, 4105, 4146, 4177, 4209 },
+
+  /* Computed Parameter: DCIR_Discharge_tableData
+   * Referenced by: '<S33>/DCIR_Discharge'
+   */
+  { 70, 70, 70, 84, 84, 84, 70, 70, 70, 77, 77, 77, 86, 86, 86, 75, 75, 75, 81,
+    81, 81, 88, 88, 88, 100, 100, 100, 107, 107, 107, 112, 112, 112, 135, 135,
+    135 },
+	  /* Pooled Parameter (Expression: )
+   * Referenced by:
+   *   '<S33>/DCIR_Discharge'
+   *   '<S33>/OCV_DSG'
+   *   '<S12>/OCV_DSG'
+   *   '<S19>/OCV_DSG'
+   *   '<S23>/DCIR_Discharge'
+   *   '<S23>/OCV_Discharge'
+   *   '<S23>/R0_Discharge'
+   */
+  { 2U, 11U }
+   #endif
+   
+#if(BUCKBOOST_USED_NU6805 == 1)
   { 6000, 6250, 6500, 6750, 7000, 7250, 7500, 7750, 8000, 8150, 8300, 8800 },
 
   /* Computed Parameter: DCIR_Discharge_tableData
@@ -60,4 +82,5 @@ const ConstP ConstP_s = {
    *   '<S25>/R0_Discharge'
    */
   { 2U, 11U }
+  #endif
 };

@@ -20,7 +20,7 @@ void hal_nu6805_buckboost_init(void)
 		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
 
 		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a
-		hal_nu6805_buckboost_set_ovp(5120);
+		hal_nu6805_buckboost_set_ovp(5000);
 		hal_nu6805_buckboost_disable_62368();
 		hal_nu6805_buckboost_write_reset_check();
 		hal_nu6805_buckboost_typeca_gate_en(false);
@@ -375,7 +375,7 @@ void hal_nu6805_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 
 void hal_nu6805_buckboost_set_ovp(uint16_t set_volt)
 {
-	g_buckboost.ovp_value =  set_volt * 125 /  100;
+	g_buckboost.ovp_value =  set_volt * 120 /100;
 }
 
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void)

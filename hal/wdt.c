@@ -69,6 +69,7 @@ void hal_wdt_init(void) //64K
 	{
 		WDT->CTRL.WORD = (WDT_TIMEOUT << WDT_CTRL_WDT_CNT_Pos) | WDT_CTRL_RST_EN_Msk | WDT_CTRL_LOAD_EN_Msk | WDT_CTRL_MODU_EN_Msk;
 	}
+
 }
 void hal_wdt_init_to_reset(void) //64K
 {
@@ -91,6 +92,7 @@ void hal_wdt_feed(void)
 		WDT->CTRL.WORD |= WDT_CTRL_LOAD_EN_Msk;
 		TMR2->LOAD_CNT.WORD = 1125 * 850 - 1; //850ms
 	}
+
 }
 
 

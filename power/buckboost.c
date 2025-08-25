@@ -239,18 +239,10 @@ void buckboost_protection_handle(void)
 	printk("Flaut State = 0x%x\n",status);
 	printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
-	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value) status |= VBUS_FUALT_VBUS_OVP;
+	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		status |= VBUS_FAULT_VBUS_UVP;
-	}
-	if(!gd->led_fault&&((status & 0x6066)||ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)))
-	{
-		gd->led_fault = 1;
-	}
-	if(!gd->led_fault1&&(gd->bat_ntc_lock_flag||gd->wirless_ntc_lock||gd->typec_ntc_lock))
-	{
-		gd->led_fault1 = 1;
 	}
 	if(g_buckboost.adc_vbat < 6000)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
@@ -284,18 +276,30 @@ void buckboost_protection_handle(void)
 		adc_protect_flag = false;
 		status |= VBUS_SOFT_PROTECT;
 	}
+	if(status&0x2006) gd->typec_scp = 1;
+	if(status & VBUS_FUALT_VBUS_OVP) gd->vbus_ovp = 1;
+	if(!gd->led_fault&&((status & 0x4060)||ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)||gd->vbus_ovp))
+	{
+		gd->led_fault = 1;
+	}
+	if(!gd->led_fault1&&(gd->typec_scp||gd->bat_ntc_lock_flag||gd->wirless_ntc_lock||gd->typec_ntc_lock))
+	{
+		gd->led_fault1 = 1;
+	}
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag) status|=VBUS_FAULT_VBUS_NTC;
 #endif
 #endif
-	if(gd->led_fault&&!(status&0x6066)&&!ntc_stop_chrg_flag&&!(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
+	if(gd->led_fault&&!(status&0x6060)&&!ntc_stop_chrg_flag&&!(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)&&!gd->vbus_ovp)
 	{
 		gd->led_fault = 0;
 	}
-	if(gd->led_fault1&&!gd->bat_ntc_lock_flag&&!gd->wirless_ntc_lock&&!gd->typec_ntc_lock)
+	if(gd->led_fault1&&!gd->bat_ntc_lock_flag&&!gd->wirless_ntc_lock&&!gd->typec_ntc_lock&&!gd->typec_scp)
 	{
 		gd->led_fault1 = 0;
 	}
+	printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
+	printk("ssss=%d\r\n",status & 0x4060);
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)
@@ -592,7 +596,9 @@ void buckboost_task_event_handler(uint32_t event)
 			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE ||g_port.port_state[1] == PORT_STATE_SOURCE))
 			{
 				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
-				if(g_buckboost.adc_vbus < g_buckboost.buckboost_out_voltage * 80 / 100 || g_buckboost.adc_vbus > g_buckboost.buckboost_out_voltage * 115 / 100)
+				if(
+						//g_buckboost.adc_vbus < g_buckboost.buckboost_out_voltage * 80 / 100 ||
+						g_buckboost.adc_vbus > g_buckboost.buckboost_out_voltage * 115 / 100)
 				{
 					printk("adc vbus = %d\n",g_buckboost.adc_vbus);
 

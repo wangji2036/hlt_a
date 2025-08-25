@@ -458,7 +458,7 @@ uint8_t pfod_common(void)
 	}
 
 	pfod_log_print();
-
+	printk("12222222222222222223333333333333444444444444");
 #if OPTION_FOD_ENABLE
 	return res;
 #else
@@ -466,6 +466,7 @@ uint8_t pfod_common(void)
 #endif
 
 }
+
 
 void pfod_log_print(void)// print long log and avoid the fsk window
 {
@@ -478,5 +479,6 @@ void pfod_log_print(void)// print long log and avoid the fsk window
 		   gd->rx_infos.pla_vrect, gd->rx_infos.pla_irect,
 		   pfo, pfo_thd, fod_count);
 #endif
+
 
 }

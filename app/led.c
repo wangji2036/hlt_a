@@ -505,10 +505,10 @@ void ui_update(void)
 		if (gd->real_soc_show >= 100) 
 		{
 			// Requirement 5: Fully charged, solid lights
-			buckboost_ops.set_work_mode(0x00);
+			// buckboost_ops.set_work_mode(0x00);
         flash_flag = 0;
 		} else {
-			buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
+			// buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 			// Requirement 4: Charging, last LED blinks
 			flash_flag = 1;
 		}
@@ -551,13 +551,13 @@ void ui_update(void)
     }
 	// printk("\r\n gd->ntc_led_off %d\r\n",gd->ntc_led_off);
 	prev_woke_mode = g_buckboost.woke_mode;
-//	printk("flash_flag = %d",flash_flag);
-//    printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
-//    printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
-//    		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
-//
-//    printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
-//    		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
+	printk("flash_flag = %d",flash_flag);
+  // printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
+  // printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
+   	//	SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
+
+  // printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
+  // 		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
 #ifdef LED_DISPLAY
 	ui_update_led();
 #else

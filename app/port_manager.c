@@ -969,7 +969,8 @@ void port_enum_port_snk_setvolt(void)
 void port_enum_port0_connect_success(void)
 {
 	printk("%s!\n",__func__);
-
+	gd->typec_scp = 0;
+	gd->vbus_ovp = 0;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
 		if(pdlib_get_tc_state(PORT0_INDEX) == TC_SNK_Attached)

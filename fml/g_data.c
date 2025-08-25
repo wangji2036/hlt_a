@@ -90,25 +90,25 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
-		ap->q_factor_base_value = 137;
+		ap->q_factor_base_value = 220;
 	}
 	else
 	{
 		ap->q_factor_base_value = *pdest0;
 	}
-	ap->q_factor_reco_value =  20;
+	ap->q_factor_reco_value =  40;
 	ap->q_factor_limH_value = 500;
 	ap->q_factor_limL_value =  	0;
 
 	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
-		ap->fs_base_value = 979;
+		ap->fs_base_value = 951;
 	}
 	else
 	{
 		ap->fs_base_value = *pdest1;
 	}
-	ap->fs_reco_value = 19;
+	ap->fs_reco_value = 100;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
 
@@ -162,6 +162,8 @@ void gd_data_init(void)
 		gd->typec_ntc_lock = 0;
 		gd->typec_charge_ntc_lock = 0;
 		gd->flash_times = 0;
+		gd->typec_scp = 0;
+		gd->vbus_ovp = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

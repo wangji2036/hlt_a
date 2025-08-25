@@ -37,6 +37,7 @@ struct _qdt_pin_ctrl
 	uint8_t MODE : 2;
 };
 
+
 static void qdt_pin_ctrl(enum _qdt_pin_chan chan, struct _qdt_pin_ctrl ctrl)
 {
 	VIC_vModuleDisable();
@@ -165,6 +166,7 @@ void fml_qdt_detect(uint32_t *q_fact, uint32_t *f_self)
 
 	*q_fact = q_tmp;
 	*f_self = f_tmp;
+
 
 //	printk("\r\n QDT-> %d %d %d %d %d %d %d %d", vqm_decay_time_cnt, vqm_width_last_cnt, nqm_reson_freq_cnt, *f_self, *q_fact, vpeak_th2, *q_fact, *f_self);
 }

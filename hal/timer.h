@@ -18,10 +18,12 @@ void hal_timer_init(TS_TMR *timer);
  * @retval void
  */
 void hal_timer_stop(TS_TMR *timer);
+void hal_tmr2_delay_10ms_by_count(void);
 
 extern volatile uint8_t  g_u8Tmr0IntHaved;
 extern volatile uint16_t g_u16Tmr0IntCnt;
 extern volatile uint8_t g_u8Tmr0IntHaved_USBPD;
 extern volatile uint16_t g_u16Tmr0IntCnt_USBPD;
+
 
 #endif /* TIMER_H_ */
