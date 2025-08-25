@@ -200,7 +200,12 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
-	ui_display();
+	if (!gd->touch_to_weakup)
+	{
+			ui_display();
+	}
+	
+	
 
 	ms_10_cnt++;
 

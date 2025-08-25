@@ -65,6 +65,7 @@ void SLP_vNormalToSleep(void)
 	hal_wdt_feed();
 	fm1210_sleep();
 	SYS->PWR_CTRL.WORD = 0;
+	gd->touch_to_weakup = 0;
 	gd->rd0_cnt = 0;
 	gd->rd1_cnt = 0;
 	gd->light0_cnt = 0;
@@ -851,6 +852,11 @@ void RST_vCheck(void)
 				{
 				// 锟斤拷效锟侥伙拷锟斤拷锟铰硷拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
 				 sleep_printk("\r\n GPIO wake-up: PC6=%d PB4=%d", PC6_KEY_PRESSED, PB4_TOUCH_PRESSED);
+				 if(PB4_TOUCH_PRESSED&&!PC6_KEY_PRESSED){
+					gd->touch_to_weakup = 1;
+				 }else{
+					gd->touch_to_weakup = 0;
+				 }
 				}
 				else
 				{

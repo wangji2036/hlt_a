@@ -164,6 +164,7 @@ void gd_data_init(void)
 		gd->flash_times = 0;
 		gd->typec_scp = 0;
 		gd->vbus_ovp = 0;
+		gd->touch_to_weakup = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

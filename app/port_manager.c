@@ -1249,6 +1249,7 @@ void port_enum_port3_connect_start(void)
 	//uint32_t source_pdo = 0;
 
 	printk("PORT3 START! PORT0=[%d] PORT1=[%d] PORT2=[%d]\n",g_port.port_state[0],g_port.port_state[1],g_port.port_state[2]);
+	gd->touch_to_weakup = 0;
 	tcpm_disable_usba_detect();
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  {pdlib_disable_typec(PORT0_INDEX);lib_para.typec_a_support = 0;}
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  {pdlib_disable_typec(PORT1_INDEX);lib_para.typec_b_support = 0;}
