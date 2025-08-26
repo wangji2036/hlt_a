@@ -635,6 +635,7 @@ void key_sigle_click_process(void)
 		button_led_run = 1;
 	}
 	gd->ntc_led_off = 0;
+	gd->touch_to_weakup = 0;
 }
 
 void key_double_click_process(void)
