@@ -458,7 +458,7 @@ uint8_t pfod_common(void)
 	}
 
 	pfod_log_print();
-	printk("12222222222222222223333333333333444444444444");
+
 #if OPTION_FOD_ENABLE
 	return res;
 #else

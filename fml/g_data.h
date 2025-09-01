@@ -412,6 +412,7 @@ struct gd_t
 	 uint8_t typec_scp;
 	 uint8_t vbus_ovp;
 	 uint8_t touch_to_weakup;
+	 uint8_t flag11;
 	 
 
 };

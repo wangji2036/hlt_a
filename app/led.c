@@ -577,7 +577,7 @@ void ui_update(void)
 			flash_flag = 3;
 		}
     }
-	// printk("\r\n gd->ntc_led_off %d\r\n",gd->ntc_led_off);
+	 printk("\r\n gd->ntc_led_off %d，gd->touch_to_weakup %d\r\n",gd->ntc_led_off,gd->touch_to_weakup);
 	prev_woke_mode = g_buckboost.woke_mode;
 	//printk("flash_flag = %d",flash_flag);
 //   printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);

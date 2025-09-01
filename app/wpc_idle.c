@@ -169,7 +169,7 @@ uint8_t qfod_detect(void)
 				{
 					gd->ptx_idle_phase_status = WPC_IDLE_STAT_LAR_MET;
 				}
-				printk("111111");
+			
 			}
 			else
 			{
@@ -190,7 +190,7 @@ uint8_t qfod_detect(void)
 							gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_FOD;
 						}
 					}
-					printk("22222222");
+	
 				}
 				else
 				{
@@ -730,10 +730,10 @@ void wpc_idle_phase_process(void)
 		bat_low_sleep = 0;
 	}
 	printk("sigle click %d \r\n",gd->sigle_clicked);
-	if(gd->vpwr >13000){
-		printk("no wpc due to vbus %d \r\n",gd->vpwr);
-		return;
-	}
+	// if(gd->vpwr >13000){
+	// 	printk("no wpc due to vbus %d \r\n",gd->vpwr);
+	// 	return;
+	// }
 	if(gd->bat_dead_flag) return;
 	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY && (gd->ptx_idle_phase_status == WPC_IDLE_STAT_STANDBY
 		|| 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_XER_FOD || 	gd->ptx_idle_phase_status == WPC_IDLE_STAT_QDT_FOD

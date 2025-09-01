@@ -1145,7 +1145,8 @@ void port_enum_port0_connect_start(void)
 
 	uint32_t source_pdo = 0;
 	gd->ntc_led_off = 0;
-	gd->sigle_clicked = 0;
+	if(!gd->flag11) gd->sigle_clicked = 0;
+	gd->flag11 = 0;
 	g_port.snk_set_volt = VOLTAGE_5V;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -1261,6 +1262,10 @@ void port_enum_port3_connect_start(void)
 	}
 	else
 	{
+		if(gd->sigle_clicked)
+		{
+			gd->flag11 = 1;
+		}
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
 	}
@@ -1276,7 +1281,7 @@ void port_enum_port3_connect_start(void)
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT2_INDEX,false);
 #endif
-
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_cc(0,TYPEC_CC_OPEN);
 	osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS);
 }
 
