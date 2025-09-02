@@ -236,8 +236,8 @@ void buckboost_protection_handle(void)
 
 	status = buckboost_ops.get_protect_status();
 	
-	printk("Flaut State = 0x%x\n",status);
-	printk("vbus = %d\n",g_buckboost.adc_vbus);
+	//printk("Flaut State = 0x%x\n",status);
+	//printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -298,8 +298,8 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault1 = 0;
 	}
-	printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
-	printk("ssss=%d\r\n",status & 0x4060);
+	//printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
+	//printk("ssss=%d\r\n",status & 0x4060);
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)
@@ -307,7 +307,7 @@ void buckboost_protection_handle(void)
 		{
 			printk("protect lock =0x%x\n",status);
 
-			printk("vbus = %d\n",g_buckboost.adc_vbus);
+			//printk("vbus = %d\n",g_buckboost.adc_vbus);
 
 			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT |VBUS_FAULT_VBUS_NTC))
 			{
@@ -470,7 +470,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
 			#else
-				printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
+				//printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
 				g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature()/100;
 				buckboost_ntc_handle();
 			#endif

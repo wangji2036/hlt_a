@@ -119,7 +119,7 @@ int16_t fml_ntc_temp_get_typec(void)
 	}
 
 	v_ntc /= NTC_TEMP_BUFF_SIZE_Max;
-	printk("\r\n typec_adc = %d",v_ntc);
+	//printk("\r\n typec_adc = %d",v_ntc);
 	i = 0;
 	while (i < sizeof(ntc_tbl)/sizeof(ntc_tbl[0]))
 	{
@@ -163,7 +163,7 @@ int16_t fml_ntc_temp_get_wpc(void)
 	}
 
 	v_ntc /= NTC_TEMP_BUFF_SIZE_Max;
-	printk("\r\n wpc_adc = %d",v_ntc);
+	//printk("\r\n wpc_adc = %d",v_ntc);
 	i = 0;
 	while (i < sizeof(ntc_tbl)/sizeof(ntc_100r_5v_tbl_rev[0]))
 	{

@@ -316,7 +316,7 @@ void tcpm_task_event_handler(uint32_t event)
 			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 		#if(CONFIG_TYPECA_SUPPORT == 1)
 
-			printk("[%d]ibus = %d\n",g_port.light0_cnt,g_buckboost.adc_ibus);
+			//printk("[%d]ibus = %d\n",g_port.light0_cnt,g_buckboost.adc_ibus);
 
 			if(pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
