@@ -114,19 +114,19 @@ void port_enum_port0_connect_closed(void)
 		port_manager_set_state(PORT_IDLE_OR_READY);
 	}
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // ���¿���toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT1_INDEX)  == TC_Disable)  // ���¿���toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT1_INDEX)  == TC_Disable)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -276,19 +276,19 @@ void port_enum_port1_connect_closed(void)
 		port_manager_set_state(PORT_IDLE_OR_READY);
 	}
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -374,19 +374,19 @@ void port_enum_port2_connect_closed(void)
 	hal_tcpc_set_gate_en(g_port.inhandle_port,false);
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -493,19 +493,19 @@ void port_enum_port3_connect_closed(void)
 	tcpm_disable_usba_detect();
 	g_port.port_state[g_port.inhandle_port] = PORT_STATE_NONE;
 
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -613,7 +613,7 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
-		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA�ŵ�
+		//if(g_tcpc.tc_port_map != PORT0_INDEX || dpdm_map != PORT0_INDEX) tcpm_set_port_sdp(PORT0_INDEX);  // 500mA锟脚碉拷
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,6500);
 		printk("mos0\n");
@@ -623,31 +623,31 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
-		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA�ŵ�
+		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA锟脚碉拷
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		hal_tcpc_set_gate_en(PORT1_INDEX,true);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_usb_a_gate_en)
 	{
-		//if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA�ŵ�s
+		//if(dpdm_map != PORT2_INDEX) tcpm_set_port_sdp(PORT2_INDEX);  // 500mA锟脚碉拷s
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
 		hal_tcpc_set_gate_en(PORT2_INDEX,true);
 	}
 #endif
-	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT0_INDEX);
 		pdlib_delayms_restart_typec(PORT0_INDEX,200);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // ���¿���toogle
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷toogle
 	{
 		//pdlib_restart_typec(PORT1_INDEX);
 		pdlib_delayms_restart_typec(PORT1_INDEX,200);
 	}
 #if(CONFIG_USBA_SUPPORT == 1)
-	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // ���¿���A�ڼ��
+	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE)  // 锟斤拷锟铰匡拷锟斤拷A锟节硷拷锟�
 	{
 		osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	}
@@ -718,8 +718,8 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
 	{
-		g_buckboost.buckboost_out_current = 4500;
-		g_buckboost.buckboost_out_current_actual = 4500;
+		g_buckboost.buckboost_out_current = 3000;
+		g_buckboost.buckboost_out_current_actual = 3000;
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
 	}
 #if(CONFIG_TYPECA_SUPPORT == 1)
@@ -1163,9 +1163,9 @@ void port_enum_port0_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		//
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //���ó���������С
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //锟斤拷锟矫筹拷锟斤拷锟斤拷锟斤拷锟斤拷小
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //û��snk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没锟斤拷snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1197,9 +1197,9 @@ void port_enum_port1_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		//hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //���ó���������С
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //锟斤拷锟矫筹拷锟斤拷锟斤拷锟斤拷锟斤拷小
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //û��snk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没锟斤拷snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1230,9 +1230,9 @@ void port_enum_port2_connect_start(void)
 		if(pdlib_is_connect()) pdlib_snk_requsrt_voltage(PDO_INDEX_1,VOLTAGE_5V,pdo_max_current(source_pdo));
 		if(bc12_type == BC1P2_QC9V || bc12_type == BC1P2_QC12V) qc2_set_volt(VOLTAGE_5V);
 		hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,100);
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //���ó���������С
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //锟斤拷锟矫筹拷锟斤拷锟斤拷锟斤拷锟斤拷小
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //û��snk
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)  //没锟斤拷snk
 	{
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
@@ -1258,7 +1258,7 @@ void port_enum_port3_connect_start(void)
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
-		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //���ó���������С
+		hal_tcpc_set_snk_charge_current(CHG_IBAT_MIN,CHG_IBUS_MIN);    //锟斤拷锟矫筹拷锟斤拷锟斤拷锟斤拷锟斤拷小
 	}
 	else
 	{
@@ -1271,7 +1271,7 @@ void port_enum_port3_connect_start(void)
 	}
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,2000,0,0);
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,2000,0,0);
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT1_INDEX,5000,2000,0,0);
 #if(CONFIG_USBA_SUPPORT == 1)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
 #endif
@@ -1282,6 +1282,7 @@ void port_enum_port3_connect_start(void)
 	if(g_port.port_state[PORT2_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_gate_en(PORT2_INDEX,false);
 #endif
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE) hal_tcpc_set_cc(0,TYPEC_CC_OPEN);
+	
 	osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS);
 }
 

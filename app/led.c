@@ -330,10 +330,12 @@ static void ui_update_led(void)
      		 }
      		 // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
      		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
-     		if (gd->vpwr > 6200
+     		else if (gd->vpwr > 6200
      		    && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
      		    && !buckboost_protection_flag
-     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100)
+				//&& !((soc_show_ram_led&20)>>5)
+			)
 
      		 {
      			 soc_show_ram_led |= 0x10;// fast LED is on
@@ -361,6 +363,8 @@ static void ui_update_led(void)
      	             }
      	         }
      	        soc_show_ram_led ^= (1 << _index);// for blink-off
+
+
      	     }
      		 else if(flash_flag == 2)
      	     {
@@ -369,20 +373,41 @@ static void ui_update_led(void)
      	     }else if (flash_flag == 4){
      	    	if(flash_light_on) soc_show_ram_led = 0x01;
      	    	 else soc_show_ram_led = 0;
-     	    	if (gd->vpwr > 6200
-     	    	     		    && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
-     	    	     		    && !buckboost_protection_flag
-     	    	     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+     	    	 if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
+     		 {
+     		     flash_flag_wls = 1;
+     		 }
+     		 else
+     		 {
+     			 flash_flag_wls = 0;
+     		 }
+     		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
+     		 {
+     			 soc_show_ram_led |= 0x20;// wireless LED is on
+     		 }
+     		 // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+     		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
+     		else if (gd->vpwr > 6200
+     		    && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+     		    && !buckboost_protection_flag
+     		    && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100)
+				//&& !((soc_show_ram_led&20)>>5)
+			)
 
-     	    	     		 {
-     	    	     			 soc_show_ram_led |= 0x10;// fast LED is on
-     	    	     		 }
+     		 {
+     			 soc_show_ram_led |= 0x10;// fast LED is on
+     		 }
+			  if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
+     		 {
+     			 soc_show_ram_led ^= (1 << 5);// for blink-off
+     		 }
      	     }
 
      	     else if(flash_flag ==3)
      	     {
      	    	 soc_show_ram_led = 0;
      	     }
+			 
      	}
 }
 #endif
@@ -577,7 +602,7 @@ void ui_update(void)
 			flash_flag = 3;
 		}
     }
-	 printk("\r\n gd->ntc_led_off %d，gd->touch_to_weakup %d\r\n",gd->ntc_led_off,gd->touch_to_weakup);
+	 printk("\r\n gd->ntc_led_off %d,gd->touch_to_weakup %d\r\n",gd->ntc_led_off,gd->touch_to_weakup);
 	prev_woke_mode = g_buckboost.woke_mode;
 	//printk("flash_flag = %d",flash_flag);
 //   printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);

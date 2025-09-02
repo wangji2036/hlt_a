@@ -51,6 +51,7 @@
 #include "led.h"
 #include "pdlib.h"
 #include "printk.h"
+#include "port_manager.h"
 /**
  * @brief Timer 0/1/2/3 initialization. 
  * 		  You can initialize one of the timer according to your needs.
@@ -200,7 +201,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
-	if (!gd->touch_to_weakup)
+	if (!gd->touch_to_weakup || g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE)
 	{
 			ui_display();
 	}
@@ -283,29 +284,4 @@ void __attribute__((isr)) TMR3_IRQHandler(void)
 	}
 }
 
-void hal_tmr2_delay_10ms_by_count(void)
-{
 
-
-    printk("\r\ntmr2_delay_start");
-    uint32_t start_count = TMR2->REAL_CNT.WORD;
-    uint32_t current_count;
-    uint32_t elapsed_count;
-
-       while (1) {
-           current_count = TMR2->REAL_CNT.WORD;
-
-           if (current_count <= start_count) {
-               elapsed_count = start_count - current_count;
-           } else {
-               elapsed_count = start_count + (0xFFFFFFFF - current_count + 1);
-           }
-
-           if (elapsed_count >= 20) {
-               break;
-           }
-           printk("\r\nelapsed_count[%d]",elapsed_count);
-
-       }
-
-}
