@@ -381,6 +381,7 @@ struct gd_t
 	 uint8_t light1_cnt;
 
 	 uint8_t charger_is_6801_flag;// not delete,for gauge
+	 uint8_t renego_flag;
 	 uint8_t resverd_reset;
 	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;
@@ -414,6 +415,7 @@ struct gd_t
 	 uint8_t touch_to_weakup;
 	 uint8_t flag11;
 	 
+
 
 };
 uint16_t dead_battery_voltage;

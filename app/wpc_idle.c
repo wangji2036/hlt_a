@@ -205,7 +205,7 @@ uint8_t qfod_detect(void)
 						qdt_try_ping_count += (1 + rx_may_still_be_flag * ap->pin_max_cnt);
 						gd->tx_infos.fo_exist = 0;
 					}
-					printk("333333333");
+					//printk("333333333");
 				}
 			}
 			break;
@@ -500,10 +500,17 @@ void wpc_idle_dig_ping_init_128K(void)
 			break;
 		}
 	}
-
+	gd->renego_flag = 0;
 	gd->pid_volt = gd->dig_ping_volt;
 	gd->pid_perd = gd->dig_ping_perd;
-	gd->pid_duty = 50;
+	if(gd->dig_ping_volt<6000)
+	{
+		gd->pid_duty = 260;
+	}
+	else
+	{
+	    gd->pid_duty = 50;
+	}
 	gd->pid_phas = gd->dig_ping_phas;
 
 	gd->sys_infos.tim3_evnt |= 1; //duty ramp up
@@ -729,7 +736,7 @@ void wpc_idle_phase_process(void)
 	{
 		bat_low_sleep = 0;
 	}
-	printk("sigle click %d \r\n",gd->sigle_clicked);
+	//printk("sigle click %d \r\n",gd->sigle_clicked);
 	// if(gd->vpwr >13000){
 	// 	printk("no wpc due to vbus %d \r\n",gd->vpwr);
 	// 	return;

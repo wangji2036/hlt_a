@@ -197,7 +197,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
 				{
-					// gd->rx_infos.cep_val = 0;
+					gd->rx_infos.cep_val = 0;
 					printk("#");
 				}
 			}
@@ -313,7 +313,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		{
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_NAK);
 
-			gd->rx_infos.cep_val = -8;
+			gd->rx_infos.cep_val = -4;
 			osal_start_timerEx(WPC_NEXT_TIMER, T_XCE_RESP_TO + gd->rx_infos.pch_t_delay, 0, WPC_TASK, WPC_EVT_PCH_TO);
 		}
 		else
@@ -599,6 +599,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			osal_start_timerEx(WPC_NEXT_TIMER, T_RENEGOTIATE, 0, WPC_TASK, WPC_EVT_NEGO_NEXT_PKT_TO);
 			gd->ptx_protocol_phase = WPC_PHASE_NEGO;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
+			gd->renego_flag = 1;
 			break;
 		case WPC_PRx_PKT_TYP_DSR_15:
 			mpp_dsr_pkt_handler(com_ask);

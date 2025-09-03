@@ -58,6 +58,14 @@ enum mpp_prx_get_request_type_t
 	GET_PTx_CHS  = 6,
 	GET_PTx_KEST = 7,
 	GET_PTx_ERR  = 9,
+	GET_POWER_MODES 		= 10,
+	GET_MODE_XCAP			= 11,
+	GET_MATED_Q_RESULT		= 12,
+	GET_PTx_PLAP2 			= 13,
+	GET_Reserved_14 		= 14,
+	GET_Reserved_15 		= 15,//G3
+	GET_PTx_CAL_CAP 		= 16,
+
 };
 
 enum mpp_prx_srq_request_type_t
@@ -89,8 +97,9 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 	switch (mpp_ask->msg.srq.request)
 	{
 		case SRQ_END_00:
-			if (mpp_ask->msg.srq.parameter == power_contract_change_cnt(&ptx_power_contract, &prx_power_contract))
+			if ((mpp_ask->msg.srq.parameter == power_contract_change_cnt(&ptx_power_contract, &prx_power_contract)) || gd->renego_flag)
 			{
+				gd->renego_flag = 0;
 				osal_mem_copy((uint8_t *)&ptx_power_contract, (uint8_t *)&prx_power_contract, sizeof(struct power_transfer_contract_t));
 				//TODO: if PRx Not received ACK successfully, and retry 20 00 packet, need to consider this situation. --Sean
 				osal_stop_timerEx(WPC_NEXT_TIMER);
@@ -334,8 +343,8 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				_fsk.com_fsk.id.hdr_30 = 0x30;
 				_fsk.com_fsk.id.qi_version = 0x21;
-				_fsk.com_fsk.id.ptmc_msb = 0x00;
-				_fsk.com_fsk.id.ptmc_lsb = 0x5C;
+				_fsk.com_fsk.id.ptmc_msb = 0x01;
+				_fsk.com_fsk.id.ptmc_lsb = 0xD1;
 			}
 			else if (mpp_ask->msg.data[0] == 0x31)
 			{
@@ -363,9 +372,9 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			fsk_pkt.mpp_fsk.eds.streams_bitmask_lsb = 0x02;
 			fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 			break;
-		case MPP_PRx_PKT_TYP_REPORT_58:
+/*		case MPP_PRx_PKT_TYP_REPORT_58:
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-			break;
+			break;*/
 		case MPP_PRx_PKT_TYP_PLAP_78:
 			gd->rx_infos.gcoil_tx = (int16_t)(((mpp_ask->msg.plap.g_coil_tx.msb<<8) + mpp_ask->msg.plap.g_coil_tx.lsb)/10000);
 			gd->rx_infos.alpha_fm = (int16_t)((mpp_ask->msg.plap.alpha_fm.msb<<8) + mpp_ask->msg.plap.alpha_fm.lsb);//unit 0.5mW

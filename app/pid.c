@@ -192,10 +192,10 @@ void pid_cep_handler(int8_t cep)
 					case EADP_TYPE_POWERBANK_PPS:
 						if (cep > 24) cep = 24;
 						gd->pid_volt += 20 * ((cep >> 0) + 1);
-						if (gd->atl_test_ldstp_bpp_P60 == 1)
+/*						if (gd->atl_test_ldstp_bpp_P60 == 1)
 						{
-							gd->pid_volt += 1000;
-						}
+							gd->pid_volt += 900;
+						}*/
 						break;
 					default:
 						break;
@@ -248,9 +248,22 @@ void pid_cep_handler(int8_t cep)
 				}
 			}
 
-			if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1 || gd->atl_test_ldstp_bpp_P60 == 1)
+			if (gd->atl_test_ldstp_epp_N60 == 1 || gd->atl_test_ldstp_bpp_N60 == 1)
 			{
 
+			}
+			else if(gd->atl_test_ldstp_bpp_P60 == 1)
+			{
+
+				uint16_t temp = gd->pid_volt + 400;
+				uint16_t i = gd->pid_volt;
+				for (i= gd->pid_volt; i<temp; i+=80)
+				{
+					fml_adp_volt_set(i);
+					delay_1us(5);
+				}
+				gd->pid_volt = i;
+				printk("bpp_ldstp %d",gd->pid_volt);
 				// power bank application,needs special process. for IOC.
 /*				uint16_t tmp_duty, tmp;
 				tmp_duty = (20091 - gd->pid_volt) * 100 / 1263;
@@ -567,6 +580,10 @@ static void pid_ctrl_mode_sel(int8_t cep)
 		{
 			m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
 		}
+	}
+	if(gd->atl_test_ldstp_bpp_P60 == 1)
+	{
+		m_pid_ctrl_mode = EPID_CTRL_MODE_VOLT;
 	}
 
 //	if (gd->atl_test_ldstp_bpp_P60 == 1)

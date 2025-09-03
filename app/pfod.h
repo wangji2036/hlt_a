@@ -11,7 +11,7 @@
 #define PFO_THD_APL_MPP		385//750
 #define PFO_RECO_APL_MPP 	365//500
 
-#define FOD_MAX_CNT			30
+#define FOD_MAX_CNT			25
 enum prx_type_t {
 	EPRX_TYPE_UNKNOWN    = 0x00,
 	EPRX_TYPE_SAMSUNG    = 0x01,

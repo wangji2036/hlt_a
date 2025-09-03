@@ -57,7 +57,7 @@ void ap_data_init(void)
 	ap->pout_opp_hys = 5000;
 
 
-	ap->ptmc = 0x005c;
+	ap->ptmc = 0x01D1;
 	ap->mpp_dither_en = 1;
 	ap->auth_seic_type = 0; //0-fm1210, 1-t91206, 2-ciu98
 
@@ -75,7 +75,7 @@ void ap_data_init(void)
 
 	ap->dig_ping_volt_6v = 5600;
 	ap->dig_ping_perd_6v = 1127;;//144000000 / 127772;
-	ap->dig_ping_duty_6v = 500;
+	ap->dig_ping_duty_6v = 450;
 	ap->dig_ping_phas_6v = 0;
 
 	ap->dig_ping_volt_9v = 9000;
@@ -90,29 +90,29 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
-		ap->q_factor_base_value = 220;
+		ap->q_factor_base_value = 215;
 	}
 	else
 	{
 		ap->q_factor_base_value = *pdest0;
 	}
-	ap->q_factor_reco_value =  40;
+	ap->q_factor_reco_value =  20;
 	ap->q_factor_limH_value = 500;
 	ap->q_factor_limL_value =  	0;
 
 	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
-		ap->fs_base_value = 951;
+		ap->fs_base_value = 967;
 	}
 	else
 	{
 		ap->fs_base_value = *pdest1;
 	}
-	ap->fs_reco_value = 100;
+	ap->fs_reco_value = 19;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
 
-	ap->q_factor_obj_value = 30;//50
+	ap->q_factor_obj_value = 25;//50
 	ap->q_factor_stable_value = 30;
 	ap->fs_obj_value = 20;//30;//50
 	ap->fs_stable_value = 30;
