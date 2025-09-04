@@ -196,12 +196,41 @@ static void ui_update_led(void)
       			 /* 防止 2h 内被 idle_to_sleep_cnt 触发休眠 */
       			 gd->idle_to_sleep_cnt = 0;
       		 }
+			   if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
+			   {
+				   flash_flag_wls = 1;
+			   }
+			   else
+			   {
+				   flash_flag_wls = 0;
+			   }
+			   if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
+			   {
+				   soc_show_ram_led |= 0x20;// wireless LED is on
+			   }
+			   // if (gd->vpwr>6200 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+			   // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮
+			  else if (gd->vpwr > 6200
+				  && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+				  && !buckboost_protection_flag
+				  && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100)
+				 //&& !((soc_show_ram_led&20)>>5)
+			 )
+ 
+			   {
+				   soc_show_ram_led |= 0x10;// fast LED is on
+			   }
+			   if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
+			   {
+				   soc_show_ram_led ^= (1 << 5);// for blink-off
+			   }
 
      		 /* 2h 内保持唤醒 */
      		 if(cycle_count < 3600)
      		 {
      			 gd->SOC_SleepTime_s = 0;
      		 }
+
 
       	 }
       else if(gd->led_fault)

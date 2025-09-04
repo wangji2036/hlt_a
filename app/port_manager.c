@@ -851,7 +851,7 @@ void port_enum_port_snk_setvolt(void)
 					{
 						if(gd->sigle_clicked)
 						{
-							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
+							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_5V)
 							{
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);

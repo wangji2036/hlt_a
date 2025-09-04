@@ -109,7 +109,7 @@ void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint1
 	osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
 	g_buckboost.out_voltage_wait = wait;
 	g_buckboost.out_voltage_delay = delay;
-	g_buckboost.buckboost_out_voltage = voltage+150;
+	g_buckboost.buckboost_out_voltage = voltage;
 	g_buckboost.buckboost_out_current = current;
 	g_buckboost.regulator_state = 0;
 	osal_set_event(BUCKBOOST_TASK,BUCKBOOST_EVT_SET_DISCHG_VBUS_VOLT);
@@ -237,7 +237,7 @@ void buckboost_protection_handle(void)
 	status = buckboost_ops.get_protect_status();
 	
 	//printk("Flaut State = 0x%x\n",status);
-	//printk("vbus = %d\n",g_buckboost.adc_vbus);
+	printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
