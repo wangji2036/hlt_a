@@ -20,7 +20,7 @@
 #include "g_data.h"
 #include "gui.h"
 #define YBZ_MPP_THD         490
-#define YBZ_MPP_RECO         470
+#define YBZ_MPP_RECO         470														
 static const uint16_t u16_kp_tbl[][3] =
 {
 	//Unknown PRx, default coeff 0
@@ -91,8 +91,9 @@ uint8_t pfod_action(void)
 			gd->power_limit_sts.fop_flag = 1;
 			res = 1;//will throttle after rpp and do not ack cep
 //			printk("\r\n IOC#10.4.05");
-    	}
+		}
     }
+
     else
     {
 		/* pfo below threshold */
@@ -297,26 +298,7 @@ uint8_t pfod_mpla(void)
 		}
 		else
 		{
-			//1.12.1.4 nok9 +458mW offset: 896(877)->439(878), 3930(3733)->3489(3750), GRL 0mm +485mW offset: 915(566)->455(564), 3648(3382)->3577(3745)
-//			if ((gd->rx_power < 3700) && (gd->rx_prect > gd->rx_power + 100))
-//			{
-//				pfo += 150;
-//			}
-//
-//			if (gd->rx_power > 10000)
-//			{
-////				if (pfo > 150)
-//				{
-//					pfo -= 150;
-//				}
-//			}
 
-	/*		if (gd->rx_power == 0)
-			{
-				pfo += 2500;
-			}
-			
-			else */
 			if (gd->rx_power < 1000)
 			{
 				pfo += 650;
@@ -344,7 +326,6 @@ uint8_t pfod_mpla(void)
 			{
 				pfo += 250;//200;
 			}
-
 			printk ("\r\n pfo value %d %d", gd->rx_power,pfo);
 		}
 	}
@@ -403,6 +384,10 @@ uint8_t pfod_common(void)
 	else if (gd->rx_infos.rx_type == EPRX_TYPE_NOK9_BPP_FOD_TPR_5)
 	{
 		pfo = gd->tx_power - ploss - gd->rx_power;
+	}else if (gd->rx_infos.rx_type == EPRX_TYPE_SAMSUNG)
+	{
+		pfo = gd->tx_power - ploss - gd->rx_power + 1000;
+		printk("\r\n SAMSUNG");
 	}
 	else
 	{
