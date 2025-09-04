@@ -237,7 +237,7 @@ void buckboost_protection_handle(void)
 	status = buckboost_ops.get_protect_status();
 	
 	//printk("Flaut State = 0x%x\n",status);
-	printk("vbus = %d\n",g_buckboost.adc_vbus);
+	//printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -423,7 +423,7 @@ void buckboost_ir_drop_handle(void)
 	{
 		ir_drop = -g_buckboost.adc_ibus * 100 / 1000 ;    //1A +100mV
 		ir_drop = ir_drop / 20 * 20;
-		if(ir_drop >= 300) ir_drop = 300;
+		if(ir_drop >= 150) ir_drop = 150;
 		if(ir_drop != g_buckboost.ir_drop)
 		{
 			cnt_delay++;
