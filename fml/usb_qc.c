@@ -15,6 +15,9 @@ void dpdm_sink_init(void)
 	DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.HVDCP_DET_FAIL_INT_MASK = 0x0;
 	bc12_type = 0;
 	printk("bc12_init\n");
+
+	uint32_t *dpdm_ovrd_offset4 = (uint32_t *)(0x4000c0bc + 4);
+	*dpdm_ovrd_offset4 |= 0x80;
 }
 
 void dpdm_sink_deinit(void)

@@ -37,6 +37,18 @@ void dpdm_source_init(void)
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	DPDM->HVDCP_CTRL.BITS.ENTER_DCP_INT_MASK = 1;
 	DPDM->HVDCP_CTRL.BITS.ENTER_HVDCP_INT_MASK = 1;
+
+	uint32_t *dpdm_ovrd_offset0 = (uint32_t *)(0x4000c0bc);
+	uint32_t *dpdm_ovrd_offset4 = (uint32_t *)(0x4000c0bc + 4);
+
+	*dpdm_ovrd_offset0 = 0x09;
+	*dpdm_ovrd_offset4 |= 0x09;
+
+	*dpdm_ovrd_offset0 = 0x0a;
+	*dpdm_ovrd_offset4 |= ((*dpdm_ovrd_offset4) & ~0x30);
+
+	*dpdm_ovrd_offset0 = 0x0b;
+	*dpdm_ovrd_offset4 |= ((*dpdm_ovrd_offset4) & ~0x30 | 0x30);
 }
 
 void usb_dpdm_port0_switch(bool en)
