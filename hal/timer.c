@@ -162,6 +162,7 @@ volatile uint16_t g_u16Tmr0IntCnt;
 
 volatile uint16_t sys_ticks;
 volatile uint32_t tc_sys_ticks = 0;
+volatile uint32_t time_ticks = 0;
 /**
  * @brief	TIM1 interrupt handler.
  * @note	This function is called every 1ms.
@@ -177,6 +178,8 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 	sys_ticks++;
 
 	tc_sys_ticks++;
+
+	time_ticks++;
 
 	if (g_u8Tmr0IntHaved)
 	{

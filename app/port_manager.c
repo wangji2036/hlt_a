@@ -46,10 +46,12 @@ void port_manager_task_init(void)
 
 }
 
-
+extern volatile uint32_t time_ticks;
 void port_enum_port0_connect_closed(void)
 {
 	printk("%s!\n",__func__);
+	gd->flag11 = 1;
+	gd->timer_cnt = time_ticks;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 	tcpm_disable_usba_detect();
@@ -1145,8 +1147,6 @@ void port_enum_port0_connect_start(void)
 
 	uint32_t source_pdo = 0;
 	gd->ntc_led_off = 0;
-	if(!gd->flag11) gd->sigle_clicked = 0;
-	gd->flag11 = 0;
 	g_port.snk_set_volt = VOLTAGE_5V;
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
@@ -1262,10 +1262,6 @@ void port_enum_port3_connect_start(void)
 	}
 	else
 	{
-		if(gd->sigle_clicked)
-		{
-			gd->flag11 = 1;
-		}
 		pdlib_disable_usbpd();
 		usb_dpdm_select(DPDM_PHY_OFF);
 	}
@@ -1289,7 +1285,11 @@ void port_enum_port3_connect_start(void)
 
 void port_enum_scan_handle(void)
 {
-
+	if(gd->flag11&&(time_ticks - gd->timer_cnt>=3000))
+	{
+		gd->flag11 = 0;
+		if(g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)gd->sigle_clicked = 0;
+	}
 	if(gd->recharge_flag)
 	{
 		g_port.port_state[PORT0_INDEX] = PORT_STATE_SOURCE;

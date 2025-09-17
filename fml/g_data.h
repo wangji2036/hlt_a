@@ -414,6 +414,7 @@ struct gd_t
 	 uint8_t vbus_ovp;
 	 uint8_t touch_to_weakup;
 	 uint8_t flag11;
+	 uint32_t timer_cnt;
 	 
 
 
