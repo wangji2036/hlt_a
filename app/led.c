@@ -267,7 +267,7 @@ static void ui_update_led(void)
 				soc_show_ram_led = 0;
 			}
 		}	
-		 else if (charge_led_run)
+		else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
 			if (button_led_run)
 			{
@@ -654,7 +654,12 @@ void ui_update(void)
 
 void key_sigle_click_process(void)
 {
-	if(buckboost_protection_flag) buckboost_fault_restore();
+	if(buckboost_protection_flag){
+		buckboost_fault_restore();
+
+}
+	gd->typec_scp =0;
+	gd->vbus_ovp =0;
 
 #if(CONFIG_TYPECA_SUPPORT == 1)
 	if(gd->tc0_lighting_mode) gd->tc0_lighting_mode = 0;
