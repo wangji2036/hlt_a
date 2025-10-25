@@ -18,6 +18,7 @@
 //#include "usb_pd.h"
 #include "t91206.h"
 #include "wpc_5_xfer_4_dstrm.h"
+#include "port_manager.h"
 
 static uint8_t special_cep_cnt;
 uint8_t wpc_msg_size_get(uint8_t hdr)
@@ -89,6 +90,7 @@ void wpc_stop_to_idle(uint8_t err_code)
 
 extern uint8_t cnt_cloak_dig_ping;
 extern uint8_t cnt_cloak_det_ping;
+uint8_t cnt_ping;
 
 void wpc_stop_power(void)
 {
@@ -188,7 +190,20 @@ void wpc_stop_power(void)
 	osal_stop_timerEx(WPC_RPP_TIMER);
 
 	printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
+	if(cnt_ping > 7 &&gd ->sigle_clicked == 1&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE ){
+		if (gd->sys_err_code == 0x16)
+		{
+			gd ->sigle_clicked = 0;
+		    cnt_ping = 0;
+		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+		}
+	}else{
+		cnt_ping ++;
+	}
+
+
 }
+
 
 static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 {
@@ -304,13 +319,13 @@ void wpc_pkt_hdr_handler(void)
 	{
 		osal_start_timerEx(WPC_NEXT_TIMER, T_FIRST_LIMIT, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
 //		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-		printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, T_FIRST_LIMIT, gd->wpc_pkt.src);
+//		printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, T_FIRST_LIMIT, gd->wpc_pkt.src);
 	}
 	else if (gd->ptx_protocol_phase == WPC_PHASE_CNFG)
 	{
 //		osal_start_timerEx(WPC_NEXT_TIMER, T_MAX_LIMIT, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_PKT_TO);
 		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-		printk("\r\n cnfg_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
+//printk("\r\n cnfg_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
 	}
 	else if ((gd->ptx_protocol_phase == WPC_PHASE_NEGO) || (WPC_PHASE_XFER == gd->ptx_protocol_phase))
 	{
@@ -437,7 +452,7 @@ void wpc_task_event_handler(uint32_t event)
 			gd->isns_avg = (gd->isns_avg + hal_badc_meas(_BADC_CH_PD6_ADC3)) >> 1;
 			gd->vpwr_avg = (gd->vpwr_avg + g_buckboost.adc_vbus) >> 1;//; hal_badc_meas(_BADC_CH_PB6_ADC7)
 			gd->tx_power = gd->isns_avg * gd->vpwr_avg / 1000;
-			printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d fo_exist:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp,gd->tx_infos.fo_exist);
+			//printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d fo_exist:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp,gd->tx_infos.fo_exist);
 			break;
 		case WPC_EVT_FSK_RESP_DONE:
 //			if (gd->tx_infos.fsk_done_event & 1)
