@@ -228,7 +228,7 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 	{
 		if(!wirless_ntc_power_reduce)
 		{
-			if(tntc>=46)
+			if(tntc>=43)
 			{
 				if(cnt++>10)
 				wirless_ntc_power_reduce = 1;
@@ -241,7 +241,7 @@ void fml_tntc_otp_limit_power(int16_t tntc)
 		}
 		else
 		{
-			if(tntc<=33)
+			if(tntc<=30)
 			{
 				if(cnt++>10)
 				{
