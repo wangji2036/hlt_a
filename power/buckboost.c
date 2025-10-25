@@ -236,8 +236,8 @@ void buckboost_protection_handle(void)
 
 	status = buckboost_ops.get_protect_status();
 	
-	//printk("Flaut State = 0x%x\n",status);
-	//printk("vbus = %d\n",g_buckboost.adc_vbus);
+	printk("Flaut State = 0x%x\n",status);
+	printk("vbus = %d\n",g_buckboost.adc_vbus);
 #if(BUCKBOOST_USED_NU6805 == 1)
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -249,7 +249,7 @@ void buckboost_protection_handle(void)
 		cnt++;
 		if(cnt >= 10)
 		{
-			if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
+			if (g_port.port_state[0] != PORT_STATE_SINK) //if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
 			{
 				status |= VBUS_FUALT_VBAT_UVP;
 				gd->bat_dead_flag = 1;
@@ -270,7 +270,14 @@ void buckboost_protection_handle(void)
 	{
 		cnt = 0;
 	}
+	 //----1014
 
+	if(status&VBUS_FUALT_VBAT_UVP)
+	{
+	    if(g_port.port_state[0] == PORT_STATE_SINK) status &= ~VBUS_FUALT_VBAT_UVP;
+	}
+
+		//---1014      //
 	if(adc_protect_flag)
 	{
 		adc_protect_flag = false;

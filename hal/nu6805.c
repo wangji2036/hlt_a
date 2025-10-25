@@ -140,6 +140,7 @@ bool hal_nu6805_buckboost_get_a2_state(void)
 
 void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
+	g_buckboost.woke_mode = woke_mode;
 	uint8_t write_data = 0;
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
 		write_data = 0x01;
