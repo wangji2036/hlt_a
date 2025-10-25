@@ -11,6 +11,7 @@
 #include "wpc_idle.h"
 #include "wpc_ping.h"
 #include "debug.h"
+#include "BMS_FixPoint.h"
 #include "mpp.h"
 #include "tcpm.h"
 #include"sleep.h"
@@ -735,6 +736,29 @@ void wpc_idle_phase_process(void)
 	else
 	{
 		bat_low_sleep = 0;
+	}
+	/* SOC lock with hysteresis: <=1% disable (stop + mode disable), >=2% re-enable */
+	static uint8_t wpc_dualsrc_low_soc_lock = 0;
+	if (!wpc_dualsrc_low_soc_lock)
+	{
+		if (gd->real_soc_show <= 1)
+		{
+			gd->wpc_disable = 0x01;
+			tcpm_stop_wpc(WPC_DELAY);
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			printk("\r\n WPC disabled: SOC<=1%% (SOC=%d)", gd->real_soc_show);
+			wpc_dualsrc_low_soc_lock = 1;
+		}
+	}
+	else
+	{
+		if (gd->real_soc_show >= 2)
+		{
+			gd->wpc_disable = 0x00;
+		tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+			printk("\r\n WPC re-enabled: SOC>=2%% (SOC=%d)", gd->real_soc_show);
+			wpc_dualsrc_low_soc_lock = 0;
+		}
 	}
 	//printk("sigle click %d \r\n",gd->sigle_clicked);
 	// if(gd->vpwr >13000){
