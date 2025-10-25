@@ -8,7 +8,7 @@
 #define PFO_15W_THD 		385
 #define PFO_15W_RECO 		365//THD*0.95
 
-#define PFO_THD_APL_MPP		385//750
+#define PFO_THD_APL_MPP		550//750
 #define PFO_RECO_APL_MPP 	365//500
 
 #define FOD_MAX_CNT			25

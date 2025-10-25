@@ -298,6 +298,13 @@ uint8_t pfod_mpla(void)
 		}
 		else
 		{
+		   if (gd->rx_infos.rx_type == EPRX_TYPE_APPLE_MAG)
+			{
+
+
+				pfo -= 400;
+			}
+
 
 			if (gd->rx_power < 1000)
 			{
@@ -386,7 +393,7 @@ uint8_t pfod_common(void)
 		pfo = gd->tx_power - ploss - gd->rx_power;
 	}else if (gd->rx_infos.rx_type == EPRX_TYPE_SAMSUNG)
 	{
-		pfo = gd->tx_power - ploss - gd->rx_power + 1000;
+		pfo = gd->tx_power - ploss - gd->rx_power + 750;
 		printk("\r\n SAMSUNG");
 	}
 	else
