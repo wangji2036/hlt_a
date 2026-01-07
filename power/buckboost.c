@@ -249,6 +249,8 @@ void buckboost_protection_handle(void)
 		cnt++;
 		if(cnt >= 10)
 		{
+			//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
+
 			if (g_port.port_state[0] != PORT_STATE_SINK) //if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
 			{
 				status |= VBUS_FUALT_VBAT_UVP;
@@ -307,6 +309,7 @@ void buckboost_protection_handle(void)
 	}
 	//printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
 	//printk("ssss=%d\r\n",status & 0x4060);
+	gd->fault_status = status;
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)

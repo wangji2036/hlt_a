@@ -3,6 +3,7 @@
 
 struct ask_packet_t {
 	uint8_t src;
+	uint8_t mark;//dmox_src & decode_ch
 	uint8_t hdr;
 	uint8_t len;
 	uint8_t data[29]; //header + message + checksum
@@ -53,5 +54,12 @@ void fml_ask_decode_check(void);
 //void fml_test_ask_info_print(uint8_t chan);
 
 //void add(void);
+
+void fml_ask_128_ping_cfg(void);
+void fml_ask_128_ping_cfg_keep(void);
+void fml_ask_360_ping_cfg(void);
+void fml_ask_dmo1_xfer_cfg(void);
+void fml_ask_dmo2_xfer_cfg(void);
+void fml_ask_dig_ddm_enable(uint8_t enable);
 
 #endif /* ASK_H_ */

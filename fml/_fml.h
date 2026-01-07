@@ -3,13 +3,15 @@
 
 #include "osal.h"
 
-#define FML_EVT_ASK_INT_RECVD    osal_event_declare(0)
-#define APL_EVT_GAUGE          osal_event_declare(1)
+#define FML_EVT_ASK_INT_RECVD    	osal_event_declare(0)
+#define APL_EVT_GAUGE          		osal_event_declare(1)
+#define APL_HID_REPORT          	osal_event_declare(2)
 
 
 #define T_GAUGE    100
 
 void fml_task_init(void);
 void fml_task_event_handler(uint32_t event);
+void ubsd_wb7720_sleep(void);
 
 #endif /* FML_H_ */

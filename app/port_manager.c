@@ -800,6 +800,12 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(7000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:7000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(7000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:7000*1000/g_buckboost.adc_vbus;
 	}
+	if (gd->bat_ntc_dischg_reduce_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
+	}
+
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
 	printk("charg set %d %d", g_port.ibus_limit,g_port.ibat_limit);
 

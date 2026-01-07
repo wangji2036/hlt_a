@@ -28,14 +28,15 @@ void buckboost_ntc_handle(void)
 	static uint8_t bat_ntc_ot_cnt = 0;
 	static uint8_t ntc_stop_chg_cnt = 0;
 	static uint8_t typec_ntc_ot_cnt = 0;
-	//bat
+	// printk("adc_tbat1 = %d , ntc_temp_typec = %d",g_buckboost.adc_tbat1,gd->sys_infos.ntc_temp_typec);
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
 			gd->bat_ntc_lock_flag = 0;
+			gd->bat_ntc_dischg_reduce_flag = 0;
 			if(!ntc_stop_chrg_flag)
 			{
-				//3度  52度
+				//3搴� 52搴�
 				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_50 || g_buckboost.adc_tbat1> NTC_10K_3435_REAL_RT_3 || g_buckboost.adc_tbat1 == 470)
 				{
 					ntc_stop_chg_cnt++;
@@ -54,7 +55,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//8度  47度
+				//8搴� 47搴�
 				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_47 && g_buckboost.adc_tbat1< NTC_10K_3435_REAL_RT_8)
 				{
 					ntc_stop_chg_cnt++;
@@ -73,7 +74,7 @@ void buckboost_ntc_handle(void)
 			}
 			if(!bat_ntc_ut_flag)
 			{
-				//15度
+				//15搴�
 				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_15)
 				{
 					if(bat_ntc_ut_cnt++>10)
@@ -90,7 +91,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//20度
+				//20搴�
 				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_20)
 				{
 					if(bat_ntc_ut_cnt++>10)
@@ -107,7 +108,7 @@ void buckboost_ntc_handle(void)
 			}
 			if(!bat_charge_ntc_ot_flag)
 			{
-				//45度
+				//45搴�
 				if(g_buckboost.adc_tbat1<NTC_10K_3435_REAL_RT_43)
 				{
 					if(g_buckboost.adc_vbat>=8400)
@@ -132,7 +133,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//40度
+				//40搴�
 				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_40||g_buckboost.adc_vbat<8400)
 				{
 					if(bat_ntc_ot_cnt++>10)
@@ -156,7 +157,7 @@ void buckboost_ntc_handle(void)
 			bat_charge_ntc_ot_flag = 0;
 			if(gd->bat_ntc_lock_flag == 0)
 			{
-				//-15度 57度
+				//-15搴�57搴�
 				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_54 || g_buckboost.adc_tbat1> NTC_10K_3435_REAL_RT_N15||g_buckboost.adc_tbat1==470)
 				{
 					bat_ntc_lock_cnt++;
@@ -173,7 +174,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//-10度 52度
+				//-10搴�52搴�
 				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_52 && g_buckboost.adc_tbat1< NTC_10K_3435_REAL_RT_N10)
 				{
 					bat_ntc_lock_cnt++;
@@ -189,6 +190,24 @@ void buckboost_ntc_handle(void)
 					bat_ntc_lock_cnt = 0;
 				}
 			}
+
+			if(!gd->bat_ntc_dischg_reduce_flag)
+			{
+				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_50)
+				{
+					gd->bat_ntc_dischg_reduce_flag = 1;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+			else
+			{
+				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_40)
+				{
+					gd->bat_ntc_dischg_reduce_flag = 0;
+					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+				}
+			}
+			printk("bat_ntc_dischg_reduce_flag %d",gd->bat_ntc_dischg_reduce_flag);
 		}
 	}
 	//typec

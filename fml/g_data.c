@@ -4,7 +4,7 @@
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
-
+uint8_t power_on_cnt = 0;
 void ap_data_init(void)
 {
 	uint32_t i;
@@ -108,13 +108,13 @@ void ap_data_init(void)
 	{
 		ap->fs_base_value = *pdest1;
 	}
-	ap->fs_reco_value = 19;
+	ap->fs_reco_value = 30;
 	ap->fs_limH_value = 3000;
 	ap->fs_limL_value = 10;
 
 	ap->q_factor_obj_value = 25;//50
 	ap->q_factor_stable_value = 30;
-	ap->fs_obj_value = 20;//30;//50
+	ap->fs_obj_value = 35;//30;//50
 	ap->fs_stable_value = 30;
 
 	ap->t_next_ping = 100;
@@ -159,12 +159,20 @@ void gd_data_init(void)
 		gd->recharge_flag = 0;
 		gd->wirless_ntc_lock = 0;
 		gd->bat_ntc_lock_flag = 0;
+		gd->bat_ntc_dischg_reduce_flag = 0;
 		gd->typec_ntc_lock = 0;
 		gd->typec_charge_ntc_lock = 0;
 		gd->flash_times = 0;
 		gd->typec_scp = 0;
 		gd->vbus_ovp = 0;
 		gd->touch_to_weakup = 0;
+			power_on_cnt = 40;
+		gd->Battery_charger_cnt = 0;
+		gd->Battery_cycle_count = 0;
+
+		gd->Bat_Rdc = 0;
+		gd->Bat_SoH = 0;
+		gd->Bat_RTC_Timer = 0;
 		printk("\r\n ------------------------------------------------------------poweron reset");
 	}
 

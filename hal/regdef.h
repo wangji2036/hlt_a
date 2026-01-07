@@ -854,7 +854,8 @@ enum {
 		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 4 ? ( 9000000) \
 		           : SYS->CLK_CTRL.BITS.CPU_CLK_SEL == 5 ? ( 6000000) \
 		           : (36000000))
-
+#define _360K_EPWM_PERD    (PLL_CLK / 360000)
+#define _128K_EPWM_PERD    (PLL_CLK / 127772)
 #define  SP3800         ( 3800)
 #define  SP3802         ( 3802)
 #define  SP3803         ( 3803)

@@ -39,6 +39,8 @@ enum {
 
 	BUCKBOOST_CHAGER_TIMER = 27,
 	BUCKBOOST_VBUS_DISG_TIMER = 28,
+
+	USB_WB7720_TIMER = 29,
 	/////////////
 	MAX_TIMER,
 };
@@ -85,7 +87,7 @@ enum {
 #define WPC_EVT_FOD_REPORTED	  osal_event_declare(23)
 #define WPC_EVT_RENEGO_TO         osal_event_declare(24)
 #define WPC_EVT_DDM               osal_event_declare(25)
-
+#define WPC_EVT_DM_CRITICAL		  osal_event_declare(26)
 void osal_init(void);
 void osal_start_system(void);
 void osal_set_event(uint8_t task_id, uint32_t event);

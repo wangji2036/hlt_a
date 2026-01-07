@@ -15,6 +15,7 @@ enum pd_apdo_type
 {
     APDO_TYPE_PPS = 0,
     APDO_TYPE_AVS,
+    APDO_TYPE_SPR_AVS,
 };
 
 enum pd_bist_mode
@@ -151,6 +152,8 @@ enum pd_bist_mode
 #define PDO_PPS_APDO_MAX_VOLT_SHIFT 17  /* 100mV units */
 #define PDO_PPS_APDO_MIN_VOLT_SHIFT 8   /* 100mV units */
 #define PDO_PPS_APDO_MAX_CURR_SHIFT 0   /* 50mA units */
+#define PDO_SPR_AVS_9_15_SHIFT		10
+#define PDO_SPR_AVS_15_20_SHIFT		0
 
 #define PDO_PPS_APDO_VOLT_MASK      0xFF
 #define PDO_PPS_APDO_CURR_MASK      0x7F
@@ -162,10 +165,21 @@ enum pd_bist_mode
 #define PDO_PPS_APDO_MAX_CURR(ma)   \
     ((((ma) / 50) & PDO_PPS_APDO_CURR_MASK) << PDO_PPS_APDO_MAX_CURR_SHIFT)
 
+#define PDO_PPS_APDO_9_15_CURR(ma)   \
+    ((((ma) / 10) & 0x3FF) << PDO_SPR_AVS_9_15_SHIFT)
+
+#define PDO_PPS_APDO_15_20_CURR(ma)   \
+    ((((ma) / 10) & 0x3FF) << PDO_SPR_AVS_15_20_SHIFT)
+
 #define PDO_PPS_APDO(min_mv, max_mv, max_ma)                \
     (PDO_TYPE(PDO_TYPE_APDO) | PDO_APDO_TYPE(APDO_TYPE_PPS) |   \
     PDO_PPS_APDO_MIN_VOLT(min_mv) | PDO_PPS_APDO_MAX_VOLT(max_mv) | \
     PDO_PPS_APDO_MAX_CURR(max_ma))
+
+#define PDO_SPR_AVS(ma_9_15,ma_15_20)                \
+    (PDO_TYPE(PDO_TYPE_APDO) | PDO_APDO_TYPE(APDO_TYPE_SPR_AVS) |   \
+    PDO_PPS_APDO_9_15_CURR(ma_9_15) | \
+    PDO_PPS_APDO_15_20_CURR(ma_15_20))
 
 #define PD_PPS_FLAGS_OMF                      (1 << 3)
 #define PD_PPS_FLGAS_PTF(raw)                 ((raw & 0x06) >> 1)
@@ -284,9 +298,18 @@ struct usb_pd_source_cap_packet_t
 				uint32_t max_voltage       		: 8;
 				uint32_t  						: 2;
 				uint32_t pps_limited 			: 1;
-				uint32_t  						: 1;
+				uint32_t apdo_type 				: 2;
 				uint32_t fixed 					: 2;
 			} PPS_BITS;
+			struct
+			{
+				uint32_t i_15_20           		: 10;
+				uint32_t i_9_15             	: 10;
+				uint32_t  						: 6;
+				uint32_t i_peak              	: 2;
+				uint32_t apdo_type 				: 2;
+				uint32_t fixed 					: 2;
+			} SPR_AVS_BITS;
 		} BITS;
 		uint32_t WORD;
 	} source_pdo[7];

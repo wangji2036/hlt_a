@@ -189,7 +189,7 @@ void wpc_stop_power(void)
 	osal_stop_timerEx(WPC_CEP_TIMER);
 	osal_stop_timerEx(WPC_RPP_TIMER);
 
-	printk("\r\n ---------------------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
+	//printk("\r\n -------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
 	if(cnt_ping > 7 &&gd ->sigle_clicked == 1&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE ){
 		if (gd->sys_err_code == 0x16)
 		{

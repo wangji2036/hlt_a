@@ -126,6 +126,8 @@ struct ap_t
 	uint32_t fs_limL_value;
 	uint16_t fs_obj_value;
 	uint16_t fs_stable_value;
+	uint16_t low_k_val;
+	uint8_t ddm_check_interval_long;
 };
 
 struct gd_t
@@ -180,7 +182,10 @@ struct gd_t
 		 int16_t ntc_temp_wpc;
 		 int16_t ntc_temp_typec;
 	} sys_infos;
-
+	struct {
+		uint8_t is_dither_en;
+		uint8_t is_dig_ddm_en;
+	} sys_status;
 	struct {
 		struct {
 			uint8_t dpl : 1;
@@ -359,6 +364,7 @@ struct gd_t
 	 uint8_t dmo2_phase; //0-dig_ping, 1-lo_power, 2-hi_power
 
 	 uint8_t nego_flag;
+	 uint8_t ios_nego_cnt;
 
 	 uint8_t dig_ping_continuous_cnt;
 	 uint8_t atl_test_tpr1c_coil_flag;
@@ -382,6 +388,8 @@ struct gd_t
 
 	 uint8_t charger_is_6801_flag;// not delete,for gauge
 	 uint8_t renego_flag;
+	 uint8_t soc_flag;
+	 uint8_t q_standby_flag;
 	 uint8_t resverd_reset;
 	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;
@@ -393,8 +401,11 @@ struct gd_t
 	 uint8_t bat_dead_flag;
 	 uint8_t bat_dead_flag_with_snk0;
 	 uint8_t bat_dead_flag_with_snk1;
-
-
+	 uint8_t Battery_cycle_count;
+	 uint8_t Battery_charger_cnt;
+	 uint8_t Bat_Rdc;
+	 int8_t Bat_SoH;
+	 uint64_t Bat_RTC_Timer;
 	 int32_t SOC_RawSOC_mpct;
 	 uint32_t SOC_SleepTime_s;
 
@@ -408,6 +419,7 @@ struct gd_t
 	 uint8_t wirless_ntc_lock;
 	 uint8_t bat_ntc_lock_flag;
 	 uint8_t typec_ntc_lock;
+	 uint8_t bat_ntc_dischg_reduce_flag;
 	 uint8_t typec_charge_ntc_lock;
 	 uint8_t flash_times;
 	 uint8_t typec_scp;
@@ -415,7 +427,7 @@ struct gd_t
 	 uint8_t touch_to_weakup;
 	 uint8_t flag11;
 	 uint32_t timer_cnt;
-	 
+	 uint8_t fault_status;
 
 
 };

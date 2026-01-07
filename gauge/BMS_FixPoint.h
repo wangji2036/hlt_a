@@ -37,14 +37,14 @@
 
 /* Invariant block signals (default storage) */
 typedef struct {
-  const int32_T Divide5;               /* '<S37>/Divide5' */
-  const int32_T Add2_c;                /* '<S41>/Add2' */
-  const int32_T Divide1_n;             /* '<S38>/Divide1' */
-  const int32_T stdvCellVADC2;         /* '<S24>/Math Function1' */
-  const int32_T Add5_b;                /* '<S34>/Add5' */
-  const int32_T Minus;                 /* '<S22>/Minus' */
-  const int32_T Add5_h;                /* '<S28>/Add5' */
-  const int32_T Add5_ha;               /* '<S29>/Add5' */
+  const int32_T Add2_c;                /* '<S39>/Add2' */
+  const int32_T Divide1_n;             /* '<S36>/Divide1' */
+  const int32_T stdvCellVADC2;         /* '<S22>/Math Function1' */
+  const int32_T Add5_b;                /* '<S32>/Add5' */
+  const int32_T Minus;                 /* '<S20>/Minus' */
+  const int32_T Add5_h;                /* '<S26>/Add5' */
+  const int32_T Add5_ha;               /* '<S27>/Add5' */
+  const boolean_T SOC_CHG_flg_c;       /* '<S7>/Constant' */
 } ConstB;
 
 /* Constant parameters (default storage) */
@@ -65,12 +65,12 @@ typedef struct {
      int32_T DCIR_Discharge_tableData[36];
 #endif
 #if(BUCKBOOST_USED_NU6805 == 1)
-  int32_T pooled6[20];
+  int32_T pooled7[32];
 
   /* Computed Parameter: DCIR_Discharge_tableData
    * Referenced by: '<S33>/DCIR_Discharge'
    */
-  int32_T DCIR_Discharge_tableData[60];
+  int32_T DCIR_Discharge_tableData[96];
 #endif
   /* Pooled Parameter (Expression: )
    * Referenced by:
@@ -170,43 +170,34 @@ extern int32_T P_SOCSlope_mpctPermV[12];/* Variable: P_SOCSlope_mpctPermV
 #endif
 
 #if(BUCKBOOST_USED_NU6805 == 1)
-extern const int32_T P_OcvSOCChg_mpct[60];   /* Variable: P_OcvSOCChg_mpct
+extern const  int32_T P_OcvSOCDsg_mpct[96];   /* Variable: P_OcvSOCDsg_mpct
                                         * Referenced by:
-                                        *   '<S13>/OCV_CHG'
-                                        *   '<S21>/OCV_CHG'
+                                        *   '<S33>/OCV_DSG'
+                                        *   '<S12>/OCV_DSG'
+                                        *   '<S19>/OCV_DSG'
                                         */
-extern const  int32_T P_OcvSOCDsg_mpct[60];   /* Variable: P_OcvSOCDsg_mpct
+extern int32_T P_SOCAxis_mpct[32];     /* Variable: P_SOCAxis_mpct
                                         * Referenced by:
-                                        *   '<S35>/OCV_DSG'
-                                        *   '<S13>/OCV_DSG'
-                                        *   '<S21>/OCV_DSG'
+                                        *   '<S33>/DCIR_Discharge'
+                                        *   '<S23>/DCIR_Discharge'
+                                        *   '<S23>/OCV_Discharge'
+                                        *   '<S23>/R0_Discharge'
                                         */
-extern const int32_T P_SOCAxis_mpct[20];     /* Variable: P_SOCAxis_mpct
-                                        * Referenced by:
-                                        *   '<S35>/DCIR_Discharge'
-                                        *   '<S25>/DCIR_Charge'
-                                        *   '<S25>/DCIR_Discharge'
-                                        *   '<S25>/OCV_Charge'
-                                        *   '<S25>/OCV_Discharge'
-                                        *   '<S25>/R0_Charge'
-                                        *   '<S25>/R0_Discharge'
-                                        */
-extern const int32_T P_SOCSlope_mpctPermV[20];/* Variable: P_SOCSlope_mpctPermV
-                                         * Referenced by: '<S24>/SOC_Slope'
-
+extern int32_T P_SOCSlope_mpctPermV[32];/* Variable: P_SOCSlope_mpctPermV
+                                         * Referenced by: '<S22>/SOC_Slope'
                                          */
 
 #endif
-extern const int32_T P_SocDeviationAxis_mpct[7];/* Variable: P_SocDeviationAxis_mpct
+extern int32_T P_SocDeviationAxis_mpct[7];/* Variable: P_SocDeviationAxis_mpct
                                            * Referenced by: '<S19>/1-D Lookup Table1'
                                            */
-extern const int32_T P_SocDeviationCorrect_upct[7];/* Variable: P_SocDeviationCorrect_upct
+extern int32_T P_SocDeviationCorrect_upct[7];/* Variable: P_SocDeviationCorrect_upct
                                               * Referenced by: '<S19>/1-D Lookup Table1'
                                               */
-extern const int32_T P_SocRangeAxis_mpct[5]; /* Variable: P_SocRangeAxis_mpct
+extern int32_T P_SocRangeAxis_mpct[5]; /* Variable: P_SocRangeAxis_mpct
                                         * Referenced by: '<S19>/adaption in SOC range'
                                         */
-extern const int32_T P_SocRangeCorrect_mpct[5];/* Variable: P_SocRangeCorrect_mpct
+extern int32_T P_SocRangeCorrect_mpct[5];/* Variable: P_SocRangeCorrect_mpct
                                           * Referenced by: '<S19>/adaption in SOC range'
                                           */
 extern uint32_T P_CurrentThresRelaxJudge_mA;/* Variable: P_CurrentThresRelaxJudge_mA
@@ -225,18 +216,12 @@ extern const  uint32_T P_R0Dsg_mOhm[36];      /* Variable: P_R0Dsg_mOhm
 
 #if(BUCKBOOST_USED_NU6805 == 1)
 
-extern const uint32_T P_DcirChg_mOhm[60];    /* Variable: P_DcirChg_mOhm
-                                        * Referenced by: '<S25>/DCIR_Charge'
+extern const  uint32_T P_DcirDsg_mOhm[96];    /* Variable: P_DcirDsg_mOhm
+                                        * Referenced by: '<S23>/DCIR_Discharge'
                                         */
-extern const uint32_T P_DcirDsg_mOhm[60];    /* Variable: P_DcirDsg_mOhm
-                                        * Referenced by: '<S25>/DCIR_Discharge'
+extern const  uint32_T P_R0Dsg_mOhm[96];      /* Variable: P_R0Dsg_mOhm
+                                        * Referenced by: '<S23>/R0_Discharge'
                                         */
-extern const uint32_T P_R0Chg_mOhm[60];      /* Variable: P_R0Chg_mOhm
-                                        * Referenced by: '<S25>/R0_Charge'
-                                        */
-extern const uint32_T P_R0Dsg_mOhm[60];      /* Variable: P_R0Dsg_mOhm
-                                        * Referenced by: '<S25>/R0_Discharge'
-                                         */
 #endif
 extern uint32_T P_RelaxDurationExtremeLowTemp_s;
                                     /* Variable: P_RelaxDurationExtremeLowTemp_s
@@ -279,18 +264,12 @@ extern const  uint16_T P_OCVDsg_mV[36];       /* Variable: P_OCVDsg_mV
 #endif
 
 #if(BUCKBOOST_USED_NU6805 == 1)
-extern const uint16_T P_OCVAxis_mV[20];      /* Variable: P_OCVAxis_mV
-                                        * Referenced by:
-                                        *   '<S13>/OCV_CHG'
-                                        *   '<S13>/OCV_DSG'
+extern uint16_T P_OCVAxis_mV[32];      /* Variable: P_OCVAxis_mV
+                                        * Referenced by: '<S12>/OCV_DSG'
                                         */
-extern const uint16_T P_OCVChg_mV[60];       /* Variable: P_OCVChg_mV
-                                        * Referenced by: '<S25>/OCV_Charge'
+extern const  uint16_T P_OCVDsg_mV[96];       /* Variable: P_OCVDsg_mV
+                                        * Referenced by: '<S23>/OCV_Discharge'
                                         */
-extern const uint16_T P_OCVDsg_mV[60];       /* Variable: P_OCVDsg_mV
-                                        * Referenced by: '<S25>/OCV_Discharge'
-                                        */
-
 #endif
 extern uint16_T P_SampleTime_ms;       /* Variable: P_SampleTime_ms
                                         * Referenced by: '<S43>/Constant1'

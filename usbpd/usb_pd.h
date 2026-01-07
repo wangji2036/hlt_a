@@ -105,6 +105,8 @@ enum usb_pd_state_e
 	PE_PRS_SNK_SRC_Send_Swap,
 #endif
 
+	PE_DRS_Send_Swap,
+
 	PE_STATE_MAX,
 };
 

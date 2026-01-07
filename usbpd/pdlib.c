@@ -55,24 +55,28 @@ void pdlib_init(void)
 extern bool typec_ntc_ot_flag;
 void pdlib_run(void)
 {
-	static uint8_t pre_flag = 0;
+	static uint8_t pre_flag = 0,pre_flag2 = 0,pre_flag3 = 0,soft_flag = 0;
 	usb_pdevt_run();
 	usb_pd_run();
 	usb_tc_run();
 	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
-		if(pre_flag != typec_ntc_ot_flag)
+		if(pre_flag != typec_ntc_ot_flag || pre_flag2 != gd->bat_ntc_dischg_reduce_flag)
 		{
 			pre_flag = typec_ntc_ot_flag;
-			if (typec_ntc_ot_flag)
+			pre_flag2 = gd->bat_ntc_dischg_reduce_flag;
+			if (typec_ntc_ot_flag||gd->bat_ntc_dischg_reduce_flag)
 			{
+				soft_flag = 1;
 				tcpm_update_pdo_for_limit();
 			}
 			else
 			{
+				soft_flag = 0;
 				tcpm_update_pdo_for_normal();
 			}
-			pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+			if(soft_flag != pre_flag3) pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+			pre_flag3 = soft_flag;
 		}
 	}
 }

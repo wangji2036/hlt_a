@@ -140,7 +140,7 @@ bool hal_nu6805_buckboost_get_a2_state(void)
 
 void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
-	g_buckboost.woke_mode = woke_mode;
+	//g_buckboost.woke_mode = woke_mode;//---10_28这段代码 会产生温度保护后状态退不出
 	uint8_t write_data = 0;
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
 		write_data = 0x01;
@@ -315,7 +315,7 @@ uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Ntc_Setting2,&read);
 
-	//printk("n read = %d\n",ntc);
+	printk("n read = %d\n",ntc);
 
 	if(read == 0)
 		return ntc*550/20;// in Ohm, 20uA
