@@ -83,4 +83,13 @@ void hal_tcpc_send_sink_caps_ext(void);
 void tcpc_pd_send_pps_status(void);
 void hal_tcpc_pd_send_batt_status(void);
 void tcpc_pd_send_bat_capability(uint8_t bat_index);
+void hal_tcpc_pd_send_Alert(void);
+void hal_tcpc_send_discover_Identity_Ack(void);
+void hal_tcpc_send_discover_SVID_Ack(void);
+void hal_tcpc_uvdm_analyze(struct usb_pd_pkt_t *pkt);
+void hal_tcpc_uvdm_send_PowerBankBattery_Realtime_Info(void);
+void hal_tcpc_uvdm_send_bat_data(void);
+extern bool is_power_z;
+void hal_tcpc_uvdm_analyze_for_powerz(struct usb_pd_pkt_t *pkt);
+
 #endif /* TCPC_H_ */

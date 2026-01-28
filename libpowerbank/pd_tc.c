@@ -556,6 +556,276 @@ void tcpc_pd_send_bat_capability(uint8_t bat_index)
 	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
 }
 
+void hal_tcpc_pd_send_Alert(void)
+{
+
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_ALERT, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
+	transmit_pkt.msg_len = 1;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0x02100000;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+
+void hal_tcpc_send_discover_Identity_Ack(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 5);
+	transmit_pkt.msg_len = 5;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0xFF00A841;
+    if(g_usb_pd_s.nego_revision ==PD_REV20)
+    	transmit_pkt.msg.WORDS[1] =  0x19800000 | USBPD_VID;
+    else
+    	transmit_pkt.msg.WORDS[1] =  0x19C00000 | USBPD_VID;
+    transmit_pkt.msg.WORDS[2] = 0x00000000;
+    transmit_pkt.msg.WORDS[3] = 0x26810000;
+    transmit_pkt.msg.WORDS[4] = 0x40000000;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_send_discover_SVID_Ack(void)
+{
+
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 2);
+	transmit_pkt.msg_len = 2;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0xFF00A842;
+    transmit_pkt.msg.WORDS[1] = 0xFF010000;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+#define UVDM_GET		0b00
+#define UVDM_Response	0b01
+#define UVDM_NAK		0b10
+#define UVDM_Wait		0b11
+
+#define PowerBankBattery_Basic_Info 	0x0000
+#define PowerBankBattery_Realtime_Info	0x0001
+#define PowerBankBattery_Abnormal_Info	0x0002
+
+void hal_tcpc_uvdm_send_PowerBankBattery_Realtime_Info(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 7);
+	transmit_pkt.hdr.BITS.externed = 1;
+	transmit_pkt.msg_len = 7;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.data_size = 24;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
+	//vdm header
+	transmit_pkt.msg.ext_msg.data[0] = PowerBankBattery_Realtime_Info << 2 | UVDM_Response | 0xC0;
+	transmit_pkt.msg.ext_msg.data[1] = 0x00;
+	transmit_pkt.msg.ext_msg.data[2] = (uint8_t)USBPD_VID;
+	transmit_pkt.msg.ext_msg.data[3] = (uint8_t)(USBPD_VID >> 8);
+
+	//message0
+	transmit_pkt.msg.ext_msg.data[4] = g_buckboost.adc_vbat;
+	transmit_pkt.msg.ext_msg.data[5] = g_buckboost.adc_vbat >> 8;
+	transmit_pkt.msg.ext_msg.data[6] = 0x00;
+	transmit_pkt.msg.ext_msg.data[7] = 0x00;
+	//message1
+	transmit_pkt.msg.ext_msg.data[8] = g_buckboost.adc_ibat;
+	transmit_pkt.msg.ext_msg.data[9] = g_buckboost.adc_ibat >> 8;
+	transmit_pkt.msg.ext_msg.data[10] = 0x00;
+	transmit_pkt.msg.ext_msg.data[11] = 0x00;
+	//message2
+	transmit_pkt.msg.ext_msg.data[12] = (uint8_t)300;
+	transmit_pkt.msg.ext_msg.data[13] = (uint8_t)(300 >> 8);
+	transmit_pkt.msg.ext_msg.data[14] = 0x00;
+	transmit_pkt.msg.ext_msg.data[15] = 0x00;
+	//message3
+	transmit_pkt.msg.ext_msg.data[16] = 98; // 98%
+	transmit_pkt.msg.ext_msg.data[17] = 0x01; //2
+	transmit_pkt.msg.ext_msg.data[18] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[19] = 0xFF;
+	//message4
+	transmit_pkt.msg.ext_msg.data[20] = gd->real_soc_show;
+	transmit_pkt.msg.ext_msg.data[21] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[22] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[23] = 0xFF;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_uvdm_analyze(struct usb_pd_pkt_t *pkt)
+{
+
+	//uint16_t ext_head = pkt->msg.ext_msg.ext_hrd.WORD;
+	uint32_t vdm_head = (uint32_t)(pkt->msg.ext_msg.data[0] | pkt->msg.ext_msg.data[1] << 8 | pkt->msg.ext_msg.data[2] << 16 | pkt->msg.ext_msg.data[3] << 24);
+
+	#define XIAMI_VID  0x0000
+	//if(vdm_head >> 16 == XIAMI_VID)
+	if(vdm_head & 0x03 == UVDM_GET && vdm_head & BIT(15) == 0)  //UVDM
+	{
+		uint32_t batinfo_type = vdm_head >>2  & 0x0f;
+		switch(batinfo_type)
+		{
+			case PowerBankBattery_Basic_Info:
+
+				break;
+			case PowerBankBattery_Realtime_Info:
+				hal_tcpc_uvdm_send_PowerBankBattery_Realtime_Info();
+				break;
+			case PowerBankBattery_Abnormal_Info:
+				break;
+		}
+	}
+
+}
+
+typedef union
+{
+uint32_t object[5];
+uint8_t byte[20];
+struct
+{
+uint16_t  PresentCapacity; //���ꨮ����?��?�㨴��?���� �̣�??0.1%
+uint16_t  Voltage;         //��?3?��??1      �̣�??mV
+int16_t   Current;         //��?3?��?���¨�D��??����??y?a3?��??o?a��?��?      �̣�??mA
+int16_t   BatteryTemperature;   //��?3????��      �̣�??0.01?��
+uint16_t  Cycle;           //?-?����?��y
+uint16_t  AbnormalAlarmCount; //����3�����?����?��y
+uint8_t   Cell;   			// ��?3?��?��a��y��?
+uint8_t   Reserved1[7];   // ���ꨢ??��
+} bat_byte;
+}USBPD_VDM_BatteryData_TypeDef;
+
+void hal_tcpc_uvdm_send_bat_data(void)
+{
+	USBPD_VDM_BatteryData_TypeDef bat_data;
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	osal_mem_clear(&bat_data,sizeof(USBPD_VDM_BatteryData_TypeDef));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 7);
+	transmit_pkt.msg_len = 7;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0xFF004220;
+    transmit_pkt.msg.WORDS[1] = 0x1234abcd;
+    bat_data.bat_byte.PresentCapacity = gd->real_soc_show * 10;
+    bat_data.bat_byte.Voltage = g_buckboost.adc_vbat;
+    bat_data.bat_byte.Current = g_buckboost.adc_ibat;
+    bat_data.bat_byte.BatteryTemperature = 3000;
+    bat_data.bat_byte.Cycle = 2;
+    bat_data.bat_byte.Cell = 1;
+    osal_mem_copy(&transmit_pkt.msg.WORDS[2],&bat_data,sizeof(USBPD_VDM_BatteryData_TypeDef));
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_uvdm_send_vendor_string(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 7);
+	transmit_pkt.msg_len = 7;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0xFF004250;
+    transmit_pkt.msg.WORDS[1] = 0x1234abcd;
+    osal_mem_copy(&transmit_pkt.msg.WORDS[2],"NuVolta",sizeof("NuVolta"));
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_uvdm_send_product_string(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_VENDOR_DEF, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 7);
+	transmit_pkt.msg_len = 7;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0xFF004260;
+    transmit_pkt.msg.WORDS[1] = 0x1234abcd;
+    osal_mem_copy(&transmit_pkt.msg.WORDS[2],"Nu17113",sizeof("Nu17113"));
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+
+typedef union
+{
+    uint32_t object[4];
+    uint8_t  byte[16];
+    struct
+    {
+        uint8_t  Nnmber;    //����o?  0������?��?3?����
+        uint8_t  Reserved1;
+        uint16_t Voltage; //��?3?��??1
+        uint32_t OverVoltage :1; //1y?1
+        uint32_t UnderVoltage :1; //?��?1
+        uint32_t OverCurrent :1; //1y����
+        uint32_t OverTemperature :1; //1y??
+        uint32_t  Reserved2:24; //?�䨺1��?
+    };
+}USBPD_VDM_BatteryAbnormalAlarm_TypeDef;
+
+typedef union
+{
+    uint32_t object[5];
+    uint8_t byte[20];
+    struct
+    {
+        uint16_t Cell[10]; //�̣���?��??1 �̣�?? mV
+    };
+}USBPD_VDM_BatteryCell_TypeDef;
+
+typedef union
+{
+uint32_t object[5];
+uint8_t byte[20];
+struct
+{
+uint32_t DesignCapacity; //����??��Y��? �̣�?? mWh
+uint32_t FullCapacity; //��?D??-?��o����Y��? �̣�?? mWh
+uint32_t PresentCapacity;//��?D?�̡�?�㨺�ꨮ����Y��?mWh
+/*?��1����1��?����??/3??������??*/
+uint8_t  Day;
+uint8_t  Hour;
+uint8_t  Minute;
+uint8_t  Second;
+uint32_t  Reserved1;
+};
+}USBPD_VDM_BatteryCapacity_TypeDef;
+
+
+bool is_power_z;
+
+void hal_tcpc_uvdm_analyze_for_powerz(struct usb_pd_pkt_t *pkt)
+{
+
+	//uint16_t ext_head = pkt->msg.ext_msg.ext_hrd.WORD;
+	uint32_t vdm_head = pkt->msg.WORDS[0];
+
+	switch(vdm_head)
+	{
+		case 0xFF000220:
+			is_power_z = 1;
+			break;
+		case 0xFF000230:
+			//hal_tcpc_uvdm_send_warming_Info();
+			break;
+		case 0xFF000240:
+			//hal_tcpc_uvdm_send_bat0_Info();
+			break;
+		case 0xFF000241:
+			//hal_tcpc_uvdm_send_bat10_Info();
+			break;
+		case 0xFF000248:
+		case 0xFF000249:
+		case 0xFF00024a:
+		case 0xFF00024b:
+		case 0xFF00024c:
+		case 0xFF00024d:
+		case 0xFF00024e:
+		case 0xFF00024f:
+			//hal_tcpc_uvdm_send_bat10_Info();
+			break;
+		case 0xFF000250:
+			hal_tcpc_uvdm_send_vendor_string();
+			break;
+		case 0xFF000260:
+			hal_tcpc_uvdm_send_product_string();
+			break;
+	}
+
+}
 
 
 

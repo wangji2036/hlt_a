@@ -188,6 +188,181 @@ enum pd_bist_mode
 #define PD_PPS_SET_OUTPUT_MA(ma)              (((ma) / 50) & 0xFF)
 
 
+/*
+ * VDM header
+ * ----------
+ * <31:16>  :: SVID
+ * <15>     :: VDM type ( 1b == structured, 0b == unstructured )
+ * <14:13>  :: Structured VDM version (can only be 00 == 1.0 currently)
+ * <12:11>  :: reserved
+ * <10:8>   :: object position (1-7 valid ... used for enter/exit mode only)
+ * <7:6>    :: command type (SVDM only?)
+ * <5>      :: reserved (SVDM), command type (UVDM)
+ * <4:0>    :: command
+ */
+#define VDO(vid, type, obj, custom)             \
+    (((vid) << 16) |                \
+     ((type) << 15) |               \
+     (((port->negotiated_rev) - 1)<<13)|                        \
+     ((obj)<<8)|                    \
+     ((custom) & 0x7FFF))
+//type
+#define SVDM 1
+#define UVDM 0
+
+#define VDO_SVDM_TYPE       (1 << 15)
+#define VDO_SVDM_VERS(x)    ((x) << 13)
+#define VDO_OPOS(x)     ((x) << 8)
+#define VDO_CMDT(x)     ((x) << 6)
+#define VDO_SVDM_VERS_MASK VDO_SVDM_VERS(0x3)
+#define VDO_OPOS_MASK       VDO_OPOS(0x7)
+#define VDO_CMDT_MASK       VDO_CMDT(0x3)
+
+#define CMDT_INIT           0
+#define CMDT_RSP_ACK        1
+#define CMDT_RSP_NAK        2
+#define CMDT_RSP_BUSY       3
+
+/* reserved for SVDM ... for Google UVDM */
+#define VDO_SRC_INITIATOR   (0 << 5)
+#define VDO_SRC_RESPONDER   (1 << 5)
+
+#define CMD_DISCOVER_IDENT  1
+#define CMD_DISCOVER_SVID   2
+#define CMD_DISCOVER_MODES  3
+#define CMD_ENTER_MODE      4
+#define CMD_EXIT_MODE       5
+#define CMD_ATTENTION       6
+#define CMD_DP_STATE            0x10
+#define CMD_DP_CONFIG           0x11
+
+
+#define VDO_CMD_VENDOR(x)    (((0x10 + (x)) & 0x1f))
+
+/* ChromeOS specific commands */
+#define VDO_CMD_VERSION     VDO_CMD_VENDOR(0)
+#define VDO_CMD_SEND_INFO   VDO_CMD_VENDOR(1)
+#define VDO_CMD_READ_INFO   VDO_CMD_VENDOR(2)
+#define VDO_CMD_REBOOT      VDO_CMD_VENDOR(5)
+#define VDO_CMD_FLASH_ERASE VDO_CMD_VENDOR(6)
+#define VDO_CMD_FLASH_WRITE VDO_CMD_VENDOR(7)
+#define VDO_CMD_ERASE_SIG   VDO_CMD_VENDOR(8)
+#define VDO_CMD_PING_ENABLE VDO_CMD_VENDOR(10)
+#define VDO_CMD_CURRENT     VDO_CMD_VENDOR(11)
+#define VDO_CMD_FLIP        VDO_CMD_VENDOR(12)
+#define VDO_CMD_GET_LOG     VDO_CMD_VENDOR(13)
+#define VDO_CMD_CCD_EN      VDO_CMD_VENDOR(14)
+
+#define PD_VDO_VID(vdo)     ((vdo) >> 16)
+#define PD_VDO_SVDM(vdo)    (((vdo) >> 15) & 1)
+#define PD_VDO_OPOS(vdo)    (((vdo) >> 8) & 0x7)
+#define PD_VDO_CMD(vdo)     ((vdo) & 0x1f)
+#define PD_VDO_CMDT(vdo)    (((vdo) >> 6) & 0x3)
+
+/*
+ * SVDM Identity request -> response
+ *
+ * Request is simply properly formatted SVDM header
+ *
+ * Response is 4 data objects:
+ * [0] :: SVDM header
+ * [1] :: Identitiy header
+ * [2] :: Cert Stat VDO
+ * [3] :: (Product | Cable) VDO
+ * [4] :: AMA VDO
+ *
+ */
+#define VDO_INDEX_HDR       0
+#define VDO_INDEX_IDH       1
+#define VDO_INDEX_CSTAT     2
+#define VDO_INDEX_CABLE     3
+#define VDO_INDEX_PRODUCT   3
+#define VDO_INDEX_AMA       4
+
+/*
+ * SVDM Identity Header
+ * --------------------
+ * <31>     :: data capable as a USB host
+ * <30>     :: data capable as a USB device
+ * <29:27>  :: product type (UFP / Cable)
+ * <26>     :: modal operation supported (1b == yes)
+ * <25:16>  :: product type (DFP)
+ * <15:0>   :: USB-IF assigned VID for this cable vendor
+ */
+#define IDH_PTYPE_UNDEF     0
+#define IDH_PTYPE_HUB       1
+#define IDH_PTYPE_PERIPH    2
+#define IDH_PTYPE_PSD       3
+#define IDH_PTYPE_AMA       5
+
+#define IDH_PTYPE_PCABLE    3
+#define IDH_PTYPE_ACABLE    4
+
+#define IDH_PTYPE_DFP_UNDEF 0
+#define IDH_PTYPE_DFP_HUB   1
+#define IDH_PTYPE_DFP_HOST  2
+#define IDH_PTYPE_DFP_PB    3
+#define IDH_PTYPE_DFP_AMC   4
+
+#define VDO_IDH(usbh, usbd, ptype, is_modal, vid)       \
+    ((usbh) << 31 | (usbd) << 30 | ((ptype) & 0x7) << 27    \
+     | (is_modal) << 26 | ((vid) & 0xffff))
+
+#define PD_IDH_PTYPE(vdo)   (((vdo) >> 27) & 0x7)
+#define PD_IDH_VID(vdo)     ((vdo) & 0xffff)
+#define PD_IDH_MODAL_SUPP(vdo)  ((vdo) & (1 << 26))
+#define PD_IDH_DFP_PTYPE(vdo)   (((vdo) >> 23) & 0x7)
+
+#define VDO_CABLE_EPR(vdo)      ((vdo >> 17) & 0x01)
+#define VDO_CABLE_Volt(vdo)     ((vdo >> 9) & 0x03)
+#define VDO_CABLE_Curr(vdo)     ((vdo >> 5) & 0x03)
+
+/*
+ * Cert Stat VDO
+ * -------------
+ * <31:0>  : USB-IF assigned XID for this cable
+ */
+#define PD_CSTAT_XID(vdo)   (vdo)
+
+/*
+ * Product VDO
+ * -----------
+ * <31:16> : USB Product ID
+ * <15:0>  : USB bcdDevice
+ */
+#define VDO_PRODUCT(pid, bcd)   (((pid) & 0xffff) << 16 | ((bcd) & 0xffff))
+#define PD_PRODUCT_PID(vdo) (((vdo) >> 16) & 0xffff)
+
+/*
+ * UFP VDO1
+ * --------
+ * <31:29> :: UFP VDO version
+ * <28>    :: Reserved
+ * <27:24> :: Device capability
+ * <23:6>  :: Reserved
+ * <5:3>   :: Alternate modes
+ * <2:0>   :: USB highest speed
+ */
+#define PD_VDO1_UFP_DEVCAP(vdo) (((vdo) & GENMASK(27, 24)) >> 24)
+
+#define DEV_USB2_CAPABLE    BIT(0)
+#define DEV_USB2_BILLBOARD  BIT(1)
+#define DEV_USB3_CAPABLE    BIT(2)
+#define DEV_USB4_CAPABLE    BIT(3)
+
+/*
+ * DFP VDO
+ * --------
+ * <31:29> :: DFP VDO version
+ * <28:27> :: Reserved
+ * <26:24> :: Host capability
+ * <23:5>  :: Reserved
+ * <4:0>   :: Port number
+ */
+#define PD_VDO_DFP_HOSTCAP(vdo) (((vdo) & GENMASK(26, 24)) >> 24)
+
+
+
 enum pd_ctrl_msg_type {
 /* Control Message type */
 	/* 0 Reserved */
@@ -240,6 +415,7 @@ enum pd_data_msg_type {
     PD_DATA_REVISION = 12,
 	/* 7-14 Reserved */
 	PD_DATA_VENDOR_DEF = 15,
+	PD_EXT_VENDOR_DEF = 0x1E,
 	PD_DATA_MSG_NR,
 };
 

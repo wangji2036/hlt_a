@@ -14,6 +14,7 @@
 extern void AhIntegralSOC_Init(void);
 extern void AhIntegralSOC(void);
 extern void Lookup_OCVSOC(void);
+extern void OCV_Hysteresis(void);
 extern void OCVSOC_Init(void);
 extern void OCVSOC(void);
 extern void SOC_Correction_Init(void);

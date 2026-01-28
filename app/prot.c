@@ -37,7 +37,7 @@ static const uint16_t ntc_tbl[] =
 	 182, 177, 173, 168, 164, 159, 155, 151, 147, 143,  //111 ~ 120
 };
 #else
-//Nu17112 IC NTC resistance is 10/NTC
+//Nu17112 IC NTC resistance is 100/NTC
 static const uint16_t ntc_tbl[] =
 {
 3996, //-40

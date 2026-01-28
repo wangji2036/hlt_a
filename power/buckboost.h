@@ -55,9 +55,10 @@ struct buckboost_s
 	int16_t adc_iac1;
 	int16_t adc_iac2;
 	//int16_t adc_iac3;
-	uint8_t charging_stat; //ÊÇ·ñÔÚ³äµç
+	uint8_t charging_stat; //ï¿½Ç·ï¿½ï¿½Ú³ï¿½ï¿½
 	uint8_t vsnkdisconnect_flag;
 #endif
+    int16_t batTemp;
 	uint8_t protect_status;
 	uint8_t ibat_level;
 };

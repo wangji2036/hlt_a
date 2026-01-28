@@ -316,7 +316,7 @@ void SOC_Correction(void)
   CellVoltsDelay = div_nde_s32_floor(ConstB_s.Add5_b * CellVoltsDelay +
     SigPr_CellVolts_mV, 10);
   SOC_VirtOCVSOC_mpct = look2_is16s32lu32n32ts_WwgFj0xk(SigPr_CellTemps_C,
-    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled7, P_OcvSOCDsg_mpct,
+    SOC_VirtualOCV_mV, P_TAxis_degC, ConstP_s.pooled6, P_OcvSOCDsg_mpct,
     (uint32_T *)&hj_m_bpIndex_s[0], ConstP_s.pooled10, 3U);
   if (SOC_VirtOCVSOC_mpct > 100000) {
     SOC_VirtOCVSOC_mpct = 100000;
@@ -334,12 +334,12 @@ void SOC_Correction(void)
     if(gd->charger_is_6801_flag)
     {
       SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
-      ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 11U);
+      ConstP_s.pooled6, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 11U);
     }
 	else
 	{
       SOC_SOCSlope_mpctPermV = look1_is32lu32n32Du32_pbinlcase(SOC_VirtualOCV_mV,
-      ConstP_s.pooled7, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
+      ConstP_s.pooled6, P_SOCSlope_mpctPermV, (uint32_T *)&hjjp_m_bpIndex_s, 31U);
      }
     SOC_CorrEachStep_upct = div_nde_s32_floor(SigPr_PackCurr_mA * (int32_T)
       SOC_ModelR0_mOhm, 1000);

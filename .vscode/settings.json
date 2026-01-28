@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "regdef.h": "c",
+        "buckboost.h": "c",
+        "bms_fixpoint_private.h": "c",
+        "typdef.h": "c",
+        "printk.h": "c",
+        "osal.h": "c",
+        "g_data.h": "c",
+        "nu103x.h": "c"
+    }
+}

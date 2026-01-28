@@ -20,7 +20,7 @@
 #if(BUCKBOOST_USED_NU6805 == 1)
 const uint32_t source_pdo[] =
 {
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
 		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 			[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
 			[2] = PDO_FIXED(12000, 2500, 0),                      // 12 V 2.5 A
@@ -31,7 +31,7 @@ const uint32_t source_pdo[] =
 
 const uint32_t source_pdo1[] =
 {
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
 		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 			[1] = PDO_FIXED(9000, 2220, 0),                      // 9 V 2.22 A
 			[2] = PDO_FIXED(12000, 1670, 0),                      // 12 V 1.67 A
@@ -334,6 +334,7 @@ void tcpm_task_event_handler(uint32_t event)
 						printk("TC[0] light = 0x%x\n",gd->dp_result);
 
 						/* AUTO POWER-OFF AFTER 2 H LOW-CURRENT */
+						printk("port0 unconnect1\n");
 						port_manager_set_event(PORT0_EVENT_UNCONNECT);   // ?? Type-C A ???
 						g_port.is_mini_current_mode = 0;                 // ???????
 						// ???????????,??? WPC;????

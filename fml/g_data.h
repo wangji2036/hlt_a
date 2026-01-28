@@ -167,6 +167,7 @@ struct gd_t
 
 	uint16_t dig_ping_volt;
 	uint16_t dig_ping_perd;
+	uint8_t force_usb_mode;
 	uint16_t dig_ping_duty;
 	uint16_t dig_ping_phas;
 
@@ -401,11 +402,13 @@ struct gd_t
 	 uint8_t bat_dead_flag;
 	 uint8_t bat_dead_flag_with_snk0;
 	 uint8_t bat_dead_flag_with_snk1;
+
 	 uint8_t Battery_cycle_count;
 	 uint8_t Battery_charger_cnt;
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
 	 uint64_t Bat_RTC_Timer;
+	 
 	 int32_t SOC_RawSOC_mpct;
 	 uint32_t SOC_SleepTime_s;
 

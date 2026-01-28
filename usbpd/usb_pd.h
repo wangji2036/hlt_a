@@ -104,8 +104,11 @@ enum usb_pd_state_e
 	PE_PRS_SNK_SRC_Reject_Swap,
 	PE_PRS_SNK_SRC_Send_Swap,
 #endif
-
 	PE_DRS_Send_Swap,
+	PE_DRS_Swap_Accept,
+	PE_RESP_VDM_Send_Identity,
+	PE_RESP_VDM_Send_SVIDs,
+	PE_RESP_UVDM_Message,
 
 	PE_STATE_MAX,
 };

@@ -51,5 +51,5 @@ extern struct tc_s g_tc[];
 void usb_tc_init(void);
 void usb_tc_run(void);
 void usb_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_pd_substate_e tc_substate);
-
+extern volatile uint32_t tc_sys_ticks;
 #endif

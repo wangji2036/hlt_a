@@ -241,7 +241,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
-	if(tc_snk_is_disconnected(tc)) //CC¶Ï¿ª
+	if(tc_snk_is_disconnected(tc)) //CCï¿½Ï¿ï¿½
 	{
 		//tc->tc_timer_cnt++;
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
@@ -256,10 +256,12 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 				if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
 				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 				//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
-				if(tc->tc_index == 0)
-					port_manager_set_event(PORT0_EVENT_UNCONNECT);
+				if(tc->tc_index == 0){
+					printk("port0 unconnect2\n");
+					port_manager_set_event(PORT0_EVENT_UNCONNECT);}
 				else
-					port_manager_set_event(PORT1_EVENT_UNCONNECT);
+				    printk("port1 unconnect1\n");
+					//port_manager_set_event(PORT1_EVENT_UNCONNECT);
 			}
 		}
 	}
@@ -390,10 +392,12 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		hal_tcpc_set_gate_en(tc->tc_index,false);
-        if(tc->tc_index == 0)
-        	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+        if(tc->tc_index == 0){
+			printk("port0 unconnect3\n");
+        	port_manager_set_event(PORT0_EVENT_UNCONNECT);}
         else
-        	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+			printk("port1 unconnect2\n");
+        	//port_manager_set_event(PORT1_EVENT_UNCONNECT);
     }
 
     if(gd->tc1_lighting_mode && tc->tc_index == 1)
@@ -402,15 +406,17 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		hal_tcpc_set_gate_en(tc->tc_index,false);
-        if(tc->tc_index == 0)
-        	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+        if(tc->tc_index == 0){
+		printk("port0 unconnect4\n");
+        	port_manager_set_event(PORT0_EVENT_UNCONNECT);}
         else
-        	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+		printk("port1 unconnect3\n");
+        	//port_manager_set_event(PORT1_EVENT_UNCONNECT);
     }
 
     if(pdlib_is_connect()) tc->try_src_cnt = 0;
 
-	if(tc_src_is_disconnected(tc)) //CC¶Ï¿ª
+	if(tc_src_is_disconnected(tc)) //CCï¿½Ï¿ï¿½
 	{
 		//tc->tc_timer_cnt++;
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
@@ -423,10 +429,12 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			hal_tcpc_port_dummyload_en(tc->tc_index,true);
 			hal_tcpc_set_gate_en(tc->tc_index,false);
 			hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-            if(tc->tc_index == 0)
-            	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+            if(tc->tc_index == 0){
+			printk("port0 unconnect5\n");
+            	port_manager_set_event(PORT0_EVENT_UNCONNECT);}
             else
-            	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+			printk("port1 unconnect4\n");
+           // port_manager_set_event(PORT1_EVENT_UNCONNECT);
 		}
 	}
 	else
@@ -447,7 +455,7 @@ static void TC_DEBUG_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
-	if(tc_debug_is_disconnected(cc1,cc2)) //CC¶Ï¿ª
+	if(tc_debug_is_disconnected(cc1,cc2)) //CCï¿½Ï¿ï¿½
 	{
 		//tc->tc_timer_cnt++;
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
@@ -472,7 +480,7 @@ static void TC_ACCESSORY_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
-	if(tc_acc_is_disconnected(cc1,cc2)) //CC¶Ï¿ª
+	if(tc_acc_is_disconnected(cc1,cc2)) //CCï¿½Ï¿ï¿½
 	{
 		//tc->tc_timer_cnt++;
 		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
@@ -725,21 +733,21 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
     {
 		if(tc->tc_index == 0)
 		{
-			tc0_delay++;
-			if(tc0_delay > 1000)
-			{
-				port_manager_set_event(PORT0_EVENT_UNCONNECT);
-				tc0_delay = 0;
-			}
+			// tc0_delay++;
+			// if(tc0_delay > 1000)
+			// {
+			// 	port_manager_set_event(PORT0_EVENT_UNCONNECT);
+			// 	tc0_delay = 0;
+			// }
 		}
 		else
 		{
-			tc1_delay++;
-			if(tc1_delay > 1000)
-			{
-				port_manager_set_event(PORT1_EVENT_UNCONNECT);
-				tc1_delay = 0;
-			}
+			// tc1_delay++;
+			// if(tc1_delay > 1000)
+			// {
+			// 	port_manager_set_event(PORT1_EVENT_UNCONNECT);
+			// 	tc1_delay = 0;
+			// }
 		}
     }
 	//		if(tc->tc_index == 0)

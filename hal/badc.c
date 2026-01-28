@@ -253,6 +253,11 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			}
 			break;
 		case _BADC_CH_PC7_ADC4:
+		if (tmp > 0)
+		{
+			rst = tmp;
+			if (rst < 1) rst = 1;
+		}
 			break;
 		case _BADC_CH_PC8_ADC5:
 			if (tmp > 0)
@@ -279,10 +284,10 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 		case _BADC_CH_PD0_ADC8:
 			if (tmp > 0)
 			{
-				rst = tmp * 72 / 10;
+				rst = tmp;
 				if (rst < 1) rst = 1;
 			}
-			break;
+		break;
 		case _BADC_CH_PD3_ADC9:
 			if (tmp > 0)
 			{

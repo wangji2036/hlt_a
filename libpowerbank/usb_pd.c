@@ -13,7 +13,7 @@
 
 #define SINK_PDO_MATCH_MODE_VOLTAGE					0
 #define SINK_PDO_MATCH_MODE_VOLTAGE_CURRENT			1
-
+bool is_sended_drswap;
 extern const struct usb_pd_state_task_t usb_pd_tasks_table[];
 
 static uint32_t usb_pd_event = 0;
@@ -259,6 +259,8 @@ void usb_pd_clear_event(uint32_t event)
 static void PE_SNK_RSC_Disable_Entry(void)
 {
 	g_usb_pd_s.explicit_contract = 0;
+	is_power_z = false;
+	is_sended_drswap = false;
 	usb_pd_reset_prl();
 	hal_tcpc_reset_pd_phy();
 	hal_tcpc_pd_phy_disable();
@@ -558,6 +560,8 @@ static void PE_SRC_Give_PPS_Status_Exit(void)
 static void PE_SRC_Startup_Entry(void)
 {
 	usbpd_printk("%s\n",__func__);
+	is_power_z = false;
+	is_sended_drswap = false;
 	g_usb_pd_s.caps_counter = 0;
 	g_usb_pd_s.explicit_contract = 0;
 	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
@@ -738,8 +742,17 @@ static void PE_SRC_Ready_Exit(void)
 
 
 	g_usb_pd_s.pe_timer_cnt++;
-	if(g_usb_pd_s.pe_timer_cnt >= 200 && g_tcpc.data_role == TYPEC_HOST)
+	if(g_usb_pd_s.pe_timer_cnt >= 1000 && is_power_z)
 	{
+		//usb_pd_set_state(PE_PRS_SRC_SNK_Send_Swap,enter_state);
+		if(g_usb_pd_s.pe_timer_cnt == 1000) pdlib_tcpc_set_cc(g_tcpc.tc_port_map,TYPEC_CC_RP_1_5);
+		if(g_usb_pd_s.pe_timer_cnt == 1020) { hal_tcpc_uvdm_send_bat_data();usb_pd_set_state(PE_SRC_Ready,enter_state);}
+	}
+	
+	g_usb_pd_s.pe_timer_cnt++;
+	if(g_usb_pd_s.pe_timer_cnt >= 200 && g_tcpc.data_role == TYPEC_HOST && is_sended_drswap == 0)
+	{
+		is_sended_drswap = 1;
 		usb_pd_set_state(PE_DRS_Send_Swap,enter_state);
 	}
 
@@ -765,9 +778,25 @@ static void PE_DRS_Send_Swap_Exit(void)
     }
 }
 
+static void PE_DRS_Swap_Accept_Entry(void)
+{
+	usb_pd_set_state(PE_DRS_Swap_Accept,exit_state);
+}
 
+static void PE_DRS_Swap_Accept_Exit(void)
+{
 
+	hal_tcpc_send_ctrl_mgs(PD_CTRL_ACCEPT);
+	if(g_tcpc.data_role == TYPEC_HOST)
+		hal_tcpc_set_data_role(g_tcpc.tc_port_map,TYPEC_DEVICE);
+	else
+		hal_tcpc_set_data_role(g_tcpc.tc_port_map,TYPEC_HOST);
 
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		usb_pd_set_state(PE_SRC_Ready,enter_state);
+	else
+		usb_pd_set_state(PE_SNK_Ready,enter_state);
+}
 
 static void PE_SRC_Disabled_Entry(void)
 {
@@ -1250,10 +1279,56 @@ static void PE_PRS_SNK_SRC_Send_Swap_Exit(void)
 
 #endif
 
+static void PE_RESP_VDM_Send_Identity_Entry(void)
+{
+	hal_tcpc_send_discover_Identity_Ack();
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		usb_pd_set_state(PE_SRC_Ready,enter_state);
+	else
+		usb_pd_set_state(PE_SNK_Ready,enter_state);
+}
+
+static void PE_RESP_VDM_Send_Identity_Exit(void)
+{
+
+}
+
+static void PE_RESP_VDM_Send_SVIDs_Entry(void)
+{
+	hal_tcpc_send_discover_SVID_Ack();
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		usb_pd_set_state(PE_SRC_Ready,enter_state);
+	else
+		usb_pd_set_state(PE_SNK_Ready,enter_state);
+}
+
+static void PE_RESP_VDM_Send_SVIDs_Exit(void)
+{
+
+}
+
+
+static void PE_RESP_UVDM_Message_Entry(void)
+{
+	if(g_pd_packet.hdr.BITS.externed)
+		hal_tcpc_uvdm_analyze(&g_pd_packet);  //xiaomi
+	else
+		hal_tcpc_uvdm_analyze_for_powerz(&g_pd_packet);  //xiaomi
+
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		usb_pd_set_state(PE_SRC_Ready,enter_state);
+	else
+		usb_pd_set_state(PE_SNK_Ready,enter_state);
+}
+
+static void PE_RESP_UVDM_Message_Exit(void)
+{
+
+}
 
 void usb_pd_sop_data_msg_handle(void)
 {
-
+	uint32_t vdm_header;
 	switch(g_pd_packet.hdr.BITS.message_type)
 	{
 		case PD_DATA_SOURCE_CAP:
@@ -1321,19 +1396,60 @@ void usb_pd_sop_data_msg_handle(void)
 		#endif
 			break;
 		case  PD_DATA_VENDOR_DEF:
-			if(g_usb_pd_s.nego_revision == PD_REV30)
+			vdm_header = g_pd_packet.msg.WORDS[0];
+			if(PD_VDO_SVDM(vdm_header))
 			{
-			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
-				if(g_tcpc.pwr_role == TYPEC_SINK)
-					usb_pd_set_state(PE_SNK_Send_Not_Supported,enter_state);
-				else
-					usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
-			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
-				usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
-			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
-				usb_pd_set_state(PE_SNK_Send_Not_Supported,enter_state);
-			#endif
+				switch(PD_VDO_CMDT(vdm_header))
+				{
+					case CMDT_INIT:
+						switch(PD_VDO_CMD(vdm_header))
+						{
+							case CMD_DISCOVER_IDENT:
+								usb_pd_set_state(PE_RESP_VDM_Send_Identity,enter_state);
+								break;
+							case CMD_DISCOVER_SVID:
+								usb_pd_set_state(PE_RESP_VDM_Send_SVIDs,enter_state);
+								break;
+							case CMD_DISCOVER_MODES:
+								break;
+							case CMD_ENTER_MODE:
+								break;
+							case CMD_EXIT_MODE:
+								break;
+							case CMD_ATTENTION:
+								break;
+							case CMD_DP_STATE:
+								break;
+							case CMD_DP_CONFIG:
+								break;
+						}
+						break;
+					case CMDT_RSP_ACK:
+						break;
+					case CMDT_RSP_NAK:
+						break;
+					case CMDT_RSP_BUSY:
+						break;
+				}
 			}
+			else
+			{
+				usb_pd_set_state(PE_RESP_UVDM_Message,enter_state);
+			}
+
+//			if(g_usb_pd_s.nego_revision == PD_REV30)
+//			{
+//			#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
+//				if(g_tcpc.pwr_role == TYPEC_SINK)
+//					usb_pd_set_state(PE_SNK_Send_Not_Supported,enter_state);
+//				else
+//					usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
+//			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
+//				usb_pd_set_state(PE_SRC_Send_Not_Supported,enter_state);
+//			#elif(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SNK)
+//				usb_pd_set_state(PE_SNK_Send_Not_Supported,enter_state);
+//			#endif
+//			}
 			break;
 		case  PD_DATA_SOURCE_INFO:
 		case  PD_DATA_REVISION:
@@ -1598,6 +1714,8 @@ void usb_pd_sop_ctrl_msg_handle(void)
 		#endif
 			break;
 		case PD_CTRL_DR_SWAP:
+			usb_pd_set_state(PE_DRS_Swap_Accept,enter_state);
+			break;
 		case PD_CTRL_VCONN_SWAP:
 		#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 			if(g_tcpc.pwr_role == TYPEC_SINK)
@@ -2644,7 +2762,11 @@ const struct usb_pd_state_task_t usb_pd_tasks_table[PE_STATE_MAX]  =
 	{PE_PRS_SNK_SRC_Send_Swap_Entry,PE_PRS_SNK_SRC_Send_Swap_Exit},						//PE_PRS_SNK_SRC_Send_Swap,
 #endif
 	{PE_DRS_Send_Swap_Entry,PE_DRS_Send_Swap_Exit},						//PE_DRS_Send_Swap,
+	{PE_DRS_Swap_Accept_Entry,PE_DRS_Swap_Accept_Exit},	//PE_DRS_Swap_Accept
 
+	{PE_RESP_VDM_Send_Identity_Entry,PE_RESP_VDM_Send_Identity_Exit},					//	PE_RESP_VDM_Send_Identity,
+	{PE_RESP_VDM_Send_SVIDs_Entry,PE_RESP_VDM_Send_SVIDs_Exit},							//PE_RESP_VDM_Send_SVIDs,
+	{PE_RESP_UVDM_Message_Entry,PE_RESP_UVDM_Message_Exit},//PE_RESP_UVDM_Message
 
 	//other
 };

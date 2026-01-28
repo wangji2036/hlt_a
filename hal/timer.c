@@ -219,7 +219,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 		extern void key_handle_10ms(void);
 		key_handle_10ms();
 	}
-
+	gd->Bat_RTC_Timer ++;
 }
 
 /**

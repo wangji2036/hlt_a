@@ -7,7 +7,8 @@
 
 #define BAT_CELL_EMPTY_VOLT   3050
 
-#define BAT_CELL_NUM 2
+uint8_t bat_cell_num = 2;
+#define BAT_CELL_NUM bat_cell_num
 
 void hal_nu6805_buckboost_init(void)
 {
@@ -140,7 +141,7 @@ bool hal_nu6805_buckboost_get_a2_state(void)
 
 void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
-	//g_buckboost.woke_mode = woke_mode;//---10_28Õâ¶Î´úÂë »á²úÉúÎÂ¶È±£»¤ºó×´Ì¬ÍË²»³ö
+	//g_buckboost.woke_mode = woke_mode;//---10_28ï¿½ï¿½Î´ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¶È±ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½Ë²ï¿½ï¿½ï¿½
 	uint8_t write_data = 0;
 	if(woke_mode == BUCKBOOST_DISCHG_MODE)
 		write_data = 0x01;

@@ -32,6 +32,7 @@
 #include "tcpm.h"
 #include "pdlib.h"
 #include "port_manager.h"
+#include "_fml.h"
 //#include "typec.h"
 //uint8_t reset_magic_code;
 
@@ -181,13 +182,14 @@ void SLP_vNormalToSleep(void)
 /*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
     hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+	ubsd_wb7720_sleep();
 #endif
     TCPC->CCA_CTRL.WORD = 0;
     TCPC->CCB_CTRL.WORD = 0;
     TCPC->RXD_CTRL.WORD = 0;
     ECAP2->QDT_CTRL.WORD = 0;
 	//tcpc wake up start.
-
+	
 	//SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_TCPC_WKUP_DIS_Pos;
 	//CCA
 	  //(Enable CC, Disable RDB, Enter low power mode)
@@ -237,7 +239,7 @@ void SLP_vNormalToSleep(void)
 
 	BADC->CTRL.WORD = 0;
 	EADC->CTRL.WORD = 0;
-	I2CS->CTRL.WORD = 0;
+	I2CS->CTRL.WORD = 0;  // Keep I2C Slave enabled during sleep
 	BPWM3->GEN_CTRL.WORD = 0;
 	BPWM4->GEN_CTRL.WORD = 0;
 	BPWM7->GEN_CTRL.WORD = 0;
@@ -263,7 +265,7 @@ void SLP_vNormalToSleep(void)
 	DPDM_QC_SINK->BC1P2_INTMSK_CTRL.WORD  = 0;
 	DPDM->QC_SRC_CTRL.WORD = 0;
 	DPDM->SOURCE_CTRL.WORD = 0;
-	I2CM->GEN_CTRL.WORD = 0;
+	I2CM->GEN_CTRL.WORD = 0;  // Keep I2C Master enabled during sleep
 
 	SYS->CLK_CTRL.WORD = 0;
 	SYS->PRO_CTRL.WORD = 0;
@@ -468,25 +470,27 @@ void SLP_vSleepToSleep(void)
 	else
 	{
 		hal_wdt_feed();
-		_SET_I2CM_SDA_OUTPUT();
-		_SET_I2CM_SCL_OUTPUT();
-		uint8_t read;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
-	//	uint8_t read;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
-		hal_wdt_feed();
+	// 	_SET_I2CM_SDA_OUTPUT();
+	// 	_SET_I2CM_SCL_OUTPUT();
+	// 	uint8_t read;
+	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
+	// //	uint8_t read;
+	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
+	// 	hal_wdt_feed();
 
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
+	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
 
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
 
-	/*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+	// /*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
+	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+
+	// 	ubsd_wb7720_sleep();
 	}
 #endif
     GPA->PDEN.BITS.PIN0 = 1;
@@ -634,6 +638,7 @@ extern uint16_t key_ui_cnt;
 
 void RST_vCheck(void)
 {
+	uint32_t tmr_cnt;
 #if SUPPORT_SLEEP_LOG
 	/* PB7 */
 	GPB->I_EN.BITS.PIN7 = 0;
@@ -660,6 +665,8 @@ void RST_vCheck(void)
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
 			case RST_SRC_1PTIMER:
+				tmr_cnt = TMR0->LOAD_CNT.WORD;
+				gd->Bat_RTC_Timer +=  tmr_cnt >> 2;
 				//sleep_printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{

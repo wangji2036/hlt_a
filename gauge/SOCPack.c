@@ -49,7 +49,7 @@ void Pack_Empty(void)
   SOCPack_EmptyU_mV = div_nde_s32_floor(P_AtRateCurrent_mA *
     SOCPack_EmptyDcr_mOhm, 1000) + P_EmptyVoltage_mV;
   SOCPack_PreEmptySOC_mpct = look2_is16s32lu32n32ts_WwgFj0xk(SigPr_CellTemps_C,
-    SOCPack_EmptyU_mV, P_TAxis_degC, ConstP_s.pooled7, P_OcvSOCDsg_mpct,
+    SOCPack_EmptyU_mV, P_TAxis_degC, ConstP_s.pooled6, P_OcvSOCDsg_mpct,
     (uint32_T *)&h_m_bpIndex_s[0], ConstP_s.pooled10, 3U);
   if (SOCPack_PreEmptySOC_mpct > 30000) {
     SOCPack_PreEmptySOC_mpct = 30000;

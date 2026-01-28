@@ -61,7 +61,9 @@ void usb_dpdm_port0_switch(bool en)
 	}
 	else
 	{
+		// GPA->I_EN.BITS.PIN0 = 1;
 		GPA->MODE.BITS.PIN0 = 0; //00:SCL1_S 01:PA0 10:UART2_TXD 11:DP_C
+		// GPA->I_EN.BITS.PIN1 = 1;
 		GPA->MODE.BITS.PIN1 = 0; //00:SDA1_S 01:PA1 10:UART2_RXD 11:DM_C
 	}
 	VIC_vModuleEnable();
