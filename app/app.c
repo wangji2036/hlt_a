@@ -49,7 +49,7 @@ void apl_task_event_handler(uint32_t event)
 		case APL_EVT_250ms_POLL://250ms
 			ui_update();
 			extern uint16_t cell2_voltage;
-			cell2_voltage = hal_badc_meas(_BADC_CH_PD0_ADC8) * 1.5;
+			cell2_voltage = hal_badc_meas(_BADC_CH_PC7_ADC4) * 1.5;
 		    printk("cell2_voltage = %d\n",cell2_voltage);
 
 

@@ -274,12 +274,11 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
 			}
 			break;
 		case _BADC_CH_PB6_ADC7:
-			if (tmp > 0)
-			{
-				//rst = tmp * 72 / 10;
-				rst = tmp * 84 / 10;
-				if (rst < 1) rst = 1;
-			}
+				if (tmp > 0)
+				{
+					rst = tmp;
+					if (rst < 1) rst = 1;
+				}
 			break;
 		case _BADC_CH_PD0_ADC8:
 			if (tmp > 0)

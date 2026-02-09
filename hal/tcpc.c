@@ -81,7 +81,7 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 				if(timeout0 >= 100)
 				{
 					timeout0 = 0;
-					printk("vbus0 timeout\n");
+					//printk("vbus0 timeout\n");
 					return true;
 				}
 			}
@@ -99,7 +99,7 @@ bool hal_tcpc_vbus_is_removed(uint8_t tc_index)
 				if(timeout0 >= 100)
 				{
 					timeout0 = 0;
-					printk("vbus1 timeout\n");
+					//printk("vbus1 timeout\n");
 					return true;
 				}
 			}
@@ -144,12 +144,12 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 {
 	if(tc_index == 0)
 	{
-		buckboost_ops.typca_dischg_en(en);
+		buckboost_ops.typcb_dischg_en(en);
 	}
 
 	if(tc_index == 1)
 	{
-		buckboost_ops.typcb_dischg_en(en);
+		buckboost_ops.typca_dischg_en(en);
 	}
 }
 
@@ -157,18 +157,19 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 
 void hal_tcpc_set_gate_en(uint8_t tc_index,bool en)
 {
-	printk("gate[%d]:%d\n",tc_index,en);
+	//printk("gate[%d]:%d\n",tc_index,en);
 	if(tc_index == 0)
-		buckboost_set_typeca_gate_en(en);
+	buckboost_set_typecb_gate_en(en);
 	else if(tc_index == 1)
-		buckboost_set_typecb_gate_en(en);
+	buckboost_set_typeca_gate_en(en);
+		
 	else if(tc_index == 2)
 		buckboost_set_usb_a_gate_en(en);
 }
 
 void hal_tcpc_set_source_mode(enum buckboost_mode mode)
 {
-	printk("set buckboost mode = %d\n",mode);
+	//printk("set buckboost mode = %d\n",mode);
 	buckboost_set_work_mode(mode);
 }
 void hal_tcpc_set_snk_charge_current(uint16_t ibat,uint16_t ibus)

@@ -200,7 +200,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 		g_u8Tmr0IntHaved_USBPD = 1;
 		g_u16Tmr0IntCnt_USBPD  = 1;
 	}
-	GPC->DOUT.BITS.PIN8 ^= 1;//1ms
+	//GPC->DOUT.BITS.PIN8 ^= 1;//1ms
 //	GPA->DOUT.BITS.PIN4 ^= 1;
 //	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();

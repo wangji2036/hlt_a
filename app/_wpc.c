@@ -67,7 +67,7 @@ static void wpc_pkt_print(void)
 	len += 2;
 	if (len != gd->wpc_pkt.len)
 	{
-		printk("\r\n error ---------------> %d %d", len, gd->wpc_pkt.len);
+		//printk("\r\n error ---------------> %d %d", len, gd->wpc_pkt.len);
 	}
 
 #if 0

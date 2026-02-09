@@ -319,6 +319,14 @@ void buckboost_protection_handle(void)
 
 			//printk("vbus = %d\n",g_buckboost.adc_vbus);
 
+			if(status & VBUS_FAULT_VBUS_NTC)
+			{
+				printk("\r\n[VBUS_NTC] VBUS_FAULT_VBUS_NTC triggered!");
+				printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d", gd->typec_ntc_lock, gd->bat_ntc_lock_flag);
+				printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
+					gd->sys_infos.ntc_temp_typec, g_buckboost.batTemp, gd->sys_infos.ntc_temp_wpc);
+			}
+
 			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT |VBUS_FAULT_VBUS_NTC))
 			{
 				//lock

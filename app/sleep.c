@@ -651,14 +651,7 @@ void RST_vCheck(void)
 	hal_uart_init(UART1);
 #endif
 
-	/* PC8 */
-	GPC->I_EN.BITS.PIN8 = 0;
-	GPC->O_EN.BITS.PIN8 = 1;
-	GPC->DOUT.BITS.PIN8 = 1;
-	GPC->ODEN.BITS.PIN8 = 0;
-	GPC->PUEN.BITS.PIN8 = 0;
-	GPC->PDEN.BITS.PIN8 = 0;
-	GPC->MODE.BITS.PIN8 = 01; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
+
 
 		sleep_printk("\r\n sleep check");
 		gd->idle_to_sleep_cnt = 0;

@@ -107,7 +107,7 @@ int16_t fml_ntc_temp_get_typec(void)
 	}
 	else
 	{
-		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB2_ADC2);
+		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB6_ADC7);
 	}
 
 

@@ -1426,7 +1426,7 @@ void port_manager_event_handle(uint32_t event)
 		case PORT_ENUM_EVT_PORT0_CONNECT_CLOSED:
 			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port0_connect_closed();
-			buckboost_ops.typca_dischg_en(true);
+			buckboost_ops.typcb_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT0_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();
@@ -1448,7 +1448,7 @@ void port_manager_event_handle(uint32_t event)
 		case PORT_ENUM_EVT_PORT1_CONNECT_CLOSED:
 			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port1_connect_closed();
-			buckboost_ops.typcb_dischg_en(true);
+			buckboost_ops.typca_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT1_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();
