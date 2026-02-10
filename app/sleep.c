@@ -424,6 +424,7 @@ void SLP_vSleepToSleep(void)
 	GPD->I_EN.BITS.PIN5 = 1;
 	GPD->MODE.BITS.PIN5 = 0; //00:PD5 01:ECAP2 10:RESERVED 11:RESERVED
 	delay_1ms(3);
+
 	hal_gpio_init_default();
     // key wake up start
 	GPC->I_EN.BITS.PIN6 = 1;

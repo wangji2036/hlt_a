@@ -38,6 +38,9 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
+	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
+	
 	VIC_vModuleDisable();
 
 	hal_wdt_init();
