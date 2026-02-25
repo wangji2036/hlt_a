@@ -274,6 +274,7 @@ void buckboost_protection_handle(void)
 	else
 	{
 		cnt = 0;
+        gd->bat_dead_flag = 0;
 	}
 	 //----1014
 
