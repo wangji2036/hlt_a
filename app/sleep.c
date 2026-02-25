@@ -664,12 +664,14 @@ void RST_vCheck(void)
 #if CONFIG_NEW_CCC_LOG_ENABLE
 				{
 					uint32_t sleep_ms = (tmr_cnt >> 4) - 30; // -30ms empirical correction, re-calibrate on hardware
+					VIC_vModuleDisable(); // Protect 32-bit read-modify-write from TMR1 ISR
 					gd->Bat_RTC_Milliseconds += sleep_ms;
 					if (gd->Bat_RTC_Milliseconds >= 1000) {
 						uint32_t extra = gd->Bat_RTC_Milliseconds / 1000;
 						gd->Bat_RTC_Milliseconds %= 1000;
 						gd->Bat_RTC_Seconds += extra;
 					}
+					VIC_vModuleEnable();
 				}
 #endif
 				//sleep_printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
