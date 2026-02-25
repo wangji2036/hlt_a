@@ -246,7 +246,8 @@ void buckboost_protection_handle(void)
 	}
 	if(g_buckboost.adc_vbat < 6000)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
-		cnt++;
+		printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);    
+        cnt++;
 		if(cnt >= 10)
 		{
 			//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)
@@ -255,10 +256,12 @@ void buckboost_protection_handle(void)
 			{
 				status |= VBUS_FUALT_VBAT_UVP;
 				gd->bat_dead_flag = 1;
+				printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);
 			}
 			else
 			{
 				gd->bat_dead_flag = 0;
+				printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d (sink,cleared)", g_buckboost.adc_vbat, gd->bat_dead_flag);
 				if(pdlib_get_deadbat() == 0)
 				{
 					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
