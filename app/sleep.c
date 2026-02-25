@@ -661,6 +661,17 @@ void RST_vCheck(void)
 			case RST_SRC_1PTIMER:
 				tmr_cnt = TMR0->LOAD_CNT.WORD;
 				gd->Bat_RTC_Timer +=  tmr_cnt >> 2;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+				{
+					uint32_t sleep_ms = (tmr_cnt >> 4) - 30; // -30ms empirical correction, re-calibrate on hardware
+					gd->Bat_RTC_Milliseconds += sleep_ms;
+					if (gd->Bat_RTC_Milliseconds >= 1000) {
+						uint32_t extra = gd->Bat_RTC_Milliseconds / 1000;
+						gd->Bat_RTC_Milliseconds %= 1000;
+						gd->Bat_RTC_Seconds += extra;
+					}
+				}
+#endif
 				//sleep_printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{

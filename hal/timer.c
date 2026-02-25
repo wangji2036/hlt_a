@@ -220,6 +220,12 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 		key_handle_10ms();
 	}
 	gd->Bat_RTC_Timer ++;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	if (++gd->Bat_RTC_Milliseconds >= 1000) {
+		gd->Bat_RTC_Milliseconds = 0;
+		gd->Bat_RTC_Seconds++;
+	}
+#endif
 }
 
 /**

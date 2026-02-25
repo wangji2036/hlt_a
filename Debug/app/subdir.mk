@@ -6,6 +6,7 @@
 C_SRCS += \
 ../app/_wpc.c \
 ../app/app.c \
+../app/bat_record.c \
 ../app/epp.c \
 ../app/fod.c \
 ../app/gui.c \
@@ -32,6 +33,7 @@ C_SRCS += \
 OBJS += \
 ./app/_wpc.o \
 ./app/app.o \
+./app/bat_record.o \
 ./app/epp.o \
 ./app/fod.o \
 ./app/gui.o \
@@ -58,6 +60,7 @@ OBJS += \
 C_DEPS += \
 ./app/_wpc.d \
 ./app/app.d \
+./app/bat_record.d \
 ./app/epp.d \
 ./app/fod.d \
 ./app/gui.d \

@@ -10,6 +10,7 @@
 #include "gui.h"
 #include "app.h"
 #include "ask.h"
+#include "bat_record.h"
 
 #define T_APP_250ms_POLL    250
 #define T_APP_100ms_POLL    100
@@ -117,6 +118,9 @@ void apl_task_event_handler(uint32_t event)
 		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
 			fml_tdie_otp_check(gd->sys_infos.die_temp);
 			fml_tdie_utp_check(gd->sys_infos.die_temp);
+#if CONFIG_NEW_CCC_LOG_ENABLE
+			battery_record_periodic_check();
+#endif
 			break;
 		case APL_EVT_010ms_POLL:
 			//detectSingleKey();

@@ -72,4 +72,17 @@
 
 #define SHIP_MODE_CNT  30                       // ship mode 30 times Q wake-up and no RX,
 
+/*----------- New CCC Log Feature -----------*/
+#define CONFIG_NEW_CCC_LOG_ENABLE       1
+#define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV threshold (mV); CV=4400mV, +50mV margin
+#define CHRG_NTC_OT_TEMP_VALUE          600     // Over-temperature threshold (0.1degC = 60.0degC)
+
+#define CONFIG_RTC_USE_CUSTOM_TIME      1
+#define CONFIG_RTC_DEFAULT_YEAR         2026
+#define CONFIG_RTC_DEFAULT_MONTH        2
+#define CONFIG_RTC_DEFAULT_DAY          25
+#define CONFIG_RTC_DEFAULT_HOUR         0
+#define CONFIG_RTC_DEFAULT_MINUTE       0
+#define CONFIG_RTC_DEFAULT_SECOND       0
+
 #endif /* CONFIG_H_ */

@@ -6,10 +6,126 @@
 #include "adp.h"
 #include "ask.h"
 #include "fsk.h"
-
+#include "config.h"
+//0~15ff  LDROM
+//1400~15ff log
+//1600~17FF Q/freq calibration value, gauge.etc.
+// 1800~19ff Product information
+#define AP_CFG_ROM_ADDR_LOG         (0x00001400)
+#define AP_CFG_ROM_ADDR_PRO_INFO    (0x00001800)
 #define AP_CFG_ROM_ADDR_BASE    (0x00001600)
 #define AP_CFG_RAM_ADDR_BASE    (0x20000000)
 #define G_DATA_RAM_ADDR_BASE    (0x20000200)
+#if CONFIG_NEW_CCC_LOG_ENABLE
+// (Product information Flash address definitions)
+#define PRODUCT_INFO_FIELD_SIZE 20      // 20 bytes per info
+#define PRODUCT_INFO_VERSION    0x0001  // - version magic
+#define ADDR_MANUFACTURER_NAME    (AP_CFG_ROM_ADDR_PRO_INFO + 0)   // manufacturer
+#define ADDR_MODEL_NAME           (AP_CFG_ROM_ADDR_PRO_INFO  + 20)  // model
+#define ADDR_BATTERY_MFR          (AP_CFG_ROM_ADDR_PRO_INFO  + 40)  // bat manufacturer
+#define ADDR_BATTERY_MODEL        (AP_CFG_ROM_ADDR_PRO_INFO  + 60)  // bat model
+#define ADDR_BATTERY_PROD_DATE    (AP_CFG_ROM_ADDR_PRO_INFO  + 80)  // battery date
+#define ADDR_PRODUCT_INFO_VERSION (AP_CFG_ROM_ADDR_PRO_INFO  + 100) // version identify
+
+// Product information structure)
+typedef struct {
+	char manufacturer_name[PRODUCT_INFO_FIELD_SIZE];  //  (Manufacturer name)
+	char model_name[PRODUCT_INFO_FIELD_SIZE];         //   (Model name)
+	char battery_mfr[PRODUCT_INFO_FIELD_SIZE];        //   (Battery manufacturer)
+	char battery_model[PRODUCT_INFO_FIELD_SIZE];      //  (Battery model)
+	char battery_prod_date[PRODUCT_INFO_FIELD_SIZE];  //  (Battery production date)
+} ProductInfo_t;  // Total: 20 * 5 = 100 bytes
+
+/********************* Battery Record Structures *********************/
+#define MAX_RECORDS             5           // Maximum number of records
+
+// Bitfield Access Macros
+// ExceptionCache_t.status_flags bitfield layout:
+// bit[0]:   cell1_tracking     - Cell1 overvoltage tracking flag
+// bit[1]:   cell2_tracking     - Cell2 overvoltage tracking flag
+// bit[2]:   temp_tracking      - Temperature abnormal tracking flag
+// bit[3-5]: temp_event_type    - Temperature event type (0=none, 2=over, 3=under)
+// bit[6-7]: charge_state       - Charge/discharge state (0=idle, 1=charge, 2=discharge)
+
+#define CACHE_GET_CELL1_TRACKING(cache)     ((cache)->status_flags & 0x01)
+#define CACHE_SET_CELL1_TRACKING(cache, v)  do { \
+    if (v) (cache)->status_flags |= 0x01; \
+    else (cache)->status_flags &= ~0x01; \
+} while(0)
+
+#define CACHE_GET_CELL2_TRACKING(cache)     (((cache)->status_flags >> 1) & 0x01)
+#define CACHE_SET_CELL2_TRACKING(cache, v)  do { \
+    if (v) (cache)->status_flags |= 0x02; \
+    else (cache)->status_flags &= ~0x02; \
+} while(0)
+
+#define CACHE_GET_TEMP_TRACKING(cache)      (((cache)->status_flags >> 2) & 0x01)
+#define CACHE_SET_TEMP_TRACKING(cache, v)   do { \
+    if (v) (cache)->status_flags |= 0x04; \
+    else (cache)->status_flags &= ~0x04; \
+} while(0)
+
+#define CACHE_GET_TEMP_EVENT_TYPE(cache)    (((cache)->status_flags >> 3) & 0x07)
+#define CACHE_SET_TEMP_EVENT_TYPE(cache, v) do { \
+    (cache)->status_flags = ((cache)->status_flags & 0xC7) | (((v) & 0x07) << 3); \
+} while(0)
+
+#define CACHE_GET_CHARGE_STATE(cache)       (((cache)->status_flags >> 6) & 0x03)
+#define CACHE_SET_CHARGE_STATE(cache, v)    do { \
+    (cache)->status_flags = ((cache)->status_flags & 0x3F) | (((v) & 0x03) << 6); \
+} while(0)
+
+// Timestamp structure (8 bytes)
+typedef struct {
+    uint16_t year;          // Year 2026-2099
+    uint8_t  month;         // Month 1-12
+    uint8_t  day;           // Day 1-31
+    uint8_t  hour;          // Hour 0-23
+    uint8_t  minute;        // Minute 0-59
+    uint8_t  second;        // Second 0-59
+    uint8_t  reserved;      // Alignment byte
+} TimeStamp_t;
+
+// Unified exception record structure (20 bytes)
+typedef struct {
+    TimeStamp_t timestamp;      // 8 bytes: Record timestamp
+    uint8_t  error_type;        // 1 byte: 0x01=overvoltage, 0x02=overtemp, 0x03=undertemp
+    uint8_t  sub_type;          // 1 byte: OV=cell_num, TEMP=charge_state
+    union {
+        struct {
+            uint16_t max_voltage;       // Cell max voltage (mV)
+            uint16_t total_voltage;     // Total voltage (mV)
+        } ov_data;
+        struct {
+            int16_t  max_temperature;   // Max temperature (0.1 deg C)
+            uint16_t reserved;
+        } temp_data;
+        uint8_t raw_data[6];
+    } data;                     // 6 bytes: Union data area
+    uint32_t record_id;         // 4 bytes: Record sequence number
+} BatteryExceptionRecord_t;     // Total: 20 bytes
+
+// Exception tracking cache (RAM) - optimized version
+typedef struct {
+    uint8_t  status_flags;          // Bitfield flags (use CACHE_GET/SET macros)
+    uint8_t  padding1;
+    uint16_t cell1_max_voltage;     // Cell1 realtime max voltage
+    uint16_t cell2_max_voltage;     // Cell2 realtime max voltage
+    int16_t  max_temperature;       // Realtime max temperature (0.1 deg C)
+    uint32_t ov_hour_start_seconds;    // Overvoltage window start seconds
+    uint32_t temp_hour_start_seconds;  // Temperature window start seconds
+} ExceptionCache_t;  // ~16 bytes
+
+// RAM persistent storage structure - optimized version
+typedef struct {
+    uint32_t magic;                 // Magic value
+    uint8_t  exception_counter;     // Exception record total count 0-255
+    uint8_t  write_ptr;             // Circular buffer write pointer 0-4
+    uint16_t padding1;              // Alignment to 4-byte boundary
+    BatteryExceptionRecord_t records[MAX_RECORDS];  // 5 exception records
+    uint16_t checksum;              // Simple additive checksum
+} BatteryRecordStorage_t;  // ~110 bytes
+#endif
 
 struct ap_t
 {
@@ -128,6 +244,11 @@ struct ap_t
 	uint16_t fs_stable_value;
 	uint16_t low_k_val;
 	uint8_t ddm_check_interval_long;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	// Battery exception record module data
+	ExceptionCache_t exception_cache;       // fault tracking module (~16 bytes)
+	BatteryRecordStorage_t record_storage;  // Flash record ram (~110 bytes)
+#endif
 };
 
 struct gd_t
@@ -408,7 +529,12 @@ struct gd_t
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
 	 uint64_t Bat_RTC_Timer;
-	 
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	 // System runtime (seconds + milliseconds) - 136 years range
+	 uint32_t Bat_RTC_Seconds;      // Running seconds: 0 ~ 4,294,967,295 (~136 years)
+	 uint16_t Bat_RTC_Milliseconds; // Sub-second precision: 0 ~ 999 ms
+#endif
+
 	 int32_t SOC_RawSOC_mpct;
 	 uint32_t SOC_SleepTime_s;
 
@@ -451,5 +577,11 @@ extern volatile struct gd_t *gd;
 void ap_data_init(void);
 void lib_para_init(void);
 void gd_data_init(void);
+#if CONFIG_NEW_CCC_LOG_ENABLE
+// Product information read/write functions
+void product_info_read(ProductInfo_t *info);
+void product_info_write(const ProductInfo_t *info);
+void product_info_print(void);
+#endif
 
 #endif /* G_DATA_H_ */

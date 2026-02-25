@@ -26,6 +26,7 @@
 #include"sleep.h"
 #include"bsp.h"
 #include "bat.h"
+#include "bat_record.h"
 
 uint32_t rrlen;
 
@@ -106,6 +107,9 @@ int main(void)
 	hal_wdt_feed();
 	fml_adp_init();
 
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	battery_record_init();
+#endif
 	osal_init();
 	apl_task_init();
 

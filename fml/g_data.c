@@ -1,9 +1,62 @@
 #include "regdef.h"
 #include "printk.h"
 #include "g_data.h"
+#include "config.h"
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
+#if CONFIG_NEW_CCC_LOG_ENABLE
+/********************* RTC Time Initialization *********************/
+// Helper: Convert date/time to seconds since 2026-01-01
+static uint32_t datetime_to_seconds(uint16_t year, uint8_t month, uint8_t day,
+                                     uint8_t hour, uint8_t minute, uint8_t second) {
+    // If year < 2026, return 0 (start from 2026)
+    if (year < 2026) {
+        return 0;
+    }
+
+    // Calculate days since 2026-01-01
+    uint32_t total_days = 0;
+
+    // Add days for complete years from 2026 to (year-1)
+    for (uint16_t y = 2026; y < year; y++) {
+        total_days += (y % 4 == 0) ? 366 : 365;
+    }
+
+    // Add days for complete months in current year
+    static const uint8_t month_days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    for (uint8_t m = 1; m < month; m++) {
+        total_days += month_days[m - 1];
+        if (m == 2 && (year % 4 == 0)) {
+            total_days += 1;  // Leap year February
+        }
+    }
+
+    // Add days in current month (day - 1 because we count from day 1)
+    total_days += (day - 1);
+
+    // Convert to seconds and add time
+    uint32_t total_seconds = total_days * 86400UL +
+                             (uint32_t)hour * 3600 +
+                             (uint32_t)minute * 60 +
+                             second;
+
+    return total_seconds;
+}
+
+// Get default RTC seconds based on config
+static uint32_t get_default_rtc_seconds(void) {
+#if (CONFIG_RTC_USE_CUSTOM_TIME == 1)
+    // Use custom fixed time from config.h
+    return datetime_to_seconds(CONFIG_RTC_DEFAULT_YEAR,
+                               CONFIG_RTC_DEFAULT_MONTH,
+                               CONFIG_RTC_DEFAULT_DAY,
+                               CONFIG_RTC_DEFAULT_HOUR,
+                               CONFIG_RTC_DEFAULT_MINUTE,
+                               CONFIG_RTC_DEFAULT_SECOND);
+#endif
+}
+#endif
 uint8_t power_on_cnt = 0;
 void ap_data_init(void)
 {
@@ -121,6 +174,11 @@ void ap_data_init(void)
 
 	printk("\r\n base_q [%d]", ap->q_factor_base_value);
 	printk("\r\n base_fre [%d]", ap->fs_base_value);
+
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	// Print product information - read directly from Flash, no global RAM usage
+	product_info_print();
+#endif
 }
 
 bool tc_power_on = false;
@@ -174,7 +232,20 @@ void gd_data_init(void)
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
 		gd->Bat_RTC_Timer = 0;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+		gd->Bat_RTC_Seconds = get_default_rtc_seconds();  // Initialize with default time
+		gd->Bat_RTC_Milliseconds = 0;
+
 		printk("\r\n ------------------------------------------------------------poweron reset");
+#if (CONFIG_RTC_USE_CUSTOM_TIME == 1)
+		printk("\r\n RTC init: %lu seconds (custom: %d-%02d-%02d %02d:%02d:%02d)",
+		       gd->Bat_RTC_Seconds,
+		       CONFIG_RTC_DEFAULT_YEAR, CONFIG_RTC_DEFAULT_MONTH, CONFIG_RTC_DEFAULT_DAY,
+		       CONFIG_RTC_DEFAULT_HOUR, CONFIG_RTC_DEFAULT_MINUTE, CONFIG_RTC_DEFAULT_SECOND);
+#endif
+#else
+		printk("\r\n ------------------------------------------------------------poweron reset");
+#endif
 	}
 
 	gd->power_on_magic = 0xaaaa;
@@ -225,3 +296,95 @@ void lib_para_init(void)
 	#endif
 		dead_battery_voltage = CONFIG_NU6801_BATLOW_VOLT;
 }
+#if CONFIG_NEW_CCC_LOG_ENABLE
+/********************* Product Information Functions *********************/
+
+/**
+ * @brief Read product information from Flash to RAM
+ * @param info Receive buffer
+ */
+void product_info_read(ProductInfo_t *info) {
+	if (info == NULL) return;
+
+	uint32_t addr;
+	uint8_t i;
+
+	// (Read manufacturer name)
+	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
+		info->manufacturer_name[i] = __read_08bits(ADDR_MANUFACTURER_NAME + i);
+	}
+
+	// (Read model name)
+	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
+		info->model_name[i] = __read_08bits(ADDR_MODEL_NAME + i);
+	}
+
+	//(Read battery manufacturer)
+	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
+		info->battery_mfr[i] = __read_08bits(ADDR_BATTERY_MFR + i);
+	}
+
+	// (Read battery model)
+	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
+		info->battery_model[i] = __read_08bits(ADDR_BATTERY_MODEL + i);
+	}
+
+	//  (Read battery production date)
+	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
+		info->battery_prod_date[i] = __read_08bits(ADDR_BATTERY_PROD_DATE + i);
+	}
+}
+
+void product_info_write(const ProductInfo_t *info) {
+	uint16_t i;
+	const uint8_t *src_data;
+
+	// (Erase the entire page)
+	hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
+
+	// 2. (Write product information - 100 bytes, 4-byte aligned)
+	src_data = (const uint8_t *)info;
+
+	for (i = 0; i < sizeof(ProductInfo_t); i += 4) {
+		uint32_t word = (src_data[i+3] << 24) | (src_data[i+2] << 16) | (src_data[i+1] << 8) | src_data[i];
+		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, word);
+	}
+	// 3. (Write version marker to distinguish new/old format)
+	hal_fmc_write_word(ADDR_PRODUCT_INFO_VERSION, PRODUCT_INFO_VERSION);
+}
+
+void product_info_print(void) {
+	char temp_buf[PRODUCT_INFO_FIELD_SIZE + 1];  // (21 bytes temp buffer)
+	uint16_t i;
+	uint32_t addr;
+
+	// (Field addresses and labels)
+	static const struct {
+		uint32_t addr;
+		const char *label;
+	} fields[] = {
+		{ ADDR_MANUFACTURER_NAME, "Manufacturer" },
+		{ ADDR_MODEL_NAME,        "Model" },
+		{ ADDR_BATTERY_MFR,       "Battery MFR" },
+		{ ADDR_BATTERY_MODEL,     "Battery Model" },
+		{ ADDR_BATTERY_PROD_DATE, "Battery Date" }
+	};
+
+	printk("\r\n===== Product Information =====");
+
+	// (Loop to read and print each field)
+	for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
+		addr = fields[i].addr;
+
+		// (Read field from Flash to temp buffer)
+		for (uint8_t j = 0; j < PRODUCT_INFO_FIELD_SIZE; j++) {
+			temp_buf[j] = __read_08bits(addr + j);
+		}
+		temp_buf[PRODUCT_INFO_FIELD_SIZE] = '\0';  // (Ensure null termination)
+
+		printk("\r\n%-13s: %s", fields[i].label, temp_buf);
+	}
+
+	printk("\r\n===============================");
+}
+#endif
