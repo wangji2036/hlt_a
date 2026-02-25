@@ -471,27 +471,27 @@ void SLP_vSleepToSleep(void)
 	else
 	{
 		hal_wdt_feed();
-	// 	_SET_I2CM_SDA_OUTPUT();
-	// 	_SET_I2CM_SCL_OUTPUT();
-	// 	uint8_t read;
-	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
-	// //	uint8_t read;
-	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
-	// 	hal_wdt_feed();
+		_SET_I2CM_SDA_OUTPUT();
+		_SET_I2CM_SCL_OUTPUT();
+		uint8_t read;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x0F));
+	//	uint8_t read;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x07));
+		hal_wdt_feed();
 
-	// 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,read & (~0x11));
 
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0xFF);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,0xFF);
 
-	// /*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
-	// 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
+	/*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
 
-	// 	ubsd_wb7720_sleep();
+	 	ubsd_wb7720_sleep();
 	}
 #endif
     GPA->PDEN.BITS.PIN0 = 1;
