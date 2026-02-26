@@ -25,9 +25,8 @@ void mcu_stop_mode(void);
 #define REG_FW_VERSION_MINOR         0x2A    // ?????
 #define REG_HW_VERSION               0x2B    // ????
 #define REG_CELL_COUNT               0x2C    // ????
-#define REG_CHARGER_TYPE             0x37    // ??????
-#define REG_SLEEP_CMD                0x44    // ????
-#define REG_WAKE_CMD                 0x45    // ????
+/* 0x37~0x4D: 异常日志滚动写入区 (REG_EXC_*, 见 config.h) */
+/* 0x4E~0x4F: REG_SLEEP_CMD / REG_WAKE_CMD (见 config.h) */
 
 #define REG_CAPACITY_MAH             0x01    // ???(mAh)
 #define REG_VBAT_MV                  0x05    // ????(mV)
@@ -50,15 +49,11 @@ void mcu_stop_mode(void);
 #define REG_CELL3_VOLTAGE_MV         0x31    // ??3??(mV)
 #define REG_CELL4_VOLTAGE_MV         0x33    // ??4??(mV)
 #define REG_PCB_TEMP_DC              0x35    // PCB??(0.1?)
-#define REG_DISCHARGE_CUTOFF_VOLTAGE 0x38    // ??????(mV)
-#define REG_CHARGE_CUTOFF_VOLTAGE    0x3A    // ??????(mV)
+/* 0x38~0x4D 已分配给异常日志区 (见 config.h REG_EXC_*), 旧定义已移除:
+ * REG_DISCHARGE_CUTOFF_VOLTAGE(0x38), REG_CHARGE_CUTOFF_VOLTAGE(0x3A),
+ * REG_TOTAL_CHARGE_CAPACITY(0x3C), REG_TOTAL_DISCHARGE_CAPACITY(0x40) */
 
-#define REG_TOTAL_CHARGE_CAPACITY    0x3C    // ??????(mAh)
-#define REG_TOTAL_DISCHARGE_CAPACITY 0x40    // ??????(mAh)
-
-// ?????
-#define REG_SLEEP           				 0x44    // ????????
-#define REG_WAKEUP          			 	 0x45    // ????????
+/* REG_SLEEP_CMD(0x4E) / REG_WAKE_CMD(0x4F) 已迁移至 config.h (原 0x44/0x45 落在异常日志区内) */
 
 #define REG_RESERVED_START           0x46    // ????????
 #define REG_RESERVED_END             0xFF    // ????????
@@ -133,6 +128,47 @@ uint16_t crc16(const uint8_t* p, uint16_t n){
 
 static uint8_t report_buffer[64] ;
 static uint8_t index = 0;
+
+/* -----------------------------------------------------------------------
+ * 异常日志本地缓存系统 (v1.3)
+ * WB7720 在每次组装 Type 0x01 时顺带检查 i2c_buff 异常日志区,
+ * 按 record_id 去重, 最多缓存 EXC_CACHE_MAX(5) 条 20B 记录.
+ * ----------------------------------------------------------------------- */
+static uint8_t exc_cache[EXC_CACHE_MAX][EXC_RECORD_SIZE];  /* 5x20B 本地缓存 */
+static uint8_t exc_cache_count = 0;   /* 当前缓存条数 (0~5) */
+static uint8_t exc_page_idx = 0;      /* Type 0x02 输出页码 (0~2, 循环) */
+
+/* 从 20B 记录偏移 +16 提取 u32 LE record_id */
+static uint32_t get_record_id(const uint8_t *rec)
+{
+    return (uint32_t)rec[16]
+         | ((uint32_t)rec[17] << 8)
+         | ((uint32_t)rec[18] << 16)
+         | ((uint32_t)rec[19] << 24);
+}
+
+/* 检查 i2c_buff[REG_EXC_RECORD] 中的记录, 若 record_id 非 0 且不在缓存中则追加 */
+static void exc_cache_update(void)
+{
+    const uint8_t *src = &i2c_buff[REG_EXC_RECORD];
+    uint32_t rid = get_record_id(src);
+
+    /* record_id == 0 表示无有效记录, 跳过 */
+    if (rid == 0) return;
+
+    /* 缓存已满, 不再追加 */
+    if (exc_cache_count >= EXC_CACHE_MAX) return;
+
+    /* 按 record_id 去重: 检查是否已在缓存中 */
+    for (uint8_t i = 0; i < exc_cache_count; i++) {
+        if (get_record_id(exc_cache[i]) == rid) return;
+    }
+
+    /* 追加到缓存 */
+    memcpy(exc_cache[exc_cache_count], src, EXC_RECORD_SIZE);
+    exc_cache_count++;
+}
+
 void update_report_buffer_0(void)
 {
 	memset(report_buffer, 0, sizeof(report_buffer));
@@ -198,7 +234,7 @@ void update_report_buffer_0(void)
 	report_buffer[39] = i2c_buff[REG_ERR_OVERVOLT_CNT + 1];//31
 	report_buffer[40] = i2c_buff[REG_ERR_OVERCURR_CNT];//32             //| 17 | ErrOverCurrCnt | u16 | ??| 过流异常次数 |
 	report_buffer[41] = i2c_buff[REG_ERR_OVERCURR_CNT + 1];//33
-	report_buffer[42] = 3;//34                                           //| 18 | ExceptionLogCount | u8 | ??| 暂无对应寄存器, 硬编码 |
+	report_buffer[42] = exc_cache_count;//34                              //| 18 | ExceptionLogCount | u8 | 条 | 来自 exc_cache 实际缓存条数 |
 
 
 
@@ -215,37 +251,43 @@ void update_report_buffer_0(void)
 	crc = crc16(&report_buffer[3],41 + sizeof(Brand_STRING) - 1);//48
 	report_buffer[44 + sizeof(Brand_STRING) -1] = crc >>0;//35
 	report_buffer[45 + sizeof(Brand_STRING) -1] = crc >>8;//36
+
+	/* 每次组装 Type 0x01 遥测报告后, 顺带检查异常日志区并缓存新记录 */
+	exc_cache_update();
 }
 
 
-/* Type 0x02 异常日志, 每条 20B 格式 (v1.2)
+/* Type 0x02 异常日志, 从 exc_cache 分页输出 (v1.3)
+ *
+ * 分页策略 (每页最多 2 条, 共 3 页):
+ *   page 0: exc_cache[0] + exc_cache[1]  (OffsetPage=0)
+ *   page 1: exc_cache[2] + exc_cache[3]  (OffsetPage=1)
+ *   page 2: exc_cache[4]                 (OffsetPage=2)
+ * 页码由 exc_page_idx 自动推进: 0→1→2→0→...
+ * 无记录时发 ReturnCount=0 的空包 (Len=2).
+ *
  * Payload (从偏移9):
  *   +0: OffsetPage (u8)
- *   +1: ReturnCount (u8)
- *   +2..(2 + ReturnCount*20 - 1): ExceptionLogs, 每条 20B:
- *       [0~1]  Year (u16 LE)
- *       [2]    Month (u8)
- *       [3]    Day (u8)
- *       [4]    Hour (u8)
- *       [5]    Minute (u8)
- *       [6]    Second (u8)
- *       [7]    Reserved (u8, 0x00)
- *       [8]    error_type (u8): 0x01=OV过压, 0x02=OT过温, 0x03=UT欠温
- *       [9]    sub_type (u8)
- *       [10~11] data_low (u16 LE)
- *       [12~13] data_high (u16 LE)
- *       [14~15] Padding (u16, 0x0000)
- *       [16~19] record_id (u32 LE)
- * Len = ReturnCount * 20 + 2
- * CRC = crc16(&report_buffer[3], 6 + Len)
- * NOTE: 数据保持硬编码测试数据 (Phase 2 依赖 NU17112 真实路径)
+ *   +1: ReturnCount (u8, 0~2)
+ *   +2...: ExceptionLogs (20B × ReturnCount)
+ *
+ * 最大包: 9 + 2 + 40 + 2 = 53B (在 64B 限制内)
  */
 void update_report_buffer_1(void)
 {
     memset(report_buffer, 0, sizeof(report_buffer));
 
-    const uint8_t RETURN_COUNT = 2;  /* 本包返回 2 条记录 */
+    /* 计算当前页的起始索引和返回条数 */
+    uint8_t page_start = exc_page_idx * 2;  /* 0, 2, 4 */
+    uint8_t return_count = 0;
+    if (exc_cache_count > page_start) {
+        return_count = exc_cache_count - page_start;
+        if (return_count > 2) return_count = 2;
+    }
 
+    uint16_t len = (uint16_t)return_count * EXC_RECORD_SIZE + 2;
+
+    /* --- 协议头 (9B) --- */
     report_buffer[0] = 0x05;  /* SOF[0] */
     report_buffer[1] = 0xA5;  /* SOF[1] */
     report_buffer[2] = 0x5A;  /* SOF[2] */
@@ -254,65 +296,29 @@ void update_report_buffer_1(void)
     report_buffer[4] = REPORT_TYPE_EXCEPTION_LOG;     /* Type = 0x02 */
     report_buffer[5] = index++;                       /* Seq Lo */
     report_buffer[6] = 0;                             /* Seq Hi */
-    /* Len = ReturnCount * 20 + 2 */
-    uint16_t len = (uint16_t)RETURN_COUNT * 20 + 2;
     report_buffer[7] = (uint8_t)(len >> 0);           /* Len Lo */
     report_buffer[8] = (uint8_t)(len >> 8);           /* Len Hi */
 
-    report_buffer[9]  = 0;             /* OffsetPage */
-    report_buffer[10] = RETURN_COUNT;  /* ReturnCount */
+    /* --- Payload --- */
+    report_buffer[9]  = exc_page_idx;     /* OffsetPage */
+    report_buffer[10] = return_count;     /* ReturnCount */
 
-    /* ---------- 记录1: 2026-01-08 18:43:23, OT过温(0x02), 充电态(0x00), 45.0 degC ---------- */
-    uint8_t *rec = &report_buffer[11];
-    rec[0]  = (uint8_t)(2026 >> 0);  /* Year Lo */
-    rec[1]  = (uint8_t)(2026 >> 8);  /* Year Hi */
-    rec[2]  = 1;                      /* Month */
-    rec[3]  = 8;                      /* Day */
-    rec[4]  = 18;                     /* Hour */
-    rec[5]  = 43;                     /* Minute */
-    rec[6]  = 23;                     /* Second */
-    rec[7]  = 0x00;                   /* Reserved */
-    rec[8]  = 0x02;                   /* error_type: OT过温 */
-    rec[9]  = 0x00;                   /* sub_type: 充电态 */
-    rec[10] = (uint8_t)(450 >> 0);    /* data_low Lo: 45.0 degC * 10 = 450 */
-    rec[11] = (uint8_t)(450 >> 8);    /* data_low Hi */
-    rec[12] = 0;                      /* data_high Lo (TEMP时=0) */
-    rec[13] = 0;                      /* data_high Hi */
-    rec[14] = 0;                      /* Padding Lo */
-    rec[15] = 0;                      /* Padding Hi */
-    rec[16] = (uint8_t)(1 >> 0);      /* record_id byte0 */
-    rec[17] = (uint8_t)(1 >> 8);      /* record_id byte1 */
-    rec[18] = (uint8_t)(1 >> 16);     /* record_id byte2 */
-    rec[19] = (uint8_t)(1 >> 24);     /* record_id byte3 */
+    /* 从 exc_cache 中 memcpy 记录到 report_buffer (20B 对齐) */
+    for (uint8_t i = 0; i < return_count; i++) {
+        memcpy(&report_buffer[11 + i * EXC_RECORD_SIZE],
+               exc_cache[page_start + i],
+               EXC_RECORD_SIZE);
+    }
 
-    /* ---------- 记录2: 2026-01-08 18:47:12, OV过压(0x01), 电芯1(0x01), 4250mV, 怹80400mV ---------- */
-    rec = &report_buffer[31];
-    rec[0]  = (uint8_t)(2026 >> 0);   /* Year Lo */
-    rec[1]  = (uint8_t)(2026 >> 8);   /* Year Hi */
-    rec[2]  = 1;                       /* Month */
-    rec[3]  = 8;                       /* Day */
-    rec[4]  = 18;                      /* Hour */
-    rec[5]  = 47;                      /* Minute */
-    rec[6]  = 12;                      /* Second */
-    rec[7]  = 0x00;                    /* Reserved */
-    rec[8]  = 0x01;                    /* error_type: OV过压 */
-    rec[9]  = 0x01;                    /* sub_type: 电芯1 */
-    rec[10] = (uint8_t)(4250 >> 0);    /* data_low Lo: max_voltage 4250mV */
-    rec[11] = (uint8_t)(4250 >> 8);    /* data_low Hi */
-    rec[12] = (uint8_t)(8400 >> 0);    /* data_high Lo: total_voltage 8400mV */
-    rec[13] = (uint8_t)(8400 >> 8);    /* data_high Hi */
-    rec[14] = 0;                       /* Padding Lo */
-    rec[15] = 0;                       /* Padding Hi */
-    rec[16] = (uint8_t)(2 >> 0);       /* record_id byte0 */
-    rec[17] = (uint8_t)(2 >> 8);       /* record_id byte1 */
-    rec[18] = (uint8_t)(2 >> 16);      /* record_id byte2 */
-    rec[19] = (uint8_t)(2 >> 24);      /* record_id byte3 */
-
-    /* CRC = crc16(&report_buffer[3], 6 + Len) */
+    /* --- CRC16 --- */
     uint16_t crc = crc16(&report_buffer[3], (uint16_t)(6 + len));
     uint16_t crc_pos = (uint16_t)(9 + len);
     report_buffer[crc_pos]     = (uint8_t)(crc >> 0);
     report_buffer[crc_pos + 1] = (uint8_t)(crc >> 8);
+
+    /* 页码自动推进: 0→1→2→0→... */
+    exc_page_idx++;
+    if (exc_page_idx > 2) exc_page_idx = 0;
 }
 
 
@@ -463,16 +469,16 @@ void user_loop(void) {
     }
 		
 
-		if(i2c_buff[REG_SLEEP])
+		if(i2c_buff[REG_SLEEP_CMD])
 		{
-			i2c_buff[REG_SLEEP] = 0;
+			i2c_buff[REG_SLEEP_CMD] = 0;
 			SysTick_DelayNticks((SystemCoreClock / 1000) * 100); // delay 100ms
 			mcu_stop_mode();
 		}
 		
-		if(i2c_buff[REG_WAKEUP])
+		if(i2c_buff[REG_WAKE_CMD])
 		{
-			i2c_buff[REG_WAKEUP] = 0;
+			i2c_buff[REG_WAKE_CMD] = 0;
 		usb_enable();
 		}
 		

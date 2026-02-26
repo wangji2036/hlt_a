@@ -1,12 +1,13 @@
 # USB 系统三方数据格式对照表
 
-**版本**: v1.1
+**版本**: v1.3
 **日期**: 2026-02-26
 **管理者**: powerbank-leader
 **适用项目**: ARUN N3C (NU17112 + NU6805 + WB7720)
 
-> **v1.1 变更**: 新增"PC 显示"列，标注哪些字段在 UI 中展示（基于 PRD v4.0 / UI 设计稿）。
-> 新增第五节：设备基本信息 (CMD_READ_DEVICE_INFO / Type 0x04)。
+> **v1.3 变更**: 第二节 §2.1 确认异常日志 i2c_buff 地址（0x37~0x4D，23B 滚动写入区）；
+> 新增 §2.3 PC 端汇总策略（record_id 去重）；修正第六节设备信息 Type 编号（0x04→0x03）；
+> 更新 Gap 表状态；修正章节编号。
 
 ---
 
@@ -65,14 +66,32 @@ Windows 上位机 (hidapi, 1Hz 轮询)
 
 ## 二、异常日志 Type 0x02 (NU17112 → WB7720 → PC)
 
-### 2.1 I2C 日志区 (暂定, 待实现)
+### 2.1 I2C 滚动写入区 (已定义，i2c_buff 0x37~0x4D)
 
-| i2c_buff 地址 | 字段 | 类型 | NU17112 数据源 |
-|--------------|------|------|--------------|
-| TBD (2B) | 日志元数据 | exception_counter(u8) + write_ptr(u8) | `record_storage.exception_counter/write_ptr` |
-| TBD (100B) | 日志条目数组 | `BatteryExceptionRecord_t[5]` (20B×5) | `record_storage.records[]` |
+**设计思路**: NU17112 最多存 5 条日志，HID 每包最多传 2 条（64B 限制）。
+采用「NU17112 每次写 1 条 → WB7720 本地缓存累积 → 分 3 包发给 PC」策略。
 
-> WB7720 尚未实现异常日志的 I2C 桥接。i2c_buff 地址范围待固件团队确认（Phase 2 任务）。
+| i2c_buff 地址 | 宏名 | 类型 | NU17112 数据源 | 说明 |
+|--------------|------|------|--------------|------|
+| 0x37 | REG_EXC_TOTAL_COUNT | u8 | `record_storage.exception_counter` | 当前有效记录总数 (0~5) |
+| 0x38 | REG_EXC_CURRENT_IDX | u8 | 内部滚动计数器 | 本次写入的记录序号 (0~total-1) |
+| 0x39 | REG_EXC_RESERVED | u8 | — | 保留，固定 0x00 |
+| 0x3A~0x4D | REG_EXC_RECORD | u8[20] | `record_storage.records[ridx]` | 当前 `BatteryExceptionRecord_t` |
+
+**NU17112 写入时序**:
+```
+每约 500ms（ubsd_wb7720_report_update 每轮结束）执行一次：
+  1. 写 i2c_buff[0x37] = total_count
+  2. 写 i2c_buff[0x38] = exc_cycle_idx
+  3. 写 i2c_buff[0x3A..0x4D] = records[ridx] (20B)
+  4. exc_cycle_idx = (exc_cycle_idx + 1) % total_count
+```
+约 2.5 秒（5 条 × 500ms）后 WB7720 可缓存全部记录。
+
+**WB7720 缓存策略**:
+- 维护 `static exc_cache[5]`（本地 100B），每次组装 Type 0x01 时顺带检查
+- 读 `i2c_buff[0x3A+16..+19]` 取 record_id，若未在缓存中则追加
+- 缓存满 5 条后停止追加（按 record_id 去重）
 
 ### 2.2 HID 报告格式 (每条 20 字节, 与 NU17112 `BatteryExceptionRecord_t` 完全对齐)
 
@@ -103,6 +122,27 @@ Windows 上位机 (hidapi, 1Hz 轮询)
 > **v1.1 变更说明**: Type 0x02 从 12B 升级为 20B，与 NU17112 `BatteryExceptionRecord_t` 原生格式对齐。
 > 旧 12B 格式 ErrType 映射 (0=温度/1=电流/2=电压) 与 NU17112 不一致，且缺少 sub_type，已废弃。
 > WB7720 桥接时直接 memcpy `BatteryExceptionRecord_t[]` 数据，无需字段转换。
+
+### 2.3 PC 端汇总策略
+
+5 条日志需 3 包才能传完，PC 需跨多个 round-robin 周期收集：
+
+| 步骤 | 操作 |
+|------|------|
+| 1 | 维护 `seen_record_ids = set()` 和 `exception_log = []` |
+| 2 | 收到 Type 0x02 包，遍历 ReturnCount 条记录 |
+| 3 | 读取每条的 record_id（偏移 +16，u32 LE） |
+| 4 | 若 record_id 不在 `seen_record_ids` 中，追加到 `exception_log`，加入 set |
+| 5 | 按 `timestamp`（Year/Month/.../Second）升序排列后展示 |
+| 6 | **断开 USB 重连时**，清空 `seen_record_ids` 和 `exception_log`，重新收集 |
+
+**预期时序**:
+```
+连接后 ~2.5s:  NU17112 已写完 5 条（WB7720 缓存满）
+连接后 ~5s:   第 1 个 Type 0x02 (page 0: 2条)
+连接后 ~10s:  第 2 个 Type 0x02 (page 1: 2条)
+连接后 ~15s:  第 3 个 Type 0x02 (page 2: 1条)  → 全部 5 条到齐
+```
 
 ---
 
@@ -153,51 +193,52 @@ Step 4: [0x0C][0x80][0x02][次Lo][次Hi]        写循环次数
 
 ---
 
-## 五、设备基本信息 Type 0x04 (NU17112 → WB7720 → PC)
+## 六、设备基本信息 Type 0x03 (NU17112 → WB7720 → PC)
 
-**触发**: 上位机连接后发一次 CMD_READ_DEVICE_INFO (0x02)，WB7720 回复 3 包。
+**触发**: 上位机连接后发 3 次 CMD_READ_DEVICE_INFO (0x02, sub_idx=0/1/2)，各返回 1 包。
 
-### 5.1 NU17112 → WB7720 i2c_buff (设备信息读回区)
+### 6.1 NU17112 → WB7720 i2c_buff (设备信息读回区，复用生产模式寄存器区)
 
-> NU17112 在开机后将 Flash 中的 ProductInfo 写入 i2c_buff 设备信息读回区，供 WB7720 响应上位机查询。
-> i2c_buff 地址范围待固件团队确认（建议使用 0x18~0x6B，与遥测区/工程区不冲突）。
+> NU17112 在开机后将 Flash 中的 ProductInfo 写入 i2c_buff 0x92~0xF5，
+> 与生产模式寄存器复用（时序互斥：生产时写入，运行时读回）。
 
-| i2c_buff 地址 | 字段 | 长度 | NU17112 数据源 |
+| i2c_buff 地址 | 宏名 | 长度 | NU17112 数据源 |
 |--------------|------|------|--------------|
-| TBD (20B) | manufacturer_name | 20B | `ProductInfo_t.manufacturer_name` (Flash 0x1800+0) |
-| TBD (20B) | model_name | 20B | `ProductInfo_t.model_name` (Flash 0x1800+20) |
-| TBD (20B) | battery_mfr | 20B | `ProductInfo_t.battery_mfr` (Flash 0x1800+40) |
-| TBD (20B) | battery_model | 20B | `ProductInfo_t.battery_model` (Flash 0x1800+60) |
-| TBD (20B) | battery_prod_date | 20B | `ProductInfo_t.battery_prod_date` (Flash 0x1800+80) |
+| 0x92~0xA5 | PROD_MANUFACTURER | 20B | `ProductInfo_t.manufacturer_name` (Flash 0x1800+0) |
+| 0xA6~0xB9 | PROD_MODEL | 20B | `ProductInfo_t.model_name` (Flash 0x1800+20) |
+| 0xBA~0xCD | PROD_BATTERY_MFR | 20B | `ProductInfo_t.battery_mfr` (Flash 0x1800+40) |
+| 0xCE~0xE1 | PROD_BATTERY_MODEL | 20B | `ProductInfo_t.battery_model` (Flash 0x1800+60) |
+| 0xE2~0xF5 | PROD_PROD_DATE | 20B | `ProductInfo_t.battery_prod_date` (Flash 0x1800+80) |
 
-### 5.2 WB7720 → HID 报告 (Type 0x04, 3包)
+### 6.2 WB7720 → HID 报告 (Type 0x03, 3 包，Len=41)
 
-| 包序 | SubIdx (Payload +0) | 字段1 (Payload +1~+20) | 字段2 (Payload +21~+40) |
-|------|--------------------|-----------------------|------------------------|
-| 包1 | 0x00 | manufacturer_name (20B) | model_name (20B) |
-| 包2 | 0x01 | battery_mfr (20B) | battery_model (20B) |
-| 包3 | 0x02 | battery_prod_date (20B) | 填充 0x00 (20B) |
+| 包序 | SubIdx (Payload +0) | Field1 (Payload +1~+20) | Field2 (Payload +21~+40) | i2c_buff 来源 |
+|------|--------------------|-----------------------|--------------------------|--------------|
+| 包1 | 0x00 | manufacturer_name (20B) | model_name (20B) | 0x92~0xA5, 0xA6~0xB9 |
+| 包2 | 0x01 | battery_mfr (20B) | battery_model (20B) | 0xBA~0xCD, 0xCE~0xE1 |
+| 包3 | 0x02 | battery_prod_date (20B) | safety_years(1B)=5 + reserved(19B) | 0xE2~0xF5, 硬编码 |
 
-### 5.3 PC 显示 (卡片4 设备基本信息)
+### 6.3 PC 显示 (卡片4 设备基本信息)
 
 | UI 标签 | 数据来源 | PC 显示 |
 |--------|---------|---------|
-| 生产厂家 | Type 0x04 包1 字段1 | ✅ 卡片4 |
-| 产品型号 | Type 0x04 包1 字段2 | ✅ 卡片4 |
-| 电池生产厂商 | Type 0x04 包2 字段1 | ✅ 卡片4 |
-| 电池型号 | Type 0x04 包2 字段2 | ✅ 卡片4 |
-| 代码/生产日期 | Type 0x04 包3 字段1 | ✅ 卡片4 |
-| 安全使用年限 | **硬编码 "5年"** | ✅ 卡片4 |
+| 生产厂家 | Type 0x03 包1 Field1 | ✅ 卡片4 |
+| 产品型号 | Type 0x03 包1 Field2 | ✅ 卡片4 |
+| 电池生产厂商 | Type 0x03 包2 Field1 | ✅ 卡片4 |
+| 电池型号 | Type 0x03 包2 Field2 | ✅ 卡片4 |
+| 代码/生产日期 | Type 0x03 包3 Field1 | ✅ 卡片4 |
+| 安全使用年限 | **硬编码 "5年"**（WB7720 SAFETY_SERVICE_YEARS） | ✅ 卡片4 |
 
 ---
 
-## 六、版本历史
+## 八、版本历史
 
 | 版本 | 日期 | 变更说明 |
 |------|------|---------|
 | v1.0 | 2026-02-26 | 初版，整合 NU17112_USB_HID_适配指南 + HID通信协议文档 |
 | v1.1 | 2026-02-26 | 新增"PC 显示"列；新增第五节设备基本信息 (Type 0x04)；对齐 PRD v4.0 |
 | v1.2 | 2026-02-26 | 第二节 Type 0x02: 从 12B 升级为 20B，与 NU17112 BatteryExceptionRecord_t 完全对齐；新增 sub_type/record_id/OV 双电压字段；ErrType 重新定义为 0x01/0x02/0x03 |
+| **v1.3** | **2026-02-26** | **异常日志全量传输**: §2.1 确认 i2c_buff 地址 0x37~0x4D（23B 滚动写入区）；新增 §2.3 PC 端 record_id 去重汇总策略；第六节设备信息 Type 0x04→Type 0x03，i2c_buff 地址确认为 0x92~0xF5；修正章节编号（原第五节重复，改为第六节）；Gap #1/#6 标注为已定义 |
 
 ---
 
@@ -205,9 +246,11 @@ Step 4: [0x0C][0x80][0x02][次Lo][次Hi]        写循环次数
 
 | # | 项目 | 状态 | 说明 |
 |---|------|------|------|
-| 1 | 异常日志 Type 0x02 的 I2C 桥接 | ❌ 未实现 | Phase 2 任务，需设计 i2c_buff 日志区地址 |
+| 1 | 异常日志 Type 0x02 的 I2C 桥接 | ✅ 已定义 | i2c_buff 0x37~0x4D (23B 滚动写入区)，见 §2.1 |
 | 2 | Cell 单节电压精度 | ⚠️ 估算 | NU6805 仅有总压，当前均分 (vbat/2) |
 | 3 | 循环次数 u8 → u16 | ⚠️ 已处理 | NU17112 u8 扩展为 u16 写入 i2c_buff |
 | 4 | 过流异常计数 | ⚠️ 预留 | 当前写 0，待 OCP 日志实现后更新 |
-| 5 | 品牌名 Type 0x01 Brand 字段 | ⚠️ 废弃 | 由 Type 0x04 设备信息取代，Type 0x01 中 +35~+41 可保留兼容 |
-| 6 | 设备信息 i2c_buff 地址 | ❌ 未定义 | NU17112 写 ProductInfo 到 i2c_buff 的具体地址待固件团队确认 |
+| 5 | 品牌名 Type 0x01 Brand 字段 | ⚠️ 废弃 | 由 Type 0x03 设备信息取代，Type 0x01 中 +35~+41 可保留兼容 |
+| 6 | 设备信息 i2c_buff 地址 | ✅ 已定义 | 复用生产模式区 0x92~0xF5，见 §6.1 及接口规范 §3.4 |
+| 7 | 异常日志 WB7720 代码实现 | ⏳ 待实现 | WB7720 main.c 需新增 exc_cache + exc_cache_update + update_report_buffer_1 修改 |
+| 8 | NU17112 滚动写入代码实现 | ⏳ 待实现 | fml/_fml.c 的 ubsd_wb7720_report_update() 需新增异常日志写入逻辑 |

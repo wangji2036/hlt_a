@@ -1,6 +1,6 @@
 # WB7720 USB Bridge 接口规范
 
-**版本**: v1.2
+**版本**: v1.3
 **日期**: 2026-02-26
 **管理者**: usb-device-agent
 **固件版本**: NANFU_USB_1052_20260121A
@@ -116,9 +116,9 @@ Byte 2~N: DATA     实际数据 (Little-Endian)
 
 | 相对偏移 | 字段 | 类型 | 说明 |
 |---------|------|------|------|
-| +0 | OffsetPage | u8 | 分页偏移 |
-| +1 | ReturnCount | u8 | 本次返回条数 (0-2) |
-| +2 起 | ExceptionLog[] | **20B × N** | 异常条目数组 |
+| +0 | OffsetPage | u8 | 本包页码 (0=第1组, 1=第2组, 2=第3组) |
+| +1 | ReturnCount | u8 | 本包实际返回条数 (1 或 2) |
+| +2 起 | ExceptionLog[] | **20B × N** | 异常条目数组，最多 2 条 |
 
 **每条异常日志 (20 字节, 与 NU17112 `BatteryExceptionRecord_t` 完全对齐)**:
 
@@ -136,13 +136,43 @@ Byte 2~N: DATA     实际数据 (Little-Endian)
 | +10~+11 | data_low | u16 LE | OV: 最高单节电压(mV); TEMP: 最高温度(s16, 0.1°C) |
 | +12~+13 | data_high | u16 LE | OV: 总电压(mV); TEMP: 0x0000 |
 | +14~+15 | Padding | u16 | 0x0000 |
-| +16~+19 | record_id | u32 LE | NU17112 内部序号，PC 可用于去重/排序 |
+| +16~+19 | record_id | u32 LE | NU17112 内部序号，PC 用于去重和排序 |
 
 > **格式对齐说明**: 本格式与 NU17112 固件 `BatteryExceptionRecord_t` (g_data.h) **完全一致（20 字节）**。
-> WB7720 可直接 memcpy NU17112 写入 i2c_buff 的记录数据，无需字段转换。每包最多携带 2 条记录。
+> WB7720 直接 memcpy i2c_buff 中的记录数据，无需字段转换。
 >
 > **原 12B 格式废弃说明**: 旧格式 ErrType 映射 (0=温度/1=电流/2=电压) 与 NU17112 不一致，缺少
 > sub_type（无法区分电芯号/充放状态），已废弃并升级为本 20B 格式。
+
+**多条日志全量传输机制 (v1.3 新增)**:
+
+NU17112 最多存 5 条日志，64B HID 报告每包只能携带 2 条，需要 3 包才能传完。
+采用「NU17112 滚动写入 + WB7720 本地缓存 + 分页输出」机制：
+
+```
+NU17112 每 ~500ms 将当前 exc_current_idx 对应的 1 条记录写入 i2c_buff[0x3A-0x4D]
+        （同时更新 0x37=总条数, 0x38=当前序号）
+
+WB7720 在每次 update_report_buffer_0() 末尾检查 i2c_buff[0x3A] 的 record_id：
+        若 record_id 不在本地缓存中，追加到 exc_cache[5]（最多保留 5 条）
+
+WB7720 在 update_report_buffer_1() 中从 exc_cache 分页输出：
+        page 0: exc_cache[0] + exc_cache[1]   (OffsetPage=0, ReturnCount=2)
+        page 1: exc_cache[2] + exc_cache[3]   (OffsetPage=1, ReturnCount=2)
+        page 2: exc_cache[4]                  (OffsetPage=2, ReturnCount=1)
+        每次 Type 0x02 输出后 page_idx 自动推进，循环。
+```
+
+**PC 端汇总策略**:
+- 维护 `seen_record_ids = set()` 集合，按 record_id 去重
+- 收到 Type 0x02 后，将未见过的记录追加到日志列表
+- 按时间戳升序排列展示
+- 约 15 秒内（3 包 × 5 秒 round-robin）可收齐全部 5 条记录
+- 断开 USB 重连后，PC 端应清空 `seen_record_ids` 重新收集
+
+**包大小计算**:
+- 最大包: 9B(头) + 2B(分页) + 40B(2条×20B) + 2B(CRC) = **53B**（在 64B 限制内）
+- 最小包(最后页): 9B + 2B + 20B(1条) + 2B = **33B**
 
 ---
 
@@ -249,6 +279,30 @@ I2C Slave 地址: **0x42**
 | 0x29 | REG_FW_VERSION_MAJOR | u8 | 固件主版本 |
 | 0x2A | REG_FW_VERSION_MINOR | u8 | 固件次版本 |
 
+### 3.2b 异常日志滚动写入区 (NU17112 写入, WB7720 读取缓存)
+
+**地址范围**: `0x37~0x4D` (23 字节，位于遥测区末尾与工程模式区之间，无冲突)
+
+| 地址 | 宏名 | 类型 | 说明 |
+|------|------|------|------|
+| 0x37 | REG_EXC_TOTAL_COUNT | u8 | NU17112 当前有效异常记录总数 (0~5) |
+| 0x38 | REG_EXC_CURRENT_IDX | u8 | 本次写入的是第几条记录 (0~4，循环) |
+| 0x39 | REG_EXC_RESERVED | u8 | 保留，写 0x00 |
+| 0x3A~0x4D | REG_EXC_RECORD | u8[20] | 当前 `BatteryExceptionRecord_t` (20B) |
+
+**NU17112 写入行为**:
+- NU17112 每约 500ms（`ubsd_wb7720_report_update()` 每轮完成后）写一次
+- 每次写入 `REG_EXC_TOTAL_COUNT`、`REG_EXC_CURRENT_IDX` 和 20B 记录数据
+- `REG_EXC_CURRENT_IDX` 从 0 滚动到 (total_count-1)，然后回 0
+- 若无异常记录（`total_count = 0`），仅写 0x37=0，不写记录数据
+
+**WB7720 读取行为**:
+- 在每次组装 Type 0x01 遥测报告时，顺带检查 `i2c_buff[0x3A]` 起的 record_id（偏移 +16）
+- 若该 record_id 未在本地 `exc_cache[5]` 中，则将整条 20B 追加入缓存
+- 缓存满 5 条后不再追加（按 record_id 去重，最旧条目自动被新条目替代）
+
+> **设计约束**: 0x37~0x4D 之所以选在此区间，是因为 0x36 是遥测区末字节（REG_PCB_TEMP），0x50 是工程模式 REG_WORK_MODE，之间有 24B 可用空间，恰好容纳本区定义的 23B。
+
 ### 3.3 工程模式寄存器 (上位机写入, NU17112 轮询读取)
 
 | 地址 | 宏名 | 类型 | 方向 | 说明 |
@@ -314,7 +368,8 @@ NU17112 检测到 REG_WORK_MODE = 0xA5 后读取数据，处理完毕后将 REG_
 |------|------|------|
 | v1.0 | 2026-02-26 | 初版，整合 HID通信协议与寄存器说明.md + NU17112_USB_HID_适配指南.md |
 | v1.1 | 2026-02-26 | Type 0x02 异常日志从 12B 升级到 20B，与 NU17112 BatteryExceptionRecord_t 完全对齐；新增 Type 0x04 设备信息类型；CMD_READ_DEVICE_INFO 补充 SubPage 参数 |
-| **v1.2** | **2026-02-26** | **Type 重新分配**: Type 0x04 废弃，设备信息改为 **Type 0x03** (3 子页 SubIdx 方案)；CMD 0x02 Payload 明确为 `[sub_idx]`，每次请求独立无状态；§3.4 生产模式寄存器改为双向复用（生产模式写入 + 正常模式设备信息读回）；新增 CMD 分发规则（§2.4） |
+| v1.2 | 2026-02-26 | Type 重新分配: Type 0x04 废弃，设备信息改为 **Type 0x03** (3 子页 SubIdx 方案)；CMD 0x02 Payload 明确为 `[sub_idx]`，每次请求独立无状态；§3.4 生产模式寄存器改为双向复用（生产模式写入 + 正常模式设备信息读回）；新增 CMD 分发规则（§2.4） |
+| **v1.3** | **2026-02-26** | **异常日志全量传输机制**: 新增 §3.2b 异常日志滚动写入区（i2c_buff 0x37~0x4D, 23B）；Type 0x02 补充多条日志分页传输说明、WB7720 本地 5 条缓存设计、PC 端 record_id 去重汇总策略；明确 OffsetPage 页码含义和包大小计算 |
 
 ---
 

@@ -6,7 +6,7 @@
 
 ## 你的职责范围
 
-### 管辖文件（12个）
+### 管辖文件
 所有文件位于 `app/` 目录：
 
 | 文件 | 行数 | 核心职责 |
@@ -23,8 +23,9 @@
 | `sleep.h` | 14 | 睡眠公共API |
 | `bat_record.c` | 675 | 电池异常记录器（Flash持久化） |
 | `bat_record.h` | 71 | Flash布局、异常类型、API |
-
-**总计**: ~3800+ lines
+| `usb_bridge.c` | — | **USB Bridge NU17112 侧**: I2C Master 定时写遥测到 WB7720、读工程模式寄存器、生产模式 Flash 处理 |
+| `usb_bridge.h` | — | USB Bridge 公共 API |
+| `main.c` | — | NU17112 应用入口 |
 
 ---
 
