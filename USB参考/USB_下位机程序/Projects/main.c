@@ -7,6 +7,7 @@
 #include "usbd_core.h"
 #include "tw25071_display.h"
 #include "bsp_uart0.h"
+#include "config.h"
 
 void mcu_stop_mode(void);
 
@@ -191,13 +192,13 @@ void update_report_buffer_0(void)
 	report_buffer[33] = 0;//25
 	report_buffer[34] = (uint8_t)(Bat_SoH *100 >>0);;//26					//| 14 | SOH_pct_x100 | u16 | 0.01% | ???????????%?100????????? |
 	report_buffer[35] = (uint8_t)(Bat_SoH *100 >>8);//27
-	report_buffer[36] = 1;//28											//| 15 | ErrOverTempCnt | u16 | ??| ?????????????????? |
-	report_buffer[37] = 0;//29
-	report_buffer[38] = 1;//30											//| 16 | ErrOverVoltCnt | u16 | ??| ?????????????????? |
-	report_buffer[39] = 0;//31
-	report_buffer[40] = 1;//32											//| 17 | ErrOverCurrCnt | u16 | ??| ?????????????????? |
-	report_buffer[41] = 0;//33
-	report_buffer[42] = 3;//34											//| 18 | ExceptionLogCount | u8 | ??| ??????????? ?????? |
+	report_buffer[36] = i2c_buff[REG_ERR_OVERTEMP_CNT];//28             //| 15 | ErrOverTempCnt | u16 | ??| 过温异常次数 |
+	report_buffer[37] = i2c_buff[REG_ERR_OVERTEMP_CNT + 1];//29
+	report_buffer[38] = i2c_buff[REG_ERR_OVERVOLT_CNT];//30             //| 16 | ErrOverVoltCnt | u16 | ??| 过压异常次数 |
+	report_buffer[39] = i2c_buff[REG_ERR_OVERVOLT_CNT + 1];//31
+	report_buffer[40] = i2c_buff[REG_ERR_OVERCURR_CNT];//32             //| 17 | ErrOverCurrCnt | u16 | ??| 过流异常次数 |
+	report_buffer[41] = i2c_buff[REG_ERR_OVERCURR_CNT + 1];//33
+	report_buffer[42] = 3;//34                                           //| 18 | ExceptionLogCount | u8 | ??| 暂无对应寄存器, 硬编码 |
 
 
 
@@ -217,94 +218,165 @@ void update_report_buffer_0(void)
 }
 
 
-//## Payload ??(EXCEPTION_LOGS)
-//| ?? | ?? | ?? | ??/?? | ?? |
-//|---|---|---|---|---|
-//| 1 | OffsetPage | u8 | ? | ????????,??????/???? |
-//| 2 | ReturnCount | u8 | ? | ???????????(0..5) |
-//| 3..(2+ReturnCount) | ExceptionLogs | 12 ??/? | ?? | ????:???7?? + ErrType(1) + Value_x100(4) |
-
-//??????(????):
-//- `Year`(u16) + `Month`(u8) + `Day`(u8) + `Hour`(u8) + `Minute`(u8) + `Second`(u8)
-//- `ErrType`(u8):0=??,1=??,2=??(?????)
-//- `Value_x100`(s32):????,????(?=???�100);??? `ErrType` ??:0???(�C�100)?1???(A�100)?2???(V�100)?
-
+/* Type 0x02 异常日志, 每条 20B 格式 (v1.2)
+ * Payload (从偏移9):
+ *   +0: OffsetPage (u8)
+ *   +1: ReturnCount (u8)
+ *   +2..(2 + ReturnCount*20 - 1): ExceptionLogs, 每条 20B:
+ *       [0~1]  Year (u16 LE)
+ *       [2]    Month (u8)
+ *       [3]    Day (u8)
+ *       [4]    Hour (u8)
+ *       [5]    Minute (u8)
+ *       [6]    Second (u8)
+ *       [7]    Reserved (u8, 0x00)
+ *       [8]    error_type (u8): 0x01=OV过压, 0x02=OT过温, 0x03=UT欠温
+ *       [9]    sub_type (u8)
+ *       [10~11] data_low (u16 LE)
+ *       [12~13] data_high (u16 LE)
+ *       [14~15] Padding (u16, 0x0000)
+ *       [16~19] record_id (u32 LE)
+ * Len = ReturnCount * 20 + 2
+ * CRC = crc16(&report_buffer[3], 6 + Len)
+ * NOTE: 数据保持硬编码测试数据 (Phase 2 依赖 NU17112 真实路径)
+ */
 void update_report_buffer_1(void)
 {
-	memset(report_buffer, 0, sizeof(report_buffer));
-	uint32_t bat_mAh =  (uint32_t )(i2c_buff[REG_CAPACITY_MAH] | i2c_buff[REG_CAPACITY_MAH + 1] << 8 | i2c_buff[REG_CAPACITY_MAH + 2] << 16 | i2c_buff[REG_CAPACITY_MAH + 3] << 24) ;
-	uint16_t adc_vbat = (uint16_t )(i2c_buff[REG_VBAT_MV] | i2c_buff[REG_VBAT_MV + 1] << 8);
-	int16_t adc_ibat = (int16_t )(i2c_buff[REG_IBAT_MA] | i2c_buff[REG_IBAT_MA + 1] << 8);
-	uint16_t cycle_cnt = (uint16_t )(i2c_buff[REG_CYCLE_COUNT] | i2c_buff[REG_CYCLE_COUNT + 1] << 8);
-	uint16_t Bat_Rdc = (uint16_t )(i2c_buff[REG_R_INTERNAL_MOHM] | i2c_buff[REG_R_INTERNAL_MOHM + 1] << 8);
-	uint16_t Bat_SoH = (uint16_t )(i2c_buff[REG_SOH_PCT_X100] | i2c_buff[REG_SOH_PCT_X100 + 1] << 8);
-	int16_t battery_temp = (int16_t )(i2c_buff[REG_TEMP_DC] | i2c_buff[REG_TEMP_DC + 1] << 8);
-	int16_t baord_temp = (int16_t )(i2c_buff[REG_PCB_TEMP_DC] | i2c_buff[REG_PCB_TEMP_DC + 1] << 8);
+    memset(report_buffer, 0, sizeof(report_buffer));
 
-	uint16_t crc = 0;
-	report_buffer[0] = 0x05;											//- SOF?????0xA5 0x5A
-	report_buffer[1] = 0xA5;											//- SOF?????0xA5 0x5A
-	report_buffer[2] = 0x5A;
+    const uint8_t RETURN_COUNT = 2;  /* 本包返回 2 条记录 */
 
-	report_buffer[3] = 0x02;											//| Ver | u8 | ???????????? 0x02 |
-	report_buffer[4] = 0x02;											//| Type | u8 | ????????x10=GET_TELEMETRY??x01=TELEMETRY |
-	report_buffer[5] = index++;											//| Seq | u16 | ???????????????16 ?????????????????|
-	report_buffer[6] = 0;
-	//report_buffer[7] = 35;												//| Len | u16 | ???????????ELEMETRY ?????35?????34 + BrandLen(1)???????????|
-	report_buffer[8] = 0;
+    report_buffer[0] = 0x05;  /* SOF[0] */
+    report_buffer[1] = 0xA5;  /* SOF[1] */
+    report_buffer[2] = 0x5A;  /* SOF[2] */
 
-	report_buffer[9] =   0;																		//| 1 | OffsetPage | u8 | ? | ????????,??????/???? |
-	report_buffer[10] =  3;//2																//| 2 | ReturnCount | u8 | ? | ???????????(0..5) |
-	
-	
-//- `Year`(u16) + `Month`(u8) + `Day`(u8) + `Hour`(u8) + `Minute`(u8) + `Second`(u8)
-//- `ErrType`(u8):0=??,1=??,2=??(?????)
-//- `Value_x100`(s32):????,????(?=???�100);??? `ErrType` ??:0???(�C�100)?1???(A�100)?2???(V�100)?
-	//
-	report_buffer[11] =  (uint8_t)(2026 >>0);//3
-	report_buffer[12] =  (uint8_t)(2026 >>8);//4
-	report_buffer[13] =  (uint8_t)(01);//5
-	report_buffer[14] =  (uint8_t)(8);//6		
-	report_buffer[15] =  (uint8_t)(18);//7
-	report_buffer[16] =  (uint8_t)(43);//8	
-	report_buffer[17] =  (uint8_t)(23);//9
-	report_buffer[18] =  (uint8_t)(0);//10	
-	report_buffer[19] =  (uint8_t)(battery_temp *100);//11
-	report_buffer[20] =	 (uint8_t)((battery_temp *100) >> 8);
-	report_buffer[21] =  0;//13
-	report_buffer[22] =  0;//14
-	
-	
-	report_buffer[23] =  (uint8_t)(2026 >>0);//3
-	report_buffer[24] =  (uint8_t)(2026 >>8);//4
-	report_buffer[25] =  (uint8_t)(1);//5
-	report_buffer[26] =  (uint8_t)(8);//6	
-	report_buffer[27] =  (uint8_t)(18);//7
-	report_buffer[28] =  (uint8_t)(47);//8	
-	report_buffer[29] =  (uint8_t)(12);//9
-	report_buffer[30] =  (uint8_t) 1;//10				
-	report_buffer[31] =  (uint8_t)((adc_ibat /10) >>0);//11
-	report_buffer[32] =	 (uint8_t)((adc_ibat /10) >>8);	
-	report_buffer[33] =  0;//13	
-	report_buffer[34] =  0;//14
-	
-	report_buffer[35] =  (uint8_t)(2026 >>0);//3
-	report_buffer[36] =  (uint8_t)(2026 >>8);//4
-	report_buffer[37] =  (uint8_t)(1);//5
-	report_buffer[38] =  (uint8_t)(9);//6	
-	report_buffer[39] =  (uint8_t)(11);//7
-	report_buffer[40] =  (uint8_t)(36);//8	
-	report_buffer[41] =  (uint8_t)(12);//9
-	report_buffer[42] =  (uint8_t) 2;//10				
-	report_buffer[43] =  (uint8_t)((adc_vbat /10) >>0);//11
-	report_buffer[44] =	 (uint8_t)((adc_vbat /10) >>8);	
-	report_buffer[45] =  0;//13	
-	report_buffer[46] =  0;//14
-	
-	report_buffer[7] = report_buffer[10] * 12 + 2;	
-	crc = crc16(&report_buffer[3],report_buffer[10] * 12  + 8);
-	report_buffer[11 + report_buffer[10] * 12] = crc >>0;//35
-	report_buffer[12 + report_buffer[10] * 12] = crc >>8;//36
+    report_buffer[3] = 0x02;                          /* Ver */
+    report_buffer[4] = REPORT_TYPE_EXCEPTION_LOG;     /* Type = 0x02 */
+    report_buffer[5] = index++;                       /* Seq Lo */
+    report_buffer[6] = 0;                             /* Seq Hi */
+    /* Len = ReturnCount * 20 + 2 */
+    uint16_t len = (uint16_t)RETURN_COUNT * 20 + 2;
+    report_buffer[7] = (uint8_t)(len >> 0);           /* Len Lo */
+    report_buffer[8] = (uint8_t)(len >> 8);           /* Len Hi */
+
+    report_buffer[9]  = 0;             /* OffsetPage */
+    report_buffer[10] = RETURN_COUNT;  /* ReturnCount */
+
+    /* ---------- 记录1: 2026-01-08 18:43:23, OT过温(0x02), 充电态(0x00), 45.0 degC ---------- */
+    uint8_t *rec = &report_buffer[11];
+    rec[0]  = (uint8_t)(2026 >> 0);  /* Year Lo */
+    rec[1]  = (uint8_t)(2026 >> 8);  /* Year Hi */
+    rec[2]  = 1;                      /* Month */
+    rec[3]  = 8;                      /* Day */
+    rec[4]  = 18;                     /* Hour */
+    rec[5]  = 43;                     /* Minute */
+    rec[6]  = 23;                     /* Second */
+    rec[7]  = 0x00;                   /* Reserved */
+    rec[8]  = 0x02;                   /* error_type: OT过温 */
+    rec[9]  = 0x00;                   /* sub_type: 充电态 */
+    rec[10] = (uint8_t)(450 >> 0);    /* data_low Lo: 45.0 degC * 10 = 450 */
+    rec[11] = (uint8_t)(450 >> 8);    /* data_low Hi */
+    rec[12] = 0;                      /* data_high Lo (TEMP时=0) */
+    rec[13] = 0;                      /* data_high Hi */
+    rec[14] = 0;                      /* Padding Lo */
+    rec[15] = 0;                      /* Padding Hi */
+    rec[16] = (uint8_t)(1 >> 0);      /* record_id byte0 */
+    rec[17] = (uint8_t)(1 >> 8);      /* record_id byte1 */
+    rec[18] = (uint8_t)(1 >> 16);     /* record_id byte2 */
+    rec[19] = (uint8_t)(1 >> 24);     /* record_id byte3 */
+
+    /* ---------- 记录2: 2026-01-08 18:47:12, OV过压(0x01), 电芯1(0x01), 4250mV, 怹80400mV ---------- */
+    rec = &report_buffer[31];
+    rec[0]  = (uint8_t)(2026 >> 0);   /* Year Lo */
+    rec[1]  = (uint8_t)(2026 >> 8);   /* Year Hi */
+    rec[2]  = 1;                       /* Month */
+    rec[3]  = 8;                       /* Day */
+    rec[4]  = 18;                      /* Hour */
+    rec[5]  = 47;                      /* Minute */
+    rec[6]  = 12;                      /* Second */
+    rec[7]  = 0x00;                    /* Reserved */
+    rec[8]  = 0x01;                    /* error_type: OV过压 */
+    rec[9]  = 0x01;                    /* sub_type: 电芯1 */
+    rec[10] = (uint8_t)(4250 >> 0);    /* data_low Lo: max_voltage 4250mV */
+    rec[11] = (uint8_t)(4250 >> 8);    /* data_low Hi */
+    rec[12] = (uint8_t)(8400 >> 0);    /* data_high Lo: total_voltage 8400mV */
+    rec[13] = (uint8_t)(8400 >> 8);    /* data_high Hi */
+    rec[14] = 0;                       /* Padding Lo */
+    rec[15] = 0;                       /* Padding Hi */
+    rec[16] = (uint8_t)(2 >> 0);       /* record_id byte0 */
+    rec[17] = (uint8_t)(2 >> 8);       /* record_id byte1 */
+    rec[18] = (uint8_t)(2 >> 16);      /* record_id byte2 */
+    rec[19] = (uint8_t)(2 >> 24);      /* record_id byte3 */
+
+    /* CRC = crc16(&report_buffer[3], 6 + Len) */
+    uint16_t crc = crc16(&report_buffer[3], (uint16_t)(6 + len));
+    uint16_t crc_pos = (uint16_t)(9 + len);
+    report_buffer[crc_pos]     = (uint8_t)(crc >> 0);
+    report_buffer[crc_pos + 1] = (uint8_t)(crc >> 8);
+}
+
+
+/* Type 0x03 设备信息, SubIdx 单内容 (v1.2)
+ * CMD 0x02: Vendor_Request[1] = sub_idx
+ * Payload (从偏移9), Len = 41:
+ *   +0:     SubIdx (u8)
+ *   +1~+20: Field1 (char[20])
+ *   +21~+40: Field2 (char[20])
+ * CRC = crc16(&report_buffer[3], 6 + 41) = crc16(&report_buffer[3], 47)
+ *
+ * SubIdx 对应内容 (从 i2c_buff 读取):
+ *   0x00: manufacturer_name (0x92~0xA5, 20B) + model_name (0xA6~0xB9, 20B)
+ *   0x01: battery_mfr (0xBA~0xCD, 20B) + battery_model (0xCE~0xE1, 20B)
+ *   0x02: battery_prod_date (0xE2~0xF5, 20B) + safety_years (1B = SAFETY_SERVICE_YEARS) + reserved (19B, 0x00)
+ */
+void update_report_buffer_device_info(uint8_t sub_idx)
+{
+    memset(report_buffer, 0, sizeof(report_buffer));
+
+    const uint8_t PAYLOAD_LEN = 41;  /* SubIdx(1) + Field1(20) + Field2(20) */
+
+    report_buffer[0] = 0x05;  /* SOF[0] */
+    report_buffer[1] = 0xA5;  /* SOF[1] */
+    report_buffer[2] = 0x5A;  /* SOF[2] */
+
+    report_buffer[3] = 0x02;                        /* Ver */
+    report_buffer[4] = REPORT_TYPE_DEVICE_INFO;     /* Type = 0x03 */
+    report_buffer[5] = index++;                     /* Seq Lo */
+    report_buffer[6] = 0;                           /* Seq Hi */
+    report_buffer[7] = PAYLOAD_LEN;                 /* Len Lo */
+    report_buffer[8] = 0;                           /* Len Hi */
+
+    report_buffer[9] = sub_idx;                     /* SubIdx */
+
+    switch (sub_idx) {
+        case 0x00:
+            /* Field1: manufacturer_name (20B from i2c_buff[0x92..0xA5]) */
+            memcpy(&report_buffer[10], &i2c_buff[REG_PROD_MANUFACTURER], 20);
+            /* Field2: model_name (20B from i2c_buff[0xA6..0xB9]) */
+            memcpy(&report_buffer[30], &i2c_buff[REG_PROD_MODEL], 20);
+            break;
+        case 0x01:
+            /* Field1: battery_mfr (20B from i2c_buff[0xBA..0xCD]) */
+            memcpy(&report_buffer[10], &i2c_buff[REG_PROD_BATTERY_MFR], 20);
+            /* Field2: battery_model (20B from i2c_buff[0xCE..0xE1]) */
+            memcpy(&report_buffer[30], &i2c_buff[REG_PROD_BATTERY_MODEL], 20);
+            break;
+        case 0x02:
+            /* Field1: battery_prod_date (20B from i2c_buff[0xE2..0xF5]) */
+            memcpy(&report_buffer[10], &i2c_buff[REG_PROD_PROD_DATE], 20);
+            /* Field2: safety_years (1B hardcoded) + reserved (19B, 0x00) */
+            report_buffer[30] = SAFETY_SERVICE_YEARS;
+            /* report_buffer[31..49] already 0 from memset */
+            break;
+        default:
+            /* 未知 SubIdx: Field1/Field2 全郥0 */
+            break;
+    }
+
+    /* CRC = crc16(&report_buffer[3], 6 + Len) = crc16(&report_buffer[3], 47) */
+    uint16_t crc = crc16(&report_buffer[3], (uint16_t)(6 + PAYLOAD_LEN));
+    report_buffer[9 + PAYLOAD_LEN]     = (uint8_t)(crc >> 0);  /* report_buffer[50] */
+    report_buffer[9 + PAYLOAD_LEN + 1] = (uint8_t)(crc >> 8);  /* report_buffer[51] */
 }
 
 
@@ -420,10 +492,25 @@ void user_loop(void) {
 
         if (flag) {
             memset(Vendor_Response, 0, sizeof(Vendor_Response));
-						static uint8_t index = 0;
-					if(index > 3) update_report_buffer_1();
-					else update_report_buffer_0();
-					index++; if(index > 4) index  = 0;
+            static uint8_t rr_index = 0;  /* round-robin计数器, 与 Seq 的 index 分离 */
+            if (Vendor_Request[0] == CMD_READ_DEVICE_INFO) {
+                /* CMD 0x02: 读设备信息, Vendor_Request[1] = sub_idx */
+                update_report_buffer_device_info(Vendor_Request[1]);
+            } else if (Vendor_Request[0] == CMD_WRITE_REGISTER) {
+                /* CMD 0x0C: 写寄存器后返回 Type 0x01 (不走 round-robin) */
+                update_report_buffer_0();
+            } else {
+                /* CMD 0x01 (CMD_READ_STATUS): round-robin
+                 * rr_index 0~3: 返回 Type 0x01 遥测
+                 * rr_index 4  : 返回 Type 0x02 异常日志 */
+                if (rr_index >= 4) {
+                    update_report_buffer_1();
+                } else {
+                    update_report_buffer_0();
+                }
+                rr_index++;
+                if (rr_index > 4) rr_index = 0;
+            }
             memcpy(Vendor_Response, report_buffer, sizeof(Vendor_Response));
 
             if (Vendor_Request[0] == 0x0C) {

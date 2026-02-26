@@ -31,14 +31,27 @@
 #define REG_PROD_PROD_DATE      0xE2  // 电池生产日期 ASCII 20B → Flash ProductInfo_t.battery_prod_date
 
 /* -----------------------------------------------------------------------
- * 设备信息读回区 (NU17112 开机写入 i2c_buff, 供 WB7720 响应 CMD_READ_DEVICE_INFO)
- * 地址范围: 0x18~0x6B (待 NU17112 固件确认, 当前暂定)
+ * 设备信息读回区 — 复用生产模式地址 (0x92~0xF5)
+ * 正常模式: NU17112 读 Flash → 写 i2c_buff[0x92~0xF5] → WB7720 构建 Type 0x03
+ * 生产模式: PC → i2c_buff[0x92~0xF5] → NU17112 读取写 Flash
+ * 两种模式时序互斥，无需独立地址区。
  * ----------------------------------------------------------------------- */
-#define REG_DEVINFO_MANUFACTURER    0x18  // 生产厂家 ASCII 20B (ProductInfo_t.manufacturer_name)
-#define REG_DEVINFO_MODEL           0x2C  // 产品型号 ASCII 20B (ProductInfo_t.model_name)
-#define REG_DEVINFO_BATTERY_MFR     0x40  // 电池生产厂商 ASCII 20B (ProductInfo_t.battery_mfr)
-#define REG_DEVINFO_BATTERY_MODEL   0x54  // 电池型号 ASCII 20B (ProductInfo_t.battery_model)
-#define REG_DEVINFO_PROD_DATE       0x68  // 电池生产日期 ASCII 20B (ProductInfo_t.battery_prod_date)
+/* DEVINFO 地址 = PROD 地址，见上方 REG_PROD_* 定义 */
+
+/* -----------------------------------------------------------------------
+ * CMD 命令码 (上位机 → 下位机, Vendor_Request[0])
+ * ----------------------------------------------------------------------- */
+#define CMD_READ_STATUS         0x01  // 请求遥测(Type 0x01) 或异常日志(Type 0x02), round-robin
+#define CMD_READ_DEVICE_INFO    0x02  // 请求设备信息(Type 0x03), Vendor_Request[1]=sub_idx
+#define CMD_REBOOT              0x0B  // USB 断开并重启 MCU
+#define CMD_WRITE_REGISTER      0x0C  // 写 i2c_buff 寄存器
+
+/* -----------------------------------------------------------------------
+ * HID Report Type (下位机 → 上位机, report_buffer[4])
+ * ----------------------------------------------------------------------- */
+#define REPORT_TYPE_TELEMETRY       0x01  // 遥测数据
+#define REPORT_TYPE_EXCEPTION_LOG   0x02  // 异常日志
+#define REPORT_TYPE_DEVICE_INFO     0x03  // 设备信息 (3 子页, SubIdx 区分)
 
 /* -----------------------------------------------------------------------
  * 工程模式寄存器地址
