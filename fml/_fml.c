@@ -12,6 +12,7 @@
 #include "port_manager.h"
 #include "g_data.h"
 #include "usb_pd.h"
+#include "usb_bridge.h"
 #define USBD_WB7720_ADDR	0x21
 extern uint8_t power_on_cnt;
 extern uint8_t bat_cell_num;
@@ -32,6 +33,9 @@ void wb7720_init(void)
 	#define CELL_COUNT 				0x2c
 	uint8_t write_buf = bat_cell_num;
 	hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL_COUNT,(uint8_t*)&write_buf,1);
+#if CONFIG_USB_BRIDGE_ENABLE
+	usb_bridge_init();
+#endif
 }
 
 static const uint16_t ntc_3435_tbl[] =
@@ -147,7 +151,7 @@ void ubsd_wb7720_report_update(void)
 	}
 	else if(cnt == 1)
 	{
-		write_buf = 5000;
+		write_buf = CONFIG_BATTERY_CAPACITY_MAH;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,Capacity_mAh,(uint8_t*)&write_buf,2);
 	}
 	else if(cnt == 2)
@@ -200,9 +204,35 @@ void ubsd_wb7720_report_update(void)
 		write_buf =  g_buckboost.batTemp;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,PCB_Temp_dC,(uint8_t*)&write_buf,2);
 	}
+#if CONFIG_USB_BRIDGE_ENABLE
+	else if(cnt == 11)
+	{
+		usb_bridge_write_exception_counts();
+	}
+	else if(cnt == 12)
+	{
+		usb_bridge_write_charge_state();
+	}
+	else if(cnt == 13)
+	{
+		usb_bridge_write_exception_record();
+	}
+	else if(cnt == 14)
+	{
+		usb_bridge_check_engineering_mode();
+	}
+	else if(cnt == 15)
+	{
+		usb_bridge_check_production_mode();
+	}
+#endif
 
 	cnt++;
+#if CONFIG_USB_BRIDGE_ENABLE
+	if(cnt >= 16) cnt = 0;
+#else
 	if(cnt >= 11) cnt = 0;
+#endif
 
 	static bool is_usb_enable = false;
 	static uint8_t qc_delay_cnt = 0;

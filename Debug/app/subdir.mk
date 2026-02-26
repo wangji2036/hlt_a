@@ -18,6 +18,7 @@ C_SRCS += \
 ../app/prot.c \
 ../app/qfod.c \
 ../app/sleep.c \
+../app/usb_bridge.c \
 ../app/wpc_5_xfer_1_bpp.c \
 ../app/wpc_5_xfer_2_epp.c \
 ../app/wpc_5_xfer_3_mpp.c \
@@ -45,6 +46,7 @@ OBJS += \
 ./app/prot.o \
 ./app/qfod.o \
 ./app/sleep.o \
+./app/usb_bridge.o \
 ./app/wpc_5_xfer_1_bpp.o \
 ./app/wpc_5_xfer_2_epp.o \
 ./app/wpc_5_xfer_3_mpp.o \
@@ -72,6 +74,7 @@ C_DEPS += \
 ./app/prot.d \
 ./app/qfod.d \
 ./app/sleep.d \
+./app/usb_bridge.d \
 ./app/wpc_5_xfer_1_bpp.d \
 ./app/wpc_5_xfer_2_epp.d \
 ./app/wpc_5_xfer_3_mpp.d \
