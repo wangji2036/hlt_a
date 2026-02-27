@@ -724,33 +724,35 @@ class BatteryMonitorApp:
         bar.pack(fill='x', side='top')
 
         font_s = _get_tk_font(9)
-        inner = tk.Frame(bar, bg=COLORS['conn_bar_bg'])
-        inner.pack(side='left', padx=8)
+
+        # 第一行: VID/PID/UsagePage/刷新/设备列表/连接/状态
+        row1 = tk.Frame(bar, bg=COLORS['conn_bar_bg'])
+        row1.pack(fill='x', padx=8, pady=(0, 2))
 
         for label, default, attr in [
             ('VID:', 'FFFF', '_vid_var'),
             ('PID:', 'FFFF', '_pid_var'),
             ('UsagePage:', 'FF00', '_page_var'),
         ]:
-            tk.Label(inner, text=label,
+            tk.Label(row1, text=label,
                      bg=COLORS['conn_bar_bg'], fg=COLORS['text_primary'],
                      font=font_s).pack(side='left', padx=(4, 0))
             var = tk.StringVar(value=default)
             setattr(self, attr, var)
-            tk.Entry(inner, textvariable=var, width=6, font=font_s).pack(side='left', padx=(0, 4))
+            tk.Entry(row1, textvariable=var, width=6, font=font_s).pack(side='left', padx=(0, 4))
 
-        tk.Button(inner, text="刷新",
+        tk.Button(row1, text="刷新",
                   command=self._refresh_devices,
                   font=font_s, relief='flat',
                   bg='#D0D4D8', padx=4).pack(side='left', padx=2)
 
         self._dev_var = tk.StringVar()
-        self._dev_combo = ttk.Combobox(inner, textvariable=self._dev_var,
+        self._dev_combo = ttk.Combobox(row1, textvariable=self._dev_var,
                                        width=18, state='readonly', font=font_s)
         self._dev_combo.pack(side='left', padx=4)
 
         self._conn_btn = tk.Button(
-            inner, text="连接",
+            row1, text="连接",
             command=self._toggle_connection,
             font=font_s, relief='flat',
             bg=COLORS['normal'], fg='white', padx=6
@@ -758,22 +760,22 @@ class BatteryMonitorApp:
         self._conn_btn.pack(side='left', padx=4)
 
         self._status_var = tk.StringVar(value="未连接")
-        tk.Label(inner, textvariable=self._status_var,
+        tk.Label(row1, textvariable=self._status_var,
                  bg=COLORS['conn_bar_bg'], fg=COLORS['text_secondary'],
                  font=font_s).pack(side='left', padx=4)
 
-        # 三态模式切换（右侧）
-        mode_frame = tk.Frame(bar, bg=COLORS['conn_bar_bg'])
-        mode_frame.pack(side='right', padx=10)
+        # 第二行: 三态模式切换（居左对齐）
+        row2 = tk.Frame(bar, bg=COLORS['conn_bar_bg'])
+        row2.pack(fill='x', padx=8, pady=(2, 0))
 
-        tk.Label(mode_frame, text="模式：",
+        tk.Label(row2, text="模式：",
                  bg=COLORS['conn_bar_bg'], fg=COLORS['text_secondary'],
                  font=font_s).pack(side='left')
 
         self._mode_var = tk.StringVar(value='user')
         for val, lbl in [('user', '用户'), ('eng', '工程'), ('prod', '生产')]:
             rb = tk.Radiobutton(
-                mode_frame, text=lbl, variable=self._mode_var, value=val,
+                row2, text=lbl, variable=self._mode_var, value=val,
                 bg=COLORS['conn_bar_bg'], fg=COLORS['text_primary'],
                 selectcolor=COLORS['conn_bar_bg'],
                 activebackground=COLORS['conn_bar_bg'],
@@ -789,7 +791,7 @@ class BatteryMonitorApp:
     # -----------------------------------------------------------------------
     def _build_title(self, parent):
         title_frame = tk.Frame(parent, bg=COLORS['body_bg'])
-        title_frame.pack(fill='x', pady=(20, 8))
+        title_frame.pack(fill='x', pady=(12, 4))
 
         inner = tk.Frame(title_frame, bg=COLORS['body_bg'])
         inner.pack(anchor='center')
@@ -831,7 +833,7 @@ class BatteryMonitorApp:
     # -----------------------------------------------------------------------
     def _build_soc_ring(self, parent):
         container = tk.Frame(parent, bg=COLORS['body_bg'])
-        container.pack(fill='x', pady=(4, 0))
+        container.pack(fill='x', pady=(0, 0))
         self._soc_ring = SOCRingWidget(container)
 
     # -----------------------------------------------------------------------
@@ -1560,6 +1562,8 @@ class BatteryMonitorApp:
         new_added = False
         for rec in records:
             rid = rec['record_id']
+            if rid == 0:        # 无效记录（WB7720 exc_cache 空槽），跳过
+                continue
             if rid not in self._exception_seen_ids:
                 self._exception_seen_ids.add(rid)
                 self._exception_list.append(rec['text'])

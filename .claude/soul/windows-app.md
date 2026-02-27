@@ -5,7 +5,7 @@
 - 项目: ARUN N3C
 - 技术栈: Python 3.x + tkinter + hidapi
 - 核心文件: `battery_monitor.py`
-- UI 主题: 金色(#D4A017) + 深灰(#2D2D2D)
+- UI 主题: 浅蓝灰背景(#F0F4F8) + 白色卡片(#FFFFFF) + 绿色正常(#4CAF50) + 红色异常(#FF4444)
 
 ## 已知陷阱
 
@@ -38,7 +38,8 @@
 - 所有多字节: Little-Endian (`struct.unpack('<H', ...)` 等)
 - 电流 s16: 充电为正，放电为负（显示时加符号）
 - SOH: u16 单位 pct×100，显示时 ÷100（如 9800 → 98.00%）
-- 异常日志每条 12 字节，ErrType 0=过温/1=过流/2=过压
+- 异常日志每条 **20 字节** (BatteryExceptionRecord_t), ErrType 0x01=过压/0x02=过温/0x03=欠温
+- record_id == 0 为无效记录（WB7720 exc_cache 空槽），上位机需跳过
 
 ## 调试经验
 
@@ -46,3 +47,21 @@
 - 数据全零: 下位机尚未收到 NU17112 的 I2C 数据
 - 温度显示异常: 检查是否触发了智能检测的边界（值接近 100）
 - 工程模式写入无反应: 检查 NU17112 固件是否实现了轮询 REG_WORK_MODE
+
+## UI 布局经验
+
+### 连接栏布局 (600px 窗口宽度)
+- 左侧 VID/PID/UsagePage 输入框 + 刷新/设备列表/连接/状态 占满 ~560px
+- 模式 Radiobutton (用户/工程/生产) 与连接控件在同一行时会被裁剪
+- **解决方案**: 连接栏分两行 — row1 连接控件, row2 模式切换（居左对齐）
+- 使用 `fill='x'` + `padx=8` 保证两行都撑满宽度
+
+### 标题区与 SOC 圆环间距
+- 标题 `title_frame.pack(pady=(12, 4))` — 减小顶部间距避免与圆环重叠
+- SOC 容器 `container.pack(pady=(0, 0))` — 紧贴标题
+- SOCRingWidget canvas 高度 260px，圆心 cy=125，无需额外 padding
+
+### 断连时状态清除
+- `_clear_all_data()` 中 `_exception_seen_ids.clear()` + `_exception_list.clear()` 很重要
+- WB7720 掉电后 exc_cache 清空，重连后 record_id 可能从 0 重新开始
+- 若不清除 seen_ids，重连后相同 record_id 的新记录会被误判为重复而丢弃
