@@ -66,5 +66,11 @@ uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t ma
  * @brief Print next abnormal record (overvoltage or temperature)
  */
 void battery_record_print_next_log(void);
+
+/**
+ * @brief Erase all exception records and reset storage to initial state.
+ * Called from engineering mode erase command.
+ */
+void battery_record_erase_all(void);
 #endif
 #endif /* __BAT_RECORD_H__ */

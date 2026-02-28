@@ -1093,6 +1093,37 @@ class BatteryMonitorApp:
         tk.Entry(grid, textvariable=self._eng_cycle_var,
                  width=10, font=font_s).grid(row=1, column=1, pady=4)
 
+        # Cell1 电压
+        tk.Label(grid, text="Cell1电压(mV):",
+                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
+                 font=font_s).grid(row=2, column=0, sticky='w', padx=(0, 8), pady=4)
+        self._eng_cell1_var = tk.StringVar(value="0")
+        tk.Entry(grid, textvariable=self._eng_cell1_var,
+                 width=10, font=font_s).grid(row=2, column=1, pady=4)
+
+        # Cell2 电压
+        tk.Label(grid, text="Cell2电压(mV):",
+                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
+                 font=font_s).grid(row=2, column=2, sticky='w', padx=(0, 8), pady=4)
+        self._eng_cell2_var = tk.StringVar(value="0")
+        tk.Entry(grid, textvariable=self._eng_cell2_var,
+                 width=10, font=font_s).grid(row=2, column=3, pady=4)
+
+        # 虚拟温度
+        tk.Label(grid, text="虚拟温度(\u00d70.1\u00b0C):",
+                 bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
+                 font=font_s).grid(row=3, column=0, sticky='w', padx=(0, 8), pady=4)
+        self._eng_temp_var = tk.StringVar(value="0")
+        tk.Entry(grid, textvariable=self._eng_temp_var,
+                 width=10, font=font_s).grid(row=3, column=1, pady=4)
+
+        # 清除全部记录按钮
+        tk.Button(grid, text="清除全部记录",
+                  command=self._erase_all_records,
+                  font=font_s, relief='flat',
+                  bg='#E74C3C', fg='white').grid(row=3, column=2, columnspan=2,
+                                                  sticky='w', padx=(0, 8), pady=4)
+
         btn_frame = tk.Frame(inner, bg=COLORS['card_bg'])
         btn_frame.pack(fill='x', pady=(4, 0))
         tk.Button(btn_frame, text="写入设备",
@@ -1631,20 +1662,45 @@ class BatteryMonitorApp:
             messagebox.showerror("输入错误", "循环次数范围 0-65535")
             return
 
+        try:
+            cell1_mv = int(self._eng_cell1_var.get().strip())
+            if cell1_mv < 0 or cell1_mv > 5000:
+                raise ValueError
+        except (ValueError, Exception):
+            messagebox.showerror("输入错误", "Cell1电压必须为 0-5000 mV")
+            return
+
+        try:
+            cell2_mv = int(self._eng_cell2_var.get().strip())
+            if cell2_mv < 0 or cell2_mv > 5000:
+                raise ValueError
+        except (ValueError, Exception):
+            messagebox.showerror("输入错误", "Cell2电压必须为 0-5000 mV")
+            return
+
+        try:
+            vtemp = int(self._eng_temp_var.get().strip())
+            if vtemp < -500 or vtemp > 1000:
+                raise ValueError
+        except (ValueError, Exception):
+            messagebox.showerror("输入错误", "虚拟温度必须为 -500~1000 (\u00d70.1\u00b0C)")
+            return
+
         self._eng_status_var.set("写入中...")
         t = threading.Thread(
             target=self._write_engineering_worker,
             args=(cur_year, cur_month, cur_day,
                   prod_year, prod_month, prod_day,
-                  cycle),
+                  cycle, cell1_mv, cell2_mv, vtemp),
             daemon=True
         )
         t.start()
 
     def _write_engineering_worker(
             self, cur_year, cur_month, cur_day,
-            prod_year, prod_month, prod_day, cycle):
-        """后台线程执行 4 步工程模式写入序列"""
+            prod_year, prod_month, prod_day,
+            cycle, cell1_mv, cell2_mv, vtemp):
+        """后台线程执行 7 步工程模式写入序列"""
         while self._reading_busy:
             time.sleep(0.01)
         self._reading_busy = True
@@ -1663,6 +1719,12 @@ class BatteryMonitorApp:
             write_reg(0x70, struct.pack('<H', prod_year) + bytes([prod_month, prod_day]))
             # Step 4: 循环次数
             write_reg(0x80, struct.pack('<H', cycle))
+            # Step 5: 虚拟 Cell1 电压
+            write_reg(0x82, struct.pack('<H', cell1_mv))
+            # Step 6: 虚拟 Cell2 电压
+            write_reg(0x84, struct.pack('<H', cell2_mv))
+            # Step 7: 虚拟温度 (s16 LE)
+            write_reg(0x86, struct.pack('<h', vtemp))
 
             self.root.after(0, lambda: self._eng_status_var.set("写入成功"))
         except Exception as e:
@@ -1670,6 +1732,58 @@ class BatteryMonitorApp:
             self.root.after(0, lambda: messagebox.showerror("写入失败", str(e)))
         finally:
             self._reading_busy = False
+
+    # -----------------------------------------------------------------------
+    # 工程模式：清除全部异常记录
+    # -----------------------------------------------------------------------
+    def _erase_all_records(self):
+        if not self._connected:
+            messagebox.showwarning("未连接", "请先连接设备")
+            return
+        if not self._eng_mode_active:
+            messagebox.showwarning("非工程模式", "请先进入工程模式并写入设备")
+            return
+        if not messagebox.askyesno("确认清除",
+                                   "确定要清除所有异常记录吗？\n此操作不可恢复。"):
+            return
+
+        self._eng_status_var.set("清除中...")
+        threading.Thread(target=self._erase_worker, daemon=True).start()
+
+    def _erase_worker(self):
+        """后台线程执行清除全部异常记录命令"""
+        while self._reading_busy:
+            time.sleep(0.01)
+        self._reading_busy = True
+
+        try:
+            payload = bytes([0x88, 1, 0xEE])
+            self._hid_write(CMD_WRITE_REGISTER, payload)
+            time.sleep(0.5)
+            # 清空 PC 端缓存
+            self._exception_seen_ids.clear()
+            self._exception_list.clear()
+            self.root.after(0, self._refresh_exception_display)
+            self.root.after(0, lambda: self._eng_status_var.set("清除成功"))
+        except Exception as e:
+            self.root.after(0, lambda: self._eng_status_var.set(f"清除失败: {e}"))
+        finally:
+            self._reading_busy = False
+
+    def _refresh_exception_display(self):
+        """刷新异常记录显示区域（清除后重新渲染）"""
+        if not self._exc_text:
+            return
+        self._exc_text.config(state='normal')
+        self._exc_text.delete('1.0', 'end')
+        if self._exception_list:
+            self._exc_text.config(fg=COLORS['exception_text'])
+            for item in self._exception_list:
+                self._exc_text.insert('end', item + '\n')
+        else:
+            self._exc_text.insert('end', "暂无异常记录")
+            self._exc_text.config(fg=COLORS['text_secondary'])
+        self._exc_text.config(state='disabled')
 
     # -----------------------------------------------------------------------
     # 生产模式写入

@@ -10,6 +10,9 @@
 #include <stddef.h>
 #include "../hal/regdef.h"
 #include"_fml.h"
+#if CONFIG_USB_BRIDGE_ENABLE
+#include "usb_bridge.h"
+#endif
 
 #if CONFIG_NEW_CCC_LOG_ENABLE
 /********************* Global Variables **********************/
@@ -383,9 +386,28 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
 // Overvoltage detection and record function
 void battery_record_update_overvoltage(void) {
 #if(BUCKBOOST_USED_NU6805 == 1)
-    uint16_t total_voltage = hal_nu6805_buckboost_get_bat_voltage();
-    uint16_t cell1_voltage = total_voltage / 2;  // Cell 1 voltage estimation
-    uint16_t cell2_voltage = total_voltage / 2;  // Cell 2 voltage estimation
+    uint16_t total_voltage, cell1_voltage, cell2_voltage;
+#if CONFIG_USB_BRIDGE_ENABLE
+    {
+        uint16_t eng_c1 = usb_bridge_get_eng_cell1();
+        uint16_t eng_c2 = usb_bridge_get_eng_cell2();
+        if (eng_c1 > 0 || eng_c2 > 0) {
+            /* Virtual mode: non-zero uses virtual value, zero uses real_total/2 */
+            uint16_t real_total = hal_nu6805_buckboost_get_bat_voltage();
+            cell1_voltage = (eng_c1 > 0) ? eng_c1 : (real_total / 2);
+            cell2_voltage = (eng_c2 > 0) ? eng_c2 : (real_total / 2);
+            total_voltage = cell1_voltage + cell2_voltage;
+        } else {
+            total_voltage = hal_nu6805_buckboost_get_bat_voltage();
+            cell1_voltage = total_voltage / 2;
+            cell2_voltage = total_voltage / 2;
+        }
+    }
+#else
+    total_voltage = hal_nu6805_buckboost_get_bat_voltage();
+    cell1_voltage = total_voltage / 2;  // Cell 1 voltage estimation
+    cell2_voltage = total_voltage / 2;  // Cell 2 voltage estimation
+#endif
 
     // Process cell 1 and cell 2
     process_cell_overvoltage(1, cell1_voltage, total_voltage);
@@ -407,7 +429,19 @@ void battery_record_update_temperature(void) {
 
 #if (BUCKBOOST_USED_NU6805 == 1)
     // NU6805: WPC NTC temperature is pre-computed in APL_TASK (100ms poll)
-    int16_t ntc_temp = gd->sys_infos.ntc_temp_wpc;  // 0.1degC
+    int16_t ntc_temp;
+#if CONFIG_USB_BRIDGE_ENABLE
+    {
+        int16_t eng_temp = usb_bridge_get_eng_temp();
+        if (eng_temp != 0) {
+            ntc_temp = eng_temp;
+        } else {
+            ntc_temp = gd->sys_infos.ntc_temp_wpc;
+        }
+    }
+#else
+    ntc_temp = gd->sys_infos.ntc_temp_wpc;  // 0.1degC
+#endif
     event_type = EXCEPTION_TYPE_OVERTEMP;
     bool is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);
 #else
@@ -561,126 +595,21 @@ uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t ma
 
 /********************* Log Print Functions *********************/
 
-// Print state tracker
-static struct {
-    uint8_t exception_index;    // Exception record print index
-    uint8_t exception_total;    // Total exception records
-    uint8_t initialized;        // Initialization flag
-} print_state = {0};
-
 // Print next abnormal log
 void battery_record_print_next_log(void) {
-    // Initialize print state
-    if (!print_state.initialized) {
-        uint32_t count = g_record_storage.exception_counter;  // Read from RAM
-        print_state.exception_total = (count < MAX_RECORDS) ? count : MAX_RECORDS;
-        print_state.exception_index = 0;
-        print_state.initialized = 1;
+    /* Disabled to save ROM (~500B). Re-enable for debug if needed. */
+}
 
-        // Print statistics
-        if (print_state.exception_total > 0) {
-            printk("\r\n=== Battery Exception Records ===");
-            printk("\r\nTotal Records: %d", print_state.exception_total);
-        }
-    }
+/**
+ * @brief Erase all exception records and reset storage to initial state.
+ * Resets g_record_storage (magic, counter, write_ptr), saves to Flash,
+ * and clears g_exception_cache tracking state.
+ */
+void battery_record_erase_all(void) {
+    memset((void*)&g_record_storage, 0, sizeof(BatteryRecordStorage_t));
+    g_record_storage.magic = MAGIC_VALUE;
+    save_storage_to_flash();
+    memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
 
-    // Print exception records
-    for (; print_state.exception_index < print_state.exception_total; print_state.exception_index++) {
-        // Read record from RAM cache
-        BatteryExceptionRecord_t record = g_record_storage.records[print_state.exception_index];
-
-        // Print common timestamp format
-        printk("\r\n[%d] %04d-%02d-%02d %02d:%02d:%02d | ",
-            record.record_id,
-            record.timestamp.year,
-            record.timestamp.month,
-            record.timestamp.day,
-            record.timestamp.hour,
-            record.timestamp.minute,
-            record.timestamp.second);
-
-        // Print details based on type
-        switch (record.error_type) {
-            case EXCEPTION_TYPE_OVERVOLTAGE:
-                printk("OV Cell%d: %dmV (Total:%dmV)",
-                    record.sub_type,
-                    record.data.ov_data.max_voltage,
-                    record.data.ov_data.total_voltage);
-                break;
-
-            case EXCEPTION_TYPE_OVERTEMP:
-            case EXCEPTION_TYPE_UNDERTEMP: {
-                int16_t temp_int = record.data.temp_data.max_temperature / 10;
-                int16_t temp_dec = record.data.temp_data.max_temperature % 10;
-                if (temp_dec < 0) temp_dec = -temp_dec;
-
-                const char *state = (record.sub_type == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG";
-                const char *type = (record.error_type == EXCEPTION_TYPE_OVERTEMP) ? "OT" : "UT";
-
-                printk("%s %s: %d.%ddegC ", state, type, temp_int, temp_dec);
-                break;
-            }
-
-            default:
-                printk("Unknown type: 0x%02X", record.error_type);
-                break;
-        }
-    }
-
-    // All Flash records printed, print current RAM cache
-    if (print_state.exception_index >= print_state.exception_total && print_state.initialized) {
-        if (print_state.exception_total > 0) {
-            printk("\r\n=== End of Flash Records ===");
-        }
-
-        // Print currently tracking exceptions (RAM cache)
-        printk("\r\n\r\n=== Current Tracking (RAM Cache) ===");
-
-        // Overvoltage exception Cell1
-        if (CACHE_GET_CELL1_TRACKING(&g_exception_cache)) {
-            TimeStamp_t ts;
-            get_current_timestamp(&ts);
-            printk("\r\n[ACTIVE] %04d-%02d-%02d %02d:%02d:%02d | OV Cell1: %dmV (Tracking...)",
-                ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
-                g_exception_cache.cell1_max_voltage);
-        }
-
-        // Overvoltage exception Cell2
-        if (CACHE_GET_CELL2_TRACKING(&g_exception_cache)) {
-            TimeStamp_t ts;
-            get_current_timestamp(&ts);
-            printk("\r\n[ACTIVE] %04d-%02d-%02d %02d:%02d:%02d | OV Cell2: %dmV (Tracking...)",
-                ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
-                g_exception_cache.cell2_max_voltage);
-        }
-
-        // Temperature exception
-        if (CACHE_GET_TEMP_TRACKING(&g_exception_cache)) {
-            TimeStamp_t ts;
-            get_current_timestamp(&ts);
-            int16_t temp_int = g_exception_cache.max_temperature / 10;
-            int16_t temp_dec = g_exception_cache.max_temperature % 10;
-            if (temp_dec < 0) temp_dec = -temp_dec;
-
-            const char *state = (CACHE_GET_CHARGE_STATE(&g_exception_cache) == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG";
-            const char *type = (CACHE_GET_TEMP_EVENT_TYPE(&g_exception_cache) == EXCEPTION_TYPE_OVERTEMP) ? "OT" : "UT";
-
-            printk("\r\n[ACTIVE] %04d-%02d-%02d %02d:%02d:%02d | %s %s: %d.%ddegC (Tracking...)",
-                ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
-                state, type, temp_int, temp_dec);
-        }
-
-        // If no active tracking exceptions
-        if (!CACHE_GET_CELL1_TRACKING(&g_exception_cache) &&
-            !CACHE_GET_CELL2_TRACKING(&g_exception_cache) &&
-            !CACHE_GET_TEMP_TRACKING(&g_exception_cache)) {
-            printk("\r\nNo active exceptions");
-        }
-
-        printk("\r\n=== End of Report ===\r\n");
-
-        // Reset print state for next call to start fresh
-        print_state.initialized = 0;
-    }
 }
 #endif

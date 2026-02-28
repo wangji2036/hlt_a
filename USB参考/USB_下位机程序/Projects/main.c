@@ -529,7 +529,8 @@ void user_loop(void) {
                     /* 工程模式写保护：工程寄存器仅在工程模式下可写 */
                     if ((wr_addr >= REG_ENG_CURRENT_DATE && wr_addr <= REG_ENG_CURRENT_DATE + 3) ||
                         (wr_addr >= REG_ENG_PRODUCTION_DATE && wr_addr <= REG_ENG_PRODUCTION_DATE + 3) ||
-                        (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1))
+                        (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1) ||
+                        (wr_addr >= REG_ENG_VIRTUAL_CELL1 && wr_addr <= REG_ENG_ERASE_ALL_CMD))
                     {
                         if (i2c_buff[REG_WORK_MODE] == ENGINEERING_MODE_KEY)
                             i2c_buff[wr_addr] = Vendor_Request[3 + i];
@@ -611,7 +612,8 @@ void I2C_IRQHandler(void) {
                 /* 工程模式写保护：工程寄存器仅在工程模式下可写 */
                 if ((wr_addr >= REG_ENG_CURRENT_DATE && wr_addr <= REG_ENG_CURRENT_DATE + 3) ||
                     (wr_addr >= REG_ENG_PRODUCTION_DATE && wr_addr <= REG_ENG_PRODUCTION_DATE + 3) ||
-                    (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1))
+                    (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1) ||
+                    (wr_addr >= REG_ENG_VIRTUAL_CELL1 && wr_addr <= REG_ENG_ERASE_ALL_CMD))
                 {
                     if (i2c_buff[REG_WORK_MODE] == ENGINEERING_MODE_KEY)
                         i2c_buff[wr_addr] = wr_data;

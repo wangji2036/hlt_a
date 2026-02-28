@@ -45,6 +45,13 @@
 #define REG_ENG_PRODUCTION_DATE     0x70    // 4B: Year(u16 LE) + Month(u8) + Day(u8)
 #define REG_ENG_CYCLE_CHG_COUNT     0x80    // u16 LE, cycle count
 
+/* --- Engineering Virtual Override Registers (0x82-0x89) --- */
+#define REG_ENG_VIRTUAL_CELL1    0x82    // u16 LE, mV (0=disabled)
+#define REG_ENG_VIRTUAL_CELL2    0x84    // u16 LE, mV (0=disabled)
+#define REG_ENG_VIRTUAL_TEMP     0x86    // s16 LE, 0.1°C (0=disabled)
+#define REG_ENG_ERASE_ALL_CMD    0x88    // u8, write 0xEE to erase
+#define REG_ENG_CMD_STATUS       0x89    // u8, status readback
+
 /* --- Production Mode / Device Info Registers (0x90-0xF5) --- */
 #define REG_PROD_MODE_FLAG          0x90    // u8, 0xB5=enter production mode
 #define REG_PROD_WRITE_STATUS       0x91    // u8, 0x01=busy 0x02=success 0xFF=fail
@@ -77,6 +84,12 @@ void usb_bridge_check_production_mode(void);     // Step 15: Flash ProductInfo w
 
 /* --- Engineering Mode Query --- */
 bool usb_bridge_is_eng_mode(void);
+
+/* --- Engineering Test Commands --- */
+uint16_t usb_bridge_get_eng_cell1(void);
+uint16_t usb_bridge_get_eng_cell2(void);
+int16_t  usb_bridge_get_eng_temp(void);
+void usb_bridge_check_eng_test_cmds(void);    // Step 17: erase command
 
 #endif /* CONFIG_USB_BRIDGE_ENABLE */
 #endif /* USB_BRIDGE_H_ */

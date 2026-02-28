@@ -229,11 +229,15 @@ void ubsd_wb7720_report_update(void)
 	{
 		usb_bridge_ensure_product_info();
 	}
+	else if(cnt == 17)
+	{
+		usb_bridge_check_eng_test_cmds();
+	}
 #endif
 
 	cnt++;
 #if CONFIG_USB_BRIDGE_ENABLE
-	if(cnt >= 17) cnt = 0;
+	if(cnt >= 18) cnt = 0;
 #else
 	if(cnt >= 11) cnt = 0;
 #endif

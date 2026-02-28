@@ -18,6 +18,7 @@
 #include "printk.h"
 #include "buckboost.h"
 #include <string.h>
+#include "bat_record.h"
 
 /*===================== External References =====================*/
 extern struct buckboost_s g_buckboost;
@@ -34,6 +35,11 @@ static uint8_t  eng_entry_virtual_cycle;     /* Virtual cycle count at entry */
 /* Exception record rotation */
 static uint16_t exc_cycle_cnt = 0;
 static uint8_t  exc_rotate_idx = 0;
+
+/* Engineering mode virtual override values */
+static uint16_t eng_virtual_cell1 = 0;  /* Virtual Cell1 voltage (mV), 0=disabled */
+static uint16_t eng_virtual_cell2 = 0;  /* Virtual Cell2 voltage (mV), 0=disabled */
+static int16_t  eng_virtual_temp  = 0;  /* Virtual temperature (0.1°C), 0=disabled */
 
 /*===================== Helper Functions =====================*/
 
@@ -321,7 +327,6 @@ void usb_bridge_check_engineering_mode(void)
 #if CONFIG_NEW_CCC_LOG_ENABLE
     uint8_t work_mode = 0;
     uint8_t date_buf[4];
-    uint8_t cycle_buf[2];
 
     /* Read work mode register from WB7720 */
     hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_WORK_MODE, &work_mode);
@@ -347,7 +352,6 @@ void usb_bridge_check_engineering_mode(void)
                 gd->Bat_RTC_Seconds = date_to_seconds(eng_year, eng_month, eng_day);
                 eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
 
-                printk("[UB]ENG ON %d-%d-%d\n", eng_year, eng_month, eng_day);
             }
 
             /* Read engineering production date from 0x70-0x73 */
@@ -385,18 +389,16 @@ void usb_bridge_check_engineering_mode(void)
                 /* prod_date written to WB7720 */
             }
 
-            /* Read engineering cycle count from 0x80-0x81 (u16 LE) */
-            hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                                      REG_ENG_CYCLE_CHG_COUNT,
-                                      cycle_buf, 2);
+            /* Read 0x80-0x87 in one 8-byte I2C read: cycle(2B) + cell1(2B) + cell2(2B) + temp(2B) */
             {
-                uint16_t eng_cycle = (uint16_t)cycle_buf[0] | ((uint16_t)cycle_buf[1] << 8);
-
-                /* Override cycle count (truncate to uint8_t range) */
-                gd->Battery_cycle_count = (uint8_t)eng_cycle;
-                eng_entry_virtual_cycle = (uint8_t)eng_cycle;
-
-                /* cycle count overridden */
+                uint8_t rbuf[8];
+                hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+                                          REG_ENG_CYCLE_CHG_COUNT, rbuf, 8);
+                gd->Battery_cycle_count = rbuf[0];
+                eng_entry_virtual_cycle = rbuf[0];
+                eng_virtual_cell1 = (uint16_t)rbuf[2] | ((uint16_t)rbuf[3] << 8);
+                eng_virtual_cell2 = (uint16_t)rbuf[4] | ((uint16_t)rbuf[5] << 8);
+                eng_virtual_temp  = (int16_t)((uint16_t)rbuf[6] | ((uint16_t)rbuf[7] << 8));
             }
 
             eng_mode_active = true;
@@ -420,8 +422,6 @@ void usb_bridge_check_engineering_mode(void)
             /* Restore real cycle count + added cycles */
             gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
 
-            printk("[UB]ENG OFF +%lus +%dc\n", elapsed, cycles_added);
-
             /* Reload real ProductInfo from Flash to I2C 0x92-0xF5 */
             {
                 ProductInfo_t info;
@@ -435,6 +435,11 @@ void usb_bridge_check_engineering_mode(void)
                     /* PI restored */
                 }
             }
+
+            /* Clear virtual override values */
+            eng_virtual_cell1 = 0;
+            eng_virtual_cell2 = 0;
+            eng_virtual_temp  = 0;
 
             eng_mode_active = false;
         }
@@ -520,6 +525,30 @@ void usb_bridge_check_production_mode(void)
 bool usb_bridge_is_eng_mode(void)
 {
     return eng_mode_active;
+}
+
+uint16_t usb_bridge_get_eng_cell1(void) { return eng_virtual_cell1; }
+uint16_t usb_bridge_get_eng_cell2(void) { return eng_virtual_cell2; }
+int16_t  usb_bridge_get_eng_temp(void)  { return eng_virtual_temp; }
+
+/**
+ * @brief Check and handle engineering test commands (erase all).
+ * Called from round-robin step 17. Only processes when engineering mode is active.
+ */
+void usb_bridge_check_eng_test_cmds(void)
+{
+#if CONFIG_NEW_CCC_LOG_ENABLE
+    if (!eng_mode_active) return;
+
+    uint8_t erase_cmd = 0;
+    hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, &erase_cmd);
+
+    if (erase_cmd == 0xEE) {
+        battery_record_erase_all();
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
+    }
+#endif
 }
 
 #endif /* CONFIG_USB_BRIDGE_ENABLE */

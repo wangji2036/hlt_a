@@ -78,4 +78,11 @@
 #define REG_ENG_PRODUCTION_DATE 0x70  // 生产日期 [年Lo][年Hi][月][日]
 #define REG_ENG_CYCLE_COUNT     0x80  // 循环次数 [次Lo][次Hi]
 
+/* 工程测试虚拟值寄存器 */
+#define REG_ENG_VIRTUAL_CELL1    0x82  // 虚拟电芯1电压 [Lo][Hi] mV, 0=用真实值
+#define REG_ENG_VIRTUAL_CELL2    0x84  // 虚拟电芯2电压 [Lo][Hi] mV, 0=用真实值
+#define REG_ENG_VIRTUAL_TEMP     0x86  // 虚拟温度 [Lo][Hi] 0.1°C, 0=用真实值
+#define REG_ENG_ERASE_ALL_CMD    0x88  // 清除全部异常记录: 写 0xEE 触发
+#define REG_ENG_CMD_STATUS       0x89  // 命令状态: 0x00=空闲, 0x02=成功, 0xFF=失败
+
 #endif /* __CONFIG_H */
