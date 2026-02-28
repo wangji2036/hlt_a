@@ -225,11 +225,15 @@ void ubsd_wb7720_report_update(void)
 	{
 		usb_bridge_check_production_mode();
 	}
+	else if(cnt == 16)
+	{
+		usb_bridge_ensure_product_info();
+	}
 #endif
 
 	cnt++;
 #if CONFIG_USB_BRIDGE_ENABLE
-	if(cnt >= 16) cnt = 0;
+	if(cnt >= 17) cnt = 0;
 #else
 	if(cnt >= 11) cnt = 0;
 #endif

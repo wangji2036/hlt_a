@@ -626,9 +626,13 @@ void I2C_IRQHandler(void) {
             I2C_Config(I2C_CON_AA);
          break;
         case 0xA8: { /* Own SLA+R has been received; ACK has been returned */
+            I2C_WriteData(i2c_buff[(uint8_t)i2c_cnt]);
+            i2c_cnt++;
             I2C_Config(I2C_CON_AA);
         } break;
         case 0xB8: { /* Data byte has been transmitted; ACK has been received */
+            I2C_WriteData(i2c_buff[(uint8_t)i2c_cnt]);
+            i2c_cnt++;
             I2C_Config(I2C_CON_AA);
         } break;
         case 0xC0: { /* Data byte has been transmitted; NOT ACK has been received */

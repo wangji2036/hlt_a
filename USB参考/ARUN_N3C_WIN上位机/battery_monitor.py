@@ -98,6 +98,9 @@ MAX_EXCEPTION_DISPLAY = 20
 # 设备信息读取超时（秒）
 DEVICE_INFO_TIMEOUT = 5.0
 
+# ProductInfo 刷新间隔（秒）。0 = 仅连接时读取一次；>0 = 定期刷新
+PROD_INFO_REFRESH_INTERVAL_S = 3
+
 # 写入步骤间隔（秒）
 WRITE_STEP_INTERVAL = 0.05
 
@@ -152,9 +155,10 @@ def _register_opposan_fonts():
 def _get_tk_font(size, bold=False):
     """返回 tkinter font tuple，优先 OPPOSans，回退 Microsoft YaHei"""
     _register_opposan_fonts()
-    weight = 'bold' if bold else 'normal'
     if FONT_REGISTERED:
-        return ('OPPOSans', size, weight)
+        family = 'OPPOSans B' if bold else 'OPPOSans M'
+        return (family, size)
+    weight = 'bold' if bold else 'normal'
     return ('Microsoft YaHei', size, weight)
 
 # ---------------------------------------------------------------------------
@@ -1453,7 +1457,14 @@ class BatteryMonitorApp:
     def _poll_tick(self):
         if not self._connected:
             return
-        if not self._reading_busy:
+        self._poll_counter += 1
+        # 定期刷新 ProductInfo
+        if PROD_INFO_REFRESH_INTERVAL_S > 0 and self._poll_counter % PROD_INFO_REFRESH_INTERVAL_S == 0:
+            if not self._reading_busy:
+                self.device_info = DeviceInfo()
+                t = threading.Thread(target=self._read_device_info_worker, daemon=True)
+                t.start()
+        elif not self._reading_busy:
             t = threading.Thread(target=self._read_data_worker, daemon=True)
             t.start()
         self.root.after(1000, self._poll_tick)

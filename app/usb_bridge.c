@@ -109,18 +109,33 @@ static bool is_product_info_valid(const uint8_t *data, uint16_t len)
 void usb_bridge_init(void)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
+    usb_bridge_ensure_product_info();
+#endif
+}
+
+/**
+ * @brief Ensure ProductInfo has been written to WB7720.
+ *
+ * Called from round-robin step 16 (~every 752ms).
+ * If usb_bridge_init() I2C write failed (WB7720 not ready at boot),
+ * this function retries until success, then stops (done=1).
+ */
+void usb_bridge_ensure_product_info(void)
+{
+#if CONFIG_NEW_CCC_LOG_ENABLE
+    static uint8_t done = 0;
+    if (done) return;
     ProductInfo_t info;
-
-    /* Read product information from Flash */
     product_info_read(&info);
-
-    /* Check if product info is valid (not blank Flash) */
-    if (is_product_info_valid((const uint8_t *)&info, sizeof(ProductInfo_t))) {
-        /* Write all 100 bytes to WB7720 register region 0x92-0xF5 */
-        hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+    if (!is_product_info_valid((const uint8_t *)&info, sizeof(ProductInfo_t))) {
+        done = 1;
+        return;
+    }
+    if (hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
                                    REG_PROD_MANUFACTURER,
                                    (uint8_t *)&info,
-                                   sizeof(ProductInfo_t));
+                                   sizeof(ProductInfo_t)) == 0) {
+        done = 1;
     }
 #endif
 }
@@ -485,14 +500,12 @@ void usb_bridge_check_production_mode(void)
     if (memcmp(&info, &verify, sizeof(ProductInfo_t)) == 0) {
         /* Step 6a: Success */
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_PROD_WRITE_STATUS, 0x02);
-        /* success */
 
         /* Also update the live I2C buffer with the newly written data */
         /* (registers 0x92-0xF5 already contain the correct data from the PC write) */
     } else {
         /* Step 6b: Fail - verification mismatch */
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_PROD_WRITE_STATUS, 0xFF);
-        /* verify failed */
     }
 
     /* Step 7: Clear production mode flag */
