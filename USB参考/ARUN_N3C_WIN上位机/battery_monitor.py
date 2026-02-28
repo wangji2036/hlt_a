@@ -1197,6 +1197,7 @@ class BatteryMonitorApp:
     # -----------------------------------------------------------------------
     def _on_mode_change(self):
         mode = self._mode_var.get()
+        was_eng = self._eng_mode_active
 
         if mode == 'eng':
             pwd = simpledialog.askstring(
@@ -1231,6 +1232,18 @@ class BatteryMonitorApp:
             self._prod_mode_active = False
             self._eng_panel.pack_forget()
             self._prod_panel.pack_forget()
+
+        # 退出工程模式时通知设备
+        if was_eng and not self._eng_mode_active and self._connected:
+            threading.Thread(target=self._exit_eng_on_device, daemon=True).start()
+
+    def _exit_eng_on_device(self):
+        """写 0x50=0x00 通知 NU17112 退出工程模式"""
+        try:
+            payload = bytes([0x50, 1, 0x00])
+            self._hid_write(CMD_WRITE_REGISTER, payload)
+        except Exception:
+            pass
 
     # -----------------------------------------------------------------------
     # 设备枚举
@@ -1725,6 +1738,8 @@ class BatteryMonitorApp:
             write_reg(0x84, struct.pack('<H', cell2_mv))
             # Step 7: 虚拟温度 (s16 LE)
             write_reg(0x86, struct.pack('<h', vtemp))
+            # Step 8: 触发 NU17112 重新读取 (支持重复写入)
+            write_reg(0x88, bytes([0xAA]))
 
             self.root.after(0, lambda: self._eng_status_var.set("写入成功"))
         except Exception as e:

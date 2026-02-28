@@ -547,6 +547,18 @@ void usb_bridge_check_eng_test_cmds(void)
         battery_record_erase_all();
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
+    } else if (erase_cmd == 0xAA) {
+        /* Refresh: EXIT current session, next step-14 will ENTER with new values */
+        uint32_t elapsed = gd->Bat_RTC_Seconds - eng_entry_virtual_seconds;
+        gd->Bat_RTC_Seconds = eng_saved_rtc_seconds + elapsed;
+        uint8_t cycles_added = gd->Battery_cycle_count - eng_entry_virtual_cycle;
+        gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
+        eng_virtual_cell1 = 0;
+        eng_virtual_cell2 = 0;
+        eng_virtual_temp  = 0;
+        eng_mode_active = false;
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
     }
 #endif
 }
