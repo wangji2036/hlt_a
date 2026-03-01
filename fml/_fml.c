@@ -109,7 +109,7 @@ void fml_task_event_handler(uint32_t event)
 				}
 
 				// Cycle-based CV voltage adjustment
-#if(BUCKBOOST_USED_NU6805 == 1)
+#if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1 && BUCKBOOST_USED_NU6805 == 1)
 				{
 					uint16_t cv_offset_mv = 0;
 					if (gd->Battery_cycle_count >= CYCLE_CV_TIER3_COUNT) {
