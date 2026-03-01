@@ -35,9 +35,9 @@
 #define REG_EXC_RESERVED            0x39    // u8, reserved = 0x00
 #define REG_EXC_RECORD_DATA         0x3A    // 20B, BatteryExceptionRecord_t
 
-/* --- Sleep/Wakeup Commands (0x44-0x45) --- */
-#define REG_SLEEP                   0x44    // u8, write 0x01 to enter sleep
-#define REG_WAKEUP                  0x45    // u8, write 0x01 to wakeup
+/* --- Sleep/Wakeup Commands (0x4E-0x4F) --- */
+#define REG_SLEEP                   0x4E    // u8, write 0x01 to enter sleep
+#define REG_WAKEUP                  0x4F    // u8, write 0x01 to wakeup
 
 /* --- Engineering Mode Registers (0x50-0x81) --- */
 #define REG_WORK_MODE               0x50    // u8, 0x00=user 0xA5=engineering
