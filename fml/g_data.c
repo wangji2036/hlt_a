@@ -2,6 +2,7 @@
 #include "printk.h"
 #include "g_data.h"
 #include "config.h"
+#include "app.h"
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
@@ -350,7 +351,7 @@ void product_info_write(const ProductInfo_t *info) {
 
 	for (i = 0; i < sizeof(ProductInfo_t); i += 4) {
 		uint32_t word = (src_data[i+3] << 24) | (src_data[i+2] << 16) | (src_data[i+1] << 8) | src_data[i];
-		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, word);
+		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, switch_big_little_endian(word));
 	}
 	// 3. (Write version marker to distinguish new/old format)
 	hal_fmc_write_word(ADDR_PRODUCT_INFO_VERSION, PRODUCT_INFO_VERSION);

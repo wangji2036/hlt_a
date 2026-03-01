@@ -34,7 +34,7 @@ WB7720 本身不做单位换算，只是透传 i2c_buff：
 - 实际上 NU17112 写入的是原始 mV，WB7720 原封不动放进 HID 报告
 - 上位机做 ÷100 转换（因为 HID 协议定义单位是 V×100，即 mV÷10）
 
-## 异常日志缓存系统 (v1.3 经验)
+## 异常日志缓存系统 (v1.4 经验)
 
 ### 架构设计
 - NU17112 每 ~500ms 滚动写入 1 条 20B 记录到 i2c_buff[0x3A~0x4D]
@@ -42,10 +42,12 @@ WB7720 本身不做单位换算，只是透传 i2c_buff：
 - Type 0x02 分 3 页输出: page 0(2条) + page 1(2条) + page 2(1条)
 - 页码 `exc_page_idx` 自动推进 0->1->2->0 循环
 
-### 关键实现细节
+### 关键实现细节 (v1.4)
 - `exc_cache_update()` 在每次 `update_report_buffer_0()` 末尾调用（搭便车策略）
-- record_id == 0 视为无效记录，跳过
-- 缓存满 5 条后停止追加（不覆盖旧记录）
+- record_id == 0 视为无效记录，跳过（安全兜底，NU17112 现在从 1 开始）
+- **v1.4 新增 — 擦除检测**: `i2c_buff[REG_EXC_TOTAL_COUNT] == 0` 时清空 `exc_cache_count` 和 `exc_page_idx`，避免 NU17112 擦除后上位机仍显示旧记录
+- **v1.4 新增 — 环形覆盖**: 缓存满 5 条时改为 FIFO 移位（`exc_cache[0..3] = exc_cache[1..4]`，新记录写入 `exc_cache[4]`），确保始终保留最新 5 条
+- **v1.4 新增 — 就地更新**: 若 record_id 已在缓存中（NU17112 可能更新同一条记录的字段），`memcpy` 覆盖该条目而非重复追加
 - `return_count = min(2, max(0, cache_count - page_start))`，无记录时发空包 ReturnCount=0
 
 ### 寄存器迁移记录
