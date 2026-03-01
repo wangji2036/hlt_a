@@ -15,7 +15,13 @@ extern uint16_t key_ui_cnt;
 void key_sigle_click_process(void);
 void key_double_click_process(void);
 void key_long_click_process(void);
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+void key_triple_click_process(void);
+#endif
 volatile uint8_t key_flag = 0;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+static uint8_t comm_feedback_cnt = 0;
+#endif
 volatile uint8_t charge_read = 0;
 volatile uint8_t charge_flag = 0;
 // following variable will be update to be GB data.
@@ -518,9 +524,26 @@ void ui_update(void)
 		key_long_click_process();
 	//  printk("\r\n ----------222------------------//-------key long click");
 	}
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	else if(key_flag == 4)
+	{
+		key_triple_click_process();
+		gd->idle_to_sleep_cnt = 0;
+	}
+#endif
 
 	key_flag = 0;
 
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if(comm_feedback_cnt > 0)
+	{
+		comm_feedback_cnt--;
+		soc_show_ram_led = (comm_feedback_cnt & 1) ? 0x00 : 0x0F;
+		prev_woke_mode = g_buckboost.woke_mode;
+		ui_no_timer_scan = 0;
+		return;  // Skip normal LED update during feedback
+	}
+#endif
 
 	if(gd->real_soc_obtained == 0 )
 	{
@@ -762,6 +785,24 @@ void key_long_click_process(void)
 //    }
 }
 
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+void key_triple_click_process(void)
+{
+	gd->usb_comm_activated ^= 1;
+	if(gd->usb_comm_activated)
+	{
+		comm_feedback_cnt = 6;  // 3 flashes (on-off-on-off-on-off @ 250ms)
+		printk("USB comm activated by triple-click\n");
+	}
+	else
+	{
+		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
+		printk("USB comm deactivated by triple-click\n");
+	}
+	key_ui_cnt = 0;
+}
+#endif
+
 //// structure for key information
 //typedef struct KeyInfo {
 //    uint8_t press_status;  // 0 means release,1 means press down
@@ -809,6 +850,16 @@ void key_handle_10ms()
 	{
 		if(key_cnt >= 3 && key_cnt <= 50)
 		{
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+			key_click_cnt++;
+			key_delay_ms = 50;
+			if(key_click_cnt >= 3)
+			{
+				key_flag = 4;  // triple click
+				key_click_cnt = 0;
+				key_delay_ms = 0;
+			}
+#else
 			if(key_click_cnt == 0)
 			{
 				key_delay_ms = 50;
@@ -820,6 +871,7 @@ void key_handle_10ms()
 				key_delay_ms = 0;
 				key_flag = 2;
 			}
+#endif
 		}
 		key_cnt = 0;
 	}
@@ -831,7 +883,14 @@ void key_handle_10ms()
 		{
 			if(key_click_cnt)
 			{
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+				if(key_click_cnt == 1)
+					key_flag = 1;  // single click
+				else if(key_click_cnt == 2)
+					key_flag = 2;  // double click
+#else
 				key_flag = 1;
+#endif
 				key_click_cnt = 0;
 			}
 		}

@@ -517,6 +517,9 @@ struct gd_t
 	 uint8_t tc0_lighting_mode;
 	 uint8_t tc1_lighting_mode;
 	 uint8_t wpc_disable;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	 uint8_t usb_comm_activated;   // Triple-click USB bridge gate (survives sleep)
+#endif
 	 uint8_t real_soc_show;
 	 uint8_t real_soc_obtained;
 	 uint8_t dp_result;

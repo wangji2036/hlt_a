@@ -204,6 +204,9 @@ void gd_data_init(void)
 		gd->bat_dead_flag_with_snk0 = 0;
 		gd->bat_dead_flag_with_snk1 = 0;
 		gd->wpc_disable = 0x00;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+		gd->usb_comm_activated = 0;
+#endif
 		gd->real_soc_show = 0;
 		gd->bat_dead_flag = 0;
 		gd->real_soc_obtained = 0;

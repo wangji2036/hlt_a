@@ -244,7 +244,11 @@ void ubsd_wb7720_report_update(void)
 
 	static bool is_usb_enable = false;
 	static uint8_t qc_delay_cnt = 0;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if(gd->usb_comm_activated && g_port.port_state[1] != PORT_STATE_NONE)
+#else
 	if(g_port.port_state[1] != PORT_STATE_NONE)
+#endif
 	{
 		if(g_usb_pd_s.explicit_contract || gd->force_usb_mode)
 		{
