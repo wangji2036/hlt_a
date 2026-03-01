@@ -41,6 +41,18 @@
 - 解决: makefile patch 脚本使用 LC_ALL=C sed + [^$] 匹配乱码字节
 - 来源: 构建环境搭建
 
+## 工程模式联机测试要点
+
+### [S-007] 工程模式虚拟参数只影响异常检测，不影响硬件保护
+- **原则**: `eng_virtual_cell1/cell2/temp` 仅在 `bat_record.c` 的 `battery_record_update_overvoltage()` 和 `battery_record_update_overtemperature()` 中使用
+- **安全保证**: BuckBoost 充放电控制、NTC 温度保护、端口管理等子系统始终使用真实 ADC/NTC 值
+- **推论**: 工程模式注入极端虚拟值不会导致硬件损坏或危险行为
+
+### [S-008] USB 桥接链路的时序约束
+- **端到端延迟**: PC 写 → WB7720 i2c_buff → NU17112 I2C 读 ≈ 50ms(HID) + 47~846ms(round-robin) ≈ 100ms~1s
+- **异常记录回传**: NU17112 检测 → Flash 写入 → i2c_buff 轮转 → WB7720 exc_cache → HID Type 0x02 ≈ 3-15s
+- **测试影响**: 所有联机测试步骤之间需插入足够等待时间，不能假设即时响应
+
 ## 平台约束备忘
 
 - MCU: CK802 @ 36 MHz, 120KB Flash, 8KB SRAM (7KB 可用)

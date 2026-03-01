@@ -2,7 +2,18 @@
 
 ## 已确认的模式 (Confirmed Patterns)
 
+### [P-001] 按键状态机扩展模式 (key_handle_10ms)
+- 按键检测采用 10ms 轮询 + 计数器模式: `key_cnt` 计按下时长, `key_click_cnt` 计点击次数, `key_delay_ms` 做超时窗口
+- 短按判定: `key_cnt >= 3 && key_cnt <= 50` (30ms~500ms), 长按: `key_cnt == 300` (3s)
+- 扩展多击检测时, 用 `#if/#else/#endif` 包裹替代逻辑, 保持 `#else` 分支为原始行为, 确保宏关闭时零影响
+- key_flag 值约定: 1=单击, 2=双击, 3=长按, 4=三击 (需 CONFIG_TRIPLE_CLICK_COMM_ENABLE)
+
 ## 已知陷阱 (Known Pitfalls)
+
+### [T-001] ui_update() 中提前 return 必须恢复 ui_no_timer_scan
+- `ui_update()` 入口设 `ui_no_timer_scan = 1` 阻止 `ui_display()` 的 GPIO 扫描, 出口恢复为 0
+- 任何中途 `return` 都必须在返回前执行 `ui_no_timer_scan = 0;`, 否则 LED 扫描永久停止, 所有 LED 熄灭
+- 来源: triple-click LED 反馈的 early return 实现时发现
 
 ## 调试经验 (Debugging Lessons)
 

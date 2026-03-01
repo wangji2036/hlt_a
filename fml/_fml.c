@@ -13,6 +13,7 @@
 #include "g_data.h"
 #include "usb_pd.h"
 #include "usb_bridge.h"
+#include "nu6805.h"
 #define USBD_WB7720_ADDR	0x21
 extern uint8_t power_on_cnt;
 extern uint8_t bat_cell_num;
@@ -106,6 +107,27 @@ void fml_task_event_handler(uint32_t event)
 					gd->Bat_SoH = 100 - ( gd->Battery_cycle_count - 50) * 5 / 100;
 					if(gd->Bat_SoH < 0) gd->Bat_SoH = 0;
 				}
+
+				// Cycle-based CV voltage adjustment
+#if(BUCKBOOST_USED_NU6805 == 1)
+				{
+					uint16_t cv_offset_mv = 0;
+					if (gd->Battery_cycle_count >= CYCLE_CV_TIER3_COUNT) {
+						cv_offset_mv = CYCLE_CV_TIER3_OFFSET;
+					} else if (gd->Battery_cycle_count >= CYCLE_CV_TIER2_COUNT) {
+						cv_offset_mv = CYCLE_CV_TIER2_OFFSET;
+					} else if (gd->Battery_cycle_count >= CYCLE_CV_TIER1_COUNT) {
+						cv_offset_mv = CYCLE_CV_TIER1_OFFSET;
+					}
+
+					static uint16_t last_cv_offset = 0xFFFF;  // force first update
+					if (cv_offset_mv != last_cv_offset) {
+						uint16_t adjusted_cv_pack = (BATTERY_CV_VALUE - cv_offset_mv) * CONFIG_BATTERY_CELL_COUNT;
+						hal_nu6805_buckboost_charge_target_volt(adjusted_cv_pack);
+						last_cv_offset = cv_offset_mv;
+					}
+				}
+#endif
 
 				//printk("Cycle = %d Rdc = %d SoH = %d RTC_Timer = %d\n",gd->Battery_cycle_count,gd->Bat_Rdc,gd->Bat_SoH,gd->Bat_RTC_Timer);
 			}
