@@ -72,5 +72,11 @@ void battery_record_print_next_log(void);
  * Called from engineering mode erase command.
  */
 void battery_record_erase_all(void);
+
+/**
+ * @brief Reset exception tracking state without erasing records.
+ * Clears g_exception_cache so new parameters can trigger fresh OV/OT detection.
+ */
+void battery_record_reset_tracking(void);
 #endif
 #endif /* __BAT_RECORD_H__ */

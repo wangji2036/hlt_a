@@ -548,15 +548,47 @@ void usb_bridge_check_eng_test_cmds(void)
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
     } else if (erase_cmd == 0xAA) {
-        /* Refresh: EXIT current session, next step-14 will ENTER with new values */
+        /* Refresh: apply new params IN-PLACE (no exit/re-enter gap) */
+
+        /* 1. Settle RTC and cycle deltas from current session */
         uint32_t elapsed = gd->Bat_RTC_Seconds - eng_entry_virtual_seconds;
         gd->Bat_RTC_Seconds = eng_saved_rtc_seconds + elapsed;
         uint8_t cycles_added = gd->Battery_cycle_count - eng_entry_virtual_cycle;
         gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
-        eng_virtual_cell1 = 0;
-        eng_virtual_cell2 = 0;
-        eng_virtual_temp  = 0;
-        eng_mode_active = false;
+
+        /* 2. Update baseline for next session */
+        eng_saved_rtc_seconds = gd->Bat_RTC_Seconds;
+        eng_saved_cycle_count = gd->Battery_cycle_count;
+
+        /* 3. Read new virtual params from WB7720 (same as entry) */
+        {
+            uint8_t rbuf[8];
+            hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+                                      REG_ENG_CYCLE_CHG_COUNT, rbuf, 8);
+            gd->Battery_cycle_count = rbuf[0];
+            eng_entry_virtual_cycle = rbuf[0];
+            eng_virtual_cell1 = (uint16_t)rbuf[2] | ((uint16_t)rbuf[3] << 8);
+            eng_virtual_cell2 = (uint16_t)rbuf[4] | ((uint16_t)rbuf[5] << 8);
+            eng_virtual_temp  = (int16_t)((uint16_t)rbuf[6] | ((uint16_t)rbuf[7] << 8));
+        }
+
+        /* 4. Re-read current date */
+        {
+            uint8_t date_buf[4];
+            hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+                                      REG_ENG_CURRENT_DATE, date_buf, 4);
+            uint16_t eng_year  = (uint16_t)date_buf[0] | ((uint16_t)date_buf[1] << 8);
+            uint8_t  eng_month = date_buf[2];
+            uint8_t  eng_day   = date_buf[3];
+            gd->Bat_RTC_Seconds = date_to_seconds(eng_year, eng_month, eng_day);
+            eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
+        }
+
+        /* 5. Reset exception tracking so new params can trigger fresh OV/OT */
+        battery_record_reset_tracking();
+
+        /* eng_mode_active stays true — no gap where real ADC triggers stale tracking */
+
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
     }

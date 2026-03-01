@@ -612,4 +612,12 @@ void battery_record_erase_all(void) {
     memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
 
 }
+
+/**
+ * @brief Reset exception tracking state without erasing records.
+ * Called from 0xAA refresh to allow new virtual params to trigger fresh detection.
+ */
+void battery_record_reset_tracking(void) {
+    memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
+}
 #endif
