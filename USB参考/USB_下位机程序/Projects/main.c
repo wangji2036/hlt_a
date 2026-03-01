@@ -526,12 +526,12 @@ void user_loop(void) {
                 if (reg_len > 60) reg_len = 60; /* 防越界: 64 - 4 */
                 for (uint8_t i = 0; i < reg_len; i++) {
                     uint8_t wr_addr = reg_addr + i;
-                    /* 工程模式写保护：工程寄存器仅在工程模式下可写 */
-                    if ((wr_addr >= REG_ENG_CURRENT_DATE && wr_addr <= REG_ENG_CURRENT_DATE + 3) ||
-                        (wr_addr >= REG_ENG_PRODUCTION_DATE && wr_addr <= REG_ENG_PRODUCTION_DATE + 3) ||
-                        (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1) ||
-                        (wr_addr >= REG_ENG_VIRTUAL_CELL1 && wr_addr <= REG_ENG_ERASE_ALL_CMD))
-                    {
+                    /* 工程模式写保护：仅擦除/刷新命令寄存器需要工程模式密钥
+                     * DATA 寄存器 (0x60~0x87) 允许无条件写入，因为它们只是参数缓冲区，
+                     * NU17112 仅在检测到 0x50=0xA5 时才读取这些参数。
+                     * 这允许 PC 在设置工程模式标志之前预写参数，避免时序竞争。 */
+                    if (wr_addr == REG_ENG_ERASE_ALL_CMD) {
+                        /* 擦除/刷新命令: 仅在工程模式下可写 */
                         if (i2c_buff[REG_WORK_MODE] == ENGINEERING_MODE_KEY)
                             i2c_buff[wr_addr] = Vendor_Request[3 + i];
                     }
@@ -609,12 +609,10 @@ void I2C_IRQHandler(void) {
                 uint8_t wr_data = I2C_ReadData();
                 uint8_t wr_addr = (uint8_t)i2c_cnt;
 
-                /* 工程模式写保护：工程寄存器仅在工程模式下可写 */
-                if ((wr_addr >= REG_ENG_CURRENT_DATE && wr_addr <= REG_ENG_CURRENT_DATE + 3) ||
-                    (wr_addr >= REG_ENG_PRODUCTION_DATE && wr_addr <= REG_ENG_PRODUCTION_DATE + 3) ||
-                    (wr_addr >= REG_ENG_CYCLE_CHG_COUNT && wr_addr <= REG_ENG_CYCLE_CHG_COUNT + 1) ||
-                    (wr_addr >= REG_ENG_VIRTUAL_CELL1 && wr_addr <= REG_ENG_ERASE_ALL_CMD))
-                {
+                /* 工程模式写保护：仅擦除/刷新命令寄存器需要工程模式密钥
+                 * DATA 寄存器 (0x60~0x87) 允许无条件写入 (参数缓冲区)。 */
+                if (wr_addr == REG_ENG_ERASE_ALL_CMD) {
+                    /* 擦除/刷新命令: 仅在工程模式下可写 */
                     if (i2c_buff[REG_WORK_MODE] == ENGINEERING_MODE_KEY)
                         i2c_buff[wr_addr] = wr_data;
                     /* 非工程模式下丢弃写入 */
