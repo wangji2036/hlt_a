@@ -20,6 +20,11 @@
 #define g_exception_cache   (ap->exception_cache)
 #define g_record_storage    (ap->record_storage)
 
+static uint32_t g_next_record_id = 1;  /* Monotonic ID, starts from 1, never 0 */
+
+/* Forward declaration */
+static void battery_record_dump_flash(void);
+
 /********************* Flash Operation Functions *********************/
 
 // Flash write with endian conversion
@@ -195,8 +200,8 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
         g_record_storage.write_ptr = 0;
     }
 
-    // Set record ID to current write pointer position
-    record->record_id = g_record_storage.write_ptr;
+    // Set record ID to monotonic counter (never 0, never repeats within a power cycle)
+    record->record_id = g_next_record_id++;
 
     g_record_storage.records[g_record_storage.write_ptr] = *record;
     g_record_storage.write_ptr = (g_record_storage.write_ptr + 1) % MAX_RECORDS;
@@ -208,6 +213,14 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
 
     // Write entire RAM storage to Flash
     save_storage_to_flash();
+    printk("[EXC]id%d ty%d\r\n", (int)record->record_id, record->error_type);
+#if CONFIG_USB_BRIDGE_ENABLE
+    {
+        uint8_t vcnt = g_record_storage.exception_counter;
+        if (vcnt > MAX_RECORDS) vcnt = MAX_RECORDS;
+        usb_bridge_exc_burst(vcnt);
+    }
+#endif
 }
 
 /********************* Public API Function Implementations *********************/
@@ -233,6 +246,21 @@ void battery_record_init(void) {
         } else {
             // printk("Battery record: Data loaded successfully (checksum OK)\r\n");
             battery_record_print_next_log();
+            /* Restore monotonic ID from existing records: find max record_id + 1 */
+            {
+                uint32_t max_rid = 0;
+                uint8_t valid = g_record_storage.exception_counter;
+                if (valid > MAX_RECORDS) valid = MAX_RECORDS;
+                for (uint8_t i = 0; i < valid; i++) {
+                    if (g_record_storage.records[i].record_id > max_rid) {
+                        max_rid = g_record_storage.records[i].record_id;
+                    }
+                }
+                g_next_record_id = (max_rid > 0) ? max_rid + 1 : 1;
+#if CONFIG_USB_BRIDGE_ENABLE
+                if (valid > 0) usb_bridge_exc_burst(valid);
+#endif
+            }
         }
     }
 
@@ -243,6 +271,8 @@ void battery_record_init(void) {
         g_record_storage.exception_counter = 0;
         g_record_storage.write_ptr = 0;
         // Removed reserved and padding fields
+
+        g_next_record_id = 1;  /* Fresh start: monotonic ID begins at 1 */
 
         // Write initialized data to Flash
         save_storage_to_flash();
@@ -563,7 +593,7 @@ void battery_record_update_temperature(void) {
 void battery_record_periodic_check(void) {
     static uint16_t check_counter = 0;
 
-    // Check every 30 seconds, assuming ~100ms call frequency
+    // Check every 1 second (10 × 100ms APL_EVT_100ms_POLL)
     if (++check_counter >= 10) {
         check_counter = 0;
         battery_record_update_overvoltage();
@@ -601,16 +631,50 @@ void battery_record_print_next_log(void) {
 }
 
 /**
+ * @brief Dump exception records read directly from Flash (bypasses RAM cache).
+ * Format: [FD]magic cnt wptr / [FDi]id type YYYYMMDD sub V1/V2
+ * type: 1=OV 2=OT 3=UT; V1=max_voltage(OV) or max_temp(OT/UT); V2=total_voltage
+ */
+static void battery_record_dump_flash(void)
+{
+    static BatteryRecordStorage_t snap;
+    uint8_t i;
+
+    flash_read_record(FLASH_LOG_BASE, (uint8_t *)&snap, sizeof(snap));
+    printk("[FD]%08X c%d w%d\r\n",
+           (unsigned int)snap.magic, snap.exception_counter, snap.write_ptr);
+    if (snap.magic != MAGIC_VALUE) return;
+
+    for (i = 0; i < MAX_RECORDS; i++) {
+        BatteryExceptionRecord_t *r = &snap.records[i];
+        if (!r->record_id) continue;
+        printk("[FD%d]id%d t%d %04d%02d%02d s%d V%d/%d\r\n",
+               i, (int)r->record_id, r->error_type,
+               r->timestamp.year, r->timestamp.month, r->timestamp.day,
+               r->sub_type,
+               r->data.ov_data.max_voltage,
+               r->data.ov_data.total_voltage);
+    }
+}
+
+/**
  * @brief Erase all exception records and reset storage to initial state.
  * Resets g_record_storage (magic, counter, write_ptr), saves to Flash,
  * and clears g_exception_cache tracking state.
  */
 void battery_record_erase_all(void) {
+    printk("[FD]pre-erase:\r\n");
+    battery_record_dump_flash();
     memset((void*)&g_record_storage, 0, sizeof(BatteryRecordStorage_t));
     g_record_storage.magic = MAGIC_VALUE;
     save_storage_to_flash();
     memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
-
+    g_next_record_id = 1;  /* Reset monotonic ID after erase */
+#if CONFIG_USB_BRIDGE_ENABLE
+    usb_bridge_exc_burst(1);  /* one burst to push zeros → clears WB7720 exc_cache */
+#endif
+    printk("[FD]post-erase:\r\n");
+    battery_record_dump_flash();
 }
 
 /**

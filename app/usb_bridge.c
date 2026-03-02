@@ -35,6 +35,7 @@ static uint8_t  eng_entry_virtual_cycle;     /* Virtual cycle count at entry */
 /* Exception record rotation */
 static uint16_t exc_cycle_cnt = 0;
 static uint8_t  exc_rotate_idx = 0;
+static uint8_t  exc_burst_cnt = 0;   /* >0: burst mode, skip interval */
 
 /* Engineering mode virtual override values */
 static uint16_t eng_virtual_cell1 = 0;  /* Virtual Cell1 voltage (mV), 0=disabled */
@@ -252,11 +253,18 @@ void usb_bridge_write_exception_record(void)
     uint8_t valid_count;
     uint8_t buf[23];
 
-    exc_cycle_cnt++;
-    if (exc_cycle_cnt < EXC_WRITE_INTERVAL) {
-        return;
+    if (exc_burst_cnt > 0) {
+        /* Burst mode: write every call until all records pushed */
+        exc_burst_cnt--;
+        exc_cycle_cnt = 0;
+    } else {
+        /* Maintenance mode: slow rotation */
+        exc_cycle_cnt++;
+        if (exc_cycle_cnt < EXC_WRITE_INTERVAL) {
+            return;
+        }
+        exc_cycle_cnt = 0;
     }
-    exc_cycle_cnt = 0;
 
     /* Determine how many valid records exist */
     valid_count = ap->record_storage.exception_counter;
@@ -436,6 +444,16 @@ void usb_bridge_check_engineering_mode(void)
                 }
             }
 
+            /* Immediately write restored real cycle count to WB7720,
+             * so telemetry updates without waiting for next cnt=5 round-robin
+             * (exit runs at cnt=14, cnt=5 is ~9 steps later = ~420ms delay) */
+            {
+                uint16_t write_buf = (uint16_t)gd->Battery_cycle_count;
+                hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+                                           REG_CYCLE_COUNT,
+                                           (uint8_t *)&write_buf, 2);
+            }
+
             /* Clear virtual override values */
             eng_virtual_cell1 = 0;
             eng_virtual_cell2 = 0;
@@ -530,6 +548,24 @@ bool usb_bridge_is_eng_mode(void)
 uint16_t usb_bridge_get_eng_cell1(void) { return eng_virtual_cell1; }
 uint16_t usb_bridge_get_eng_cell2(void) { return eng_virtual_cell2; }
 int16_t  usb_bridge_get_eng_temp(void)  { return eng_virtual_temp; }
+
+/**
+ * @brief Trigger burst sync of N exception records to WB7720.
+ *
+ * Resets exc_rotate_idx to 0 and sets exc_burst_cnt = count so that
+ * usb_bridge_write_exception_record() skips EXC_WRITE_INTERVAL for the
+ * next `count` calls, pushing all records at 846ms/record instead of 54s/record.
+ *
+ * Call after: write_exception_record(), battery_record_init(), battery_record_erase_all().
+ */
+void usb_bridge_exc_burst(uint8_t count)
+{
+#if CONFIG_NEW_CCC_LOG_ENABLE
+    exc_burst_cnt  = count;
+    exc_rotate_idx = 0;
+    exc_cycle_cnt  = 0;
+#endif
+}
 
 /**
  * @brief Check and handle engineering test commands (erase all).

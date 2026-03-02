@@ -62,8 +62,9 @@
 #define REG_PROD_PROD_DATE          0xE2    // 20B ASCII
 
 /*===================== Timing Constants =====================*/
-#define EXC_WRITE_INTERVAL          64      // Exception log write interval in round-robin steps
-                                            // 64 x 47ms ≈ 3 seconds per record rotation
+#define EXC_WRITE_INTERVAL          64      // Maintenance interval in round-robin cycles
+                                            // 64 x 846ms ≈ 54s per record (maintenance only)
+                                            // Fast initial sync uses burst mode instead
 
 /*===================== Function Declarations =====================*/
 
@@ -84,6 +85,9 @@ void usb_bridge_check_production_mode(void);     // Step 15: Flash ProductInfo w
 
 /* --- Engineering Mode Query --- */
 bool usb_bridge_is_eng_mode(void);
+
+/* --- Exception Burst Sync --- */
+void usb_bridge_exc_burst(uint8_t count);     // Trigger N consecutive record writes to WB7720
 
 /* --- Engineering Test Commands --- */
 uint16_t usb_bridge_get_eng_cell1(void);
