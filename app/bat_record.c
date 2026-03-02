@@ -386,30 +386,39 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
             }
         }
     } else if (is_tracking) {
-        // Recovered - save to Flash if max changed
-        // Read last saved value from records
-        uint8_t last_index = (g_record_storage.write_ptr == 0) ?
-                             (MAX_RECORDS - 1) : (g_record_storage.write_ptr - 1);
-        uint16_t last_saved_max = g_record_storage.records[last_index].data.ov_data.max_voltage;
+        // Voltage recovered - check 1-hour window before clearing tracking
+        uint32_t current_seconds;
+        VIC_vModuleDisable();
+        current_seconds = gd->Bat_RTC_Seconds;
+        VIC_vModuleEnable();
 
-        if (*max_voltage > last_saved_max) {
-            // Update record in RAM
-            get_current_timestamp(&g_record_storage.records[last_index].timestamp);
-            g_record_storage.records[last_index].data.ov_data.max_voltage = *max_voltage;
-            g_record_storage.records[last_index].data.ov_data.total_voltage = total_voltage;
+        bool is_hour_passed = is_new_hour(g_exception_cache.ov_hour_start_seconds, current_seconds);
 
-            // No longer need to update last_saved_max cache
+        if (is_hour_passed) {
+            // 1 hour window has ended - finalize: save to Flash if max changed, then clear tracking
+            uint8_t last_index = (g_record_storage.write_ptr == 0) ?
+                                 (MAX_RECORDS - 1) : (g_record_storage.write_ptr - 1);
+            uint16_t last_saved_max = g_record_storage.records[last_index].data.ov_data.max_voltage;
 
-            // Save to Flash
-            save_storage_to_flash();
+            if (*max_voltage > last_saved_max) {
+                // Update record in RAM with peak voltage captured during OV period
+                get_current_timestamp(&g_record_storage.records[last_index].timestamp);
+                g_record_storage.records[last_index].data.ov_data.max_voltage = *max_voltage;
+                g_record_storage.records[last_index].data.ov_data.total_voltage = total_voltage;
 
-            printk("\r\n[SAVE] OV Cell%d: %dmV (Recovered, saved to Flash)", cell_num, *max_voltage);
+                // Save to Flash
+                save_storage_to_flash();
+
+                printk("\r\n[SAVE] OV Cell%d: %dmV (Recovered+1h, saved to Flash)", cell_num, *max_voltage);
+            }
+
+            // Clear tracking state - use bit operation
+            g_exception_cache.status_flags &= ~tracking_mask;
+            *max_voltage = 0;
         }
-
-        // Clear tracking state - use bit operation
-        g_exception_cache.status_flags &= ~tracking_mask;
-        *max_voltage = 0;
-        // Field no longer exists
+        // else: 1 hour not yet elapsed - keep tracking state and *max_voltage intact.
+        // If voltage rises above threshold again, the (cell_over && is_tracking) branch
+        // will capture the new peak. Tracking clears only when the 1-hour window ends.
     }
 }
 

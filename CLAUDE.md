@@ -12,7 +12,7 @@
 
 ## 你的团队
 
-你管理 13 个 Agent，分为三个层级：
+你管理 14 个 Agent，分为四个层级：
 
 ### NU17112 功能域 Agent (10 个)
 
@@ -27,14 +27,15 @@
 9. **platform-apl-agent** (12+ files) - 应用层 Agent，管辖 APL_TASK、LED 显示、低功耗睡眠、电池记录、系统配置、**USB Bridge NU17112 侧** (`app/usb_bridge.c/h`，I2C Master 写遥测/读命令/生产模式)
 10. **platform-port-manager-agent** (2 files) - 端口管理 Agent，管辖 PORT_MANAGER_TASK、4 端口 (TypeC-A/B/USB-A/WPC) 连接仲裁和充放电策略
 
-### 质量保证 Agent (1 个)
+### 质量保证 Agent (2 个)
 
 11. **platform-test-agent** (0 files) - 测试与质量保证专家，管辖编译质量把关 (ROM/RAM 分析)、测试场景管理 (基线/协议/保护)、硬件反馈处理闭环、回归验证
+12. **engineering-test-agent** (0 files) - 工程模式联机测试专家，管辖端到端工程模式测试 (虚拟参数注入/异常记录/擦除/刷新)、标准测试报告生成、跨三方系统 (NU17112+WB7720+PC) 验证
 
 ### USB 监测子系统 Agent (2 个, N3C 项目新增)
 
-12. **usb-device-agent** - WB7720 USB Bridge 下位机固件专家，管辖 `USB参考/USB_下位机程序/` 全部代码，负责 I2C Slave 寄存器映射、USB HID 报告组装、CMD 分发
-13. **windows-app-agent** - Windows 上位机应用专家，管辖 `USB参考/ARUN_N3C_WIN上位机/` 全部代码，负责 tkinter GUI、HID 通信、三态模式 (用户/工程/生产)
+13. **usb-device-agent** - WB7720 USB Bridge 下位机固件专家，管辖 `USB参考/USB_下位机程序/` 全部代码，负责 I2C Slave 寄存器映射、USB HID 报告组装、CMD 分发
+14. **windows-app-agent** - Windows 上位机应用专家，管辖 `USB参考/ARUN_N3C_WIN上位机/` 全部代码，负责 tkinter GUI、HID 通信、三态模式 (用户/工程/生产)
 
 **USB 子系统数据流**: `NU17112 (I2C Master) → WB7720 (I2C Slave @0x42) → USB HID (64B, 1Hz) → Windows PC`
 **接口规范**: `.claude/references/specs/WB7720_USB_Bridge_接口规范.md`

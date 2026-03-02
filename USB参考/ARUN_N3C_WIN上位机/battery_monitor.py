@@ -296,26 +296,26 @@ def _parse_exception_record(raw20: bytes) -> Optional[Dict]:
         # OV 过压
         prefix = f"电芯{sub_type}"
         desc   = "电池充电电压异常"
-        value_str = f"{data_low / 1000:.1f}V"
-        text = f"{prefix} {desc} {value_str}[ {ts_str} ]"
+        value_str = f"{data_low / 1000:.2f}V (总{data_high / 1000:.2f}V)"
+        text = f"[#{record_id}] {prefix} {desc} {value_str}[ {ts_str} ]"
     elif error_type == 0x02:
         # OT 过温
         prefix = f"电芯{sub_type}"
         charge_str = SUB_TYPE_TEMP.get(sub_type, f"状态{sub_type}")
         desc   = f"电池{charge_str}温度异常"
         dl_signed = struct.unpack_from('<h', raw20, 10)[0]
-        value_str = f"{dl_signed / 10:.0f}℃"
-        text = f"{prefix} {desc} {value_str}[ {ts_str} ]"
+        value_str = f"{dl_signed / 10:.1f}℃"
+        text = f"[#{record_id}] {prefix} {desc} {value_str}[ {ts_str} ]"
     elif error_type == 0x03:
         # UT 欠温
         prefix = f"电芯{sub_type}"
         charge_str = SUB_TYPE_TEMP.get(sub_type, f"状态{sub_type}")
         desc   = f"电池{charge_str}温度异常"
         dl_signed = struct.unpack_from('<h', raw20, 10)[0]
-        value_str = f"{dl_signed / 10:.0f}℃"
-        text = f"{prefix} {desc} {value_str}[ {ts_str} ]"
+        value_str = f"{dl_signed / 10:.1f}℃"
+        text = f"[#{record_id}] {prefix} {desc} {value_str}[ {ts_str} ]"
     else:
-        text = f"未知异常类型 0x{error_type:02X}[ {ts_str} ]"
+        text = f"[#{record_id}] 未知异常类型 0x{error_type:02X}[ {ts_str} ]"
 
     return {
         'record_id':   record_id,
@@ -619,7 +619,10 @@ class BatteryMonitorApp:
         self.battery_data  = BatteryData()
         self.device_info   = DeviceInfo()
         self._exception_seen_ids: set = set()
-        self._exception_list: List[str] = []
+        # _exception_list 存储字典，每项: {'rid': int, 'text': str, 'record': dict}
+        self._exception_list: List[Dict] = []
+        # rid → _exception_list 下标的快速查找字典
+        self._exception_id_to_index: Dict[int, int] = {}
 
         # HID 状态
         self._hid_device   = None
@@ -1069,59 +1072,77 @@ class BatteryMonitorApp:
 
         font_s = _get_tk_font(10)
 
-        # 当前日期
+        # 当前日期 [勾选]
+        self._chk_cur_date_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_cur_date_var,
+                       bg=COLORS['card_bg']).grid(row=0, column=0, pady=4)
         tk.Label(grid, text="当前日期 (YYYY/MM/DD):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=0, column=0, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=0, column=1, sticky='w', padx=(0, 8), pady=4)
         self._eng_cur_date_var = tk.StringVar(value=time.strftime("%Y/%m/%d"))
         tk.Entry(grid, textvariable=self._eng_cur_date_var,
-                 width=14, font=font_s).grid(row=0, column=1, padx=(0, 16), pady=4)
+                 width=14, font=font_s).grid(row=0, column=2, pady=4)
 
-        # 生产日期
+        # 生产日期 [勾选] - 换行
+        self._chk_prod_date_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_prod_date_var,
+                       bg=COLORS['card_bg']).grid(row=1, column=0, pady=4)
         tk.Label(grid, text="生产日期 (YYYY/MM/DD):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=0, column=2, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=1, column=1, sticky='w', padx=(0, 8), pady=4)
         self._eng_prod_date_var = tk.StringVar()
         tk.Entry(grid, textvariable=self._eng_prod_date_var,
-                 width=14, font=font_s).grid(row=0, column=3, pady=4)
+                 width=14, font=font_s).grid(row=1, column=2, pady=4)
 
-        # 循环次数
+        # 循环次数 [勾选]
+        self._chk_cycle_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_cycle_var,
+                       bg=COLORS['card_bg']).grid(row=2, column=0, pady=4)
         tk.Label(grid, text="循环次数 (0-65535):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=1, column=0, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=2, column=1, sticky='w', padx=(0, 8), pady=4)
         self._eng_cycle_var = tk.StringVar(value="0")
         tk.Entry(grid, textvariable=self._eng_cycle_var,
-                 width=10, font=font_s).grid(row=1, column=1, pady=4)
+                 width=10, font=font_s).grid(row=2, column=2, pady=4)
 
-        # Cell1 电压
+        # Cell1 电压 [勾选]
+        self._chk_cell1_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_cell1_var,
+                       bg=COLORS['card_bg']).grid(row=3, column=0, pady=4)
         tk.Label(grid, text="Cell1电压(mV):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=2, column=0, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=3, column=1, sticky='w', padx=(0, 8), pady=4)
         self._eng_cell1_var = tk.StringVar(value="0")
         tk.Entry(grid, textvariable=self._eng_cell1_var,
-                 width=10, font=font_s).grid(row=2, column=1, pady=4)
+                 width=10, font=font_s).grid(row=3, column=2, pady=4)
 
-        # Cell2 电压
+        # Cell2 电压 [勾选] - 同行右侧
+        self._chk_cell2_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_cell2_var,
+                       bg=COLORS['card_bg']).grid(row=3, column=3, pady=4)
         tk.Label(grid, text="Cell2电压(mV):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=2, column=2, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=3, column=4, sticky='w', padx=(0, 8), pady=4)
         self._eng_cell2_var = tk.StringVar(value="0")
         tk.Entry(grid, textvariable=self._eng_cell2_var,
-                 width=10, font=font_s).grid(row=2, column=3, pady=4)
+                 width=10, font=font_s).grid(row=3, column=5, pady=4)
 
-        # 虚拟温度
+        # 虚拟温度 [勾选]
+        self._chk_temp_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(grid, variable=self._chk_temp_var,
+                       bg=COLORS['card_bg']).grid(row=4, column=0, pady=4)
         tk.Label(grid, text="虚拟温度(\u00d70.1\u00b0C):",
                  bg=COLORS['card_bg'], fg=COLORS['text_secondary'],
-                 font=font_s).grid(row=3, column=0, sticky='w', padx=(0, 8), pady=4)
+                 font=font_s).grid(row=4, column=1, sticky='w', padx=(0, 8), pady=4)
         self._eng_temp_var = tk.StringVar(value="0")
         tk.Entry(grid, textvariable=self._eng_temp_var,
-                 width=10, font=font_s).grid(row=3, column=1, pady=4)
+                 width=10, font=font_s).grid(row=4, column=2, pady=4)
 
         # 清除全部记录按钮
         tk.Button(grid, text="清除全部记录",
                   command=self._erase_all_records,
                   font=font_s, relief='flat',
-                  bg='#E74C3C', fg='white').grid(row=3, column=2, columnspan=2,
+                  bg='#E74C3C', fg='white').grid(row=4, column=3, columnspan=3,
                                                   sticky='w', padx=(0, 8), pady=4)
 
         btn_frame = tk.Frame(inner, bg=COLORS['card_bg'])
@@ -1376,6 +1397,7 @@ class BatteryMonitorApp:
             self._exc_text.config(fg=COLORS['text_secondary'], state='disabled')
         self._exception_seen_ids.clear()
         self._exception_list.clear()
+        self._exception_id_to_index.clear()
 
     def _clear_device_info_ui(self):
         for key in ('di_mfr', 'di_model', 'di_bat_mfr', 'di_bat_model', 'di_date'):
@@ -1611,24 +1633,82 @@ class BatteryMonitorApp:
                 text=f"{bd.voltage_delta:.2f}V")
 
     # -----------------------------------------------------------------------
-    # UI 刷新：异常日志追加
+    # UI 刷新：异常日志追加（支持同 record_id 峰值更新）
     # -----------------------------------------------------------------------
+    def _update_exception_record_in_list(self, rid: int, new_rec: Dict) -> bool:
+        """
+        若已显示的 rid 条目有更高的峰值（OV 看 max_voltage/data_low，
+        OT/UT 看 max_temperature/data_low 绝对值），则原位更新文本并返回 True；
+        否则返回 False（无需重绘）。
+        """
+        idx = self._exception_id_to_index.get(rid)
+        if idx is None or idx >= len(self._exception_list):
+            return False
+
+        old_entry = self._exception_list[idx]
+        old_rec   = old_entry['record']
+
+        error_type = new_rec.get('error_type', 0)
+        updated    = False
+
+        if error_type == 0x01:
+            # OV 过压：data_low = max_voltage (mV)，值越大越高
+            if new_rec['data_low'] > old_rec['data_low']:
+                updated = True
+        elif error_type in (0x02, 0x03):
+            # OT/UT 温度：data_low 是有符号值 (×0.1°C)
+            # 用绝对值比较：绝对值更大 = 偏离正常更远
+            old_dl_signed = struct.unpack_from('<h', bytes([
+                old_rec['data_low'] & 0xFF,
+                (old_rec['data_low'] >> 8) & 0xFF
+            ]), 0)[0]
+            new_dl_signed = struct.unpack_from('<h', bytes([
+                new_rec['data_low'] & 0xFF,
+                (new_rec['data_low'] >> 8) & 0xFF
+            ]), 0)[0]
+            if abs(new_dl_signed) > abs(old_dl_signed):
+                updated = True
+
+        if updated:
+            self._exception_list[idx] = {
+                'rid':    rid,
+                'text':   new_rec['text'],
+                'record': new_rec,
+            }
+
+        return updated
+
     def _append_exception_logs(self, records: List[Dict]):
-        new_added = False
+        changed = False
         for rec in records:
             rid = rec['record_id']
             if rid == 0:        # 无效记录（WB7720 exc_cache 空槽），跳过
                 continue
             if rid not in self._exception_seen_ids:
+                # 新记录 → 添加
                 self._exception_seen_ids.add(rid)
-                self._exception_list.append(rec['text'])
-                new_added = True
+                new_idx = len(self._exception_list)
+                self._exception_list.append({
+                    'rid':    rid,
+                    'text':   rec['text'],
+                    'record': rec,
+                })
+                self._exception_id_to_index[rid] = new_idx
+                changed = True
+            else:
+                # 已见过 → 检查是否有更高峰值需要更新
+                if self._update_exception_record_in_list(rid, rec):
+                    changed = True
 
-        if not new_added:
+        if not changed:
             return
 
         if len(self._exception_list) > MAX_EXCEPTION_DISPLAY:
+            # 裁剪旧记录，同步重建 id→index 字典
             self._exception_list = self._exception_list[-MAX_EXCEPTION_DISPLAY:]
+            self._exception_id_to_index = {
+                entry['rid']: i for i, entry in enumerate(self._exception_list)
+            }
 
         if not self._exc_text:
             return
@@ -1636,8 +1716,8 @@ class BatteryMonitorApp:
         self._exc_text.config(state='normal', fg=COLORS['exception_text'])
         self._exc_text.delete('1.0', 'end')
         if self._exception_list:
-            for item in self._exception_list:
-                self._exc_text.insert('end', item + '\n')
+            for entry in self._exception_list:
+                self._exc_text.insert('end', entry['text'] + '\n')
         else:
             self._exc_text.insert('end', "暂无异常记录")
             self._exc_text.config(fg=COLORS['text_secondary'])
@@ -1652,68 +1732,81 @@ class BatteryMonitorApp:
             messagebox.showwarning("未连接", "请先连接设备")
             return
 
-        try:
-            cur_parts = self._eng_cur_date_var.get().strip().split('/')
-            cur_year, cur_month, cur_day = int(cur_parts[0]), int(cur_parts[1]), int(cur_parts[2])
-            assert cur_year > 2000 and 1 <= cur_month <= 12 and 1 <= cur_day <= 31
-        except Exception:
-            messagebox.showerror("输入错误", "当前日期格式错误，请使用 YYYY/MM/DD")
-            return
+        params = {}
 
-        try:
-            prod_parts = self._eng_prod_date_var.get().strip().split('/')
-            prod_year, prod_month, prod_day = int(prod_parts[0]), int(prod_parts[1]), int(prod_parts[2])
-            assert prod_year > 2000 and 1 <= prod_month <= 12 and 1 <= prod_day <= 31
-        except Exception:
-            messagebox.showerror("输入错误", "生产日期格式错误，请使用 YYYY/MM/DD")
-            return
+        if self._chk_cur_date_var.get():
+            try:
+                cur_parts = self._eng_cur_date_var.get().strip().split('/')
+                cur_year, cur_month, cur_day = int(cur_parts[0]), int(cur_parts[1]), int(cur_parts[2])
+                assert cur_year > 2000 and 1 <= cur_month <= 12 and 1 <= cur_day <= 31
+                params['cur_date'] = (cur_year, cur_month, cur_day)
+            except Exception:
+                messagebox.showerror("输入错误", "当前日期格式错误，请使用 YYYY/MM/DD")
+                return
 
-        try:
-            cycle = int(self._eng_cycle_var.get().strip())
-            assert 0 <= cycle <= 65535
-        except Exception:
-            messagebox.showerror("输入错误", "循环次数范围 0-65535")
-            return
+        if self._chk_prod_date_var.get():
+            try:
+                prod_parts = self._eng_prod_date_var.get().strip().split('/')
+                prod_year, prod_month, prod_day = int(prod_parts[0]), int(prod_parts[1]), int(prod_parts[2])
+                assert prod_year > 2000 and 1 <= prod_month <= 12 and 1 <= prod_day <= 31
+                params['prod_date'] = (prod_year, prod_month, prod_day)
+            except Exception:
+                messagebox.showerror("输入错误", "生产日期格式错误，请使用 YYYY/MM/DD")
+                return
 
-        try:
-            cell1_mv = int(self._eng_cell1_var.get().strip())
-            if cell1_mv < 0 or cell1_mv > 5000:
-                raise ValueError
-        except (ValueError, Exception):
-            messagebox.showerror("输入错误", "Cell1电压必须为 0-5000 mV")
-            return
+        if self._chk_cycle_var.get():
+            try:
+                cycle = int(self._eng_cycle_var.get().strip())
+                assert 0 <= cycle <= 65535
+                params['cycle'] = cycle
+            except Exception:
+                messagebox.showerror("输入错误", "循环次数范围 0-65535")
+                return
 
-        try:
-            cell2_mv = int(self._eng_cell2_var.get().strip())
-            if cell2_mv < 0 or cell2_mv > 5000:
-                raise ValueError
-        except (ValueError, Exception):
-            messagebox.showerror("输入错误", "Cell2电压必须为 0-5000 mV")
-            return
+        if self._chk_cell1_var.get():
+            try:
+                cell1_mv = int(self._eng_cell1_var.get().strip())
+                if cell1_mv < 0 or cell1_mv > 5000:
+                    raise ValueError
+                params['cell1'] = cell1_mv
+            except (ValueError, Exception):
+                messagebox.showerror("输入错误", "Cell1电压必须为 0-5000 mV")
+                return
 
-        try:
-            vtemp = int(self._eng_temp_var.get().strip())
-            if vtemp < -500 or vtemp > 1000:
-                raise ValueError
-        except (ValueError, Exception):
-            messagebox.showerror("输入错误", "虚拟温度必须为 -500~1000 (\u00d70.1\u00b0C)")
+        if self._chk_cell2_var.get():
+            try:
+                cell2_mv = int(self._eng_cell2_var.get().strip())
+                if cell2_mv < 0 or cell2_mv > 5000:
+                    raise ValueError
+                params['cell2'] = cell2_mv
+            except (ValueError, Exception):
+                messagebox.showerror("输入错误", "Cell2电压必须为 0-5000 mV")
+                return
+
+        if self._chk_temp_var.get():
+            try:
+                vtemp = int(self._eng_temp_var.get().strip())
+                if vtemp < -500 or vtemp > 1000:
+                    raise ValueError
+                params['temp'] = vtemp
+            except (ValueError, Exception):
+                messagebox.showerror("输入错误", "虚拟温度必须为 -500~1000 (\u00d70.1\u00b0C)")
+                return
+
+        if not params:
+            messagebox.showwarning("无选项", "请至少勾选一项要发送的参数")
             return
 
         self._eng_status_var.set("写入中...")
         t = threading.Thread(
             target=self._write_engineering_worker,
-            args=(cur_year, cur_month, cur_day,
-                  prod_year, prod_month, prod_day,
-                  cycle, cell1_mv, cell2_mv, vtemp),
+            args=(params,),
             daemon=True
         )
         t.start()
 
-    def _write_engineering_worker(
-            self, cur_year, cur_month, cur_day,
-            prod_year, prod_month, prod_day,
-            cycle, cell1_mv, cell2_mv, vtemp):
-        """后台线程执行 7 步工程模式写入序列"""
+    def _write_engineering_worker(self, params):
+        """后台线程执行工程模式写入序列（仅发送勾选的参数）"""
         while self._reading_busy:
             time.sleep(0.01)
         self._reading_busy = True
@@ -1724,21 +1817,23 @@ class BatteryMonitorApp:
                 self._hid_write(CMD_WRITE_REGISTER, payload)
                 time.sleep(WRITE_STEP_INTERVAL)
 
-            # Step 1: 解锁工程模式
+            # 解锁工程模式（始终发送）
             write_reg(0x50, bytes([0xA5]))
-            # Step 2: 当前日期
-            write_reg(0x60, struct.pack('<H', cur_year) + bytes([cur_month, cur_day]))
-            # Step 3: 生产日期
-            write_reg(0x70, struct.pack('<H', prod_year) + bytes([prod_month, prod_day]))
-            # Step 4: 循环次数
-            write_reg(0x80, struct.pack('<H', cycle))
-            # Step 5: 虚拟 Cell1 电压
-            write_reg(0x82, struct.pack('<H', cell1_mv))
-            # Step 6: 虚拟 Cell2 电压
-            write_reg(0x84, struct.pack('<H', cell2_mv))
-            # Step 7: 虚拟温度 (s16 LE)
-            write_reg(0x86, struct.pack('<h', vtemp))
-            # Step 8: 触发 NU17112 重新读取 (支持重复写入)
+            if 'cur_date' in params:
+                y, m, d = params['cur_date']
+                write_reg(0x60, struct.pack('<H', y) + bytes([m, d]))
+            if 'prod_date' in params:
+                y, m, d = params['prod_date']
+                write_reg(0x70, struct.pack('<H', y) + bytes([m, d]))
+            if 'cycle' in params:
+                write_reg(0x80, struct.pack('<H', params['cycle']))
+            if 'cell1' in params:
+                write_reg(0x82, struct.pack('<H', params['cell1']))
+            if 'cell2' in params:
+                write_reg(0x84, struct.pack('<H', params['cell2']))
+            if 'temp' in params:
+                write_reg(0x86, struct.pack('<h', params['temp']))
+            # 触发 NU17112 重新读取
             write_reg(0x88, bytes([0xAA]))
 
             self.root.after(0, lambda: self._eng_status_var.set("写入成功"))
@@ -1778,6 +1873,7 @@ class BatteryMonitorApp:
             # 清空 PC 端缓存
             self._exception_seen_ids.clear()
             self._exception_list.clear()
+            self._exception_id_to_index.clear()
             self.root.after(0, self._refresh_exception_display)
             self.root.after(0, lambda: self._eng_status_var.set("清除成功"))
         except Exception as e:
@@ -1793,8 +1889,8 @@ class BatteryMonitorApp:
         self._exc_text.delete('1.0', 'end')
         if self._exception_list:
             self._exc_text.config(fg=COLORS['exception_text'])
-            for item in self._exception_list:
-                self._exc_text.insert('end', item + '\n')
+            for entry in self._exception_list:
+                self._exc_text.insert('end', entry['text'] + '\n')
         else:
             self._exc_text.insert('end', "暂无异常记录")
             self._exc_text.config(fg=COLORS['text_secondary'])
