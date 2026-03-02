@@ -28,9 +28,25 @@
 ## 构建验证经验
 
 ### [L-005] CDS 构建环境
-- C_INCLUDE_PATH 必须用 Windows 风格路径（分号分隔，反斜杠）
+- C_INCLUDE_PATH 必须用 Windows 风格路径（分号分隔，反斜杠），通过 `cygpath -w` 转换
 - makefile 首次需要 patch（修复中文乱码路径），patch 后 makefile.orig 存在则跳过
 - 增量构建只编译修改的文件，全量 rebuild 需 make clean 先行
+- CDS 路径含空格（"Program Files (x86)"），不能在 Bash 单行 inline 设置 PATH，必须写入脚本文件再 `bash script.sh`
+
+### [L-016] 历史 commit 编译流程（已验证）
+
+完整流程（避免踩坑）：
+
+1. `git checkout <hash>` → detached HEAD
+2. 写 `Debug/build_now.sh` 脚本（含 C_INCLUDE_PATH 生成 + make clean && make all）
+3. `bash Debug/build_now.sh` 执行编译
+4. **先** `cp Debug/PowerBankEvk_relsease.bin Debug/PowerBankEvk_<short_hash>.bin`（保存产物）
+5. `make clean`（清理 .o/.d，防止切分支冲突）
+6. `git checkout ARUN_N3C`
+7. 确认保存的 bin/ihex 仍在，删除临时脚本
+
+**关键 Bug（已修复）**: `ls "$d"*.h "$d"*.c "$d"*.S` 三者 AND 逻辑，无 .S 文件的目录返回非零 → C_INCLUDE_PATH 全空 → `regdef.h: No such file or directory`
+**正确写法**: `ls "$d"*.h >/dev/null 2>&1 || ls "$d"*.c >/dev/null 2>&1 || ls "$d"*.S >/dev/null 2>&1`
 
 ## 知识回流记录
 
