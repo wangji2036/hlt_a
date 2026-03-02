@@ -340,7 +340,8 @@ typedef struct {
     uint16_t cell1_max_voltage;
     uint16_t cell2_max_voltage;
     int16_t  max_temperature;
-    uint32_t ov_hour_start_seconds;
+    uint32_t cell1_hour_start_seconds;   /* OV 1-hour window start for Cell1 */
+    uint32_t cell2_hour_start_seconds;   /* OV 1-hour window start for Cell2 */
     uint32_t temp_hour_start_seconds;
 } ExceptionCache_t;
 

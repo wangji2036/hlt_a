@@ -20,6 +20,7 @@ import os
 import sys
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
+from datetime import datetime
 
 # ---------------------------------------------------------------------------
 # 尝试导入 hidapi，未安装时给出提示
@@ -1821,7 +1822,9 @@ class BatteryMonitorApp:
             write_reg(0x50, bytes([0xA5]))
             if 'cur_date' in params:
                 y, m, d = params['cur_date']
-                write_reg(0x60, struct.pack('<H', y) + bytes([m, d]))
+                _now = datetime.now()
+                h, mi, s = _now.hour, _now.minute, _now.second
+                write_reg(0x60, struct.pack('<H', y) + bytes([m, d, h, mi, s]))
             if 'prod_date' in params:
                 y, m, d = params['prod_date']
                 write_reg(0x70, struct.pack('<H', y) + bytes([m, d]))

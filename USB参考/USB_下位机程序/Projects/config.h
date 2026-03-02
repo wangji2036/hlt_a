@@ -75,6 +75,9 @@
  * ----------------------------------------------------------------------- */
 #define REG_WORK_MODE           0x50  // 工程模式标志: 0xA5=进入工程模式, NU17112 处理后写 0x00
 #define REG_ENG_CURRENT_DATE    0x60  // 当前日期 [年Lo][年Hi][月][日]
+#define REG_ENG_CURRENT_TIME_H  0x64  /* Engineering current time: hour (u8) */
+#define REG_ENG_CURRENT_TIME_M  0x65  /* Engineering current time: minute (u8) */
+#define REG_ENG_CURRENT_TIME_S  0x66  /* Engineering current time: second (u8) */
 #define REG_ENG_PRODUCTION_DATE 0x70  // 生产日期 [年Lo][年Hi][月][日]
 #define REG_ENG_CYCLE_COUNT     0x80  // 循环次数 [次Lo][次Hi]
 

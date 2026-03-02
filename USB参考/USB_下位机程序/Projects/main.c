@@ -133,6 +133,7 @@ static uint8_t index = 0;
  * 异常日志本地缓存系统 (v1.3)
  * WB7720 在每次组装 Type 0x01 时顺带检查 i2c_buff 异常日志区,
  * 按 record_id 去重, 最多缓存 EXC_CACHE_MAX(5) 条 20B 记录.
+ * v1.4: 缓存满时环形覆盖最老记录; total_count=0 时清空缓存 (擦除检测).
  * ----------------------------------------------------------------------- */
 static uint8_t exc_cache[EXC_CACHE_MAX][EXC_RECORD_SIZE];  /* 5x20B 本地缓存 */
 static uint8_t exc_cache_count = 0;   /* 当前缓存条数 (0~5) */
@@ -147,26 +148,45 @@ static uint32_t get_record_id(const uint8_t *rec)
          | ((uint32_t)rec[19] << 24);
 }
 
-/* 检查 i2c_buff[REG_EXC_RECORD] 中的记录, 若 record_id 非 0 且不在缓存中则追加 */
+/* 检查 i2c_buff 异常日志区, 缓存新记录 (v1.4 环形覆盖 + 擦除检测) */
 static void exc_cache_update(void)
 {
+    /* 擦除检测: NU17112 清空记录后 total_count 降为 0, 清空本地缓存 */
+    if (i2c_buff[REG_EXC_TOTAL_COUNT] == 0) {
+        if (exc_cache_count > 0) {
+            exc_cache_count = 0;
+            exc_page_idx = 0;
+        }
+        return;
+    }
+
     const uint8_t *src = &i2c_buff[REG_EXC_RECORD];
     uint32_t rid = get_record_id(src);
 
-    /* record_id == 0 表示无有效记录, 跳过 */
+    /* record_id == 0 表示无有效记录 (NU17112 现在从 1 开始, 此为安全兜底) */
     if (rid == 0) return;
 
-    /* 缓存已满, 不再追加 */
-    if (exc_cache_count >= EXC_CACHE_MAX) return;
-
-    /* 按 record_id 去重: 检查是否已在缓存中 */
+    /* 已在缓存中: 更新该条记录 (max_voltage 等字段可能被 NU17112 更新) */
     for (uint8_t i = 0; i < exc_cache_count; i++) {
-        if (get_record_id(exc_cache[i]) == rid) return;
+        if (get_record_id(exc_cache[i]) == rid) {
+            memcpy(exc_cache[i], src, EXC_RECORD_SIZE);
+            return;
+        }
     }
 
-    /* 追加到缓存 */
-    memcpy(exc_cache[exc_cache_count], src, EXC_RECORD_SIZE);
-    exc_cache_count++;
+    /* 不在缓存中: 追加或环形覆盖最老记录 */
+    if (exc_cache_count < EXC_CACHE_MAX) {
+        /* 缓存未满: 追加 */
+        memcpy(exc_cache[exc_cache_count], src, EXC_RECORD_SIZE);
+        exc_cache_count++;
+    } else {
+        /* 缓存已满: FIFO — 移除最老 (index 0), 新记录追加到末尾 */
+        for (uint8_t i = 0; i < EXC_CACHE_MAX - 1; i++) {
+            memcpy(exc_cache[i], exc_cache[i + 1], EXC_RECORD_SIZE);
+        }
+        memcpy(exc_cache[EXC_CACHE_MAX - 1], src, EXC_RECORD_SIZE);
+        /* exc_cache_count 保持 EXC_CACHE_MAX */
+    }
 }
 
 void update_report_buffer_0(void)
@@ -526,19 +546,10 @@ void user_loop(void) {
                 if (reg_len > 60) reg_len = 60; /* 防越界: 64 - 4 */
                 for (uint8_t i = 0; i < reg_len; i++) {
                     uint8_t wr_addr = reg_addr + i;
-                    /* 工程模式写保护：仅擦除/刷新命令寄存器需要工程模式密钥
-                     * DATA 寄存器 (0x60~0x87) 允许无条件写入，因为它们只是参数缓冲区，
-                     * NU17112 仅在检测到 0x50=0xA5 时才读取这些参数。
-                     * 这允许 PC 在设置工程模式标志之前预写参数，避免时序竞争。 */
-                    if (wr_addr == REG_ENG_ERASE_ALL_CMD) {
-                        /* 擦除/刷新命令: 仅在工程模式下可写 */
-                        if (i2c_buff[REG_WORK_MODE] == ENGINEERING_MODE_KEY)
-                            i2c_buff[wr_addr] = Vendor_Request[3 + i];
-                    }
-                    else
-                    {
-                        i2c_buff[wr_addr] = Vendor_Request[3 + i];
-                    }
+                    /* 所有寄存器无条件写入 — 写保护由 NU17112 侧
+                     * eng_mode_active 守卫保证 (usb_bridge_check_eng_test_cmds),
+                     * WB7720 端不做二次拦截, 避免时序/组合包问题 */
+                    i2c_buff[wr_addr] = Vendor_Request[3 + i];
                 }
             }
 

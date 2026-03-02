@@ -112,7 +112,8 @@ typedef struct {
     uint16_t cell1_max_voltage;     // Cell1 realtime max voltage
     uint16_t cell2_max_voltage;     // Cell2 realtime max voltage
     int16_t  max_temperature;       // Realtime max temperature (0.1 deg C)
-    uint32_t ov_hour_start_seconds;    // Overvoltage window start seconds
+    uint32_t cell1_hour_start_seconds;   /* OV 1-hour window start for Cell1 */
+    uint32_t cell2_hour_start_seconds;   /* OV 1-hour window start for Cell2 */
     uint32_t temp_hour_start_seconds;  // Temperature window start seconds
 } ExceptionCache_t;  // ~16 bytes
 

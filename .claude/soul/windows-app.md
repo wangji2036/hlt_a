@@ -29,6 +29,14 @@
 - 顺序: 解锁(0x50=0xA5) → 当前日期(0x60) → 生产日期(0x70) → 循环次数(0x80)
 - 不能并发，不能跳步
 
+### 当前日期寄存器 0x60 包含 H/M/S (P2)
+- 0x60 写入 7 字节: `struct.pack('<H', y) + bytes([m, d, h, mi, s])`
+- H/M/S 在 `_write_engineering_worker` 写入时通过 `datetime.now()` 实时取，不依赖 UI 输入框
+- UI 输入框只提供 Y/M/D（用户可能在填完表单后延迟点写入，所以 H:M:S 必须取发送瞬间时刻）
+- `from datetime import datetime` 已加入顶层 import（line 23）
+- 生产日期 0x70 仍只写 4 字节（Y/M/D），无时间字段
+- 0xAA refresh (0x88) 不重发日期，无需再次写 0x60
+
 ### 生产模式并发
 - 生产模式写入期间必须暂停遥测轮询（FLAG 0x90=0xB5 已设置时）
 - 否则 NU17112 可能在读取 ProductInfo 时被遥测写入打断

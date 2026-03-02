@@ -287,15 +287,18 @@ void battery_record_init(void) {
 static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
                                       uint16_t total_voltage) {
     volatile uint16_t *max_voltage;
+    uint32_t *hour_start;
     uint8_t tracking_mask;
 
     // Select cache fields based on cell number (use bitfield macros for tracking)
     if (cell_num == 1) {
         tracking_mask = 0x01;  // CELL1_TRACKING bit
         max_voltage = &g_exception_cache.cell1_max_voltage;
+        hour_start  = &g_exception_cache.cell1_hour_start_seconds;
     } else {
         tracking_mask = 0x02;  // CELL2_TRACKING bit
         max_voltage = &g_exception_cache.cell2_max_voltage;
+        hour_start  = &g_exception_cache.cell2_hour_start_seconds;
     }
 
     bool cell_over = (cell_voltage >= OVER_VOLTAGE_THRESHOLD);
@@ -311,7 +314,7 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
 
             // Get time stamp
             VIC_vModuleDisable();
-            g_exception_cache.ov_hour_start_seconds = gd->Bat_RTC_Seconds;
+            *hour_start = gd->Bat_RTC_Seconds;
             VIC_vModuleEnable();
 
             // Generate timestamp directly
@@ -342,7 +345,7 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
             current_seconds = gd->Bat_RTC_Seconds;
             VIC_vModuleEnable();
 
-            bool is_hour_passed = is_new_hour(g_exception_cache.ov_hour_start_seconds, current_seconds);
+            bool is_hour_passed = is_new_hour(*hour_start, current_seconds);
 
             // Read last saved value from records (moved outside if/else)
             uint8_t last_index = (g_record_storage.write_ptr == 0) ?
@@ -380,7 +383,7 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
 
                     // Reset 1-hour window
                     VIC_vModuleDisable();
-                    g_exception_cache.ov_hour_start_seconds = gd->Bat_RTC_Seconds;
+                    *hour_start = gd->Bat_RTC_Seconds;
                     VIC_vModuleEnable();
                 }
             }
@@ -392,7 +395,7 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
         current_seconds = gd->Bat_RTC_Seconds;
         VIC_vModuleEnable();
 
-        bool is_hour_passed = is_new_hour(g_exception_cache.ov_hour_start_seconds, current_seconds);
+        bool is_hour_passed = is_new_hour(*hour_start, current_seconds);
 
         if (is_hour_passed) {
             // 1 hour window has ended - finalize: save to Flash if max changed, then clear tracking

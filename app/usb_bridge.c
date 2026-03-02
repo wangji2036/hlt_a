@@ -44,43 +44,42 @@ static int16_t  eng_virtual_temp  = 0;  /* Virtual temperature (0.1°C), 0=disab
 
 /*===================== Helper Functions =====================*/
 
+
 /**
- * @brief Convert date (Year, Month, Day) to seconds since 2026-01-01 00:00:00.
- * @param year  Year (u16), must be >= 2026
- * @param month Month (u8), 1-12
- * @param day   Day (u8), 1-31
- * @return Seconds since 2026-01-01, or 0 if year < 2026
+ * @brief Read current date/time from WB7720 (0x60-0x66) and apply to RTC.
+ *        Updates Bat_RTC_Seconds, Bat_RTC_Milliseconds, eng_entry_virtual_seconds.
+ *        (datetime_to_seconds inlined to eliminate 6-arg call overhead on CK802)
  */
-static uint32_t date_to_seconds(uint16_t year, uint8_t month, uint8_t day)
+static void apply_eng_datetime_to_rtc(void)
 {
-    if (year < 2026) {
-        return 0;
-    }
+    /* datetime_to_seconds inlined to eliminate 6-arg call overhead on CK802 */
+    static const uint8_t days_in_month[13] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    uint8_t dt_buf[7];
+    hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR, REG_ENG_CURRENT_DATE, dt_buf, 7);
+    uint16_t year  = (uint16_t)dt_buf[0] | ((uint16_t)dt_buf[1] << 8);
+    uint8_t  month = dt_buf[2];
+    uint8_t  day   = dt_buf[3];
 
-    uint32_t total_days = 0;
-    uint16_t y;
+    /* Days since 2026-01-01 (formula, no loop; eng mode always provides year>=2026) */
+    uint16_t y = year - 2026U;
+    uint32_t total_days = (uint32_t)y * 365UL + ((uint32_t)(y + 1) / 4);
     uint8_t m;
-
-    /* Add days for complete years from 2026 to (year-1) */
-    for (y = 2026; y < year; y++) {
-        total_days += (y % 4 == 0) ? 366 : 365;
-    }
-
-    /* Days per month (non-leap) */
-    static const uint8_t month_days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-
-    /* Add days for complete months in current year */
     for (m = 1; m < month; m++) {
-        total_days += month_days[m - 1];
-        if (m == 2 && (year % 4 == 0)) {
-            total_days += 1; /* Leap year February */
-        }
+        total_days += days_in_month[m];
     }
+    if (month > 2 && (year % 4 == 0)) total_days++;
+    total_days += (uint32_t)(day - 1);
 
-    /* Add days in current month (day-1 because day 1 = offset 0) */
-    total_days += (day - 1);
+    uint32_t secs = total_days * 86400UL
+                    + (uint32_t)dt_buf[4] * 3600UL
+                    + (uint32_t)dt_buf[5] * 60UL
+                    + (uint32_t)dt_buf[6];
 
-    return total_days * 86400UL;
+    VIC_vModuleDisable();
+    gd->Bat_RTC_Seconds = secs;
+    gd->Bat_RTC_Milliseconds = 0;
+    VIC_vModuleEnable();
+    eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
 }
 
 /**
@@ -347,20 +346,8 @@ void usb_bridge_check_engineering_mode(void)
             eng_saved_rtc_seconds = gd->Bat_RTC_Seconds;
             eng_saved_cycle_count = gd->Battery_cycle_count;
 
-            /* Read engineering current date from 0x60-0x63: Year(u16 LE) + Month(u8) + Day(u8) */
-            hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                                      REG_ENG_CURRENT_DATE,
-                                      date_buf, 4);
-            {
-                uint16_t eng_year  = (uint16_t)date_buf[0] | ((uint16_t)date_buf[1] << 8);
-                uint8_t  eng_month = date_buf[2];
-                uint8_t  eng_day   = date_buf[3];
-
-                /* Override RTC seconds with virtual date */
-                gd->Bat_RTC_Seconds = date_to_seconds(eng_year, eng_month, eng_day);
-                eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
-
-            }
+            /* Read engineering current date from 0x60-0x66 and apply to RTC */
+            apply_eng_datetime_to_rtc();
 
             /* Read engineering production date from 0x70-0x73 */
             hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
@@ -608,20 +595,8 @@ void usb_bridge_check_eng_test_cmds(void)
             eng_virtual_temp  = (int16_t)((uint16_t)rbuf[6] | ((uint16_t)rbuf[7] << 8));
         }
 
-        /* 4. Re-read current date */
-        {
-            uint8_t date_buf[4];
-            hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                                      REG_ENG_CURRENT_DATE, date_buf, 4);
-            uint16_t eng_year  = (uint16_t)date_buf[0] | ((uint16_t)date_buf[1] << 8);
-            uint8_t  eng_month = date_buf[2];
-            uint8_t  eng_day   = date_buf[3];
-            gd->Bat_RTC_Seconds = date_to_seconds(eng_year, eng_month, eng_day);
-            eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
-        }
-
-        /* 5. Reset exception tracking so new params can trigger fresh OV/OT */
-        battery_record_reset_tracking();
+        /* 4. Re-read current date (0x60-0x66) and apply to RTC */
+        apply_eng_datetime_to_rtc();
 
         /* eng_mode_active stays true — no gap where real ADC triggers stale tracking */
 

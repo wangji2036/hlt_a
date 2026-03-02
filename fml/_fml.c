@@ -162,9 +162,22 @@ void ubsd_wb7720_report_update(void)
 	#define REG_WAKEUP          	0x45    // ????????
 
 	uint16_t write_buf;
-	
 
 	static uint8_t cnt = 0;
+	static bool is_usb_enable = false;
+	static uint8_t qc_delay_cnt = 0;
+
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if(!gd->usb_comm_activated)
+	{
+		if(is_usb_enable == 1)
+		{
+			ubsd_wb7720_sleep();
+			is_usb_enable = 0;
+		}
+		return;
+	}
+#endif
 
 	if(cnt == 0)
 	{
@@ -264,10 +277,8 @@ void ubsd_wb7720_report_update(void)
 	if(cnt >= 11) cnt = 0;
 #endif
 
-	static bool is_usb_enable = false;
-	static uint8_t qc_delay_cnt = 0;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	if(gd->usb_comm_activated && g_port.port_state[1] != PORT_STATE_NONE)
+	if(gd->usb_comm_activated)
 #else
 	if(g_port.port_state[1] != PORT_STATE_NONE)
 #endif
