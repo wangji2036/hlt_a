@@ -1790,7 +1790,7 @@ class BatteryMonitorApp:
 
         params = {}
 
-        if self._chk_cur_date_var.get():
+        if self._chk_cur_date_var.get() and self._eng_cur_date_var.get().strip():
             try:
                 cur_parts = self._eng_cur_date_var.get().strip().split('/')
                 cur_year, cur_month, cur_day = int(cur_parts[0]), int(cur_parts[1]), int(cur_parts[2])
@@ -1800,7 +1800,7 @@ class BatteryMonitorApp:
                 messagebox.showerror("输入错误", "当前日期格式错误，请使用 YYYY/MM/DD")
                 return
 
-        if self._chk_prod_date_var.get():
+        if self._chk_prod_date_var.get() and self._eng_prod_date_var.get().strip():
             try:
                 prod_parts = self._eng_prod_date_var.get().strip().split('/')
                 prod_year, prod_month, prod_day = int(prod_parts[0]), int(prod_parts[1]), int(prod_parts[2])
@@ -1810,7 +1810,7 @@ class BatteryMonitorApp:
                 messagebox.showerror("输入错误", "生产日期格式错误，请使用 YYYY/MM/DD")
                 return
 
-        if self._chk_cycle_var.get():
+        if self._chk_cycle_var.get() and self._eng_cycle_var.get().strip():
             try:
                 cycle = int(self._eng_cycle_var.get().strip())
                 assert 0 <= cycle <= 65535
@@ -1819,7 +1819,7 @@ class BatteryMonitorApp:
                 messagebox.showerror("输入错误", "循环次数范围 0-65535")
                 return
 
-        if self._chk_cell1_var.get():
+        if self._chk_cell1_var.get() and self._eng_cell1_var.get().strip():
             try:
                 cell1_mv = int(self._eng_cell1_var.get().strip())
                 if cell1_mv < 0 or cell1_mv > 5000:
@@ -1829,7 +1829,7 @@ class BatteryMonitorApp:
                 messagebox.showerror("输入错误", "Cell1电压必须为 0-5000 mV")
                 return
 
-        if self._chk_cell2_var.get():
+        if self._chk_cell2_var.get() and self._eng_cell2_var.get().strip():
             try:
                 cell2_mv = int(self._eng_cell2_var.get().strip())
                 if cell2_mv < 0 or cell2_mv > 5000:
@@ -1839,14 +1839,14 @@ class BatteryMonitorApp:
                 messagebox.showerror("输入错误", "Cell2电压必须为 0-5000 mV")
                 return
 
-        if self._chk_temp_var.get():
+        if self._chk_temp_var.get() and self._eng_temp_var.get().strip():
             try:
                 vtemp = int(self._eng_temp_var.get().strip())
                 if vtemp < -500 or vtemp > 1000:
                     raise ValueError
                 params['temp'] = vtemp
             except (ValueError, Exception):
-                messagebox.showerror("输入错误", "虚拟温度必须为 -500~1000 (\u00d70.1\u00b0C)")
+                messagebox.showerror("输入错误", "虚拟温度必须为 -500~1000 (×0.1°C)")
                 return
 
         if not params:
