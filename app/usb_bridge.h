@@ -46,11 +46,16 @@
 #define REG_ENG_CYCLE_CHG_COUNT     0x80    // u16 LE, cycle count
 
 /* --- Engineering Virtual Override Registers (0x82-0x89) --- */
-#define REG_ENG_VIRTUAL_CELL1    0x82    // u16 LE, mV (0=disabled)
-#define REG_ENG_VIRTUAL_CELL2    0x84    // u16 LE, mV (0=disabled)
-#define REG_ENG_VIRTUAL_TEMP     0x86    // s16 LE, 0.1°C (0=disabled)
+#define REG_ENG_VIRTUAL_CELL1    0x82    // u16 LE, mV (0xFFFF=no override)
+#define REG_ENG_VIRTUAL_CELL2    0x84    // u16 LE, mV (0xFFFF=no override)
+#define REG_ENG_VIRTUAL_TEMP     0x86    // s16 LE, 0.1°C (0x7FFF=no override)
 #define REG_ENG_ERASE_ALL_CMD    0x88    // u8, write 0xEE to erase
 #define REG_ENG_CMD_STATUS       0x89    // u8, status readback
+
+/* --- Engineering Mode Sentinel Values --- */
+#define ENG_SENTINEL_CYCLE   0xFFFF   // "don't override" for cycle count
+#define ENG_SENTINEL_CELL    0xFFFF   // "don't override" for cell voltage
+#define ENG_SENTINEL_TEMP    0x7FFF   // "don't override" for temperature
 
 /* --- Production Mode / Device Info Registers (0x90-0xF5) --- */
 #define REG_PROD_MODE_FLAG          0x90    // u8, 0xB5=enter production mode

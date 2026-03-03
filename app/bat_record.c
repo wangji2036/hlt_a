@@ -433,11 +433,11 @@ void battery_record_update_overvoltage(void) {
     {
         uint16_t eng_c1 = usb_bridge_get_eng_cell1();
         uint16_t eng_c2 = usb_bridge_get_eng_cell2();
-        if (eng_c1 > 0 || eng_c2 > 0) {
-            /* Virtual mode: non-zero uses virtual value, zero uses real_total/2 */
+        if (eng_c1 != ENG_SENTINEL_CELL || eng_c2 != ENG_SENTINEL_CELL) {
+            /* Virtual mode: non-sentinel uses virtual value, sentinel uses real_total/2 */
             uint16_t real_total = hal_nu6805_buckboost_get_bat_voltage();
-            cell1_voltage = (eng_c1 > 0) ? eng_c1 : (real_total / 2);
-            cell2_voltage = (eng_c2 > 0) ? eng_c2 : (real_total / 2);
+            cell1_voltage = (eng_c1 != ENG_SENTINEL_CELL) ? eng_c1 : (real_total / 2);
+            cell2_voltage = (eng_c2 != ENG_SENTINEL_CELL) ? eng_c2 : (real_total / 2);
             total_voltage = cell1_voltage + cell2_voltage;
         } else {
             total_voltage = hal_nu6805_buckboost_get_bat_voltage();
@@ -475,7 +475,7 @@ void battery_record_update_temperature(void) {
 #if CONFIG_USB_BRIDGE_ENABLE
     {
         int16_t eng_temp = usb_bridge_get_eng_temp();
-        if (eng_temp != 0) {
+        if (eng_temp != (int16_t)ENG_SENTINEL_TEMP) {
             ntc_temp = eng_temp;
         } else {
             ntc_temp = gd->sys_infos.ntc_temp_wpc;

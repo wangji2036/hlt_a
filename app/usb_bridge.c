@@ -37,10 +37,10 @@ static uint16_t exc_cycle_cnt = 0;
 static uint8_t  exc_rotate_idx = 0;
 static uint8_t  exc_burst_cnt = 0;   /* >0: burst mode, skip interval */
 
-/* Engineering mode virtual override values */
-static uint16_t eng_virtual_cell1 = 0;  /* Virtual Cell1 voltage (mV), 0=disabled */
-static uint16_t eng_virtual_cell2 = 0;  /* Virtual Cell2 voltage (mV), 0=disabled */
-static int16_t  eng_virtual_temp  = 0;  /* Virtual temperature (0.1°C), 0=disabled */
+/* Engineering mode virtual override values (sentinel = no override) */
+static uint16_t eng_virtual_cell1 = ENG_SENTINEL_CELL;  /* Virtual Cell1 voltage (mV) */
+static uint16_t eng_virtual_cell2 = ENG_SENTINEL_CELL;  /* Virtual Cell2 voltage (mV) */
+static int16_t  eng_virtual_temp  = (int16_t)ENG_SENTINEL_TEMP;  /* Virtual temperature (0.1°C) */
 
 /*===================== Helper Functions =====================*/
 
@@ -49,14 +49,23 @@ static int16_t  eng_virtual_temp  = 0;  /* Virtual temperature (0.1°C), 0=disab
  * @brief Read current date/time from WB7720 (0x60-0x66) and apply to RTC.
  *        Updates Bat_RTC_Seconds, Bat_RTC_Milliseconds, eng_entry_virtual_seconds.
  *        (datetime_to_seconds inlined to eliminate 6-arg call overhead on CK802)
+ *
+ * @return true if date was applied, false if sentinel (year==0) was detected
  */
-static void apply_eng_datetime_to_rtc(void)
+static bool apply_eng_datetime_to_rtc(void)
 {
     /* datetime_to_seconds inlined to eliminate 6-arg call overhead on CK802 */
     static const uint8_t days_in_month[13] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
     uint8_t dt_buf[7];
     hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR, REG_ENG_CURRENT_DATE, dt_buf, 7);
     uint16_t year  = (uint16_t)dt_buf[0] | ((uint16_t)dt_buf[1] << 8);
+
+    /* Sentinel check: year==0 means "don't override RTC" */
+    if (year == 0) {
+        eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
+        return false;
+    }
+
     uint8_t  month = dt_buf[2];
     uint8_t  day   = dt_buf[3];
 
@@ -80,6 +89,7 @@ static void apply_eng_datetime_to_rtc(void)
     gd->Bat_RTC_Milliseconds = 0;
     VIC_vModuleEnable();
     eng_entry_virtual_seconds = gd->Bat_RTC_Seconds;
+    return true;
 }
 
 /**
@@ -355,34 +365,36 @@ void usb_bridge_check_engineering_mode(void)
                                       REG_ENG_PRODUCTION_DATE,
                                       date_buf, 4);
             {
-                /* Write engineering production date to I2C 0xE2 area (20B ASCII) */
-                /* Format: "YYYY-MM-DD" padded with 0x00 to 20 bytes */
+                /* Sentinel check: prod_year==0 means "don't override production date" */
                 uint16_t prod_year  = (uint16_t)date_buf[0] | ((uint16_t)date_buf[1] << 8);
-                uint8_t  prod_month = date_buf[2];
-                uint8_t  prod_day   = date_buf[3];
-                char prod_date_str[PRODUCT_INFO_FIELD_SIZE];
-                uint8_t idx = 0;
+                if (prod_year != 0) {
+                    /* Write engineering production date to I2C 0xE2 area (20B ASCII) */
+                    /* Format: "YYYY-MM-DD" padded with 0x00 to 20 bytes */
+                    uint8_t  prod_month = date_buf[2];
+                    uint8_t  prod_day   = date_buf[3];
+                    char prod_date_str[PRODUCT_INFO_FIELD_SIZE];
+                    uint8_t idx = 0;
 
-                memset(prod_date_str, 0, sizeof(prod_date_str));
+                    memset(prod_date_str, 0, sizeof(prod_date_str));
 
-                /* Simple integer-to-ASCII for YYYY-MM-DD */
-                prod_date_str[idx++] = '0' + (prod_year / 1000) % 10;
-                prod_date_str[idx++] = '0' + (prod_year / 100) % 10;
-                prod_date_str[idx++] = '0' + (prod_year / 10) % 10;
-                prod_date_str[idx++] = '0' + prod_year % 10;
-                prod_date_str[idx++] = '-';
-                prod_date_str[idx++] = '0' + (prod_month / 10) % 10;
-                prod_date_str[idx++] = '0' + prod_month % 10;
-                prod_date_str[idx++] = '-';
-                prod_date_str[idx++] = '0' + (prod_day / 10) % 10;
-                prod_date_str[idx++] = '0' + prod_day % 10;
+                    /* Simple integer-to-ASCII for YYYY-MM-DD */
+                    prod_date_str[idx++] = '0' + (prod_year / 1000) % 10;
+                    prod_date_str[idx++] = '0' + (prod_year / 100) % 10;
+                    prod_date_str[idx++] = '0' + (prod_year / 10) % 10;
+                    prod_date_str[idx++] = '0' + prod_year % 10;
+                    prod_date_str[idx++] = '-';
+                    prod_date_str[idx++] = '0' + (prod_month / 10) % 10;
+                    prod_date_str[idx++] = '0' + prod_month % 10;
+                    prod_date_str[idx++] = '-';
+                    prod_date_str[idx++] = '0' + (prod_day / 10) % 10;
+                    prod_date_str[idx++] = '0' + prod_day % 10;
 
-                hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                                           REG_PROD_PROD_DATE,
-                                           (uint8_t *)prod_date_str,
-                                           PRODUCT_INFO_FIELD_SIZE);
-
-                /* prod_date written to WB7720 */
+                    hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+                                               REG_PROD_PROD_DATE,
+                                               (uint8_t *)prod_date_str,
+                                               PRODUCT_INFO_FIELD_SIZE);
+                }
+                /* else: sentinel, skip prod date override */
             }
 
             /* Read 0x80-0x87 in one 8-byte I2C read: cycle(2B) + cell1(2B) + cell2(2B) + temp(2B) */
@@ -390,8 +402,16 @@ void usb_bridge_check_engineering_mode(void)
                 uint8_t rbuf[8];
                 hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
                                           REG_ENG_CYCLE_CHG_COUNT, rbuf, 8);
-                gd->Battery_cycle_count = rbuf[0];
-                eng_entry_virtual_cycle = rbuf[0];
+
+                uint16_t raw_cycle = (uint16_t)rbuf[0] | ((uint16_t)rbuf[1] << 8);
+                if (raw_cycle != ENG_SENTINEL_CYCLE) {
+                    gd->Battery_cycle_count = (uint8_t)raw_cycle;
+                    eng_entry_virtual_cycle = (uint8_t)raw_cycle;
+                } else {
+                    /* Sentinel: keep real cycle count as baseline */
+                    eng_entry_virtual_cycle = gd->Battery_cycle_count;
+                }
+
                 eng_virtual_cell1 = (uint16_t)rbuf[2] | ((uint16_t)rbuf[3] << 8);
                 eng_virtual_cell2 = (uint16_t)rbuf[4] | ((uint16_t)rbuf[5] << 8);
                 eng_virtual_temp  = (int16_t)((uint16_t)rbuf[6] | ((uint16_t)rbuf[7] << 8));
@@ -442,10 +462,10 @@ void usb_bridge_check_engineering_mode(void)
                                            (uint8_t *)&write_buf, 2);
             }
 
-            /* Clear virtual override values */
-            eng_virtual_cell1 = 0;
-            eng_virtual_cell2 = 0;
-            eng_virtual_temp  = 0;
+            /* Clear virtual override values (reset to sentinel = no override) */
+            eng_virtual_cell1 = ENG_SENTINEL_CELL;
+            eng_virtual_cell2 = ENG_SENTINEL_CELL;
+            eng_virtual_temp  = (int16_t)ENG_SENTINEL_TEMP;
 
             eng_mode_active = false;
         }
@@ -587,13 +607,21 @@ void usb_bridge_check_eng_test_cmds(void)
         eng_saved_rtc_seconds = gd->Bat_RTC_Seconds;
         eng_saved_cycle_count = gd->Battery_cycle_count;
 
-        /* 3. Read new virtual params from WB7720 (same as entry) */
+        /* 3. Read new virtual params from WB7720 (same sentinel checks as entry) */
         {
             uint8_t rbuf[8];
             hal_i2cm_read_multi_bytes(USB_BRIDGE_WB7720_ADDR,
                                       REG_ENG_CYCLE_CHG_COUNT, rbuf, 8);
-            gd->Battery_cycle_count = rbuf[0];
-            eng_entry_virtual_cycle = rbuf[0];
+
+            uint16_t raw_cycle = (uint16_t)rbuf[0] | ((uint16_t)rbuf[1] << 8);
+            if (raw_cycle != ENG_SENTINEL_CYCLE) {
+                gd->Battery_cycle_count = (uint8_t)raw_cycle;
+                eng_entry_virtual_cycle = (uint8_t)raw_cycle;
+            } else {
+                /* Sentinel: keep real cycle count as baseline */
+                eng_entry_virtual_cycle = gd->Battery_cycle_count;
+            }
+
             eng_virtual_cell1 = (uint16_t)rbuf[2] | ((uint16_t)rbuf[3] << 8);
             eng_virtual_cell2 = (uint16_t)rbuf[4] | ((uint16_t)rbuf[5] << 8);
             eng_virtual_temp  = (int16_t)((uint16_t)rbuf[6] | ((uint16_t)rbuf[7] << 8));
