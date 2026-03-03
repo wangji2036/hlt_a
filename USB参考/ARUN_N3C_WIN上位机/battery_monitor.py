@@ -105,6 +105,11 @@ PROD_INFO_REFRESH_INTERVAL_S = 3
 # 写入步骤间隔（秒）
 WRITE_STEP_INTERVAL = 0.05
 
+# Engineering mode sentinel values (= "don't override, keep device value")
+ENG_SENTINEL_CYCLE = 0xFFFF
+ENG_SENTINEL_CELL  = 0xFFFF
+ENG_SENTINEL_TEMP  = 0x7FFF   # signed int16 sentinel
+
 # 窗口宽度（固定）
 WIN_WIDTH = 600
 
@@ -1236,6 +1241,9 @@ class BatteryMonitorApp:
             self._prod_mode_active = False
             self._eng_panel.pack(fill='x', padx=16, pady=(0, 8))
             self._prod_panel.pack_forget()
+            # 立即通知设备进入工程模式（发送 0xA5 + 全 sentinel）
+            if self._connected:
+                threading.Thread(target=self._enter_eng_on_device, daemon=True).start()
 
         elif mode == 'prod':
             pwd = simpledialog.askstring(
@@ -1260,6 +1268,36 @@ class BatteryMonitorApp:
         # 退出工程模式时通知设备
         if was_eng and not self._eng_mode_active and self._connected:
             threading.Thread(target=self._exit_eng_on_device, daemon=True).start()
+
+    def _enter_eng_on_device(self):
+        """发送 0xA5 + 全 sentinel 值，激活 NU17112 工程模式但不覆盖任何参数"""
+        while self._reading_busy:
+            time.sleep(0.01)
+        self._reading_busy = True
+        try:
+            def write_reg(reg, data_bytes):
+                payload = bytes([reg, len(data_bytes)]) + data_bytes
+                self._hid_write(CMD_WRITE_REGISTER, payload)
+                time.sleep(WRITE_STEP_INTERVAL)
+
+            # 解锁工程模式
+            write_reg(0x50, bytes([0xA5]))
+            # 当前日期 sentinel（全零 = 不覆盖 RTC）
+            write_reg(0x60, struct.pack('<H', 0) + bytes([0, 0, 0, 0, 0]))
+            # 生产日期 sentinel（全零 = 不覆盖）
+            write_reg(0x70, struct.pack('<H', 0) + bytes([0, 0]))
+            # 循环次数 sentinel
+            write_reg(0x80, struct.pack('<H', ENG_SENTINEL_CYCLE))
+            # Cell1 sentinel
+            write_reg(0x82, struct.pack('<H', ENG_SENTINEL_CELL))
+            # Cell2 sentinel
+            write_reg(0x84, struct.pack('<H', ENG_SENTINEL_CELL))
+            # 温度 sentinel (signed)
+            write_reg(0x86, struct.pack('<h', ENG_SENTINEL_TEMP))
+        except Exception as e:
+            print(f"[ENG] 进入工程模式失败: {e}")
+        finally:
+            self._reading_busy = False
 
     def _exit_eng_on_device(self):
         """写 0x50=0x00 通知 NU17112 退出工程模式"""
@@ -1835,25 +1873,47 @@ class BatteryMonitorApp:
                 self._hid_write(CMD_WRITE_REGISTER, payload)
                 time.sleep(WRITE_STEP_INTERVAL)
 
-            # 解锁工程模式（始终发送）
-            write_reg(0x50, bytes([0xA5]))
+            # 当前日期：勾选发用户值，未勾选发 sentinel（全零 = 不覆盖 RTC）
             if 'cur_date' in params:
                 y, m, d = params['cur_date']
                 _now = datetime.now()
                 h, mi, s = _now.hour, _now.minute, _now.second
                 write_reg(0x60, struct.pack('<H', y) + bytes([m, d, h, mi, s]))
+            else:
+                write_reg(0x60, struct.pack('<H', 0) + bytes([0, 0, 0, 0, 0]))
+
+            # 生产日期
             if 'prod_date' in params:
                 y, m, d = params['prod_date']
                 write_reg(0x70, struct.pack('<H', y) + bytes([m, d]))
+            else:
+                write_reg(0x70, struct.pack('<H', 0) + bytes([0, 0]))
+
+            # 循环次数
             if 'cycle' in params:
                 write_reg(0x80, struct.pack('<H', params['cycle']))
+            else:
+                write_reg(0x80, struct.pack('<H', ENG_SENTINEL_CYCLE))
+
+            # Cell1
             if 'cell1' in params:
                 write_reg(0x82, struct.pack('<H', params['cell1']))
+            else:
+                write_reg(0x82, struct.pack('<H', ENG_SENTINEL_CELL))
+
+            # Cell2
             if 'cell2' in params:
                 write_reg(0x84, struct.pack('<H', params['cell2']))
+            else:
+                write_reg(0x84, struct.pack('<H', ENG_SENTINEL_CELL))
+
+            # 温度
             if 'temp' in params:
                 write_reg(0x86, struct.pack('<h', params['temp']))
-            # 触发 NU17112 重新读取
+            else:
+                write_reg(0x86, struct.pack('<h', ENG_SENTINEL_TEMP))
+
+            # 触发 NU17112 刷新参数 (0xAA)
             write_reg(0x88, bytes([0xAA]))
 
             self.root.after(0, lambda: self._eng_status_var.set("写入成功"))
@@ -1871,7 +1931,7 @@ class BatteryMonitorApp:
             messagebox.showwarning("未连接", "请先连接设备")
             return
         if not self._eng_mode_active:
-            messagebox.showwarning("非工程模式", "请先进入工程模式并写入设备")
+            messagebox.showwarning("非工程模式", "请先进入工程模式")
             return
         if not messagebox.askyesno("确认清除",
                                    "确定要清除所有异常记录吗？\n此操作不可恢复。"):
@@ -1887,15 +1947,10 @@ class BatteryMonitorApp:
         self._reading_busy = True
 
         try:
-            # 先确保 NU17112 已进入工程模式（写 0xA5 到 0x50）
-            unlock = bytes([0x50, 1, 0xA5])
-            self._hid_write(CMD_WRITE_REGISTER, unlock)
-            time.sleep(0.15)  # 等待 NU17112 round-robin step 14 读到 0xA5
-
+            # 工程模式已在密码验证时激活（0xA5），直接发擦除命令
             payload = bytes([0x88, 1, 0xEE])
             self._hid_write(CMD_WRITE_REGISTER, payload)
-            # 立即清空 PC 端本地缓存，并设置等待硬件确认标志
-            # 不在此处显示"清除成功"——等 WB7720 返回 0 条记录后再确认
+            # 清空 PC 端本地缓存 + 设置硬件确认标志
             self._exception_seen_ids.clear()
             self._exception_list.clear()
             self._exception_id_to_index.clear()
