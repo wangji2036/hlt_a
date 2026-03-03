@@ -22,6 +22,11 @@
 
 static uint32_t g_next_record_id = 1;  /* Monotonic ID, starts from 1, never 0 */
 
+/* Record index tracking for circular buffer safety (BSS-zeroed at boot) */
+static uint8_t s_cell1_record_idx;  /* Index in records[] for active Cell1 OV */
+static uint8_t s_cell2_record_idx;  /* Index in records[] for active Cell2 OV */
+static uint8_t s_temp_record_idx;   /* Index in records[] for active temp */
+
 /* Forward declaration */
 static void battery_record_dump_flash(void);
 
@@ -285,7 +290,7 @@ void battery_record_init(void) {
 
 // Cell overvoltage processing function - Optimized version
 static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
-                                      uint16_t total_voltage, volatile uint8_t *record_idx) {
+                                      uint16_t total_voltage, uint8_t *record_idx) {
     volatile uint16_t *max_voltage;
     uint32_t *hour_start;
     uint8_t tracking_mask;
@@ -469,12 +474,12 @@ void battery_record_update_overvoltage(void) {
 #endif
 
     // Process cell 1 and cell 2
-    process_cell_overvoltage(1, cell1_voltage, total_voltage, &g_exception_cache.cell1_record_idx);
-    process_cell_overvoltage(2, cell2_voltage, total_voltage, &g_exception_cache.cell2_record_idx);
+    process_cell_overvoltage(1, cell1_voltage, total_voltage, &s_cell1_record_idx);
+    process_cell_overvoltage(2, cell2_voltage, total_voltage, &s_cell2_record_idx);
 #elif(BUCKBOOST_USED_NU6801 == 1)
     uint16_t cell1_voltage = g_buckboost.adc_vbat;
     uint16_t total_voltage = g_buckboost.adc_vbat;
-    process_cell_overvoltage(1, cell1_voltage, total_voltage, &g_exception_cache.cell1_record_idx);
+    process_cell_overvoltage(1, cell1_voltage, total_voltage, &s_cell1_record_idx);
 #endif
 }
 
@@ -535,7 +540,7 @@ void battery_record_update_temperature(void) {
             record.data.temp_data.max_temperature = g_exception_cache.max_temperature;
             record.data.temp_data.reserved = 0;
             // Save record index before write_exception_record advances write_ptr
-            g_exception_cache.temp_record_idx = g_record_storage.write_ptr;
+            s_temp_record_idx = g_record_storage.write_ptr;
             write_exception_record(&record);
             printk("\r\n[ACTIVE] : %ddegC (Tracking...)", record.data.temp_data.max_temperature);
         } else {
@@ -556,7 +561,7 @@ void battery_record_update_temperature(void) {
             bool is_hour_passed = is_new_hour(g_exception_cache.temp_hour_start_seconds, current_seconds);
 
             // Read last saved temperature from records using saved index
-            uint8_t last_index = g_exception_cache.temp_record_idx;
+            uint8_t last_index = s_temp_record_idx;
             if (last_index >= MAX_RECORDS ||
                 g_record_storage.records[last_index].error_type != event_type) {
                 // Record was overwritten by circular buffer, restart tracking
@@ -602,7 +607,7 @@ void battery_record_update_temperature(void) {
     } else if (is_temp_tracking) {
         // Recovered - save to Flash if max changed
         // Read last saved temperature from records using saved index
-        uint8_t last_index = g_exception_cache.temp_record_idx;
+        uint8_t last_index = s_temp_record_idx;
         if (last_index >= MAX_RECORDS ||
             g_record_storage.records[last_index].error_type != event_type) {
             // Record was overwritten, just clear tracking
