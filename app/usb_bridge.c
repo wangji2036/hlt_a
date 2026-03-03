@@ -347,8 +347,6 @@ void usb_bridge_check_engineering_mode(void)
 
     /* Read work mode register from WB7720 */
     hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_WORK_MODE, &work_mode);
-    printk("[ENG14] 0x50=%02X act=%d\r\n", work_mode, eng_mode_active);
-
     if (work_mode == 0xA5) {
         if (!eng_mode_active) {
             /*--- ENTER engineering mode ---*/
@@ -582,15 +580,11 @@ void usb_bridge_exc_burst(uint8_t count)
 void usb_bridge_check_eng_test_cmds(void)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
-    printk("[ENG17] act=%d\r\n", eng_mode_active);
     if (!eng_mode_active) return;
 
     uint8_t erase_cmd = 0;
     hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, &erase_cmd);
-    printk("[ENG17] 0x88=%02X\r\n", erase_cmd);
-
     if (erase_cmd == 0xEE) {
-        printk("[ENG17] ERASE!\r\n");
         battery_record_erase_all();
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
