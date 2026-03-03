@@ -743,9 +743,11 @@ void wpc_xfer_phase_process(struct com_prx_ask_pkt_t *com_pkt)
 		case BPP:
 			wpc_bpp_xfer_phase_protocol_process(com_pkt);
 			break;
+		#if ENABLE_EPP_FUNC
 		case EPP:
 			wpc_epp_xfer_phase_protocol_process(com_pkt);
 			break;
+		#endif
 		case MPP:
 			wpc_mpp_xfer_phase_protocol_process(com_pkt);
 			break;

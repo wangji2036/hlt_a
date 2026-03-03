@@ -10,6 +10,7 @@ RM := rm -rf
 -include sources.mk
 -include util/subdir.mk
 -include usbpd/subdir.mk
+-include libpowerbank/subdir.mk
 -include startup/subdir.mk
 -include power/subdir.mk
 -include osal/subdir.mk
@@ -65,7 +66,7 @@ PowerBankEvk_relsease.elf.asm: PowerBankEvk_relsease.elf
 PowerBankEvk_relsease.elf: $(OBJS) $(USER_OBJS) ../startup/ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"../startup/ckcpu.ld" -o "PowerBankEvk_relsease.elf" $(OBJS) $(USER_OBJS) $(LIBS) -L"../util" -lpowerbank -Wl,-ckmap='$(@:%.elf=%.map)'
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"../startup/ckcpu.ld" -o "PowerBankEvk_relsease.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)' 
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"

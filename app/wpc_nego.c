@@ -440,9 +440,11 @@ void wpc_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 	{
 		case BPP:
 			break;
+		#if ENABLE_EPP_FUNC
 		case EPP:
 			wpc_epp_nego_phase_process(com_ask);
 			break;
+		#endif
 		case MPP:
 			wpc_mpp_nego_phase_process(com_ask);
 			break;
