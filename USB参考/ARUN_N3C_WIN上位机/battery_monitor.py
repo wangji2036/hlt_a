@@ -629,6 +629,8 @@ class BatteryMonitorApp:
         self._hid_device   = None
         self._connected    = False
         self._reading_busy = False
+        self._erase_pending = False      # 等待 WB7720 确认清除完成
+        self._erase_pending_since: float = 0.0
         self._poll_counter = 0
         self._dev_info_timeout_id = None
 
@@ -1399,6 +1401,7 @@ class BatteryMonitorApp:
         self._exception_seen_ids.clear()
         self._exception_list.clear()
         self._exception_id_to_index.clear()
+        self._erase_pending = False
 
     def _clear_device_info_ui(self):
         for key in ('di_mfr', 'di_model', 'di_bat_mfr', 'di_bat_model', 'di_date'):
@@ -1525,6 +1528,10 @@ class BatteryMonitorApp:
         if not self._connected:
             return
         self._poll_counter += 1
+        # 清除等待超时保护（15s 内 WB7720 未确认则放弃）
+        if self._erase_pending and (time.time() - self._erase_pending_since > 15):
+            self._erase_pending = False
+            self._eng_status_var.set("清除超时，请重试")
         # 定期刷新 ProductInfo
         if PROD_INFO_REFRESH_INTERVAL_S > 0 and self._poll_counter % PROD_INFO_REFRESH_INTERVAL_S == 0:
             if not self._reading_busy:
@@ -1572,8 +1579,18 @@ class BatteryMonitorApp:
             elif rtype == TYPE_EXCEPT_LOG:
                 records = _parse_exception_payload(payload)
                 if records:
-                    print(f"  [EXC] {len(records)} 条异常日志")
-                    self.root.after(0, lambda r=records: self._append_exception_logs(r))
+                    if self._erase_pending:
+                        # 清除尚未被硬件确认，丢弃 WB7720 回传的旧记录
+                        print(f"  [EXC] 清除进行中，丢弃 {len(records)} 条旧记录")
+                    else:
+                        print(f"  [EXC] {len(records)} 条异常日志")
+                        self.root.after(0, lambda r=records: self._append_exception_logs(r))
+                else:
+                    # 空日志响应：WB7720 exc_cache 已确认清空
+                    if self._erase_pending:
+                        self._erase_pending = False
+                        self.root.after(0, self._refresh_exception_display)
+                        self.root.after(0, lambda: self._eng_status_var.set("清除成功"))
 
             elif rtype == TYPE_DEVICE_INFO:
                 _parse_device_info_payload(payload, self.device_info)
@@ -1870,16 +1887,24 @@ class BatteryMonitorApp:
         self._reading_busy = True
 
         try:
+            # 先确保 NU17112 已进入工程模式（写 0xA5 到 0x50）
+            unlock = bytes([0x50, 1, 0xA5])
+            self._hid_write(CMD_WRITE_REGISTER, unlock)
+            time.sleep(0.15)  # 等待 NU17112 round-robin step 14 读到 0xA5
+
             payload = bytes([0x88, 1, 0xEE])
             self._hid_write(CMD_WRITE_REGISTER, payload)
-            time.sleep(0.5)
-            # 清空 PC 端缓存
+            # 立即清空 PC 端本地缓存，并设置等待硬件确认标志
+            # 不在此处显示"清除成功"——等 WB7720 返回 0 条记录后再确认
             self._exception_seen_ids.clear()
             self._exception_list.clear()
             self._exception_id_to_index.clear()
+            self._erase_pending = True
+            self._erase_pending_since = time.time()
             self.root.after(0, self._refresh_exception_display)
-            self.root.after(0, lambda: self._eng_status_var.set("清除成功"))
+            self.root.after(0, lambda: self._eng_status_var.set("清除中，等待硬件确认..."))
         except Exception as e:
+            self._erase_pending = False
             self.root.after(0, lambda: self._eng_status_var.set(f"清除失败: {e}"))
         finally:
             self._reading_busy = False
