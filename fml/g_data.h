@@ -108,14 +108,17 @@ typedef struct {
 // Exception tracking cache (RAM) - optimized version
 typedef struct {
     uint8_t  status_flags;          // Bitfield flags (use CACHE_GET/SET macros)
-    uint8_t  padding1;
+    uint8_t  cell1_record_idx;      // Index in records[] for active Cell1 OV record
+    uint8_t  cell2_record_idx;      // Index in records[] for active Cell2 OV record
+    uint8_t  temp_record_idx;       // Index in records[] for active temp record
     uint16_t cell1_max_voltage;     // Cell1 realtime max voltage
     uint16_t cell2_max_voltage;     // Cell2 realtime max voltage
     int16_t  max_temperature;       // Realtime max temperature (0.1 deg C)
+    uint16_t padding1;              // Alignment for uint32_t fields
     uint32_t cell1_hour_start_seconds;   /* OV 1-hour window start for Cell1 */
     uint32_t cell2_hour_start_seconds;   /* OV 1-hour window start for Cell2 */
     uint32_t temp_hour_start_seconds;  // Temperature window start seconds
-} ExceptionCache_t;  // ~16 bytes
+} ExceptionCache_t;  // 24 bytes
 
 // RAM persistent storage structure - optimized version
 typedef struct {
