@@ -158,8 +158,8 @@ void ubsd_wb7720_report_update(void)
 
 	#define PCB_Temp_dC				0x35
 
-	#define REG_SLEEP           	0x44    // ????????
-	#define REG_WAKEUP          	0x45    // ????????
+	#define REG_SLEEP           	0x4E    // REG_SLEEP_CMD (WB7720 config.h:70)
+	#define REG_WAKEUP          	0x4F    // REG_WAKE_CMD  (WB7720 config.h:71)
 
 	uint16_t write_buf;
 

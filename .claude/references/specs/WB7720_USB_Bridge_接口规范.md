@@ -1,7 +1,7 @@
 # WB7720 USB Bridge 接口规范
 
-**版本**: v1.4
-**日期**: 2026-02-28
+**版本**: v1.5
+**日期**: 2026-03-03
 **管理者**: usb-device-agent
 **固件版本**: NANFU_USB_1052_20260121A
 
@@ -106,7 +106,7 @@ Byte 2~N: DATA     实际数据 (Little-Endian)
 | +27~+28 | 过温异常次数 | u16 LE | 次 |
 | +29~+30 | 过压异常次数 | u16 LE | 次 |
 | +31~+32 | 过流异常次数 | u16 LE | 次 |
-| +33 | 异常日志条数 | u8 | 条 |
+| +33 | 异常日志条数 | u8 | 条 (= `exc_cache_count`, WB7720 本地实际缓存条数, 0~5) |
 | +34 | 品牌名长度 | u8 | 字节 |
 | +35~+41 | 品牌名 | char[7] | ASCII |
 
@@ -296,10 +296,23 @@ I2C Slave 地址: **0x42**
 - `REG_EXC_CURRENT_IDX` 从 0 滚动到 (total_count-1)，然后回 0
 - 若无异常记录（`total_count = 0`），仅写 0x37=0，不写记录数据
 
-**WB7720 读取行为**:
-- 在每次组装 Type 0x01 遥测报告时，顺带检查 `i2c_buff[0x3A]` 起的 record_id（偏移 +16）
-- 若该 record_id 未在本地 `exc_cache[5]` 中，则将整条 20B 追加入缓存
-- 缓存满 5 条后不再追加（按 record_id 去重，最旧条目自动被新条目替代）
+**WB7720 读取行为** (`exc_cache_update()`, 在每次 `update_report_buffer_0()` 末尾调用):
+
+1. **擦除检测**: 若 `i2c_buff[REG_EXC_TOTAL_COUNT] == 0`，清空本地缓存
+   (`exc_cache_count = 0`, `exc_page_idx = 0`) 并返回。
+   这是 erase-all 闭环的关键: NU17112 擦除后设 total_count=0 → WB7720 检测到并清空 exc_cache
+   → 下次 Type 0x02 回复 ReturnCount=0 → PC 端清空日志列表。
+
+2. **record_id 过滤**: 从 `i2c_buff[0x3A+16]` 提取 u32 LE record_id，若为 0 则跳过
+   （安全兜底，NU17112 record_id 从 1 开始）。
+
+3. **就地更新**: 若 record_id 已在 `exc_cache` 中，`memcpy` 覆盖该条目
+   （NU17112 可能更新同一记录的字段如 max_voltage）。
+
+4. **新记录追加/环形覆盖**: 若 record_id 不在缓存中:
+   - 缓存未满 (count < 5): 追加到 `exc_cache[count]`，count++
+   - **缓存已满 (count == 5)**: **FIFO 环形覆盖** — 将 `exc_cache[1..4]` 前移至 `[0..3]`，
+     新记录写入 `exc_cache[4]`，保证始终保留最新 5 条记录（最老记录被淘汰）
 
 > **设计约束**: 0x37~0x4D 之所以选在此区间，是因为 0x36 是遥测区末字节（REG_PCB_TEMP），0x50 是工程模式 REG_WORK_MODE，之间有 24B 可用空间，恰好容纳本区定义的 23B。
 
@@ -308,18 +321,42 @@ I2C Slave 地址: **0x42**
 | 地址 | 宏名 | 类型 | 方向 | 说明 |
 |------|------|------|------|------|
 | 0x50 | REG_WORK_MODE | u8 | PC→WB7720 | 0x00=用户, 0xA5=工程模式 |
-| 0x60~0x63 | REG_ENG_CURRENT_DATE | u16+u8+u8 LE | PC→WB7720→NU17112 | 当前日期 |
-| 0x70~0x73 | REG_ENG_PRODUCTION_DATE | u16+u8+u8 LE | PC→WB7720→NU17112 | 生产日期 |
-| 0x80~0x81 | REG_ENG_CYCLE_CHG_COUNT | u16 LE | PC→WB7720→NU17112 | 循环次数 |
+| 0x60~0x66 | REG_ENG_CURRENT_DATE/TIME | 7B (见下表) | PC→WB7720→NU17112 | 当前日期时间 |
+| 0x70~0x73 | REG_ENG_PRODUCTION_DATE | u16+u8+u8 LE | PC→WB7720→NU17112 | 生产日期 (仅年月日) |
+| 0x80~0x81 | REG_ENG_CYCLE_COUNT | u16 LE | PC→WB7720→NU17112 | 循环次数 |
+
+**REG_ENG_CURRENT_DATE/TIME 详细布局 (0x60~0x66, 7 字节)**:
+
+| 地址 | config.h 宏名 | 类型 | 说明 |
+|------|--------------|------|------|
+| 0x60~0x61 | REG_ENG_CURRENT_DATE | u16 LE | 年 (e.g. 2026) |
+| 0x62 | REG_ENG_CURRENT_DATE+2 | u8 | 月 (1~12) |
+| 0x63 | REG_ENG_CURRENT_DATE+3 | u8 | 日 (1~31) |
+| 0x64 | REG_ENG_CURRENT_TIME_H | u8 | 时 (0~23) |
+| 0x65 | REG_ENG_CURRENT_TIME_M | u8 | 分 (0~59) |
+| 0x66 | REG_ENG_CURRENT_TIME_S | u8 | 秒 (0~59) |
+
+> **NU17112 读取行为**: `apply_eng_datetime_to_rtc()` 通过一次 `hal_i2cm_read_multi_bytes(0x60, 7)` 读取全部 7 字节，
+> 将年月日时分秒转换为自 2026-01-01 的秒数写入 `gd->Bat_RTC_Seconds`。
+> 若 year==0 (sentinel)，表示不覆盖 RTC，保留真实时钟。
+
+> **REG_ENG_PRODUCTION_DATE (0x70~0x73)** 仅使用 4 字节（年月日），NU17112 通过
+> `hal_i2cm_read_multi_bytes(0x70, 4)` 读取，不含时分秒。
+
+> **命名不一致注意**: config.h 中宏名为 `REG_ENG_CYCLE_COUNT` (0x80)，
+> WB7720 main.c 及 usb_bridge.h 中沿用旧名 `REG_ENG_CYCLE_CHG_COUNT` (0x80)。
+> 两者指向同一地址，功能相同。后续统一时应以 config.h 的 `REG_ENG_CYCLE_COUNT` 为准。
 
 **工程模式写入序列** (每步间隔 ≥ 50ms):
 ```
-Step 1: CMD_WRITE_REGISTER → REG_WORK_MODE(0x50) = 0xA5   (解锁)
-Step 2: CMD_WRITE_REGISTER → REG_ENG_CURRENT_DATE(0x60)   (当前日期)
-Step 3: CMD_WRITE_REGISTER → REG_ENG_PRODUCTION_DATE(0x70) (生产日期)
-Step 4: CMD_WRITE_REGISTER → REG_ENG_CYCLE_CHG_COUNT(0x80) (循环次数)
+Step 1: CMD_WRITE_REGISTER → REG_ENG_CURRENT_DATE(0x60), 7B   (当前日期时间: YY YY MM DD HH mm ss)
+Step 2: CMD_WRITE_REGISTER → REG_ENG_PRODUCTION_DATE(0x70), 4B (生产日期: YY YY MM DD)
+Step 3: CMD_WRITE_REGISTER → REG_ENG_CYCLE_COUNT(0x80), 2B     (循环次数)
+Step 4: CMD_WRITE_REGISTER → REG_WORK_MODE(0x50) = 0xA5        (解锁, 最后写入触发)
 ```
-NU17112 检测到 REG_WORK_MODE = 0xA5 后读取数据，处理完毕后将 REG_WORK_MODE 清零。
+> **写入顺序约束**: 0xA5 触发标志必须在最后写入。NU17112 检测到 `REG_WORK_MODE = 0xA5` 后
+> 立即读取 0x60~0x66 (7B) + 0x70~0x73 (4B) + 0x80~0x87 (8B) 并应用，然后将 REG_WORK_MODE 清零。
+> 若在 0xA5 之前写入参数，可确保参数已到位。
 
 ### 3.3b 工程测试寄存器 (0x82-0x89, 虚拟覆写 + 记录清除)
 
@@ -333,7 +370,16 @@ NU17112 检测到 REG_WORK_MODE = 0xA5 后读取数据，处理完毕后将 REG_
 | 0x88 | REG_ENG_ERASE_ALL_CMD | u8 | PC→NU17112 | 写 0xEE 触发清除全部异常记录 |
 | 0x89 | REG_ENG_CMD_STATUS | u8 | NU17112→PC | 0x00=空闲, 0x01=进行中, 0x02=成功, 0xFF=失败 |
 
-**写保护**: 0x82~0x88 写入要求 `REG_WORK_MODE(0x50)=0xA5`（工程模式已解锁），否则写入被忽略。
+**写保护 (分层实现)**:
+
+- **WB7720 层**: 仅对 `0x88 (REG_ENG_ERASE_ALL_CMD)` 执行写保护检查 — I2C 中断中判断
+  `i2c_buff[REG_WORK_MODE] == 0xA5`，不满足则丢弃写入。
+  `0x82~0x87` 在 WB7720 层**无条件写入** i2c_buff（I2C 中断和 HID CMD_WRITE_REGISTER 均不拦截）。
+- **NU17112 层**: `usb_bridge_check_eng_test_cmds()` 首先检查 `eng_mode_active` 状态，
+  仅在工程模式激活时才读取并处理 0x82~0x87 的虚拟值。未进入工程模式时这些寄存器不被读取，
+  即使被外部写入也不产生任何效果。
+- **HID CMD_WRITE_REGISTER**: 对所有地址无条件写入 i2c_buff，不做任何鉴权。
+  写保护完全依赖 NU17112 侧的 `eng_mode_active` 状态守卫。
 
 **虚拟覆写测试流程**:
 
@@ -445,6 +491,7 @@ Step 3: [0x0C][0x50][0x01][0x00]                退出工程模式
 | v1.2 | 2026-02-26 | Type 重新分配: Type 0x04 废弃，设备信息改为 **Type 0x03** (3 子页 SubIdx 方案)；CMD 0x02 Payload 明确为 `[sub_idx]`，每次请求独立无状态；§3.4 生产模式寄存器改为双向复用（生产模式写入 + 正常模式设备信息读回）；新增 CMD 分发规则（§2.4） |
 | v1.3 | 2026-02-26 | **异常日志全量传输机制**: 新增 §3.2b 异常日志滚动写入区（i2c_buff 0x37~0x4D, 23B）；Type 0x02 补充多条日志分页传输说明、WB7720 本地 5 条缓存设计、PC 端 record_id 去重汇总策略；明确 OffsetPage 页码含义和包大小计算 |
 | **v1.4** | **2026-02-28** | **工程测试寄存器**: 新增 §3.3b 工程测试寄存器（i2c_buff 0x82~0x89, 8B）；支持虚拟电芯电压/温度覆写用于异常触发测试（OV >4450mV, OT >60.0°C）；支持 0xEE 命令清除全部异常记录；CMD_STATUS 反馈机制；写保护要求 WORK_MODE=0xA5 |
+| **v1.5** | **2026-03-03** | **代码对齐修正**: (1) §3.3 REG_ENG_CURRENT_DATE 扩展为 7 字节 (0x60~0x66, 含时分秒)，匹配 NU17112 `apply_eng_datetime_to_rtc()` 实际读取; (2) §3.3b 写保护描述修正为分层实现 (WB7720 仅保护 0x88, 0x82~0x87 由 NU17112 eng_mode_active 守卫); (3) §3.2b 新增擦除检测行为 (total_count==0 清空 exc_cache); (4) §3.2b 缓存满策略从"不再追加"修正为 FIFO 环形覆盖; (5) Type 0x01 +33 异常日志条数明确为 exc_cache_count 实时值; (6) REG_ENG_CYCLE_COUNT 命名不一致备注 |
 
 ---
 

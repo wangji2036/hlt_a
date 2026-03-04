@@ -194,6 +194,10 @@ void buckboost_task_init(void)
 
 void buckboost_protection_handle(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
+
 	static uint8_t cnt = 0;
 
 #if(BUCKBOOST_USED_NU6805 == 1)
@@ -435,6 +439,58 @@ void buckboost_fault_restore(void)
 	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 	buckboost_set_bus_iv(5000,3300,0,0);
 }
+
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+void usb_comm_lock(void)
+{
+	g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+	g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
+	g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
+	g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
+
+	pdlib_disable_typec(PORT0_INDEX);
+	pdlib_disable_typec(PORT1_INDEX);
+
+	hal_tcpc_set_gate_en(PORT0_INDEX, false);
+	hal_tcpc_set_gate_en(PORT1_INDEX, false);
+	hal_tcpc_set_gate_en(PORT2_INDEX, false);
+
+	buckboost_set_bus_iv(5000, 3300, 0, 0);
+
+	pdlib_clear_typec_prswap(PORT0_INDEX);
+	pdlib_clear_typec_prswap(PORT1_INDEX);
+
+	pdlib_disable_usbpd();
+
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+
+	tcpm_disable_usba_detect();
+
+	buckboost_ops.init();
+
+	printk("USB comm lock: all charge/discharge stopped\n");
+}
+
+void usb_comm_unlock(void)
+{
+	buckboost_protection_flag = 0;
+
+	pdlib_restart_typec(PORT0_INDEX);
+	pdlib_restart_typec(PORT1_INDEX);
+
+	osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
+
+	tcpm_stop_wpc(WPC_DELAY);
+	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+
+	buckboost_ops.init();
+	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
+	buckboost_set_bus_iv(5000, 3300, 0, 0);
+
+	printk("USB comm unlock: charge/discharge restored\n");
+}
+#endif /* CONFIG_TRIPLE_CLICK_COMM_ENABLE */
 
 void buckboost_ir_drop_handle(void)
 {

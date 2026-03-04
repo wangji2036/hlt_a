@@ -60,6 +60,19 @@ WB7720 本身不做单位换算，只是透传 i2c_buff：
 - 最小包 (0 条): 9B + 2B + 0B + 2B = 13B
 - 安全余量充足
 
+## 接口规范维护经验 (v1.5)
+
+### 代码-文档对齐审计要点
+- **寄存器字节数**: 检查 NU17112 侧 `hal_i2cm_read_multi_bytes()` 的实际读取长度，不要假设与命名一致
+  - 例: REG_ENG_CURRENT_DATE 名义为"日期"，但 `apply_eng_datetime_to_rtc()` 实际读 7B (含时分秒)
+  - 例: REG_ENG_PRODUCTION_DATE 虽然有对应的 TIME 宏空间，但 NU17112 只读 4B (仅年月日)
+- **写保护层级**: WB7720 I2C IRQ 和 HID CMD_WRITE 的保护策略不同，文档要分别说明
+  - I2C IRQ: 只保护 0x88 (REG_ENG_ERASE_ALL_CMD)
+  - HID CMD_WRITE: 无条件写入所有地址，保护完全交给 NU17112 侧
+- **命名不一致**: config.h 使用 `REG_ENG_CYCLE_COUNT`，main.c BMS_REGISTERS 区用 `REG_ENG_CYCLE_CHG_COUNT`
+  同一地址 0x80，需在文档中标注
+- **Type 0x01 字段来源**: ExceptionLogCount (+33) 来自 `exc_cache_count` (实时缓存条数)，不是硬编码
+
 ## 调试经验
 
 - 初次调试时用 HID Wireshark 或 USB 协议分析器抓包，确认 SOF `05 A5 5A` 存在

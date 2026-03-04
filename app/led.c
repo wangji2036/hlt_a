@@ -8,6 +8,8 @@
 #include"BMS_FixPoint.h"
 #include "port_manager.h"
 #include "nu6805.h"
+#include "buckboost.h"
+#include "_fml.h"
 extern volatile uint16_t sys_ticks;
 extern uint16_t key_ui_cnt;
 #define LED_DISPLAY
@@ -677,6 +679,10 @@ void ui_update(void)
 
 void key_sigle_click_process(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
+
 	if(buckboost_protection_flag){
 		buckboost_fault_restore();
 
@@ -760,6 +766,15 @@ void key_double_click_process(void)
 
 void key_long_click_process(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+    if (gd->usb_comm_activated)
+    {
+        gd->usb_comm_activated = 0;
+        usb_comm_unlock();
+        ubsd_wb7720_sleep();
+        printk("USB comm auto-deactivated before sleep\n");
+    }
+#endif
 
     {
         printk("\r\n long press power-off - no input detected, wpc_mode=%d\n", wpc_mode);
@@ -788,14 +803,19 @@ void key_long_click_process(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void key_triple_click_process(void)
 {
+	if (buckboost_protection_flag) return;
+
 	gd->usb_comm_activated ^= 1;
 	if(gd->usb_comm_activated)
 	{
+		usb_comm_lock();
 		comm_feedback_cnt = 6;  // 3 flashes (on-off-on-off-on-off @ 250ms)
 		printk("USB comm activated by triple-click\n");
 	}
 	else
 	{
+		usb_comm_unlock();
+		ubsd_wb7720_sleep();
 		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
 		printk("USB comm deactivated by triple-click\n");
 	}

@@ -148,6 +148,11 @@ extern const struct buckboost_operations buckboost_ops;
 extern uint8_t buckboost_protection_flag;
 extern uint8_t zero_soc_cnt;
 
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+extern void usb_comm_lock(void);
+extern void usb_comm_unlock(void);
+#endif
+
 #endif /* BUCK_BOOST_H_ */
 
 

@@ -100,6 +100,6 @@
 #define CONFIG_BATTERY_CELL_COUNT       2       // Cell count (2S series)
 
 /*----------- Triple-Click Communication Activation -----------*/
-#define CONFIG_TRIPLE_CLICK_COMM_ENABLE 0
+#define CONFIG_TRIPLE_CLICK_COMM_ENABLE 1
 
 #endif /* CONFIG_H_ */
