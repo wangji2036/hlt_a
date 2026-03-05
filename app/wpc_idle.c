@@ -719,6 +719,9 @@ extern uint8_t cert_chain[];
 
 void wpc_idle_phase_process(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
 	static uint8_t bat_low_sleep = 0;
 
 	if(gd->bat_dead_flag)

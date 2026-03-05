@@ -61,6 +61,12 @@ static uint16_t sleep_f_68nf_thd = 1317;// sleep F -normal F,
 #endif
 void SLP_vNormalToSleep(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) {
+		printk("[SLEEP] blocked by USB_COM mode\n");
+		return;
+	}
+#endif
 	VIC_vModuleDisable();
 	sleep_printk("\r\n enter sleep");
 	hal_wdt_feed();

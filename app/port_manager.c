@@ -1297,6 +1297,9 @@ void port_enum_port3_connect_start(void)
 
 void port_enum_scan_handle(void)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
 	if(gd->flag11&&(time_ticks - gd->timer_cnt>=3000))
 	{
 		gd->flag11 = 0;
