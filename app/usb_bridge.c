@@ -130,6 +130,18 @@ void usb_bridge_init(void)
 }
 
 /**
+ * @brief Reset ProductInfo write flag so next call re-writes to WB7720.
+ *
+ * Must be called after WB7720 wakeup (NVIC_SystemReset clears i2c_buff).
+ */
+static uint8_t product_info_done = 0;
+
+void usb_bridge_reset_product_info(void)
+{
+    product_info_done = 0;
+}
+
+/**
  * @brief Ensure ProductInfo has been written to WB7720.
  *
  * Called from round-robin step 16 (~every 752ms).
@@ -139,19 +151,21 @@ void usb_bridge_init(void)
 void usb_bridge_ensure_product_info(void)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
-    static uint8_t done = 0;
-    if (done) return;
+    if (product_info_done) return;
     ProductInfo_t info;
     product_info_read(&info);
     if (!is_product_info_valid((const uint8_t *)&info, sizeof(ProductInfo_t))) {
-        done = 1;
+        printk("[PI] Flash invalid, skip\n");
+        product_info_done = 1;
         return;
     }
-    if (hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
+    uint8_t ret = hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
                                    REG_PROD_MANUFACTURER,
                                    (uint8_t *)&info,
-                                   sizeof(ProductInfo_t)) == 0) {
-        done = 1;
+                                   sizeof(ProductInfo_t));
+    printk("[PI] write %dB ret=%d\n", (int)sizeof(ProductInfo_t), ret);
+    if (ret == 0) {
+        product_info_done = 1;
     }
 #endif
 }

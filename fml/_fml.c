@@ -283,15 +283,34 @@ void ubsd_wb7720_report_update(void)
 	if(g_port.port_state[1] != PORT_STATE_NONE)
 #endif
 	{
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+		if(is_usb_enable == 0)
+		{
+			ubsd_wb7720_wakeup();
+#if CONFIG_USB_BRIDGE_ENABLE
+			usb_bridge_reset_product_info();
+			printk("[USB] wakeup, PI reset, cnt=%d\n", cnt);
+#endif
+			is_usb_enable = 1;
+		}
+
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
+#else
 		if(g_usb_pd_s.explicit_contract || gd->force_usb_mode)
 		{
 			DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-			DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;  //
+			DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 			DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 
 			if(is_usb_enable == 0)
 			{
 				ubsd_wb7720_wakeup();
+#if CONFIG_USB_BRIDGE_ENABLE
+				usb_bridge_reset_product_info();
+				printk("[USB] wakeup, PI reset, cnt=%d\n", cnt);
+#endif
 				is_usb_enable = 1;
 			}
 		}
@@ -306,9 +325,9 @@ void ubsd_wb7720_report_update(void)
 					osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
 				}
 			}
-
 			if(qc_delay_cnt >= 100) qc_delay_cnt = 100;
 		}
+#endif
 
 	}
 	else

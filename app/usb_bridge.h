@@ -76,6 +76,7 @@
 /* --- Initialization (called from wb7720_init) --- */
 void usb_bridge_init(void);
 void usb_bridge_ensure_product_info(void);  // Step 16: retry ProductInfo write if init failed
+void usb_bridge_reset_product_info(void);  // Reset done flag after WB7720 wakeup
 
 /* --- Telemetry Extensions (called from round-robin) --- */
 void usb_bridge_write_exception_counts(void);   // Step 11: OT/OV/OC counts -> 0x11-0x16
