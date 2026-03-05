@@ -168,14 +168,52 @@ void ubsd_wb7720_report_update(void)
 	static uint8_t qc_delay_cnt = 0;
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	if(!gd->usb_comm_activated)
+	/* --- CC-driven WB7720 Sleep/Wake ---
+	 * Read CC to detect cable presence (we are SINK with Rd,
+	 * so a connected host shows Rp: CC_RP_DEF / RP_1_5 / RP_3_0).
+	 * WB7720 awake ONLY when USB_COM active AND cable connected. */
 	{
-		if(is_usb_enable == 1)
+		bool want_awake = false;
+		if (gd->usb_comm_activated)
 		{
-			ubsd_wb7720_sleep();
-			is_usb_enable = 0;
+			enum tc_cc_status cc1, cc2;
+			hal_tcpc_get_cc(0, &cc1, &cc2);
+			printk("[CC] cc1=%d cc2=%d\n", cc1, cc2);
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+			/* SINK mode: look for remote Rp */
+			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
+				want_awake = true;
+#else
+			/* SOURCE mode: look for remote Rd */
+			if (cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
+				want_awake = true;
+#endif
 		}
-		return;
+
+		if (!want_awake)
+		{
+			if (is_usb_enable)
+			{
+				ubsd_wb7720_sleep();
+				is_usb_enable = 0;
+				gd->wb7720_awake = 0;
+				printk("[USB] CC lost or COM off -> sleep\n");
+			}
+			cnt = 0;
+			return;
+		}
+
+		/* want_awake == true: USB_COM active + CC connected */
+		if (!is_usb_enable)
+		{
+			ubsd_wb7720_wakeup();
+#if CONFIG_USB_BRIDGE_ENABLE
+			usb_bridge_reset_product_info();
+			printk("[USB] CC detected -> wakeup, PI reset\n");
+#endif
+			is_usb_enable = 1;
+			gd->wb7720_awake = 1;
+		}
 	}
 #endif
 
@@ -278,31 +316,14 @@ void ubsd_wb7720_report_update(void)
 #endif
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	if(gd->usb_comm_activated)
+	/* Sleep/Wake already handled above via CC detection.
+	 * Just set DPDM MUX when awake (we reach here only if want_awake). */
+	DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 #else
 	if(g_port.port_state[1] != PORT_STATE_NONE)
-#endif
 	{
-#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-		/* Periodic wakeup: re-send every round-robin cycle (cnt==0)
-		 * so WB7720 re-enumerates USB after cable replug.  —AJI */
-		if(is_usb_enable == 0 || cnt == 0)
-		{
-			ubsd_wb7720_wakeup();
-#if CONFIG_USB_BRIDGE_ENABLE
-			if(is_usb_enable == 0)
-			{
-				usb_bridge_reset_product_info();
-				printk("[USB] wakeup, PI reset\n");
-			}
-#endif
-			is_usb_enable = 1;
-		}
-
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
-		DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
-#else
 		if(g_usb_pd_s.explicit_contract || gd->force_usb_mode)
 		{
 			DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
@@ -332,8 +353,6 @@ void ubsd_wb7720_report_update(void)
 			}
 			if(qc_delay_cnt >= 100) qc_delay_cnt = 100;
 		}
-#endif
-
 	}
 	else
 	{
@@ -345,6 +364,7 @@ void ubsd_wb7720_report_update(void)
 
 		qc_delay_cnt = 0;
 	}
+#endif
 }
 
 

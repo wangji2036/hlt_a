@@ -551,7 +551,14 @@ void ui_update(void)
 	{
 		static uint8_t comm_blink_cnt = 0;
 		comm_blink_cnt++;
-		soc_show_ram_led = (comm_blink_cnt & 1) ? 0x10 : 0x00;  // LED5 toggle
+		uint8_t led_val = (comm_blink_cnt & 1) ? 0x10 : 0x00;  // LED5 toggle
+#if (CONFIG_USB_COMM_LED4_WB_STATE == 1)
+		if (gd->wb7720_awake)
+			led_val |= 0x08;                        // LED4 solid ON
+		else
+			led_val |= (comm_blink_cnt & 1) ? 0x08 : 0x00;  // LED4 blink
+#endif
+		soc_show_ram_led = led_val;
 		prev_woke_mode = g_buckboost.woke_mode;
 		ui_no_timer_scan = 0;
 		return;

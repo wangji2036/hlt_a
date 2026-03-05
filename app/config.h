@@ -102,5 +102,7 @@
 /*----------- Triple-Click Communication Activation -----------*/
 #define CONFIG_TRIPLE_CLICK_COMM_ENABLE 1
 #define CONFIG_USB_COMM_LED5_BLINK      1       // LED5 blinks in USB_COM mode (debug)
+#define CONFIG_USB_COMM_LED4_WB_STATE   1       // LED4: WB7720 wakeup=solid, sleep=blink
+#define CONFIG_USB_COM_FORCE_SINK       1       // Force SINK role in USB_COM for VBUS from phone
 
 #endif /* CONFIG_H_ */

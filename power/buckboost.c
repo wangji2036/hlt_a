@@ -466,12 +466,23 @@ void usb_comm_lock(void)
 
 	buckboost_ops.init();
 
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+	hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
+	hal_tcpc_set_cc(PORT0_INDEX, TYPEC_CC_RD);
+	hal_tcpc_set_roles(PORT0_INDEX, TYPEC_SINK, TYPEC_DEVICE);
+	printk("USB comm lock: force SINK on PORT0 for VBUS\n");
+#else
 	printk("USB comm lock: all charge/discharge stopped\n");
+#endif
 }
 
 void usb_comm_unlock(void)
 {
 	buckboost_protection_flag = 0;
+
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+	hal_tcpc_set_cc(PORT0_INDEX, TYPEC_CC_OPEN);
+#endif
 
 	pdlib_restart_typec(PORT0_INDEX);
 	pdlib_restart_typec(PORT1_INDEX);
