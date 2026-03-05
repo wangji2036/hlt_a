@@ -101,5 +101,6 @@
 
 /*----------- Triple-Click Communication Activation -----------*/
 #define CONFIG_TRIPLE_CLICK_COMM_ENABLE 1
+#define CONFIG_USB_COMM_LED5_BLINK      1       // LED5 blinks in USB_COM mode (debug)
 
 #endif /* CONFIG_H_ */

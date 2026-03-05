@@ -977,6 +977,9 @@ void port_enum_port_snk_setvolt(void)
 void port_enum_port0_connect_success(void)
 {
 	printk("%s!\n",__func__);
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
 	gd->typec_scp = 0;
 	gd->vbus_ovp = 0;
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -1060,6 +1063,9 @@ void port_enum_port0_connect_success(void)
 void port_enum_port1_connect_success(void)
 {
 	printk("%s!\n",__func__);
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	if (gd->usb_comm_activated) return;
+#endif
 
 	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{

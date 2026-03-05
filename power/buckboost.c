@@ -448,9 +448,6 @@ void usb_comm_lock(void)
 	g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
 	g_port.port_state[PORT3_INDEX] = PORT_STATE_NONE;
 
-	pdlib_disable_typec(PORT0_INDEX);
-	pdlib_disable_typec(PORT1_INDEX);
-
 	hal_tcpc_set_gate_en(PORT0_INDEX, false);
 	hal_tcpc_set_gate_en(PORT1_INDEX, false);
 	hal_tcpc_set_gate_en(PORT2_INDEX, false);

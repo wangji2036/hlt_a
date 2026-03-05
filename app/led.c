@@ -545,6 +545,18 @@ void ui_update(void)
 		ui_no_timer_scan = 0;
 		return;  // Skip normal LED update during feedback
 	}
+
+#if (CONFIG_USB_COMM_LED5_BLINK == 1)
+	if(gd->usb_comm_activated)
+	{
+		static uint8_t comm_blink_cnt = 0;
+		comm_blink_cnt++;
+		soc_show_ram_led = (comm_blink_cnt & 1) ? 0x10 : 0x00;  // LED5 toggle
+		prev_woke_mode = g_buckboost.woke_mode;
+		ui_no_timer_scan = 0;
+		return;
+	}
+#endif
 #endif
 
 	if(gd->real_soc_obtained == 0 )
