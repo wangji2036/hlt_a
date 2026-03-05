@@ -284,12 +284,17 @@ void ubsd_wb7720_report_update(void)
 #endif
 	{
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-		if(is_usb_enable == 0)
+		/* Periodic wakeup: re-send every round-robin cycle (cnt==0)
+		 * so WB7720 re-enumerates USB after cable replug.  —AJI */
+		if(is_usb_enable == 0 || cnt == 0)
 		{
 			ubsd_wb7720_wakeup();
 #if CONFIG_USB_BRIDGE_ENABLE
-			usb_bridge_reset_product_info();
-			printk("[USB] wakeup, PI reset, cnt=%d\n", cnt);
+			if(is_usb_enable == 0)
+			{
+				usb_bridge_reset_product_info();
+				printk("[USB] wakeup, PI reset\n");
+			}
 #endif
 			is_usb_enable = 1;
 		}
