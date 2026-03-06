@@ -12,6 +12,7 @@
 #include "port_manager.h"
 #include "g_data.h"
 #include "usb_pd.h"
+#include "typec.h"
 #include "usb_bridge.h"
 #include "nu6805.h"
 #define USBD_WB7720_ADDR	0x21
@@ -179,7 +180,7 @@ void ubsd_wb7720_report_update(void)
 		{
 			enum tc_cc_status cc1, cc2;
 			hal_tcpc_get_cc(0, &cc1, &cc2);
-			printk("[CC] cc1=%d cc2=%d\n", cc1, cc2);
+			printk("[CC] cc1=%d cc2=%d tc=%d\n", cc1, cc2, g_tc[0].usb_tc_state);
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
 			/* SINK mode: look for remote Rp */
 			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)

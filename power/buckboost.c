@@ -467,9 +467,9 @@ void usb_comm_lock(void)
 	buckboost_ops.init();
 
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
-	/* CC=Rd now handled by TypeC state machine (TC_SRC_Unattached → TC_SNK_Unattached) */
 	hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
-	printk("USB comm lock: force SINK via TC state machine\n");
+	pdlib_restart_typec(PORT0_INDEX);  // DRP → SNK_Unattached → CC=Rd
+	printk("USB comm lock: force SINK via TC restart\n");
 #else
 	printk("USB comm lock: all charge/discharge stopped\n");
 #endif
