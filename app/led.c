@@ -507,6 +507,19 @@ void ui_update(void)
 		key_ui_cnt = 4; // 4 * 250ms = 1s display
 	}
 
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+	/* USB_COM 模式下，任何按键先退出 USB_COM 并消费事件 */
+	if (gd->usb_comm_activated && key_flag != 0)
+	{
+		gd->usb_comm_activated = 0;
+		usb_comm_unlock();
+		ubsd_wb7720_sleep();
+		comm_feedback_cnt = 2;  // 1 flash feedback
+		printk("USB comm exit by key %d\n", key_flag);
+		key_flag = 0;
+	}
+#endif
+
 	if(key_flag == 1)
 	{
 		key_sigle_click_process();
@@ -699,10 +712,6 @@ void ui_update(void)
 
 void key_sigle_click_process(void)
 {
-#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	if (gd->usb_comm_activated) return;
-#endif
-
 	if(buckboost_protection_flag){
 		buckboost_fault_restore();
 
@@ -786,16 +795,6 @@ void key_double_click_process(void)
 
 void key_long_click_process(void)
 {
-#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-    if (gd->usb_comm_activated)
-    {
-        gd->usb_comm_activated = 0;
-        usb_comm_unlock();
-        ubsd_wb7720_sleep();
-        printk("USB comm auto-deactivated before sleep\n");
-    }
-#endif
-
     {
         printk("\r\n long press power-off - no input detected, wpc_mode=%d\n", wpc_mode);
 
