@@ -375,6 +375,12 @@ static void TC_SRC_AttachWait_Exit(struct tc_s * tc)
 }
 static void TC_SRC_Attached_Entry(struct tc_s * tc)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1 && CONFIG_USB_COM_FORCE_SINK == 1)
+	if (gd->usb_comm_activated && tc->tc_index == 0) {
+		usb_tc_set_state(tc, TC_SNK_Unattached, enter_state);
+		return;
+	}
+#endif
 	tc->tc_timer_cnt = tc_sys_ticks;
 	hal_tcpc_set_polarity(tc->tc_index,tc->polarity);
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SOURCE,TYPEC_HOST);
@@ -826,6 +832,12 @@ static void TC_TryWAIT_SRC_Exit(struct tc_s * tc)
 
 static void TC_Try_SRC_Entry(struct tc_s * tc)
 {
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1 && CONFIG_USB_COM_FORCE_SINK == 1)
+	if (gd->usb_comm_activated && tc->tc_index == 0) {
+		usb_tc_set_state(tc, TC_SNK_Unattached, enter_state);
+		return;
+	}
+#endif
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
 	tc->tc_timer_cnt = tc_sys_ticks;
 
