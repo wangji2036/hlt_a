@@ -18,6 +18,7 @@
 extern uint8_t power_on_cnt;
 extern uint8_t bat_cell_num;
 uint16_t cell2_voltage;
+uint8_t g_wb7720_awake;    // WB7720 wakeup state (1=awake, 0=sleep), separate from gd_t to preserve struct layout
 
 void fml_task_init(void)
 {
@@ -196,7 +197,7 @@ void ubsd_wb7720_report_update(void)
 			{
 				ubsd_wb7720_sleep();
 				is_usb_enable = 0;
-				gd->wb7720_awake = 0;
+				g_wb7720_awake = 0;
 				printk("[USB] CC lost or COM off -> sleep\n");
 			}
 			cnt = 0;
@@ -212,7 +213,7 @@ void ubsd_wb7720_report_update(void)
 			printk("[USB] CC detected -> wakeup, PI reset\n");
 #endif
 			is_usb_enable = 1;
-			gd->wb7720_awake = 1;
+			g_wb7720_awake = 1;
 		}
 	}
 #endif

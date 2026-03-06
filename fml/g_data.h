@@ -520,7 +520,6 @@ struct gd_t
 	 uint8_t wpc_disable;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	 uint8_t usb_comm_activated;   // Triple-click USB bridge gate (survives sleep)
-	 uint8_t wb7720_awake;         // WB7720 wakeup state (1=awake, 0=sleep)
 #endif
 	 uint8_t real_soc_show;
 	 uint8_t real_soc_obtained;

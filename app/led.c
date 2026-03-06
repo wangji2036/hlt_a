@@ -12,6 +12,7 @@
 #include "_fml.h"
 extern volatile uint16_t sys_ticks;
 extern uint16_t key_ui_cnt;
+extern uint8_t g_wb7720_awake;
 #define LED_DISPLAY
 
 void key_sigle_click_process(void);
@@ -553,7 +554,7 @@ void ui_update(void)
 		comm_blink_cnt++;
 		uint8_t led_val = (comm_blink_cnt & 1) ? 0x10 : 0x00;  // LED5 toggle
 #if (CONFIG_USB_COMM_LED4_WB_STATE == 1)
-		if (gd->wb7720_awake)
+		if (g_wb7720_awake)
 			led_val |= 0x08;                        // LED4 solid ON
 		else
 			led_val |= (comm_blink_cnt & 1) ? 0x08 : 0x00;  // LED4 blink

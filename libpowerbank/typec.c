@@ -277,6 +277,13 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 static void TC_SRC_Unattached_Entry(struct tc_s * tc)
 {
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+	/* USB_COM: redirect to SNK state machine for CC=Rd + Rp detection —AJI */
+	if (gd->usb_comm_activated && tc->tc_index == 0) {
+		usb_tc_set_state(tc, TC_SNK_Unattached, enter_state);
+		return;
+	}
+#endif
 	hal_tcpc_set_cc(tc->tc_index, TYPEC_CC_RP_3_0);
 
     hal_tcpc_set_vconn(tc->tc_index,false);
