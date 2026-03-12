@@ -310,7 +310,6 @@ void lib_para_init(void)
 void product_info_read(ProductInfo_t *info) {
 	if (info == NULL) return;
 
-	uint32_t addr;
 	uint8_t i;
 
 	// (Read manufacturer name)

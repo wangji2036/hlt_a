@@ -21,15 +21,17 @@ extern uint8_t bat_cell_num;
 uint16_t cell2_voltage;
 uint8_t g_wb7720_awake;    // WB7720 wakeup state (1=awake, 0=sleep), separate from gd_t to preserve struct layout
 
+void wb7720_init(void);
+void ubsd_wb7720_report_update(void);
+void ubsd_wb7720_wakeup(void);
+
 void fml_task_init(void)
 {
 	osal_task_handler_reg(FML_TASK, fml_task_event_handler);
 	osal_start_timerEx(GAUGE_TIMER, 0,   T_GAUGE, FML_TASK, APL_EVT_GAUGE);
-	osal_start_timerEx(USB_WB7720_TIMER, 0,   47, FML_TASK, APL_HID_REPORT); 
+	osal_start_timerEx(USB_WB7720_TIMER, 0,   47, FML_TASK, APL_HID_REPORT);
 	wb7720_init();
 }
-void ubsd_wb7720_report_update(void);
-void wb7720_init(void);
 
 void wb7720_init(void)
 {
@@ -167,7 +169,7 @@ void ubsd_wb7720_report_update(void)
 
 	static uint8_t cnt = 0;
 	static bool is_usb_enable = false;
-	static uint8_t qc_delay_cnt = 0;
+	static uint8_t qc_delay_cnt __attribute__((unused)) = 0;
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	/* --- CC-driven WB7720 Sleep/Wake ---

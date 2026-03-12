@@ -69,7 +69,7 @@
 /*********** lib config ***************/
 
 #define CONFIG_TYPECA_SUPPORT				1
-#define CONFIG_TYPECB_SUPPORT				1
+#define CONFIG_TYPECB_SUPPORT				0
 #define CONFIG_UFCS_SOURCE_SUPPORT			0 // current lib not included, contact nuvolta for support if needed.
 #define CONFIG_AFC_SOURCE_SUPPORT			1
 #define CONFIG_FCP_SOURCE_SUPPORT			1

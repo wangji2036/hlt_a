@@ -48,7 +48,7 @@ void dpdm_source_init(void)
 	*dpdm_ovrd_offset4 |= ((*dpdm_ovrd_offset4) & ~0x30);
 
 	*dpdm_ovrd_offset0 = 0x0b;
-	*dpdm_ovrd_offset4 |= ((*dpdm_ovrd_offset4) & ~0x30 | 0x30);
+	*dpdm_ovrd_offset4 |= (((*dpdm_ovrd_offset4) & ~0x30) | 0x30);
 }
 
 void usb_dpdm_port0_switch(bool en)

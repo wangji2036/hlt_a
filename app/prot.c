@@ -6,6 +6,7 @@
 #include "g_data.h"
 #include "_wpc.h"
 #include "config.h"
+#include "tcpm.h"
 
 #define NTC_TEMP_BUFF_SIZE_Max    (                         8)
 #define NTC_TEMP_BUFF_SIZE_Msk    (NTC_TEMP_BUFF_SIZE_Max - 1)
@@ -13,7 +14,7 @@
 #define DIE_TEMP_BUFF_SIZE_Max    (                         8)
 #define DIE_TEMP_BUFF_SIZE_Msk    (DIE_TEMP_BUFF_SIZE_Max - 1)
 
-static uint8_t DeltaTemp_N_1;
+static uint8_t DeltaTemp_N_1 __attribute__((unused));
 
 
 #if IC_PN_17111
@@ -200,7 +201,7 @@ uint8_t wirless_ntc_power_reduce = 0;
 /*+++++++++++++++++++++++++++++++++++++++++++ TNTC_OTP +++++++++++++++++++++++++++++++++++++++++++*/
 void fml_tntc_otp_limit_power(int16_t tntc)
 {
-	uint8_t DeltaTemp = 0;
+	uint8_t DeltaTemp __attribute__((unused)) = 0;
 	//flg_action = 0;//default value, no action.
 	//flg_action = 1;//cep=-5, reduce power
 	//flg_action = 2;//go to send ATN and update the nego cap

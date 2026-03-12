@@ -14,6 +14,7 @@
 #include "pdlib.h"
 #include "pd_tc.h"
 
+extern void tcpm_update_pdo_for_normal(void);
 const uint32_t source_pdo_default[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )

@@ -2,7 +2,7 @@
 # Automatically-generated file. Do not edit!
 ################################################################################
 
-# Add inputs and outputs from these tool invocations to the build variables 
+# Add inputs and outputs from these tool invocations to the build variables
 C_SRCS += \
 ../app/_wpc.c \
 ../app/app.c \
@@ -29,7 +29,7 @@ C_SRCS += \
 ../app/wpc_idle.c \
 ../app/wpc_nego.c \
 ../app/wpc_ping.c \
-../app/wpc_xfer.c 
+../app/wpc_xfer.c \
 
 OBJS += \
 ./app/_wpc.o \
@@ -57,7 +57,7 @@ OBJS += \
 ./app/wpc_idle.o \
 ./app/wpc_nego.o \
 ./app/wpc_ping.o \
-./app/wpc_xfer.o 
+./app/wpc_xfer.o \
 
 C_DEPS += \
 ./app/_wpc.d \
@@ -85,17 +85,16 @@ C_DEPS += \
 ./app/wpc_idle.d \
 ./app/wpc_nego.d \
 ./app/wpc_ping.d \
-./app/wpc_xfer.d 
+./app/wpc_xfer.d \
 
 
 # Each subdirectory must supply rules for building sources it contributes
 app/%.o: ../app/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: CSky Elf C Compiler'
-	csky-abiv2-elf-gcc -mcpu=ck802 -DDEBUG_SWITCH -Os -g3 -Wall -ffunction-sections -fdata-sections -c  -mistack -ffixed-r8 --std=c99 -Wa,-melrw -o "$@" "$<" && \
+	csky-abiv2-elf-gcc -mcpu=ck802 -DDEBUG_SWITCH -Os -g3 -Wall -c -mistack -ffixed-r8 --std=c99 -Wa,-melrw -ffunction-sections -fdata-sections -o "$@" "$<" && \
 	echo -n '$(@:%.o=%.d)' $(dir $@) > '$(@:%.o=%.d)' && \
-	csky-abiv2-elf-gcc -MM -MG -P -w -mcpu=ck802 -DDEBUG_SWITCH -Os -g3 -Wall -ffunction-sections -fdata-sections -c  -mistack -ffixed-r8 --std=c99 -Wa,-melrw   "$<" >> '$(@:%.o=%.d)'
+	csky-abiv2-elf-gcc -MM -MG -P -w -mcpu=ck802 -DDEBUG_SWITCH -Os -g3 -Wall -c -mistack -ffixed-r8 --std=c99 -Wa,-melrw -ffunction-sections -fdata-sections   "$<" >> '$(@:%.o=%.d)'
 	@echo 'Finished building: $<'
 	@echo ' '
-
 

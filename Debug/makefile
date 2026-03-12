@@ -8,16 +8,16 @@ RM := rm -rf
 
 # All of the sources participating in the build are defined here
 -include sources.mk
--include util/subdir.mk
--include usbpd/subdir.mk
--include libpowerbank/subdir.mk
--include startup/subdir.mk
--include power/subdir.mk
--include osal/subdir.mk
--include hal/subdir.mk
--include gauge/subdir.mk
--include fml/subdir.mk
 -include app/subdir.mk
+-include fml/subdir.mk
+-include gauge/subdir.mk
+-include hal/subdir.mk
+-include libpowerbank/subdir.mk
+-include osal/subdir.mk
+-include power/subdir.mk
+-include startup/subdir.mk
+-include usbpd/subdir.mk
+-include util/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -38,35 +38,35 @@ endif
 
 -include ../makefile.defs
 
-# Add inputs and outputs from these tool invocations to the build variables 
+# Add inputs and outputs from these tool invocations to the build variables
 
 # All Target
-all: PowerBankEvk_relsease.elf PowerBankEvk_relsease.ihex PowerBankEvk_relsease.bin PowerBankEvk_relsease.elf.asm
+all: NU17113A1_APROM_IP162_GB_NewPcb.elf NU17113A1_APROM_IP162_GB_NewPcb.ihex NU17113A1_APROM_IP162_GB_NewPcb.bin NU17113A1_APROM_IP162_GB_NewPcb.elf.asm
 
 # Output Target
-PowerBankEvk_relsease.ihex: PowerBankEvk_relsease.elf
+NU17113A1_APROM_IP162_GB_NewPcb.ihex: NU17113A1_APROM_IP162_GB_NewPcb.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objcopy -O ihex "$<" "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
-PowerBankEvk_relsease.bin: PowerBankEvk_relsease.elf
+NU17113A1_APROM_IP162_GB_NewPcb.bin: NU17113A1_APROM_IP162_GB_NewPcb.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objcopy -O binary "$<" "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
-PowerBankEvk_relsease.elf.asm: PowerBankEvk_relsease.elf
+NU17113A1_APROM_IP162_GB_NewPcb.elf.asm: NU17113A1_APROM_IP162_GB_NewPcb.elf
 	@echo 'Outputing file $@'
 	csky-abiv2-elf-objdump -d "$<" > "$@"
 	@echo 'Finished outputing: $@'
 	@echo ' '
 
 # Tool invocations
-PowerBankEvk_relsease.elf: $(OBJS) $(USER_OBJS) ../startup/ckcpu.ld
+NU17113A1_APROM_IP162_GB_NewPcb.elf: $(OBJS) $(USER_OBJS) ../startup/ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections  -T"../startup/ckcpu.ld" -o "PowerBankEvk_relsease.elf" $(OBJS) $(USER_OBJS) $(LIBS) -L"../util" -lpowerbank -Wl,-ckmap='$(@:%.elf=%.map)' 
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections -T"../startup/ckcpu.ld" -o "NU17113A1_APROM_IP162_GB_NewPcb.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)'
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"
@@ -76,8 +76,8 @@ PowerBankEvk_relsease.elf: $(OBJS) $(USER_OBJS) ../startup/ckcpu.ld
 
 # Other Targets
 clean:
-	-$(RM) PowerBankEvk_relsease.ihex PowerBankEvk_relsease.bin PowerBankEvk_relsease.elf.asm PowerBankEvk_relsease.map
-	-$(RM) $(OBJS)$(C_DEPS)$(ASM_DEPS)$(S_DEPS)$(S_UPPER_DEPS) PowerBankEvk_relsease.elf
+	-$(RM) NU17113A1_APROM_IP162_GB_NewPcb.ihex NU17113A1_APROM_IP162_GB_NewPcb.bin NU17113A1_APROM_IP162_GB_NewPcb.elf.asm NU17113A1_APROM_IP162_GB_NewPcb.map
+	-$(RM) $(OBJS)$(C_DEPS)$(ASM_DEPS)$(S_DEPS)$(S_UPPER_DEPS) NU17113A1_APROM_IP162_GB_NewPcb.elf
 	-@echo ' '
 
 .PHONY: all clean dependents

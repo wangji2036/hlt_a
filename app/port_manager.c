@@ -811,6 +811,7 @@ void port_enum_port_snk_setcharge(void)
 
 	//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
 	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+	printk("chager mode=%d vbus=%d ovp=%d\n", g_buckboost.woke_mode, g_buckboost.adc_vbus, g_buckboost.ovp_value);
 	g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
 
 	buckboost_set_charge_current(g_port.ibat_limit,g_port.ibus_limit);
@@ -1087,7 +1088,7 @@ void port_enum_port1_connect_success(void)
 				pdlib_set_pd_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
 				g_port.incharge_port = PORT1_INDEX;
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
 		}
 		else  //TC_SRC_Attached
 		{

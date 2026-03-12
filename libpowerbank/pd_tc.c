@@ -659,7 +659,10 @@ void hal_tcpc_uvdm_analyze(struct usb_pd_pkt_t *pkt)
 
 	#define XIAMI_VID  0x0000
 	//if(vdm_head >> 16 == XIAMI_VID)
-	if(vdm_head & 0x03 == UVDM_GET && vdm_head & BIT(15) == 0)  //UVDM
+	#ifndef BIT
+	#define BIT(n) (0x01ul << (n))
+	#endif
+	if((vdm_head & 0x03) == UVDM_GET && (vdm_head & BIT(15)) == 0)  //UVDM
 	{
 		uint32_t batinfo_type = vdm_head >>2  & 0x0f;
 		switch(batinfo_type)
@@ -745,15 +748,15 @@ typedef union
     uint8_t  byte[16];
     struct
     {
-        uint8_t  Nnmber;    //����o?  0������?��?3?����
+        uint8_t  Nnmber;
         uint8_t  Reserved1;
-        uint16_t Voltage; //��?3?��??1
-        uint32_t OverVoltage :1; //1y?1
-        uint32_t UnderVoltage :1; //?��?1
-        uint32_t OverCurrent :1; //1y����
-        uint32_t OverTemperature :1; //1y??
-        uint32_t  Reserved2:24; //?�䨺1��?
-    };
+        uint16_t Voltage;
+        uint32_t OverVoltage :1;
+        uint32_t UnderVoltage :1;
+        uint32_t OverCurrent :1;
+        uint32_t OverTemperature :1;
+        uint32_t  Reserved2:24;
+    } alarm;
 }USBPD_VDM_BatteryAbnormalAlarm_TypeDef;
 
 typedef union
@@ -762,8 +765,8 @@ typedef union
     uint8_t byte[20];
     struct
     {
-        uint16_t Cell[10]; //�̣���?��??1 �̣�?? mV
-    };
+        uint16_t Cell[10];
+    } cell;
 }USBPD_VDM_BatteryCell_TypeDef;
 
 typedef union
@@ -772,16 +775,15 @@ uint32_t object[5];
 uint8_t byte[20];
 struct
 {
-uint32_t DesignCapacity; //����??��Y��? �̣�?? mWh
-uint32_t FullCapacity; //��?D??-?��o����Y��? �̣�?? mWh
-uint32_t PresentCapacity;//��?D?�̡�?�㨺�ꨮ����Y��?mWh
-/*?��1����1��?����??/3??������??*/
+uint32_t DesignCapacity;
+uint32_t FullCapacity;
+uint32_t PresentCapacity;
 uint8_t  Day;
 uint8_t  Hour;
 uint8_t  Minute;
 uint8_t  Second;
 uint32_t  Reserved1;
-};
+} cap;
 }USBPD_VDM_BatteryCapacity_TypeDef;
 
 

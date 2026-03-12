@@ -135,7 +135,7 @@ static bool is_new_hour(uint32_t last_seconds, uint32_t current_seconds) {
 }
 
 // Check temperature abnormal status - Only check over-temperature, charge/discharge are the same
-static bool is_temperature_abnormal(uint16_t ntc_resistance, uint8_t mode, uint8_t *event_type) {
+static bool __attribute__((unused)) is_temperature_abnormal(uint16_t ntc_resistance, uint8_t mode, uint8_t *event_type) {
 	/*
     if (mode == BUCKBOOST_CHAGER_MODE) {
         if (ntc_resistance < CHRG_NTC_OT_VALUE) {
@@ -292,7 +292,7 @@ void battery_record_init(void) {
 static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
                                       uint16_t total_voltage, uint8_t *record_idx) {
     volatile uint16_t *max_voltage;
-    uint32_t *hour_start;
+    volatile uint32_t *hour_start;
     uint8_t tracking_mask;
 
     // Select cache fields based on cell number (use bitfield macros for tracking)

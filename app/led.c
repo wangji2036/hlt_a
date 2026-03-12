@@ -10,6 +10,7 @@
 #include "nu6805.h"
 #include "buckboost.h"
 #include "_fml.h"
+#include "sleep.h"
 extern volatile uint16_t sys_ticks;
 extern uint16_t key_ui_cnt;
 extern uint8_t g_wb7720_awake;
@@ -598,7 +599,7 @@ void ui_update(void)
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.charging_stat)
 #else
 				//charge done
-			hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,&charge_read);
+			hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,(uint8_t*)&charge_read);
 			charge_flag = (charge_read&0x10)>>4;
 			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 #endif

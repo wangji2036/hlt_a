@@ -13,8 +13,8 @@
 
 bool hal_tcpc_vbus_is_present(uint8_t tc_index)
 {
-	static uint8_t cnt = 0;
 #if(BUCKBOOST_USED_NU6801 == 1)
+	static uint8_t cnt = 0;
 	cnt++;
 	if(cnt >= 10)
 	{
