@@ -1947,7 +1947,7 @@ void usb_pd_timer_update(void)
 	for(uint8_t i = 0; i< USBPD_TIMER_MAX;i++)
 	{
 		VIC_vModuleDisable();
-		if(usb_pd_timers[i].timer.state == TIMER_STOP) continue;
+		if(usb_pd_timers[i].timer.state == TIMER_STOP) {VIC_vModuleEnable();continue;}
 		if(usb_pd_timers[i].timer.time_cnt) usb_pd_timers[i].timer.time_cnt--;
 		if(usb_pd_timers[i].timer.time_cnt == 0) usb_pd_timers[i].timer.timeout = true;
 		VIC_vModuleEnable();
