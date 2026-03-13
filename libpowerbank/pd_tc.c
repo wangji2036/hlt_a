@@ -239,6 +239,10 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
 	}
     *cc1 = hal_tcpc_to_typec_cc(cc_status & 0x03,sink);
     *cc2 = hal_tcpc_to_typec_cc((cc_status & 0x0c) >>2,sink);
+
+    /* Port1 (CCB): force CC2=OPEN — PC8 has external pull-up causing phantom detection */
+    if(tc_index == 1)
+        *cc2 = TYPEC_CC_OPEN;
 }
 
 enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)

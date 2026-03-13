@@ -385,12 +385,12 @@ void hal_gpio_init(void)
 
 	/* PC8 */
 	GPC->I_EN.BITS.PIN8 = 0;
-	GPC->O_EN.BITS.PIN8 = 1;
+	GPC->O_EN.BITS.PIN8 = 0;
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
 	GPC->PDEN.BITS.PIN8 = 0;
-	GPC->MODE.BITS.PIN8 = 1; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED (GPIO6 for LED)
+	GPC->MODE.BITS.PIN8 = 0; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
 
 
 	/* PD0 */
@@ -731,15 +731,13 @@ void hal_gpio_init_default(void)
 	}
 
 	/* PC8 */
-	// Set PC8 to output HIGH to turn off LED in sleep (LED is active low)
-
 	GPC->I_EN.BITS.PIN8 = 0;
-	GPC->O_EN.BITS.PIN8 = 1; // Enable output
-	GPC->DOUT.BITS.PIN8 = 1; // Set HIGH to turn off LED
+	GPC->O_EN.BITS.PIN8 = 0;
+	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
 	GPC->PDEN.BITS.PIN8 = 0;
-	GPC->MODE.BITS.PIN8 = 1; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED (GPIO mode)
+	GPC->MODE.BITS.PIN8 = 0; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
 	/* PD0 */
 	GPD->I_EN.BITS.PIN0 = 0;//1;
 	GPD->MODE.BITS.PIN0 = 0;//1; //00:PD0 01:BADC8 10:DM_C2 11:RESERVED

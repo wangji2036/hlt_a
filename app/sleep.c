@@ -231,7 +231,7 @@ void SLP_vNormalToSleep(void)
 		  //(Enable DRP)
 		TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
 		TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
-		TCPC->CCB_ROLE.BITS.CC2_ROLE = 1;
+		TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // CC2=OPEN: PC8 external pull-up causes false wake-up
 		TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
 	}
 	else

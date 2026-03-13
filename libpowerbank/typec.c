@@ -259,9 +259,9 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 				if(tc->tc_index == 0){
 					printk("port0 unconnect2\n");
 					port_manager_set_event(PORT0_EVENT_UNCONNECT);}
-				else
+				else{
 				    printk("port1 unconnect1\n");
-					//port_manager_set_event(PORT1_EVENT_UNCONNECT);
+					port_manager_set_event(PORT1_EVENT_UNCONNECT);}
 			}
 		}
 	}
@@ -302,8 +302,9 @@ static void TC_SRC_Unattached_Exit(struct tc_s * tc)
     {
         if(tc->tc_index == 0)
         	port_manager_set_event(PORT0_EVENT_TRY_CONNECT);
-        else
-        	port_manager_set_event(PORT1_EVENT_TRY_CONNECT);
+        else{
+        	printk("P1_TRY[%x %x]\n",cc1,cc2);
+        	port_manager_set_event(PORT1_EVENT_TRY_CONNECT);}
         usb_tc_set_state(tc,TC_SRC_AttachWait,enter_state);
     }
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -422,9 +423,9 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
         if(tc->tc_index == 0){
 		printk("port0 unconnect4\n");
         	port_manager_set_event(PORT0_EVENT_UNCONNECT);}
-        else
+        else{
 		printk("port1 unconnect3\n");
-        	//port_manager_set_event(PORT1_EVENT_UNCONNECT);
+        	port_manager_set_event(PORT1_EVENT_UNCONNECT);}
     }
 
     if(pdlib_is_connect()) tc->try_src_cnt = 0;
@@ -445,9 +446,9 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
             if(tc->tc_index == 0){
 			printk("port0 unconnect5\n");
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);}
-            else
+            else{
 			printk("port1 unconnect4\n");
-           // port_manager_set_event(PORT1_EVENT_UNCONNECT);
+            	port_manager_set_event(PORT1_EVENT_UNCONNECT);}
 		}
 	}
 	else
@@ -683,7 +684,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if (tc_snk_is_connected(cc1,cc2))
 				{
-					//printk("SNK [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
+					printk("B_SNK[%x %x %d]\n",cc1,cc2,b_delay_cnt);
 					b_delay_cnt++;
 					b_toggle_rd_cnt--;
 					if(b_delay_cnt >= 10)
@@ -716,7 +717,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if(tc_src_is_connected(cc1,cc2) || tc_acc_is_connected(cc1,cc2))
 				{
-					//printk("SRC [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
+					printk("B_SRC[%x %x %d]\n",cc1,cc2,b_delay_cnt);
 					b_delay_cnt++;
 					b_toggle_rp_cnt--;
 					if(b_delay_cnt >= 10)
@@ -746,21 +747,21 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
     {
 		if(tc->tc_index == 0)
 		{
-			// tc0_delay++;
-			// if(tc0_delay > 1000)
-			// {
-			// 	port_manager_set_event(PORT0_EVENT_UNCONNECT);
-			// 	tc0_delay = 0;
-			// }
+			tc0_delay++;
+			if(tc0_delay > 1000)
+			{
+				port_manager_set_event(PORT0_EVENT_UNCONNECT);
+				tc0_delay = 0;
+			}
 		}
 		else
 		{
-			// tc1_delay++;
-			// if(tc1_delay > 1000)
-			// {
-			// 	port_manager_set_event(PORT1_EVENT_UNCONNECT);
-			// 	tc1_delay = 0;
-			// }
+			tc1_delay++;
+			if(tc1_delay > 1000)
+			{
+				port_manager_set_event(PORT1_EVENT_UNCONNECT);
+				tc1_delay = 0;
+			}
 		}
     }
 	//		if(tc->tc_index == 0)
