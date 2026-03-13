@@ -225,13 +225,16 @@ void SLP_vNormalToSleep(void)
 #if(CONFIG_TYPECB_SUPPORT == 1)
 	if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk1))
 	{
-		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1; // enable cc block
-		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1;
+		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+		TCPC->CCB_CTRL.BITS.CC_DCSRC_DRP = 2;   // DRP duty cycle (cleared by WORD=0, must restore)
+		TCPC->CCB_CTRL.BITS.CC_T_DRP_SEL = 3;   // DRP toggle period (cleared by WORD=0, must restore)
 		  //(Enable DRP)
+		TCPC->CCB_ROLE.BITS.RP_VALUE = 0;        // RP_VALUE_DEFAULT for Rp phase
 		TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
 		TCPC->CCB_ROLE.BITS.CC1_ROLE = 1;
-		TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // CC2=OPEN: PC8 external pull-up causes false wake-up
+		TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // CC2=OPEN: PC8 external pull-up causes false detection
 		TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;//(Start DRP)
 	}
 	else
@@ -643,6 +646,279 @@ uint8_t reset_cnt;
 
 extern uint16_t key_ui_cnt;
 
+/*
+ * tc_check_wake() - Software CC polling for sleep wake-up detection
+ *
+ * Ported from platform code (nu17112_powerbank/app/sleep.c:665-925).
+ * Replaces hardware DRP wake-up for Port1 (CCB) where CC2_ROLE=OPEN
+ * prevents hardware DRP toggle.
+ *
+ * 4-step polling:
+ *   Step 0: Check Source disconnect (lighting_mode / bat_dead)
+ *   Step 1: Check Sink (charger) attach - set CC=Rd, read Rp
+ *   Step 2: Check Source (device) attach - set CC=Rp_1.5, read Rd
+ *   Step 3: Re-confirm Sink attach - set CC=Rd again
+ *
+ * Returns bitmask of detected events (0 = no change).
+ */
+#define TC_WAKE_TC0_OUT		(0x01 << 1)
+#define TC_WAKE_TC0_SNK		(0x01 << 2)
+#define TC_WAKE_TC0_SRC		(0x01 << 3)
+#define TC_WAKE_TC1_OUT		(0x01 << 4)
+#define TC_WAKE_TC1_SNK		(0x01 << 5)
+#define TC_WAKE_TC1_SRC		(0x01 << 6)
+
+uint8_t tc_check_wake(void)
+{
+	uint8_t ret = 0;
+	uint8_t step = 0;
+
+	extern bool tc_src_is_connected(enum tc_cc_status cc1, enum tc_cc_status cc2);
+
+	while(step < 4)
+	{
+		if(step == 0)
+		{
+			/* Step 0: Check Source disconnect for lighting/dead_batt ports */
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0)
+			{
+				TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1)
+			{
+				TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+			if(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0 || gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1)
+				delay_1us(2000);
+
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0)
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_A, &cc1, &cc2);
+				sleep_printk("\r\n [%d]0cc1:[%d %d 0x%x]\n", step, cc1, cc2, TCPC->CCA_STAT.WORD);
+				if (!tc_src_is_connected(cc1, cc2))
+				{
+					gd->rd0_cnt++;
+					sleep_printk("\r\n rd0_cnt = %d\n", gd->rd0_cnt);
+					if(gd->rd0_cnt >= 10)
+					{
+						gd->bat_dead_flag_with_snk0 = 0;
+						gd->tc0_lighting_mode = 0;
+						ret |= TC_WAKE_TC0_OUT;
+					}
+				}
+				else
+				{
+					gd->rd0_cnt = 0;
+				}
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1)
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_B, &cc1, &cc2);
+				sleep_printk("\r\n 1cc0:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCB_STAT.WORD);
+				if (!tc_src_is_connected(cc1, cc2))
+				{
+					gd->rd1_cnt++;
+					sleep_printk("\r\n rd1_cnt = %d\n", gd->rd1_cnt);
+					if(gd->rd1_cnt >= 10)
+					{
+						gd->bat_dead_flag_with_snk1 = 0;
+						gd->tc1_lighting_mode = 0;
+						ret |= TC_WAKE_TC1_OUT;
+					}
+				}
+				else
+				{
+					gd->rd1_cnt = 0;
+				}
+			}
+#endif
+		}
+
+		if(step == 1)
+		{
+			/* Step 1: Check Sink (charger) attach - set CC=Rd, detect Rp */
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_A, TYPEC_CC_RD);
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_B, TYPEC_CC_RD);
+				TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // Force CC2=OPEN: PC8 pull-up protection
+			}
+#endif
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0) || !(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				delay_1us(1700);
+			}
+
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_A, &cc1, &cc2);
+				if(cc1 != TYPEC_CC_OPEN || cc2 != TYPEC_CC_OPEN)
+				{
+					sleep_printk("\n tc_wake K1_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCA_STAT.WORD);
+					ret |= TC_WAKE_TC0_SNK;
+				}
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_B, &cc1, &cc2);
+				if(cc1 != TYPEC_CC_OPEN || cc2 != TYPEC_CC_OPEN)
+				{
+					sleep_printk("\n tc_wake K2_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCB_STAT.WORD);
+					ret |= TC_WAKE_TC1_SNK;
+				}
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+		}
+
+		if(step == 2)
+		{
+			/* Step 2: Check Source (device) attach - set CC=Rp_1.5, detect Rd */
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_A, TYPEC_CC_RP_1_5);
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_B, TYPEC_CC_RP_1_5);
+				TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // Force CC2=OPEN: PC8 pull-up protection
+			}
+#endif
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0) || !(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				delay_1us(1700);
+			}
+
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_A, &cc1, &cc2);
+				if(cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
+				{
+					sleep_printk("\n tc_wake K3_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCA_STAT.WORD);
+					ret |= TC_WAKE_TC0_SRC;
+				}
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_B, &cc1, &cc2);
+				if(cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
+				{
+					sleep_printk("\n tc_wake K4_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCB_STAT.WORD);
+					ret |= TC_WAKE_TC1_SRC;
+				}
+			}
+#endif
+		}
+
+		if(step == 3)
+		{
+			/* Step 3: Re-confirm Sink attach - set CC=Rd again */
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_A, TYPEC_CC_RD);
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0;
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+				pdlib_tcpc_set_cc(TYPEC_PORT_B, TYPEC_CC_RD);
+				TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;  // Force CC2=OPEN: PC8 pull-up protection
+			}
+#endif
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0) || !(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				delay_1us(1700);
+			}
+
+#if(CONFIG_TYPECA_SUPPORT == 1)
+			if(!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk0))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_A, &cc1, &cc2);
+				if(cc1 != TYPEC_CC_OPEN || cc2 != TYPEC_CC_OPEN)
+				{
+					sleep_printk("\n tc_wake K5_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCA_STAT.WORD);
+					ret |= TC_WAKE_TC0_SNK;
+				}
+				TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT == 1)
+			if(!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
+			{
+				enum tc_cc_status cc1, cc2;
+				pdlib_tcpc_get_cc(TYPEC_PORT_B, &cc1, &cc2);
+				if(cc1 != TYPEC_CC_OPEN || cc2 != TYPEC_CC_OPEN)
+				{
+					sleep_printk("\n tc_wake K6_cc:[%d %d 0x%x]\n", cc1, cc2, TCPC->CCB_STAT.WORD);
+					ret |= TC_WAKE_TC1_SNK;
+				}
+				TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+			}
+#endif
+		}
+
+		step++;
+	}
+
+	// Restore CCB CC2=OPEN before returning to sleep
+	TCPC->CCB_ROLE.BITS.CC2_ROLE = 0;
+
+	return ret;
+}
+
 void RST_vCheck(void)
 {
 	uint32_t tmr_cnt;
@@ -661,6 +937,13 @@ void RST_vCheck(void)
 
 
 		sleep_printk("\r\n sleep check");
+		sleep_printk(" rst=%d CCB[S=0x%x C=0x%x R=0x%x] FSM=0x%x WK=%d",
+			SYS->OPR_STAT.BITS.RST_SRC,
+			TCPC->CCB_STAT.WORD,   // CC1(bit1:0) CC2(bit3:2) 实际检测值
+			TCPC->CCB_CTRL.WORD,   // CC block/LPMODE 配置
+			TCPC->CCB_ROLE.WORD,   // CC1/CC2 role + DRP
+			TCPC->FSM_STAT.WORD,   // DRP FSM 状态
+			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS);  // 0=唤醒使能 1=禁用
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
@@ -851,6 +1134,11 @@ void RST_vCheck(void)
 					//	SLP_vNormalToSleep();
 					}
 #else
+					{
+						uint8_t tc_ret = tc_check_wake();
+						sleep_printk("\r\n tc wake[0x%x]", tc_ret);
+						if (tc_ret) break;
+					}
 					SLP_vSleepToSleep();
 #endif
 				}
