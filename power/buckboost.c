@@ -677,6 +677,14 @@ void buckboost_task_event_handler(uint32_t event)
 			if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE ||g_port.port_state[1] == PORT_STATE_SOURCE))
 			{
 				g_buckboost.ibus_cc_flag =  buckboost_ops.is_ibus_loop();
+				{
+					static uint8_t src_log_cnt = 0;
+					if(++src_log_cnt >= 50) { /* ~1s @ 20ms period */
+						src_log_cnt = 0;
+						printk("SRC VBUS set=%d adc=%d ir=%d\n",
+							g_buckboost.buckboost_out_voltage, g_buckboost.adc_vbus, g_buckboost.ir_drop);
+					}
+				}
 				if(
 						//g_buckboost.adc_vbus < g_buckboost.buckboost_out_voltage * 80 / 100 ||
 						g_buckboost.adc_vbus > g_buckboost.buckboost_out_voltage * 115 / 100)

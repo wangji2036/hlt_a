@@ -325,11 +325,11 @@ void SLP_vNormalToSleep(void)
 	}
 	else
 	{
-		// touch wake up start
+		// touch wake up — disabled to prevent GPIO false wake-up
 		GPB->I_EN.BITS.PIN4 = 1;
 		GPB->O_EN.BITS.PIN4 = 0;
 		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITEN.BITS.PIN4 = 0; // disabled
 		GPB->ITTP.BITS.PIN4 = 2;
 	}
 
@@ -448,12 +448,12 @@ void SLP_vSleepToSleep(void)
 	}
 	else
 	{
-		// touch wake up start
-		GPB->I_EN.BITS.PIN4 = 1;      // 1. 使锟斤拷PB4锟斤拷锟诫功锟斤拷
-		GPB->O_EN.BITS.PIN4 = 0;      // 2. 锟截憋拷PB4锟斤拷锟斤拷锟斤拷锟�
-		GPB->MODE.BITS.PIN4 = 0;      // 3. 锟斤拷锟斤拷PB4为GPIO锟斤拷通锟斤拷锟斤拷
-		GPB->ITEN.BITS.PIN4 = 1;      // 4. 使锟斤拷PB4锟叫断癸拷锟斤拷
-		GPB->ITTP.BITS.PIN4 = 2;      // 5. 锟斤拷锟斤拷为锟铰斤拷锟截达拷锟斤拷锟斤拷锟斤拷锟斤拷=锟酵碉拷平锟斤拷
+		// touch wake up — disabled to prevent GPIO false wake-up
+		GPB->I_EN.BITS.PIN4 = 1;
+		GPB->O_EN.BITS.PIN4 = 0;
+		GPB->MODE.BITS.PIN4 = 0;
+		GPB->ITEN.BITS.PIN4 = 0;      // disabled
+		GPB->ITTP.BITS.PIN4 = 2;
 
 	}
 

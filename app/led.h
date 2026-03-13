@@ -2,20 +2,18 @@
 #define LED_H_
 #define _UI_PIN1_PORT     GPA
 #define _UI_PIN2_PORT     GPC
-#define _UI_PIN3_PORT     GPC
+#define _UI_PIN3_PORT     GPB
 #define _UI_PIN4_PORT     GPC
 #define _UI_PIN5_PORT     GPB
-#define _UI_PIN6_PORT     GPC
 
 #define PORT_GPA          GPA
 #define PORT_GPB          GPB
 
 #define _UI_PIN1_PINx     PIN4
 #define _UI_PIN2_PINx     PIN5
-#define _UI_PIN3_PINx     PIN4
+#define _UI_PIN3_PINx     PIN6
 #define _UI_PIN4_PINx     PIN3
 #define _UI_PIN5_PINx     PIN3
-#define _UI_PIN6_PINx     PIN8
 
 #define _KEY_PORT    GPC
 #define _KEY_PINx    PIN6
@@ -32,7 +30,6 @@
 		_UI_PIN3_PORT-> O_EN.BITS._UI_PIN3_PINx = 0; _UI_PIN3_PORT->I_EN.BITS._UI_PIN3_PINx = 1;\
 		_UI_PIN4_PORT-> O_EN.BITS._UI_PIN4_PINx = 0; _UI_PIN4_PORT->I_EN.BITS._UI_PIN4_PINx = 1;\
 		_UI_PIN5_PORT-> O_EN.BITS._UI_PIN5_PINx = 0; _UI_PIN5_PORT->I_EN.BITS._UI_PIN5_PINx = 1;\
-		_UI_PIN6_PORT-> O_EN.BITS._UI_PIN6_PINx = 0; _UI_PIN6_PORT->I_EN.BITS._UI_PIN6_PINx = 1;\
 } while(0)
 
 typedef enum {
