@@ -92,6 +92,9 @@ static const uint16_t ntc_100r_5v_tbl_rev[] =
 //type c
 int16_t fml_ntc_temp_get_typec(void)
 {
+	/* PB6 reused as LED3 — skip ADC read, return safe temp */
+	return 25;
+
 	static uint8_t  vntc_idx = 0;
 
 #if IC_PN_17111
