@@ -322,18 +322,17 @@ void SLP_vNormalToSleep(void)
 		GPB->I_EN.BITS.PIN4 = 1;
 		GPB->O_EN.BITS.PIN4 = 0;
 		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 0;
-
-
+		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
 	}
 	else
 	{
-		// touch wake up — disabled to prevent GPIO false wake-up
+		// touch wake up
 		GPB->I_EN.BITS.PIN4 = 1;
 		GPB->O_EN.BITS.PIN4 = 0;
 		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 0; // disabled
-		GPB->ITTP.BITS.PIN4 = 2;
+		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
 	}
 
 #if(BUCKBOOST_USED_NU6801 == 1)
@@ -447,16 +446,17 @@ void SLP_vSleepToSleep(void)
 		GPB->I_EN.BITS.PIN4 = 1;
 		GPB->O_EN.BITS.PIN4 = 0;
 		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 0; // disable interrupt
+		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
 	}
 	else
 	{
-		// touch wake up — disabled to prevent GPIO false wake-up
+		// touch wake up
 		GPB->I_EN.BITS.PIN4 = 1;
 		GPB->O_EN.BITS.PIN4 = 0;
-		GPB->MODE.BITS.PIN4 = 0;
-		GPB->ITEN.BITS.PIN4 = 0;      // disabled
-		GPB->ITTP.BITS.PIN4 = 2;
+		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+		GPB->ITEN.BITS.PIN4 = 1;
+		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
 
 	}
 
