@@ -778,15 +778,15 @@ void port_enum_port_snk_setcharge(void)
 		}
 		else if(g_buckboost.adc_vbus < 12500)
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 2500 ? g_port.ibus_limit : 2500;
+			g_port.ibus_limit = g_port.ibus_limit < 2910 ? g_port.ibus_limit : 2910;
 		}
 		else if(g_buckboost.adc_vbus < 15500)
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
+			g_port.ibus_limit = g_port.ibus_limit < 2330 ? g_port.ibus_limit : 2330;
 		}
 		else
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 1500 ? g_port.ibus_limit : 1500;
+			g_port.ibus_limit = g_port.ibus_limit < 1750 ? g_port.ibus_limit : 1750;
 		}
 	}
 
@@ -878,8 +878,8 @@ void port_enum_port_snk_setvolt(void)
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
 								g_port.ibus_limit = pdo_max_current(source_pdo);
-								if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1500? 1500:g_port.ibus_limit;
-								else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2000? 2000:g_port.ibus_limit;
+								if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1750? 1750:g_port.ibus_limit;
+								else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2330? 2330:g_port.ibus_limit;
 								g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
 								break;
 							}

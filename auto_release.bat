@@ -1,99 +1,92 @@
 @echo off
-REM ============================================================
-REM 通用固件发布批处理脚本
-REM 功能：自动查找最新固件，计算校验码，生成带版本信息的文件
-REM 特点：可迁移，适用于任何工程
-REM ============================================================
+setlocal EnableExtensions
+chcp 65001 >nul
 
-REM 切换到脚本所在目录（项目根目录）
-cd /d "%~dp0"
-if %ERRORLEVEL% neq 0 (
-    echo 错误: 无法切换到项目根目录
+set "NO_PAUSE="
+if /I "%~1"=="--no-pause" set "NO_PAUSE=1"
+
+call :enter_project_root
+if errorlevel 1 exit /b 1
+
+if exist "%CD%\build_release\auto_release.bat" (
+    call "%CD%\build_release\auto_release.bat" %*
+    exit /b %ERRORLEVEL%
+)
+
+call :ensure_python
+if errorlevel 1 (
+    echo FAIL Python was not found and auto-install failed.
+    echo DD_RESULT^|release_status^|FAIL
+    echo DD_RESULT^|release_reason^|python_unavailable
+    if not defined NO_PAUSE pause
     exit /b 1
 )
 
-REM 查找 Python 解释器
-set PYTHON_CMD=
+set "PY_RELEASE_EXTRA="
+if /I "%DD_FORCE_RELEASE%"=="1" set "PY_RELEASE_EXTRA=--force"
+"%PYTHON_CMD%" auto_release.py %PY_RELEASE_EXTRA%
+set "EXIT_CODE=%ERRORLEVEL%"
+if not defined NO_PAUSE pause
+exit /b %EXIT_CODE%
 
-REM 尝试 python 命令
-where python >nul 2>&1
-if %ERRORLEVEL% == 0 (
-    set PYTHON_CMD=python
-    goto :found_python
+:enter_project_root
+cd /d "%~dp0"
+if exist ".project" goto :eof
+if exist "..\.project" (
+    cd /d ".."
+    goto :eof
 )
-
-REM 尝试 py 命令
-where py >nul 2>&1
-if %ERRORLEVEL% == 0 (
-    set PYTHON_CMD=py
-    goto :found_python
-)
-
-REM 尝试 python3 命令
-where python3 >nul 2>&1
-if %ERRORLEVEL% == 0 (
-    set PYTHON_CMD=python3
-    goto :found_python
-)
-
-REM 尝试常见的 Python 安装路径
-if exist "C:\Python39\python.exe" (
-    set PYTHON_CMD=C:\Python39\python.exe
-    goto :found_python
-)
-
-if exist "C:\Python310\python.exe" (
-    set PYTHON_CMD=C:\Python310\python.exe
-    goto :found_python
-)
-
-if exist "C:\Python311\python.exe" (
-    set PYTHON_CMD=C:\Python311\python.exe
-    goto :found_python
-)
-
-if exist "C:\Python312\python.exe" (
-    set PYTHON_CMD=C:\Python312\python.exe
-    goto :found_python
-)
-
-if exist "C:\Python313\python.exe" (
-    set PYTHON_CMD=C:\Python313\python.exe
-    goto :found_python
-)
-
-REM 尝试从 AppData 查找
-if exist "%LOCALAPPDATA%\Programs\Python\Python39\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python39\python.exe
-    goto :found_python
-)
-
-if exist "%LOCALAPPDATA%\Programs\Python\Python310\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python310\python.exe
-    goto :found_python
-)
-
-if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python311\python.exe
-    goto :found_python
-)
-
-if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python312\python.exe
-    goto :found_python
-)
-
-if exist "%LOCALAPPDATA%\Programs\Python\Python313\python.exe" (
-    set PYTHON_CMD=%LOCALAPPDATA%\Programs\Python\Python313\python.exe
-    goto :found_python
-)
-
-REM 如果都找不到，输出错误信息
-echo 错误: 未找到 Python 解释器
-echo 请确保 Python 已安装并添加到 PATH 环境变量中
+echo FAIL Cannot locate project root from %~dp0
+echo DD_RESULT^|release_status^|FAIL
+echo DD_RESULT^|release_reason^|missing_project_root
 exit /b 1
 
-:found_python
-REM 执行 Python 脚本
-"%PYTHON_CMD%" auto_release.py
-exit /b %ERRORLEVEL%
+:ensure_python
+set "PYTHON_CMD="
+call :find_python
+if defined PYTHON_CMD exit /b 0
+
+echo warn Python was not found locally.
+where winget >nul 2>&1
+if errorlevel 1 exit /b 1
+
+echo info Installing Python 3.13 via winget...
+winget install -e --id Python.Python.3.13 --accept-package-agreements --accept-source-agreements --disable-interactivity
+if errorlevel 1 exit /b 1
+
+set "PYTHON_CMD="
+call :find_python
+if defined PYTHON_CMD exit /b 0
+exit /b 1
+
+:find_python
+call :try_python_candidate "python"
+if defined PYTHON_CMD goto :eof
+call :try_python_candidate "py"
+if defined PYTHON_CMD goto :eof
+call :try_python_candidate "python3"
+if defined PYTHON_CMD goto :eof
+
+for %%P in (
+    "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python39\python.exe"
+    "C:\Python313\python.exe"
+    "C:\Python312\python.exe"
+    "C:\Python311\python.exe"
+    "C:\Python310\python.exe"
+    "C:\Python39\python.exe"
+) do (
+    call :try_python_candidate "%%~fP"
+    if defined PYTHON_CMD goto :eof
+)
+goto :eof
+
+:try_python_candidate
+if "%~1"=="" goto :eof
+"%~1" --version >nul 2>&1
+if errorlevel 1 goto :eof
+set "PYTHON_CMD=%~1"
+goto :eof

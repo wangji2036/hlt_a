@@ -1,0 +1,335 @@
+UI 初始化完成，日志面板就绪
+尝试连接设备 path=\\?\HID#VID_FFFF&PID_FFFF#6&303f561f&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+HID 设备打开成功，启动设备信息读取线程
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020143002300458813100128030000000000000019001a00029a018e017700102700000000000000000475000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.16s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=-0.17s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.21s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.22s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.24s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020144002300458813100128030000000000000019001a00029a018e017700102700000000000000005284000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020145002300458813100128030000000000000019001a00029a018e01770010270000000000000000f8a2000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+RX 64B: 05a55a020146002300458813100128030000000000000019001a00029a018e0177001027000000000000000006c9000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=2: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=2: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=1.76s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=1.74s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020147002300458813100128030000000000000019001a00029a018e01770010270000000000000000acef000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.38s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.40s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.44s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020148002300458813100128030000000000000019001a00029a018e017700102700000000000000008b3b000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020149002300458813100128030000000000000019001a00029a018e01770010270000000000000000211d000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.80s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.76s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a02014a002300458813100128030000000000000019001a00029a018e01770010270000000000000000df76000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.37s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.38s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.42s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a02014b002300458813100128030000000000000019001a00029a018e017700102700000000000000007550000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a02014c002300458813100128030000000000000019001a00029a018e0177001027000000000000000023a1000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.78s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.76s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a02014d002300458813100128030000000000000019001a00029a018e017700102700000000000000008987000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.35s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.37s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.40s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a02014e002300458813100128030000000000000019001a00029a018d01770010270000000000000000d461000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a02014f002300458813100128030000000000000019001a00029a018d017700102700000000000000007e47000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.80s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.75s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020150002300458813100128030000000000000019001a00029a018e017700102700000000000000001854000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.35s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.37s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.41s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020151002300458813100128030000000000000019001a00029a018e01770010270000000000000000b272000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020152002300458813100128030000000000000019001a00029a018e017700102700000000000000004c19000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.73s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.72s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020153002300458813100128030000000000000019001a00029a018e01770010270000000000000000e63f000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.41s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.44s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.47s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020154002300458813100128030000000000000019001a00029a018e01770010270000000000000000b0ce000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020155002300458813100128030000000000000019001a00029a018e017700102700000000000000001ae8000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.80s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.78s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020156002300458813100128030000000000000019001a00029a018e01770010270000000000000000e483000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.33s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.36s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.43s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020157002300458813100128030000000000000019001a000299018e01770010270000000000000000034d000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020158002300458813100128030000000000000019001a00029a018e017700102700000000000000006971000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.82s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.80s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020159002300458813100128030000000000000019001a00029a018d0177001027000000000000000060da000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.32s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.36s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.40s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a02015a002300458813100128030000000000000019001a00029a018e017700102700000000000000003d3c000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a02015b002300458813100128030000000000000019001a00029a018e01770010270000000000000000971a000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.80s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.78s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a02015c002300458813100127030000000000000019001a00029a018e01770010270000000000000000649c000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.32s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.34s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.37s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a02015d002300458813100128030000000000000019001a00029a018e017700102700000000000000006bcd000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a02015e002300458813100128030000000000000019001a00029a018e0177001027000000000000000095a6000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.80s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.79s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a02015f002300458813100128030000000000000019001a00029a018e017700102700000000000000003f80000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.31s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.33s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.37s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020160002300458813100128030000000000000019001a00029a018e017700102700000000000000003e8b000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020161002300458813100128030000000000000019001a00029a018e0177001027000000000000000094ad000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.82s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.80s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020162002300458813100128030000000000000019001a00029a018e017700102700000000000000006ac6000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.29s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.31s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.36s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020163002300458813100128030000000000000019001a00029a018d01770010270000000000000000636d000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020164002300458813100128030000000000000019001a00029a018e017700102700000000000000009611000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.79s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.77s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020165002300458813100128030000000000000019001a00029a018e017700102700000000000000003c37000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.34s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.36s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.42s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020166002300458813100128030000000000000019001a00029a018e01770010270000000000000000c25c000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a020167002300458813100128030000000000000019001a00029a018e01770010270000000000000000687a000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=0 retry=2: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=3: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=4: 读取超时（无数据）
+[DEV_INFO] sub_idx=0 retry=5: 读取超时（无数据）
+[DEV_INFO] sub_idx=0: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=0.81s
+[DEV_INFO] 请求 sub_idx=1, 剩余时间=0.78s
+TX cmd=0x02 payload=01 buf=00020100000000000000...
+RX 64B: 05a55a020168002300458813100127030000000000000019001a00029a018e01770010270000000000000000ead9000000000000000000000000000000000000
+[DEV_INFO] sub_idx=1 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=1 retry=0: 收到遥测帧（忽略）
+[DEV_INFO] sub_idx=1 retry=1: 读取超时（无数据）
+[DEV_INFO] sub_idx=1: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.34s
+[DEV_INFO] 请求 sub_idx=2, 剩余时间=-0.36s
+TX cmd=0x02 payload=02 buf=00020200000000000000...
+[DEV_INFO] sub_idx=2: 6次重试均未收到 TYPE_DEVICE_INFO，剩余时间=-0.41s
+[DEV_INFO] 读取失败/超时, connected=True, sub_received=set()
+[DEV_INFO] 开始读取设备信息 (等待锁 0ms, timeout=5.0s)
+[DEV_INFO] 请求 sub_idx=0, 剩余时间=5.00s
+TX cmd=0x02 payload=00 buf=00020000000000000000...
+RX 64B: 05a55a020169002300458813100128030000000000000019001a00029a018e01770010270000000000000000e588000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=0: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=0: 收到遥测帧（忽略）
+RX 64B: 05a55a02016a002300458813100128030000000000000019001a00029a018e017700102700000000000000001be3000000000000000000000000000000000000
+[DEV_INFO] sub_idx=0 retry=1: rtype=0x01
+[DEV_INFO] sub_idx=0 retry=1: 收到遥测帧（忽略）
+
