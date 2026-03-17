@@ -238,13 +238,14 @@ uint8_t pfod_mpla(void)
 
     if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
     {
+        /* YBZ MPP Fixture: 适当放大 temp_power，降低等效 pfo，减少治具误报 */
         if (gd->rx_power > 10000)
         {
-            temp_power = gd->rx_power * 815 / 1000;
+            temp_power = gd->rx_power * 940 / 1000;
         }
         else
         {
-        	temp_power = gd->rx_power*800/1000;
+        	temp_power = gd->rx_power * 910 / 1000;
         }
         pfo = gd->tx_power - ploss - temp_power;
     }

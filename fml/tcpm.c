@@ -21,22 +21,17 @@
 const uint32_t source_pdo[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
-		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
-			[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
-			[2] = PDO_FIXED(12000, 2910, 0),                      // 12 V 2.91 A
-			[3] = PDO_FIXED(15000, 2330, 0),                      // 15 V 2.33 A
-			[4] = PDO_FIXED(20000, 1750, 0),                      // 20 V 1.75 A
-			[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
 };
 
 const uint32_t source_pdo1[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
-		[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
-			[1] = PDO_FIXED(9000, 2220, 0),                      // 9 V 2.22 A
-			[2] = PDO_FIXED(12000, 1670, 0),                      // 12 V 1.67 A
-		    //[3] = PDO_FIXED(15000, 1330, 0),                      // 15 V 1.33 A
-			//[4] = PDO_FIXED(20000, 1000, 0),                      // 20 V 1 A
+	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
+	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 const uint32_t source_pdo[] =
@@ -44,11 +39,8 @@ const uint32_t source_pdo[] =
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
 
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
-	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
-	[2] = PDO_FIXED(12000, 2910, 0),                      // 12 V 2.91 A
-	[3] = PDO_FIXED(15000, 2330, 0),                      // 15 V 2.33 A
-	[4] = PDO_FIXED(20000, 1750, 0),                      // 20 V 1.75 A
-	[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
+	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
+	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
 };
 #endif
 
@@ -63,8 +55,8 @@ const uint32_t sink_pdo[] =
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
 	[2] = PDO_FIXED(12000, 2910, 0),                     // 12 V 2.91 A
-	[3] = PDO_FIXED(15000, 2330, 0),                     // 15 V 2.33 A
-	[4] = PDO_FIXED(20000, 1750, 0),                     // 20 V 1.75 A
+	// [3] = PDO_FIXED(15000, 2330, 0),                  // 15 V 2.33 A, disabled for sink charge
+	// [4] = PDO_FIXED(20000, 1750, 0),                  // 20 V 1.75 A, disabled for sink charge
 };
 
 uint16_t port_vbus = 5000;
@@ -451,7 +443,7 @@ void tcpm_task_event_handler(uint32_t event)
 			printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
 			break;
 		case TCPM_EVT_QI_WORK:
-			if(qi_state == 0)   //���߳�����¼�����
+			if(qi_state == 0)   
 			{
 				qi_state = 1;
 				port_manager_set_event(PORT3_EVENT_TRY_CONNECT);

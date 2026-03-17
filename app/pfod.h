@@ -5,7 +5,7 @@
 
 #define PFO_10W_THD 		265
 #define PFO_10W_RECO 		251//THD*0.95
-#define PFO_15W_THD 		385
+#define PFO_15W_THD 		400
 #define PFO_15W_RECO 		365//THD*0.95
 
 #define PFO_THD_APL_MPP		550//750

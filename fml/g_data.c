@@ -144,7 +144,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
-		ap->q_factor_base_value = 215;
+		ap->q_factor_base_value = 110;
 	}
 	else
 	{
@@ -156,7 +156,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
-		ap->fs_base_value = 967;
+		ap->fs_base_value = 833;
 	}
 	else
 	{

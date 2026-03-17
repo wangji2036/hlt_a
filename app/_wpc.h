@@ -89,7 +89,7 @@ enum EPT_CODE {
 #define T_NEXT             23
 #define T_FIRST_LIMIT                 (   20)
 #define T_MAX_LIMIT                   (  170)
-#define T_NEGOTIATE       400
+#define T_NEGOTIATE       440
 #define T_RENEGOTIATE       814
 #define T_RENEGO_TO        1900
 #define T_TERMINATE        10

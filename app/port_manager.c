@@ -873,13 +873,15 @@ void port_enum_port_snk_setvolt(void)
 						}
 						else
 						{
-							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_20V)
+							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_12V)
 							{
+								// Request the selected fixed PDO and mirror its values into the local charge limits.
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
 								g_port.ibus_limit = pdo_max_current(source_pdo);
-								if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1750? 1750:g_port.ibus_limit;
-								else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2330? 2330:g_port.ibus_limit;
+								// Disabled: do not execute any >12V current-clamp path here.
+								// if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1750? 1750:g_port.ibus_limit;
+								// else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2330? 2330:g_port.ibus_limit;
 								g_port.adpater_power =  (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
 								break;
 							}
