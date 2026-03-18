@@ -1139,7 +1139,7 @@ void RST_vCheck(void)
 						sleep_printk("\r\n tc wake[0x%x]", tc_ret);
 						if (tc_ret) break;
 					}
-					SLP_vSleepToSleep();
+						SLP_vSleepToSleep();
 #endif
 				}
 				break;
@@ -1168,10 +1168,9 @@ void RST_vCheck(void)
 				}
 				else
 				{
-				// 锟斤拷锟斤拷锟斤拷锟襟触凤拷锟斤拷锟斤拷锟斤拷GPIO锟斤拷锟斤拷锟斤拷睡锟斤拷
-				sleep_printk("\r\n GPIO false wake-up, continue sleep");
-				SLP_vSleepToSleep();
-				break;
+					sleep_printk("\r\n GPIO false wake-up, continue sleep");
+					SLP_vSleepToSleep();
+					break;
 			    }
 
 			#if(CONFIG_TYPECA_SUPPORT == 1)
