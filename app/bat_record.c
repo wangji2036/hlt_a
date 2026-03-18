@@ -506,6 +506,8 @@ void battery_record_update_temperature(void) {
 #else
     ntc_temp = gd->sys_infos.ntc_temp_wpc;  // 0.1degC
 #endif
+    event_type = EXCEPTION_TYPE_OVERTEMP;
+    bool is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);
 #else
     // NU6801: read NTC resistance and convert to temperature
     uint16_t ntc_resistance = g_buckboost.adc_tbat1;

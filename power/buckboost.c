@@ -199,11 +199,10 @@ void buckboost_protection_handle(void)
 #endif
 
 	static uint8_t cnt = 0;
-// OCP debounce disabled for USB comm stability testing
-// #if(BUCKBOOST_USED_NU6805 == 1)
-// 	static uint8_t nu6805_ocp_cnt = 0;
-// 	#define NU6805_OCP_LOCK_COUNT 4
-// #endif
+#if(BUCKBOOST_USED_NU6805 == 1)
+	static uint8_t nu6805_ocp_cnt = 0;
+	#define NU6805_OCP_LOCK_COUNT 4
+#endif
 
 #if(BUCKBOOST_USED_NU6805 == 1)
 	#define VBUS_FUALT_VBUS_OCP			BIT(1)
@@ -298,22 +297,21 @@ void buckboost_protection_handle(void)
 		adc_protect_flag = false;
 		status |= VBUS_SOFT_PROTECT;
 	}
-// OCP debounce disabled - restore immediate lockout for stability testing
-// #if(BUCKBOOST_USED_NU6805 == 1)
-// 	if(status & VBUS_FUALT_VBUS_OCP)
-// 	{
-// 		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT) nu6805_ocp_cnt++;
-// 		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT)
-// 		{
-// 			printk("ocp debounce %d/%d\n", nu6805_ocp_cnt, NU6805_OCP_LOCK_COUNT);
-// 			status &= ~VBUS_FUALT_VBUS_OCP;
-// 		}
-// 	}
-// 	else
-// 	{
-// 		nu6805_ocp_cnt = 0;
-// 	}
-// #endif
+#if(BUCKBOOST_USED_NU6805 == 1)
+	if(status & VBUS_FUALT_VBUS_OCP)
+	{
+		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT) nu6805_ocp_cnt++;
+		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT)
+		{
+			printk("ocp debounce %d/%d\n", nu6805_ocp_cnt, NU6805_OCP_LOCK_COUNT);
+			status &= ~VBUS_FUALT_VBUS_OCP;
+		}
+	}
+	else
+	{
+		nu6805_ocp_cnt = 0;
+	}
+#endif
 	if(status&0x2006) gd->typec_scp = 1;
 	if(status & VBUS_FUALT_VBUS_OVP) gd->vbus_ovp = 1;
 	if(!gd->led_fault&&((status & 0x4060)||ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)||gd->vbus_ovp))
@@ -344,7 +342,7 @@ void buckboost_protection_handle(void)
 #if(BUCKBOOST_USED_NU6805 == 1)
 		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC))
 		{
-			// nu6805_ocp_cnt = 0;
+			nu6805_ocp_cnt = 0;
 			printk("protect lock =0x%x\n",status);
 
 			//printk("vbus = %d\n",g_buckboost.adc_vbus);
@@ -430,9 +428,9 @@ void buckboost_protection_handle(void)
 	}
 	else
 	{
-// #if(BUCKBOOST_USED_NU6805 == 1)
-// 		nu6805_ocp_cnt = 0;
-// #endif
+#if(BUCKBOOST_USED_NU6805 == 1)
+		nu6805_ocp_cnt = 0;
+#endif
 		if(buckboost_protection_flag && g_port.port_state[PORT0_INDEX] ==PORT_STATE_NONE &&g_port.port_state[PORT1_INDEX] ==PORT_STATE_NONE)
 		{
 			buckboost_protection_flag = 0;

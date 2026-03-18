@@ -63,9 +63,7 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE           1
 #define BUCKBOOST_USED_NU6805               1
 #define BUCKBOOST_USED_NU6801               0
-#define OVER_VOLTAGE_THRESHOLD              4450
-#define CHRG_NTC_OT_TEMP_VALUE             600
-#define DISCHG_NTC_OT_TEMP_VALUE           650
+#define OVER_VOLTAGE_THRESHOLD              4500
 #define CHRG_NTC_OT_VALUE                   50
 #define BATTERY_CV_VALUE                    4400
 

@@ -22,8 +22,8 @@ const uint32_t source_pdo_default[] =
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
 	[2] = PDO_FIXED(12000, 2500, 0),                      // 12 V 2.5 A
-	[3] = PDO_FIXED(15000, 2000, 0),                      // 15 V 2 A
-	[4] = PDO_FIXED(20000, 1500, 0),                      // 20 V 1.5 A
+//	[3] = PDO_FIXED(15000, 2000, 0),                      // 15 V 2 A
+//	[4] = PDO_FIXED(20000, 1500, 0),                      // 20 V 1.5 A
 	[5] = PDO_PPS_APDO(5000,11000,2700),  // 5V-11V 2.7A
 	   // ====  修改 Victor 2024-06-22 end ====
 };
@@ -34,8 +34,8 @@ const uint32_t sink_pdo_default[] =
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
 	[2] = PDO_FIXED(12000, 2500, 0),                     // 12 V 2.5 A
-	[3] = PDO_FIXED(15000, 2000, 0),                     // 15 V 2 A
-	[4] = PDO_FIXED(20000, 1500, 0),                     // 20V 1.5 A
+//	[3] = PDO_FIXED(15000, 2000, 0),                     // 15 V 2 A
+//	[4] = PDO_FIXED(20000, 1500, 0),                     // 20V 1.5 A
 	[5] = PDO_PPS_APDO(5000,11000,2700),	// 5V-11V 2.70A
 };
 

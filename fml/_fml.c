@@ -180,6 +180,7 @@ void ubsd_wb7720_report_update(void)
 		bool want_awake = false;
 		if (gd->usb_comm_activated)
 		{
+			enum tc_cc_status cc1, cc2;
 			hal_tcpc_get_cc(0, &cc1, &cc2);
 			printk("[CC] cc1=%d cc2=%d tc=%d\n", cc1, cc2, g_tc[0].usb_tc_state);
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
