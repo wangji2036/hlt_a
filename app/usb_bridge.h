@@ -32,12 +32,16 @@
 /* --- Exception Log Region (0x37-0x4D, 23 bytes) --- */
 #define REG_EXC_TOTAL_COUNT         0x37    // u8, total valid records (0-5)
 #define REG_EXC_CURRENT_IDX         0x38    // u8, current record index (0-4)
-#define REG_EXC_RESERVED            0x39    // u8, reserved = 0x00
+#define REG_EXC_READY               0x39    // u8, 0xA5=数据有效可读, 0x00=写入中
 #define REG_EXC_RECORD_DATA         0x3A    // 20B, BatteryExceptionRecord_t
 
 /* --- Sleep/Wakeup Commands (0x4E-0x4F) --- */
 #define REG_SLEEP                   0x4E    // u8, write 0x01 to enter sleep
 #define REG_WAKEUP                  0x4F    // u8, write 0x01 to wakeup
+
+/* --- Time Sync Register --- */
+#define REG_TIME_SYNC               0x51    // u8, write 0xCA to trigger RTC calibration
+#define TIME_SYNC_MAGIC             0xCA
 
 /* --- Engineering Mode Registers (0x50-0x81) --- */
 #define REG_WORK_MODE               0x50    // u8, 0x00=user 0xA5=engineering
@@ -100,6 +104,7 @@ uint16_t usb_bridge_get_eng_cell1(void);
 uint16_t usb_bridge_get_eng_cell2(void);
 int16_t  usb_bridge_get_eng_temp(void);
 void usb_bridge_check_eng_test_cmds(void);    // Step 17: erase command
+void usb_bridge_check_time_sync(void);        // Step 14b: RTC time calibration
 
 #endif /* CONFIG_USB_BRIDGE_ENABLE */
 #endif /* USB_BRIDGE_H_ */

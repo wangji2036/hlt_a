@@ -295,12 +295,17 @@ void usb_bridge_write_exception_record(void)
         valid_count = MAX_RECORDS;
     }
 
+    /* 写入前: 清 ready flag，WB7720 看到非 0xA5 则不读，防止半写竞争 */
+    hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0x00);
+
     /* If no records, write zeros */
     if (valid_count == 0) {
         memset(buf, 0, sizeof(buf));
         hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
                                    REG_EXC_TOTAL_COUNT,
                                    buf, sizeof(buf));
+        /* 写入完成: 置 ready flag，WB7720 可安全读取 */
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0xA5);
         return;
     }
 
@@ -328,6 +333,9 @@ void usb_bridge_write_exception_record(void)
     if (exc_rotate_idx >= valid_count) {
         exc_rotate_idx = 0;
     }
+
+    /* 写入完成: 置 ready flag，WB7720 可安全读取 */
+    hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0xA5);
 #endif
 }
 
@@ -481,6 +489,31 @@ void usb_bridge_check_engineering_mode(void)
 
             eng_mode_active = false;
         }
+    }
+#endif
+}
+
+/**
+ * @brief Check and handle RTC time sync trigger from PC.
+ *
+ * When eng mode active, PC writes datetime to 0x60-0x66, then writes
+ * REG_TIME_SYNC(0x51) = 0xCA to trigger sync. NU17112 reads datetime
+ * and updates RTC, then clears the trigger register.
+ *
+ * Called from round-robin step 14 (after check_engineering_mode).
+ */
+void usb_bridge_check_time_sync(void)
+{
+#if CONFIG_NEW_CCC_LOG_ENABLE
+    if (!eng_mode_active) return;
+
+    uint8_t trigger = 0;
+    hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_TIME_SYNC, &trigger);
+
+    if (trigger == TIME_SYNC_MAGIC) {
+        apply_eng_datetime_to_rtc();
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_TIME_SYNC, 0x00);
+        printk("time sync ok\n");
     }
 #endif
 }

@@ -297,6 +297,7 @@ void ubsd_wb7720_report_update(void)
 	else if(cnt == 14)
 	{
 		usb_bridge_check_engineering_mode();
+		usb_bridge_check_time_sync();
 	}
 	else if(cnt == 15)
 	{
