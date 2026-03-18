@@ -380,8 +380,13 @@ void ubsd_wb7720_sleep(void)
 
 void ubsd_wb7720_wakeup(void)
 {
-	hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR,REG_WAKEUP,0x01);
-	printk("enter wake mode\n");
+	/* WAKE_CMD 重试: 第1次触发 EXTI 唤醒，读回操作提供自然延时 */
+	for (int retry = 0; retry < 5; retry++) {
+		hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_WAKEUP, 0x01);
+		uint8_t readback = 0;
+		hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_WAKEUP, &readback);
+		printk("[WB] wake r=%d rb=%02X\n", retry, readback);
+	}
 }
 
 
