@@ -182,6 +182,8 @@ void ubsd_wb7720_report_update(void)
 
 		if (!want_awake)
 		{
+			is_usb_enable = 0;
+			g_wb7720_awake = 0;
 			cnt = 0;
 			return;
 		}
