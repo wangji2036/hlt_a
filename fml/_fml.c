@@ -196,13 +196,13 @@ void ubsd_wb7720_report_update(void)
 
 		if (!want_awake)
 		{
-			if (is_usb_enable)
-			{
-				ubsd_wb7720_sleep();
-				is_usb_enable = 0;
-				g_wb7720_awake = 0;
-				printk("[USB] CC lost or COM off -> sleep\n");
-			}
+			// if (is_usb_enable)
+			// {
+			// 	ubsd_wb7720_sleep();
+			// 	is_usb_enable = 0;
+			// 	g_wb7720_awake = 0;
+			// 	printk("[USB] CC lost or COM off -> sleep\n");
+			// }
 			cnt = 0;
 			return;
 		}
