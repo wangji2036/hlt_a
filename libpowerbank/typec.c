@@ -231,7 +231,11 @@ static void TC_SNK_Attached_Entry(struct tc_s * tc)
     else
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS);
 
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+    if(tc->tc_index == PORT0_INDEX && !gd->usb_comm_activated) usb_dpdm_port0_switch(true);
+#else
     if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
+#endif
 }
 
 
@@ -387,7 +391,11 @@ static void TC_SRC_Attached_Entry(struct tc_s * tc)
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SOURCE,TYPEC_HOST);
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
     //tc->try_src_cnt = 0;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+    if(tc->tc_index == PORT0_INDEX && !gd->usb_comm_activated) usb_dpdm_port0_switch(true);
+#else
     if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
+#endif
     if(tc->tc_index == PORT0_INDEX)
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
     else
