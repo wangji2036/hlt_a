@@ -491,6 +491,9 @@ void usb_comm_lock(void)
 
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
 	hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
+	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	usb_dpdm_port0_switch(false);
 	pdlib_restart_typec(PORT0_INDEX);  // DRP → SNK_Unattached → CC=Rd
 	printk("USB comm lock: force SINK via TC restart\n");
