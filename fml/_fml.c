@@ -177,24 +177,43 @@ void ubsd_wb7720_report_update(void)
 	 * so a connected host shows Rp: CC_RP_DEF / RP_1_5 / RP_3_0).
 	 * WB7720 awake ONLY when USB_COM active AND cable connected. */
 	{
-		/* 临时: 跳过 CC 检测，usb_comm_activated 即强制 WAKE */
-		bool want_awake = gd->usb_comm_activated ? true : false;
+		bool want_awake = false;
+		if (gd->usb_comm_activated)
+		{
+			enum tc_cc_status cc1, cc2;
+			hal_tcpc_get_cc(0, &cc1, &cc2);
+			printk("[CC] cc1=%d cc2=%d tc=%d\n", cc1, cc2, g_tc[0].usb_tc_state);
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+			/* SINK mode: look for remote Rp */
+			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
+				want_awake = true;
+#else
+			/* SOURCE mode: look for remote Rd */
+			if (cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
+				want_awake = true;
+#endif
+		}
 
 		if (!want_awake)
 		{
-			is_usb_enable = 0;
-			g_wb7720_awake = 0;
+			if (is_usb_enable)
+			{
+				ubsd_wb7720_sleep();
+				is_usb_enable = 0;
+				g_wb7720_awake = 0;
+				printk("[USB] CC lost or COM off -> sleep\n");
+			}
 			cnt = 0;
 			return;
 		}
 
-		/* want_awake == true: USB_COM active → 强制唤醒 */
+		/* want_awake == true: USB_COM active + CC connected */
 		if (!is_usb_enable)
 		{
 			ubsd_wb7720_wakeup();
 #if CONFIG_USB_BRIDGE_ENABLE
 			usb_bridge_reset_product_info();
-			printk("[USB] forced wakeup, PI reset\n");
+			printk("[USB] CC detected -> wakeup, PI reset\n");
 #endif
 			is_usb_enable = 1;
 			g_wb7720_awake = 1;
