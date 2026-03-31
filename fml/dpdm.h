@@ -298,6 +298,7 @@ enum dpdm_snk_type
 };
 
 void usb_dpdm_port0_switch(bool en);
+void usb_dpdm_port1_switch(bool en);
 
 extern uint8_t dpdm_map;
 extern uint8_t bc12_type;

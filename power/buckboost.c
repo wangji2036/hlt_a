@@ -493,10 +493,12 @@ void usb_comm_lock(void)
 	hal_tcpc_set_source_mode(BUCKBOOST_SHUTDOWM_MODE);
 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	usb_dpdm_port0_switch(false);
-	pdlib_restart_typec(PORT0_INDEX);  // DRP → SNK_Unattached → CC=Rd
-	printk("USB comm lock: force SINK via TC restart\n");
+	usb_dpdm_port1_switch(false);              // Release PB2/PD0 for WB7720 USB data
+	pdlib_restart_typec(PORT1_INDEX);           // Port1 → SINK (WB7720 connector)
+	printk("USB comm lock: force SINK on Port1 for WB7720\n");
 #else
 	printk("USB comm lock: all charge/discharge stopped\n");
 #endif
@@ -505,6 +507,8 @@ void usb_comm_lock(void)
 void usb_comm_unlock(void)
 {
 	buckboost_protection_flag = 0;
+
+	usb_dpdm_port1_switch(true);               // Restore PB2/PD0 to DPDM mode
 
 	pdlib_restart_typec(PORT0_INDEX);
 	pdlib_restart_typec(PORT1_INDEX);

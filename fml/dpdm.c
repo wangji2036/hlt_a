@@ -69,6 +69,26 @@ void usb_dpdm_port0_switch(bool en)
 	VIC_vModuleEnable();
 }
 
+void usb_dpdm_port1_switch(bool en)
+{
+	VIC_vModuleDisable();
+	if(en)
+	{
+		GPB->MODE.BITS.PIN2 = 3; //00:PB2 01:BPWM3 10:BADC2 11:DP_C2
+		GPD->MODE.BITS.PIN0 = 2; //00:PD0 01:BADC8 10:DM_C2 11:RESERVED
+	}
+	else
+	{
+		/* GPIO high-Z: release PB2/PD0 for WB7720 USB data */
+		GPB->I_EN.BITS.PIN2 = 0;
+		GPB->O_EN.BITS.PIN2 = 0;
+		GPB->MODE.BITS.PIN2 = 0; //PB2 GPIO
+		GPD->I_EN.BITS.PIN0 = 0;
+		GPD->MODE.BITS.PIN0 = 0; //PD0 GPIO
+	}
+	VIC_vModuleEnable();
+}
+
 void usb_dpdm_select(uint8_t tc_index)
 {
 	printk("[DPDM] select port=%d\n", tc_index);
