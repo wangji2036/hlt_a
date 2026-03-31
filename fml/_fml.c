@@ -265,8 +265,12 @@ void ubsd_wb7720_report_update(void)
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,SOH_pct_x100,(uint8_t*)&write_buf,2);
 	}else if(cnt == 8)
 	{
-		cell2_voltage = hal_badc_meas(_BADC_CH_PC7_ADC4) * 1.5;
-		printk("cell2_voltage = %d\n",cell2_voltage);
+		{
+			uint16_t bat2_plus  = hal_badc_meas(_BADC_CH_PB6_ADC7) * 2;
+			int16_t  vbat_minus = (int16_t)(hal_badc_meas(_BADC_CH_PD3_ADC9) * 2) - 3300;
+			cell2_voltage = bat2_plus - vbat_minus;
+			printk("cell2=%d bat2+=%d vbat-=%d\n", cell2_voltage, bat2_plus, vbat_minus);
+		}
 		write_buf = cell2_voltage;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL2_VOLTAGE_MV,(uint8_t*)&write_buf,2);
 	}

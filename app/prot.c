@@ -139,6 +139,9 @@ int16_t fml_ntc_temp_get_typec(void)
 //wpc
 int16_t fml_ntc_temp_get_wpc(void)
 {
+	/* PD3 reused for VBAT- sampling — return safe temp */
+	return 25;
+
 	static uint8_t  vntc_idx = 0;
 
 #if IC_PN_17111

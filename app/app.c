@@ -50,8 +50,12 @@ void apl_task_event_handler(uint32_t event)
 		case APL_EVT_250ms_POLL://250ms
 			ui_update();
 			extern uint16_t cell2_voltage;
-			cell2_voltage = hal_badc_meas(_BADC_CH_PC7_ADC4) * 1.5;
-		    printk("cell2_voltage = %d\n",cell2_voltage);
+			{
+				uint16_t bat2_plus  = hal_badc_meas(_BADC_CH_PB6_ADC7) * 2;                   // BAT2+ (mV)
+				int16_t  vbat_minus = (int16_t)(hal_badc_meas(_BADC_CH_PD3_ADC9) * 2) - 3300; // VBAT- (mV)
+				cell2_voltage = bat2_plus - vbat_minus;                                         // Cell2 = BAT2+ - VBAT-
+				printk("cell2=%d bat2+=%d vbat-=%d\n", cell2_voltage, bat2_plus, vbat_minus);
+			}
 
 
 #if 1
