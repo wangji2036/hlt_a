@@ -51,10 +51,31 @@ void apl_task_event_handler(uint32_t event)
 			ui_update();
 			extern uint16_t cell2_voltage;
 			{
-				uint16_t bat2_plus  = hal_badc_meas(_BADC_CH_PB6_ADC7) * 2;                   // BAT2+ (mV)
-				int16_t  vbat_minus = (int16_t)(hal_badc_meas(_BADC_CH_PD3_ADC9) * 2) - 3300; // VBAT- (mV)
-				cell2_voltage = bat2_plus - vbat_minus;                                         // Cell2 = BAT2+ - VBAT-
-				printk("cell2=%d bat2+=%d vbat-=%d\n", cell2_voltage, bat2_plus, vbat_minus);
+				/* PB6=BADC7: BAT2+ 总电压（2M+1M 分压 ×3） */
+				uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
+				uint16_t bat2_plus  = (uint16_t)(pb6_adc_mv * BADC_PB6_BAT2P_DIV_RATIO);
+
+				/* PC7=BADC4: Cell2 分压采样（2M+1M ×3） */
+				uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
+				uint16_t pc7_mv     = (uint16_t)(pc7_adc_mv * BADC_PC7_CELL2_DIV_RATIO);
+
+				/* PD3=BADC9: VBAT- 负压（1M→VDD + 2M→VBAT-）
+				 * V_pd3 = (VDD×2 + VBAT-) / 3, VBAT- = pd3_adc × 3 - VDD × 2
+				 * 若 3.3V 被拉低 → pd3 读数异常偏低，保持上次有效值 */
+				static int16_t vbat_minus_last = 0;
+				uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
+				if (pd3_adc_mv >= BADC_PD3_VBATN_MIN_MV) {
+					uint16_t vdd_mv = hal_badc_get_vdd_mv();
+					int16_t raw = (int16_t)(pd3_adc_mv * 3) - (int16_t)(vdd_mv * 2);
+					/* EMA 滤波：filtered += (raw - filtered) >> N */
+					vbat_minus_last += (raw - vbat_minus_last) >> BADC_PD3_VBATN_EMA_SHIFT;
+				}
+
+				uint16_t total_vbat = (uint16_t)((int16_t)bat2_plus - vbat_minus_last);
+				cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus_last);
+				printk("PB6=%u PC7=%u PD3=%u VDD=%u PB6_V=%u PC7_V=%u total=%u cell2=%u vbat-=%d NU6805=%d\n",
+				       pb6_adc_mv, pc7_adc_mv, pd3_adc_mv, hal_badc_get_vdd_mv(),
+				       bat2_plus, pc7_mv, total_vbat, cell2_voltage, vbat_minus_last, g_buckboost.adc_vbat);
 			}
 
 

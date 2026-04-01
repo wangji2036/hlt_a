@@ -112,7 +112,7 @@ void usb_dpdm_select(uint8_t tc_index)
 	dpdm_sink_deinit();
 
 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;  // TypeC-A (本项目唯一 C 口)
-	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 1;  // USB-A (本项目禁用，无害)
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;  // USB-A 关闭（PC3=LED4, PC4=LED3，不可驱动 DP/DM_A1）
 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;  // TypeC-B (本项目禁用)
 	bc12_type = 0;
 	dpdm_map = tc_index;

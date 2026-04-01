@@ -233,9 +233,20 @@ void ubsd_wb7720_report_update(void)
 	}
 	else if(cnt == 2)
 	{
-		write_buf = g_buckboost.adc_vbat;
+		/* 总电压 = PB6(BAT2+) - PD3(VBAT-)，PD3 有 3.3V 掉电保护 */
+		static int16_t vbat_minus_fml = 0;
+		uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
+		uint16_t pd3_adc   = hal_badc_meas(_BADC_CH_PD3_ADC9);
+		if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
+			uint16_t vdd_mv = hal_badc_get_vdd_mv();
+			int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
+				vbat_minus_fml += (raw - vbat_minus_fml) >> BADC_PD3_VBATN_EMA_SHIFT;
+		}
+		uint16_t total_vbat = (uint16_t)((int16_t)pb6_bat2p - vbat_minus_fml);
+		write_buf = total_vbat;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,VBAT_mV,(uint8_t*)&write_buf,2);
-		printk("adc_vbat = %d %d %d\n",g_buckboost.adc_ibat,g_buckboost.adc_vbat,write_buf);
+		printk("PB6=%u PD3=%u vbat-=%d total=%u NU6805=%d cell2=%u\n",
+		       pb6_bat2p, pd3_adc, vbat_minus_fml, total_vbat, g_buckboost.adc_vbat, cell2_voltage);
 	}
 	else if(cnt == 3)
 	{
@@ -266,17 +277,35 @@ void ubsd_wb7720_report_update(void)
 	}else if(cnt == 8)
 	{
 		{
-			uint16_t bat2_plus  = hal_badc_meas(_BADC_CH_PB6_ADC7) * 2;
-			int16_t  vbat_minus = (int16_t)(hal_badc_meas(_BADC_CH_PD3_ADC9) * 2) - 3300;
-			cell2_voltage = bat2_plus - vbat_minus;
-			printk("cell2=%d bat2+=%d vbat-=%d\n", cell2_voltage, bat2_plus, vbat_minus);
+		/* PC7=BADC4: Cell2 = PC7采样 - PD3负压 */
+			static int16_t vbat_minus_c2 = 0;
+			uint16_t pc7_adc = hal_badc_meas(_BADC_CH_PC7_ADC4);
+			uint16_t pc7_mv  = (uint16_t)(pc7_adc * BADC_PC7_CELL2_DIV_RATIO);
+			uint16_t pd3_adc = hal_badc_meas(_BADC_CH_PD3_ADC9);
+			if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
+				uint16_t vdd_mv = hal_badc_get_vdd_mv();
+				int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
+					vbat_minus_c2 += (raw - vbat_minus_c2) >> BADC_PD3_VBATN_EMA_SHIFT;
+			}
+			cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus_c2);
+			printk("PC7=%u pc7_v=%u vbat-=%d cell2=%u\n", pc7_adc, pc7_mv, vbat_minus_c2, cell2_voltage);
 		}
 		write_buf = cell2_voltage;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL2_VOLTAGE_MV,(uint8_t*)&write_buf,2);
 	}
 	else if(cnt == 9)
 	{
-		write_buf = g_buckboost.adc_vbat - cell2_voltage;
+		/* Cell1 = 总电压(PB6 - VBAT-) - Cell2(PC7) */
+		static int16_t vbat_minus_c1 = 0;
+		uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
+		uint16_t pd3_adc   = hal_badc_meas(_BADC_CH_PD3_ADC9);
+		if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
+			uint16_t vdd_mv = hal_badc_get_vdd_mv();
+			int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
+				vbat_minus_c1 += (raw - vbat_minus_c1) >> BADC_PD3_VBATN_EMA_SHIFT;
+		}
+		uint16_t total_vbat = (uint16_t)((int16_t)pb6_bat2p - vbat_minus_c1);
+		write_buf = total_vbat - cell2_voltage;
 		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL1_VOLTAGE_MV,(uint8_t*)&write_buf,2);
 	}
 	else if(cnt == 10)

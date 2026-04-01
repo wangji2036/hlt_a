@@ -60,6 +60,8 @@ static void drv_IO_control(uint8_t pinx, bool status)
 		_UI_PIN4_PORT-> O_EN.BITS._UI_PIN4_PINx = 1;
 		break;
 	case 3:
+		/* PC4 = LED3 only，确保 MODE=GPIO */
+		GPC->MODE.BITS.PIN4 = 0;
 		_UI_PIN3_PORT->I_EN.BITS._UI_PIN3_PINx = 0;
 		_UI_PIN3_PORT->DOUT.BITS._UI_PIN3_PINx = status;
 		_UI_PIN3_PORT-> O_EN.BITS._UI_PIN3_PINx = 1;

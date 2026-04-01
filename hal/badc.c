@@ -339,6 +339,11 @@ uint16_t hal_badc_meas(enum badc_chan_t channel)
  * @param  None.
  * @return None.
  */
+uint16_t hal_badc_get_vdd_mv(void)
+{
+	return hal_badc_vref_update();
+}
+
 void hal_badc_isns_chan_offest_update(void)
 {
 	uint16_t BDAC_VREF_V3P3 = hal_badc_vref_update();

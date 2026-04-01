@@ -275,7 +275,7 @@ void hal_gpio_init(void)
 		GPB->MODE.BITS.PIN5 = 0; //00:PB5 01:JTAG_RST 10:BADC6 11:LS_ISNS_PGA_P
 	}
 
-	/* PB6 — BADC7: BAT2+ / 2 voltage sampling */
+	/* PB6 — BADC7: BAT2+ via 2M+1M divider (V_pin = BAT2+/3) */
 	GPB->I_EN.BITS.PIN6 = 0;
 		GPB->O_EN.BITS.PIN6 = 0;
 		GPB->DOUT.BITS.PIN6 = 0;
@@ -332,7 +332,7 @@ void hal_gpio_init(void)
 	GPC->PDEN.BITS.PIN3 = 0;
 	GPC->MODE.BITS.PIN3 = 0; //00:PC3 01:BPWM4 10:DP_A1 11:RESERVED
 
-	/* PC4 — GPIO (was DM_A1) */
+	/* PC4 — LED3 (GPIO only，不用于 DM_A1) */
 	GPC->I_EN.BITS.PIN4 = 1;
 	GPC->O_EN.BITS.PIN4 = 0;
 	GPC->DOUT.BITS.PIN4 = 0;
@@ -380,7 +380,7 @@ void hal_gpio_init(void)
 		GPC->ODEN.BITS.PIN7 = 0;
 		GPC->PUEN.BITS.PIN7 = 0;
 		GPC->PDEN.BITS.PIN7 = 0;
-		GPC->MODE.BITS.PIN7 = 1; //00:PC7 01:BADC4 10:RESERVED 11:RESERVED
+		GPC->MODE.BITS.PIN7 = 1; //00:PC7 01:BADC4 — Cell2 分压采样（2M+1M, V_pin = Cell2/3）
 	}
 
 	/* PC8 */
@@ -407,7 +407,7 @@ void hal_gpio_init(void)
 	GPD->I_EN.BITS.PIN2 = 0;
 	GPD->MODE.BITS.PIN2 = 0; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED
 
-	/* PD3 */
+	/* PD3 — BADC9: VBAT- 负压采样（1M→VDD + 2M→VBAT-, V_pin = (VDD×2+VBAT-)/3） */
 	GPD->I_EN.BITS.PIN3 = 0;
 	GPD->MODE.BITS.PIN3 = 1; //00:PD3 01:BADC9 10:RESERVED 11:RESERVED
 	GPD->ITEN.BITS.PIN3 = 0;
@@ -679,14 +679,14 @@ void hal_gpio_init_default(void)
 	GPC->PDEN.BITS.PIN3 = 0;//0;
 	GPC->MODE.BITS.PIN3 = 0;//2; //00:PC3 01:BPWM4 10:DP_A1 11:RESERVED
 
-	/* PC4 */
+	/* PC4 — LED3 (GPIO only，sleep 态关输出) */
 	GPC->I_EN.BITS.PIN4 = 0;
 	GPC->O_EN.BITS.PIN4 = 0;
 	GPC->DOUT.BITS.PIN4 = 0;
 	GPC->ODEN.BITS.PIN4 = 0;
 	GPC->PUEN.BITS.PIN4 = 0;
 	GPC->PDEN.BITS.PIN4 = 0;
-	GPC->MODE.BITS.PIN4 = 0;//2; //00:PC4 01:EPWM5 10:DM_A1 11:RESERVED
+	GPC->MODE.BITS.PIN4 = 0; //00:PC4 (GPIO) — LED3 only
 
 	/* PC5 */
 	GPC->I_EN.BITS.PIN5 = 0;//1;

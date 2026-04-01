@@ -2,7 +2,7 @@
 #define LED_H_
 #define _UI_PIN1_PORT     GPA
 #define _UI_PIN2_PORT     GPC
-#define _UI_PIN3_PORT     GPB
+#define _UI_PIN3_PORT     GPC
 #define _UI_PIN4_PORT     GPC
 #define _UI_PIN5_PORT     GPB
 
@@ -11,7 +11,7 @@
 
 #define _UI_PIN1_PINx     PIN4
 #define _UI_PIN2_PINx     PIN5
-#define _UI_PIN3_PINx     PIN6
+#define _UI_PIN3_PINx     PIN4
 #define _UI_PIN4_PINx     PIN3
 #define _UI_PIN5_PINx     PIN3
 
