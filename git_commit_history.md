@@ -7,6 +7,9 @@
 | 1 | 2026-03-14 | feat | 有线充放电 PDO 上调至 35W | `fml/tcpm.c` |
 | 2 | 2026-03-14 | fix | 恢复 PB4 触摸按键 GPIO 唤醒（去屏蔽） | `app/sleep.c` |
 | 3 | 2026-03-14 | fix | 移除 PB3 有线快充指示灯，仅保留无线充电指示 | `app/led.c` |
+| 4 | 2026-04-01 | feat | APL 250ms 串口增加 PB6/BADC7 原始 mV 与分压说明 | `app/app.c` |
+| 5 | 2026-04-01 | fix | PB6 BAT2+ 分压按硬件 2M+1M 修正为 ×3 | `hal/badc.h`, `app/app.c`, `fml/_fml.c`, `hal/gpio.c` |
+| 6 | 2026-04-01 | feat | 三路MCU ADC采样重构 + LED3修正 + 负压EMA滤波 | 8 files |
 
 ---
 
@@ -216,5 +219,130 @@ PB3 定义为无线充电指示灯，用户要求去掉有线快充指示灯功�
 
 ### Open Questions
 - 无
+
+---
+
+## Commit 4: feat(debug): PB6 BADC7 串口打印原始分压电压
+
+| 字段 | 内容 |
+|------|------|
+| **DateTime** | 2026-04-01 |
+| **Scope** | APL_TASK 调试输出 / BAT2+ 采样 |
+| **Files** | `app/app.c` |
+| **Functions** | `apl_task_event_handler` → `APL_EVT_250ms_POLL` |
+
+### 变更统计
+- 修改文件数：1
+- 行为：250ms 周期 `printk` 增加 `PB6_ADC7` 引脚电压（mV），保留 `BAT2+`、`cell2`、`vbat-`
+
+### 详细变更分析
+- `hal_badc_meas(_BADC_CH_PB6_ADC7)` 只读一次，赋给 `pb6_adc_mv`，`bat2_plus = pb6_adc_mv * 2`
+- 注释说明：PB6=BADC7，**1:1 电阻分压** → \(V_\mathrm{pin}=\mathrm{BAT2+}/2\)，软件 ×2 得 BAT2+（与 `hal/gpio.c`「BAT2+ / 2」一致）
+
+### Change Summary
+1. 串口可区分 ADC 引脚电压与还原后的 BAT2+
+2. 代码注释标明分压关系（非改硬件）
+
+### Rationale
+便于现场对照万用表与固件读数，确认分压网络与标定。
+
+### Risk / Impact
+- 仅增加日志与一次局部变量，不影响采样算法
+- 量产版本可关 `printk` 或 `#if DEBUG`（若项目有统一开关）
+
+### Verification
+- 正常：BAT2+ 稳定时 `PB6_ADC7` ≈ `BAT2+/2`（mV）
+- 边界：低电压时两值成比例
+- 异常：PB6 若被复用为非 ADC 模式则读数无效（当前 `gpio` 初始化仍为 BADC7）
+
+### Rollback
+恢复单行 `bat2_plus = hal_badc_meas(...) * 2` 与原 `printk` 格式。
+
+### Open Questions
+- None
+
+---
+
+## Commit 5: fix(badc): PB6 BAT2+ 分压 2M+1M → 软件 ×3
+
+| 字段 | 内容 |
+|------|------|
+| **DateTime** | 2026-04-01 |
+| **Scope** | BAT2+ 电压还原（PB6 BADC7） |
+| **Files** | `hal/badc.h`, `app/app.c`, `fml/_fml.c`, `hal/gpio.c` |
+
+### 变更统计
+- 新增 `BADC_PB6_BAT2P_DIV_RATIO`（值为 3）
+- `app.c` / `_fml.c`：`bat2_plus` 由 `×2` 改为 `× BADC_PB6_BAT2P_DIV_RATIO`
+- `gpio.c`：注释由「/2」改为「2M+1M，V_pin = BAT2+/3」
+
+### 依据
+- 硬件：上拉 **2M**（接 BAT2+）、下拉 **1M**（接 GND）→ \(V_\mathrm{PB6} = \mathrm{BAT2+} \times \frac{1}{2+1}\)，还原 \(\mathrm{BAT2+}_\mathrm{mV} = V_\mathrm{adc} \times 3\)
+
+### Risk / Impact
+- **cell2 电压、USB 桥上报 CELL2_VOLTAGE_MV** 数值相对旧版（×2）会系统性变化；需与万用表核对 BAT2+ 一致后再量产
+- 若现场板仍为 1:1 分压，应改回 `BADC_PB6_BAT2P_DIV_RATIO` 为 2
+
+### Verification
+- 万用表测 BAT2+ 与 PB6 对地：\(V_\mathrm{PB6} \approx V_\mathrm{BAT2+}/3\)
+- 串口：`PB6_ADC7×3 ≈` 万用表 BAT2+（mV）
+
+### Rollback
+`#define BADC_PB6_BAT2P_DIV_RATIO 2u` 并恢复注释为 1:1 分压假设
+
+### Open Questions
+- None
+
+---
+
+## Commit 6: feat(adc): 三路MCU ADC采样重构 + LED3引脚修正 + 负压EMA滤波
+
+| 字段 | 内容 |
+|------|------|
+| **DateTime** | 2026-04-01 |
+| **Scope** | ADC采样 / 电压上报 / LED引脚 / DPDM解耦 |
+| **Files** | `hal/badc.h`, `hal/badc.c`, `hal/gpio.c`, `app/app.c`, `app/led.h`, `app/led.c`, `fml/_fml.c`, `fml/dpdm.c` |
+
+### 变更统计
+- 修改文件数：8
+- 新增行数：103，删除行数：20
+
+### 详细变更
+
+#### 1. 三路ADC采样通道
+| 引脚 | 通道 | 信号 | 硬件 | 公式 |
+|------|------|------|------|------|
+| PB6 | BADC7 | BAT2+ 总电压 | 2M+1M 分压 | `adc × 3` |
+| PC7 | BADC4 | Cell2 第二节电芯 | 2M+1M 分压 | `adc × 3` |
+| PD3 | BADC9 | VBAT- 电池负压 | 1M→VDD + 2M→VBAT- | `adc × 3 - VDD × 2` |
+
+#### 2. 电压计算
+- 总电压: `total = PB6_V - VBAT-`（替代NU6805上报）
+- Cell2: `cell2 = PC7_V - VBAT-`
+- Cell1: `cell1 = total - cell2`
+
+#### 3. 动态VDD校准
+- 新增 `hal_badc_get_vdd_mv()`，基于内部1.2V参考获取实际VDD
+- 消除芯片间3.3V偏差
+
+#### 4. 负压保护与EMA滤波
+- 3.3V掉电保护: ADC < 500mV 保持上次值
+- EMA: `filtered += (raw - filtered) >> 3`（1/8权重）
+
+#### 5. LED3引脚修正
+- LED3 从 PB6(GPB.PIN6) 改为 PC4(GPC.PIN4)
+- 驱动前确保 MODE=GPIO
+
+#### 6. DPDM USB-A关闭
+- `PORT2_CTRL = 0`，防止DM_A1干扰PC4(LED3)
+
+### Verification
+- 串口: `PB6= PC7= PD3= VDD= PB6_V= PC7_V= total= cell2= vbat-= NU6805=`
+- 万用表对照PB6/PC7/PD3
+
+### Rollback
+- 分压比: badc.h 宏修改
+- EMA: `BADC_PD3_VBATN_EMA_SHIFT` 调整
+- LED3: led.h 恢复 GPB.PIN6
 
 ---
