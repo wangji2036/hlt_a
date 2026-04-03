@@ -174,7 +174,7 @@ void usb_bridge_ensure_product_info(void)
 /**
  * @brief Write exception counts (OT/OV/OC) to WB7720 registers 0x11-0x16.
  *
- * Scans ap->record_storage.records[] and counts error types:
+ * Scans all Flash pages and counts error types:
  *   error_type 0x01 = Overvoltage  -> REG_ERR_OVERVOLT_CNT (0x13)
  *   error_type 0x02 = Overtemp     -> REG_ERR_OVERTEMP_CNT (0x11)
  *   error_type 0x03 = Undertemp    -> REG_ERR_OVERCURR_CNT (0x15) (mapped to OC slot)
@@ -184,37 +184,12 @@ void usb_bridge_ensure_product_info(void)
 void usb_bridge_write_exception_counts(void)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
-    uint16_t ot_count = 0;
-    uint16_t ov_count = 0;
-    uint16_t oc_count = 0; /* maps undertemp to OC slot (reserved) */
-    uint8_t i;
-    uint8_t valid_count;
+    /* Nanfu pattern: scan all Flash pages directly (not limited to RAM cache) */
+    uint16_t ot_count = battery_record_get_overtemp_count();
+    uint16_t ov_count = battery_record_get_overvolt_count();
+    uint16_t oc_count = 0;  /* reserved */
     uint8_t buf[6];
 
-    /* Determine how many valid records exist */
-    valid_count = ap->record_storage.exception_counter;
-    if (valid_count > MAX_RECORDS) {
-        valid_count = MAX_RECORDS;
-    }
-
-    /* Count error types from stored records */
-    for (i = 0; i < valid_count; i++) {
-        switch (ap->record_storage.records[i].error_type) {
-            case 0x01: /* Overvoltage */
-                ov_count++;
-                break;
-            case 0x02: /* Over-temperature */
-                ot_count++;
-                break;
-            case 0x03: /* Under-temperature -> mapped to OC slot */
-                oc_count++;
-                break;
-            default:
-                break;
-        }
-    }
-
-    /* Pack 3 x u16 LE into buffer: OT(0x11), OV(0x13), OC(0x15) */
     buf[0] = (uint8_t)(ot_count & 0xFF);
     buf[1] = (uint8_t)((ot_count >> 8) & 0xFF);
     buf[2] = (uint8_t)(ov_count & 0xFF);
@@ -618,6 +593,7 @@ void usb_bridge_check_eng_test_cmds(void)
     hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, &erase_cmd);
     if (erase_cmd == 0xEE) {
         battery_record_erase_all();
+        usb_bridge_exc_burst(0);  /* Reset upload cursor after erase */
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_CMD_STATUS, 0x02);
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_ENG_ERASE_ALL_CMD, 0x00);
     } else if (erase_cmd == 0xAA) {

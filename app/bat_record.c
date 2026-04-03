@@ -17,12 +17,11 @@
 
 #if CONFIG_NEW_CCC_LOG_ENABLE
 
-/********************* Global Variables **********************/
-/* Multi-page storage state */
-static uint8_t g_active_page = 0;          /* Current active page (0 or 1) */
-static uint8_t g_page_sequence = 0;        /* Page sequence for determining newest */
-static uint8_t g_write_ptr = 0;            /* Write pointer in current page */
-static uint32_t g_exception_counter = 0;   /* Total exception count */
+/********************* Shorthand for ap->record_storage / exception_cache *********************/
+#define g_record_storage   (ap->record_storage)
+#define g_exception_cache  (ap->exception_cache)
+
+/********************* Static Variables *********************/
 
 /* 1h Window mechanism (GB31241) */
 static OvWindowTracker_t g_ov_window[2];     /* [0]=Cell1, [1]=Cell2 */
@@ -30,20 +29,14 @@ static TempWindowTracker_t g_temp_window[2]; /* [0]=charging, [1]=discharging */
 static uint32_t g_window_start_seconds = 0;
 static bool g_window_initialized = false;
 
-/* Monotonic record ID */
+/* Engineering mode deferred flush flag (Nanfu pattern) */
+static bool g_eng_virtual_triggered = false;
+
+/* Monotonic record ID (recovered from Flash on init) */
 static uint32_t g_next_record_id = 1;
 
-/* Static page buffer (avoid stack overflow with 496B struct) */
+/* Static page buffer (avoid 496B stack overflow) */
 static FlashPageLayout_t g_flash_page_buffer;
-
-/* Print state (reserved for debug print functions) */
-static struct {
-    uint8_t current_page;
-    uint8_t record_index;
-    uint8_t total_records;
-    uint8_t records_printed;
-    uint8_t initialized;
-} print_state __attribute__((unused)) = {0};
 
 /********************* Flash Operation Functions *********************/
 
@@ -76,9 +69,8 @@ static void flash_read_record(uint32_t addr, uint8_t *data, uint16_t len) {
 /********************* Time Management Functions *********************/
 
 static void seconds_to_timestamp(uint32_t total_seconds, TimeStamp_t *ts) {
-    uint32_t seconds_in_day = 86400;
-    uint32_t days = total_seconds / seconds_in_day;
-    uint32_t seconds_today = total_seconds % seconds_in_day;
+    uint32_t days = total_seconds / 86400;
+    uint32_t seconds_today = total_seconds % 86400;
 
     uint32_t year = 2026;
     uint32_t days_in_year = 365;
@@ -89,12 +81,12 @@ static void seconds_to_timestamp(uint32_t total_seconds, TimeStamp_t *ts) {
     }
 
     const uint8_t month_days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-    uint8_t month = 1;
+    uint8_t month;
     for (month = 1; month <= 12; month++) {
-        uint8_t days_this_month = month_days[month-1];
-        if (month == 2 && (year % 4 == 0)) days_this_month = 29;
-        if (days < days_this_month) break;
-        days -= days_this_month;
+        uint8_t d = month_days[month-1];
+        if (month == 2 && (year % 4 == 0)) d = 29;
+        if (days < d) break;
+        days -= d;
     }
 
     ts->year = year;
@@ -123,19 +115,13 @@ static void get_current_timestamp(volatile TimeStamp_t *ts) {
 }
 
 static bool is_new_hour(uint32_t last_seconds, uint32_t current_seconds) {
-    uint32_t elapsed = current_seconds - last_seconds;
-    return elapsed >= EXCEPTION_WINDOW_SECONDS;
+    return (current_seconds - last_seconds) >= EXCEPTION_WINDOW_SECONDS;
 }
 
 /********************* Exception Thresholds *********************/
-/* Battery record thresholds (independent from NTC protection thresholds) */
-#define BR_CHRG_OT_VALUE          NTC_10K_3435_REAL_RT_60   /* 60C charging */
-#define BR_CHRG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_50   /* 50C restore */
-#define BR_DISG_OT_VALUE          NTC_10K_3435_REAL_RT_65   /* 65C discharging */
-#define BR_DISG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_55   /* 55C restore */
-#define BR_OVER_VOLTAGE_THRESHOLD OVER_VOLTAGE_THRESHOLD     /* config.h: 4500mV */
+#define BR_OVER_VOLTAGE_THRESHOLD OVER_VOLTAGE_THRESHOLD  /* config.h: 4500mV */
 
-/********************* Page Checksum *********************/
+/********************* Checksum *********************/
 
 static uint16_t calculate_page_checksum(FlashPageLayout_t *page) {
     uint32_t sum = 0;
@@ -151,76 +137,82 @@ static bool verify_page_checksum(FlashPageLayout_t *page) {
     return (calculate_page_checksum(page) == page->checksum);
 }
 
+static uint16_t calculate_storage_checksum(volatile BatteryRecordStorage_t *s) {
+    uint32_t sum = 0;
+    volatile uint8_t *data = (volatile uint8_t*)s;
+    size_t len = offsetof(BatteryRecordStorage_t, checksum);
+    for (size_t i = 0; i < len; i++) sum += data[i];
+    return (uint16_t)(sum & 0xFFFF);
+}
+
 /********************* Multi-Page Flash Operations *********************/
 
 static void switch_active_page(void) {
-    g_active_page = (g_active_page + 1) % LOG_PAGE_COUNT;
-    g_page_sequence++;
-    uint32_t new_page_addr = GET_ACTIVE_PAGE_ADDR(g_active_page);
-    hal_fmc_erase_page(new_page_addr);
-    g_write_ptr = 0;
-    printk("\r\n[PAGE SWITCH] -> page %d (seq=%d)", g_active_page, g_page_sequence);
+    g_record_storage.active_page = (g_record_storage.active_page + 1) % LOG_PAGE_COUNT;
+    g_record_storage.page_sequence++;
+    uint32_t addr = GET_ACTIVE_PAGE_ADDR(g_record_storage.active_page);
+    hal_fmc_erase_page(addr);
+    g_record_storage.write_ptr = 0;
+    printk("\r\n[PAGE SWITCH] -> page %d (seq=%d)", g_record_storage.active_page, g_record_storage.page_sequence);
 }
 
-/* Sync latest record to ap->record_storage RAM cache (USB Bridge compatibility) */
-static void sync_record_to_ram_cache(BatteryExceptionRecord_t *record) {
-    uint8_t wptr = ap->record_storage.write_ptr;
-    ap->record_storage.records[wptr] = *record;
-    ap->record_storage.write_ptr = (wptr + 1) % MAX_RECORDS;
-    if (ap->record_storage.exception_counter < 255)
-        ap->record_storage.exception_counter++;
-    ap->record_storage.magic = MAGIC_VALUE;
-}
+/* Save one record to Flash at given index in active page (read-modify-write) */
+static void save_record_to_flash(BatteryExceptionRecord_t *record, uint8_t record_index) {
+    if (record_index >= MAX_RECORDS_PER_PAGE) return;
 
-/* Write a single record to the active flash page (read-modify-write entire page) */
-static void write_exception_record(BatteryExceptionRecord_t *record) {
-    if (g_write_ptr >= MAX_RECORDS_PER_PAGE) {
-        switch_active_page();
-    }
-
-    record->record_id = g_next_record_id++;
-    g_exception_counter++;
-
-    uint32_t page_addr = GET_ACTIVE_PAGE_ADDR(g_active_page);
-
-    /* Read existing page */
+    uint32_t page_addr = GET_ACTIVE_PAGE_ADDR(g_record_storage.active_page);
     flash_read_record(page_addr, (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
 
-    bool is_new_page = (g_flash_page_buffer.magic != MAGIC_VALUE);
-    if (is_new_page) {
+    if (g_flash_page_buffer.magic != MAGIC_VALUE) {
         memset(&g_flash_page_buffer, 0, sizeof(FlashPageLayout_t));
         g_flash_page_buffer.page_records_count = 0;
     }
 
-    /* Update header */
     g_flash_page_buffer.magic = MAGIC_VALUE;
-    g_flash_page_buffer.page_number = g_active_page;
+    g_flash_page_buffer.page_number = g_record_storage.active_page;
     g_flash_page_buffer.overflow_ptr = 0;
-    g_flash_page_buffer.page_seq = g_page_sequence;
+    g_flash_page_buffer.page_seq = g_record_storage.page_sequence;
 
     VIC_vModuleDisable();
     g_flash_page_buffer.page_timestamp = gd->Bat_RTC_Seconds;
     VIC_vModuleEnable();
 
-    /* Write record */
-    g_flash_page_buffer.records[g_write_ptr] = *record;
-    g_flash_page_buffer.page_records_count = g_write_ptr + 1;
+    if (record_index >= g_flash_page_buffer.page_records_count) {
+        g_flash_page_buffer.page_records_count = record_index + 1;
+        if (g_flash_page_buffer.page_records_count > MAX_RECORDS_PER_PAGE)
+            g_flash_page_buffer.page_records_count = MAX_RECORDS_PER_PAGE;
+    }
 
-    /* Checksum and write */
+    g_flash_page_buffer.records[record_index] = *record;
     g_flash_page_buffer.checksum = calculate_page_checksum(&g_flash_page_buffer);
+
     hal_fmc_erase_page(page_addr);
     flash_write_record(page_addr, (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
 
-    g_write_ptr++;
-
-    /* Sync to RAM cache for USB Bridge reads */
-    sync_record_to_ram_cache(record);
-
-    printk("\r\n[BR WRITE] page=%d idx=%d id=%d type=%d",
-           g_active_page, g_write_ptr - 1, record->record_id, record->error_type);
+    g_record_storage.checksum = calculate_storage_checksum(&g_record_storage);
 }
 
-/* Load storage from flash - scan all pages, find newest */
+/* Write exception record (Nanfu pattern: uses g_record_storage metadata) */
+static void write_exception_record(BatteryExceptionRecord_t *record) {
+    if (g_record_storage.write_ptr >= MAX_RECORDS_PER_PAGE) {
+        switch_active_page();
+    }
+
+    if (g_record_storage.exception_counter < 255)
+        g_record_storage.exception_counter++;
+
+    record->record_id = g_next_record_id++;
+
+    save_record_to_flash(record, g_record_storage.write_ptr);
+
+    printk("\r\n[BR WRITE] page=%d idx=%d id=%d type=%d",
+           g_record_storage.active_page, g_record_storage.write_ptr,
+           record->record_id, record->error_type);
+
+    g_record_storage.write_ptr++;
+}
+
+/* Load storage from Flash — scan all pages, find newest, recover max record_id */
 static void load_storage_from_flash(void) {
     bool page_valid[2] = {false, false};
     uint8_t page_sequences[2] = {0};
@@ -238,10 +230,9 @@ static void load_storage_from_flash(void) {
             page_valid[i] = true;
             page_sequences[i] = g_flash_page_buffer.page_seq;
             page_record_counts[i] = g_flash_page_buffer.page_records_count;
-            printk("\r\n[LOAD] Page %d valid: seq=%d, count=%d",
-                      i, page_sequences[i], page_record_counts[i]);
+            printk("\r\n[LOAD] Page %d valid: seq=%d, count=%d", i, page_sequences[i], page_record_counts[i]);
         } else if (magic_ok && !count_ok) {
-            /* Corrupted - repair */
+            /* Page repair: magic OK but corrupted record count */
             memset(&g_flash_page_buffer, 0, sizeof(FlashPageLayout_t));
             g_flash_page_buffer.magic = MAGIC_VALUE;
             g_flash_page_buffer.checksum = calculate_page_checksum(&g_flash_page_buffer);
@@ -254,10 +245,10 @@ static void load_storage_from_flash(void) {
         }
     }
 
-    /* Find newest valid page by sequence number */
+    /* Find newest valid page */
     uint8_t newest_page = 0;
-    bool found = false;
     uint8_t newest_seq = 0;
+    bool found = false;
 
     for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
         if (page_valid[i]) {
@@ -275,41 +266,42 @@ static void load_storage_from_flash(void) {
         }
     }
 
-    if (found) {
-        g_active_page = newest_page;
-        g_page_sequence = newest_seq;
-        g_write_ptr = page_record_counts[newest_page];
+    if (!found) return;
 
-        /* Count total records and find max record_id */
-        uint32_t max_id = 0;
-        for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
-            if (page_valid[i]) {
-                g_exception_counter += page_record_counts[i];
-                /* Read page to find max record_id */
-                flash_read_record(page_addrs[i], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
-                for (uint8_t j = 0; j < page_record_counts[i]; j++) {
-                    if (g_flash_page_buffer.records[j].record_id > max_id) {
-                        max_id = g_flash_page_buffer.records[j].record_id;
-                    }
+    g_record_storage.active_page = newest_page;
+    g_record_storage.page_sequence = newest_seq;
+    g_record_storage.write_ptr = page_record_counts[newest_page];
+    g_record_storage.magic = MAGIC_VALUE;
+
+    /* Count total records and recover max record_id across ALL pages */
+    uint32_t max_id = 0;
+    uint8_t total_count = 0;
+    for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
+        if (page_valid[i]) {
+            total_count += page_record_counts[i];
+            flash_read_record(page_addrs[i], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
+            for (uint8_t j = 0; j < page_record_counts[i]; j++) {
+                if (g_flash_page_buffer.records[j].record_id > max_id) {
+                    max_id = g_flash_page_buffer.records[j].record_id;
                 }
             }
         }
-        g_next_record_id = max_id + 1;
-        if (g_next_record_id == 0) g_next_record_id = 1;
-
-        printk("\r\n[LOAD] Active page=%d, seq=%d, wptr=%d, next_id=%d",
-               g_active_page, g_page_sequence, g_write_ptr, g_next_record_id);
     }
+    g_record_storage.exception_counter = total_count;
+    g_next_record_id = (max_id > 0) ? max_id + 1 : 1;
+    g_record_storage.checksum = calculate_storage_checksum(&g_record_storage);
+
+    printk("\r\n[LOAD] Active page=%d, seq=%d, wptr=%d, next_id=%d, total=%d",
+           g_record_storage.active_page, g_record_storage.page_sequence,
+           g_record_storage.write_ptr, g_next_record_id, total_count);
 }
 
 /********************* Window-based Detection (GB31241) *********************/
 
-/* Process cell overvoltage - RAM only, no Flash write */
 static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
                                       uint16_t total_voltage) {
     if (cell_voltage < BR_OVER_VOLTAGE_THRESHOLD) return;
-
-    uint8_t idx = cell_num - 1;  /* 0=Cell1, 1=Cell2 */
+    uint8_t idx = cell_num - 1;
 
     if (!g_ov_window[idx].triggered || cell_voltage > g_ov_window[idx].max_voltage) {
         g_ov_window[idx].triggered = true;
@@ -317,24 +309,22 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
         g_ov_window[idx].total_voltage = total_voltage;
         g_ov_window[idx].cell_num = cell_num;
         get_current_timestamp(&g_ov_window[idx].max_timestamp);
-
         printk("[BR] OV Cell%d: %dmV (window max)\n", cell_num, cell_voltage);
     }
 }
 
-/* Overvoltage detection - uses X20 MCU ADC sampled cell voltages */
 void battery_record_update_overvoltage(void) {
 #if(BUCKBOOST_USED_NU6805 == 1)
-    /* X20 MCU ADC: cell2_voltage is global (app.c 250ms update, PC7 - VBAT-)
-     * cell1 = NU6805 total - cell2 */
     extern uint16_t cell2_voltage;
     uint16_t total_voltage, cell1_voltage;
+    bool using_virtual = false;
 
 #if CONFIG_USB_BRIDGE_ENABLE
     {
         uint16_t eng_c1 = usb_bridge_get_eng_cell1();
         uint16_t eng_c2 = usb_bridge_get_eng_cell2();
         if (eng_c1 != ENG_SENTINEL_CELL || eng_c2 != ENG_SENTINEL_CELL) {
+            using_virtual = true;
             uint16_t real_c2 = cell2_voltage;
             uint16_t real_total = g_buckboost.adc_vbat;
             cell1_voltage = (eng_c1 != ENG_SENTINEL_CELL) ? eng_c1 : (real_total > real_c2 ? real_total - real_c2 : 0);
@@ -355,6 +345,11 @@ void battery_record_update_overvoltage(void) {
     process_cell_overvoltage(1, cell1_voltage, total_voltage);
     process_cell_overvoltage(2, cell2_voltage, total_voltage);
 #endif
+
+    /* Nanfu pattern: flag deferred flush on virtual injection */
+    if (using_virtual) {
+        g_eng_virtual_triggered = true;
+    }
 #elif(BUCKBOOST_USED_NU6801 == 1)
     uint16_t cell1_voltage = g_buckboost.adc_vbat;
     uint16_t total_voltage = cell1_voltage;
@@ -362,9 +357,9 @@ void battery_record_update_overvoltage(void) {
 #endif
 }
 
-/* Temperature detection - uses X20 pre-computed ntc_temp_wpc */
 void battery_record_update_temperature(void) {
     uint8_t mode = g_buckboost.woke_mode;
+    bool using_virtual = false;
 
 #if (BUCKBOOST_USED_NU6805 == 1)
     int16_t ntc_temp;
@@ -373,40 +368,32 @@ void battery_record_update_temperature(void) {
         int16_t eng_temp = usb_bridge_get_eng_temp();
         if (eng_temp != (int16_t)ENG_SENTINEL_TEMP) {
             ntc_temp = eng_temp;
+            using_virtual = true;
         } else {
             ntc_temp = gd->sys_infos.ntc_temp_wpc;
         }
     }
 #else
-    ntc_temp = gd->sys_infos.ntc_temp_wpc;  /* 0.1degC from APL pre-compute */
+    ntc_temp = gd->sys_infos.ntc_temp_wpc;
 #endif
     bool is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);
     uint8_t event_type = EXCEPTION_TYPE_OVERTEMP;
 #else
-    /* NU6801: NTC resistance based */
     uint16_t ntc_resistance = g_buckboost.adc_tbat1;
     int16_t ntc_temp = ntc_to_temp(ntc_resistance) * 10;
     uint8_t event_type = EXCEPTION_TYPE_OVERTEMP;
     bool is_abnormal;
-    if (mode == BUCKBOOST_CHAGER_MODE) {
-        is_abnormal = (ntc_resistance < BR_CHRG_OT_VALUE);
-    } else if (mode == BUCKBOOST_DISCHG_MODE) {
-        is_abnormal = (ntc_resistance < BR_DISG_OT_VALUE);
-    } else {
+    if (mode == BUCKBOOST_CHAGER_MODE)
+        is_abnormal = (ntc_resistance < NTC_10K_3435_REAL_RT_60);
+    else if (mode == BUCKBOOST_DISCHG_MODE)
+        is_abnormal = (ntc_resistance < NTC_10K_3435_REAL_RT_65);
+    else
         is_abnormal = false;
-    }
 #endif
 
     if (!is_abnormal) return;
 
-    uint8_t idx;
-    if (mode == BUCKBOOST_CHAGER_MODE) {
-        idx = 0;
-    } else if (mode == BUCKBOOST_DISCHG_MODE) {
-        idx = 1;
-    } else {
-        idx = 0;  /* Default to charging slot */
-    }
+    uint8_t idx = (mode == BUCKBOOST_DISCHG_MODE) ? 1 : 0;
 
     if (!g_temp_window[idx].triggered || ntc_temp > g_temp_window[idx].max_temperature) {
         g_temp_window[idx].triggered = true;
@@ -414,15 +401,17 @@ void battery_record_update_temperature(void) {
         g_temp_window[idx].event_type = event_type;
         g_temp_window[idx].charge_state = mode;
         get_current_timestamp(&g_temp_window[idx].max_timestamp);
-
         printk("[BR] TEMP %s: %d (window max)\n",
             (mode == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG", ntc_temp);
     }
+
+    if (using_virtual) {
+        g_eng_virtual_triggered = true;
+    }
 }
 
-/* Process window end: flush triggered exceptions to Flash */
+/* Flush triggered window exceptions to Flash */
 static void process_window_end(void) {
-    /* Overvoltage: Cell1 and Cell2 */
     for (int i = 0; i < 2; i++) {
         if (g_ov_window[i].triggered) {
             BatteryExceptionRecord_t record;
@@ -431,15 +420,12 @@ static void process_window_end(void) {
             record.sub_type = g_ov_window[i].cell_num;
             record.data.ov_data.max_voltage = g_ov_window[i].max_voltage;
             record.data.ov_data.total_voltage = g_ov_window[i].total_voltage;
-            record.record_id = 0;  /* write_exception_record assigns ID */
-
+            record.record_id = 0;
             write_exception_record(&record);
             printk("[BR] WINDOW OV Cell%d: %dmV -> Flash\n",
                 g_ov_window[i].cell_num, g_ov_window[i].max_voltage);
         }
     }
-
-    /* Temperature: charging and discharging */
     for (int i = 0; i < 2; i++) {
         if (g_temp_window[i].triggered) {
             BatteryExceptionRecord_t record;
@@ -449,15 +435,12 @@ static void process_window_end(void) {
             record.data.temp_data.max_temperature = g_temp_window[i].max_temperature;
             record.data.temp_data.reserved = 0;
             record.record_id = 0;
-
             write_exception_record(&record);
             printk("[BR] WINDOW TEMP %s: %d -> Flash\n",
                 (g_temp_window[i].charge_state == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG",
                 g_temp_window[i].max_temperature);
         }
     }
-
-    /* Clear all window trackers */
     memset(g_ov_window, 0, sizeof(g_ov_window));
     memset(g_temp_window, 0, sizeof(g_temp_window));
 }
@@ -465,30 +448,32 @@ static void process_window_end(void) {
 /********************* Public API *********************/
 
 void battery_record_init(void) {
-    g_active_page = 0;
-    g_page_sequence = 0;
-    g_write_ptr = 0;
-    g_exception_counter = 0;
-    g_next_record_id = 1;
+    /* Reset metadata — load_storage_from_flash will overwrite */
+    g_record_storage.magic = 0;
+    g_record_storage.exception_counter = 0;
+    g_record_storage.write_ptr = 0;
+    g_record_storage.active_page = 0;
+    g_record_storage.page_sequence = 0;
     g_window_initialized = false;
+    g_eng_virtual_triggered = false;
 
     memset(g_ov_window, 0, sizeof(g_ov_window));
     memset(g_temp_window, 0, sizeof(g_temp_window));
+    memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
 
     load_storage_from_flash();
+    /* g_next_record_id is set by load_storage_from_flash (max_id+1) */
 
-    printk("\r\n[BR INIT] pages=%d, active=%d, records=%d",
-           LOG_PAGE_COUNT, g_active_page, g_exception_counter);
+    printk("\r\n[BR INIT] pages=%d, active=%d, total=%d, next_id=%d",
+           LOG_PAGE_COUNT, g_record_storage.active_page,
+           g_record_storage.exception_counter, g_next_record_id);
 }
 
-/* Periodic check: 1h window mechanism */
 void battery_record_periodic_check(void) {
     static uint16_t check_counter = 0;
-
-    if (++check_counter < 10) return;  /* Every 1s (10 × 100ms) */
+    if (++check_counter < 10) return;
     check_counter = 0;
 
-    /* Initialize window on first call */
     if (!g_window_initialized) {
         VIC_vModuleDisable();
         g_window_start_seconds = gd->Bat_RTC_Seconds;
@@ -499,34 +484,27 @@ void battery_record_periodic_check(void) {
         printk("[BR] Window initialized\n");
     }
 
-    /* Detect exceptions (RAM only, no Flash) */
+    /* Detect exceptions (RAM only) */
     battery_record_update_overvoltage();
     battery_record_update_temperature();
 
-#if CONFIG_USB_BRIDGE_ENABLE
-    /* Engineering mode: immediate flush when virtual injection triggers exception */
-    {
-        bool eng_triggered = false;
-        uint16_t eng_c1 = usb_bridge_get_eng_cell1();
-        uint16_t eng_c2 = usb_bridge_get_eng_cell2();
-        int16_t eng_temp = usb_bridge_get_eng_temp();
-        if (eng_c1 != ENG_SENTINEL_CELL || eng_c2 != ENG_SENTINEL_CELL ||
-            eng_temp != (int16_t)ENG_SENTINEL_TEMP) {
-            for (int i = 0; i < 2; i++) {
-                if (g_ov_window[i].triggered || g_temp_window[i].triggered) {
-                    eng_triggered = true;
-                    break;
-                }
+    /* Nanfu pattern: immediate flush ONLY when g_eng_virtual_triggered flag set */
+    if (g_eng_virtual_triggered) {
+        g_eng_virtual_triggered = false;
+        bool has_triggered = false;
+        for (int i = 0; i < 2; i++) {
+            if (g_ov_window[i].triggered || g_temp_window[i].triggered) {
+                has_triggered = true;
+                break;
             }
         }
-        if (eng_triggered) {
+        if (has_triggered) {
             process_window_end();
             printk("[BR] Eng mode: immediate flush\n");
         }
     }
-#endif
 
-    /* Check if window has expired */
+    /* Check window expiry */
     uint32_t current_seconds;
     VIC_vModuleDisable();
     current_seconds = gd->Bat_RTC_Seconds;
@@ -538,29 +516,22 @@ void battery_record_periodic_check(void) {
         printk("[BR] New window started\n");
     }
 
-    /* Print RTC for debug */
     TimeStamp_t ts;
     get_current_timestamp(&ts);
     printk("RTC: %04d-%02d-%02d %02d:%02d:%02d\n",
         ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
 }
 
-/* Read exception records from Flash (for USB Bridge telemetry) */
 uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count) {
     if (buf == NULL || max_count == 0) return 0;
-
     uint8_t read_count = 0;
     const uint32_t page_addrs[2] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2};
 
-    /* Read from all valid pages, newest first */
     for (uint8_t p = 0; p < LOG_PAGE_COUNT && read_count < max_count; p++) {
-        /* Start from active page, go backwards */
-        uint8_t page_idx = (g_active_page + LOG_PAGE_COUNT - p) % LOG_PAGE_COUNT;
+        uint8_t page_idx = (g_record_storage.active_page + LOG_PAGE_COUNT - p) % LOG_PAGE_COUNT;
         flash_read_record(page_addrs[page_idx], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
-
         if (g_flash_page_buffer.magic != MAGIC_VALUE) continue;
         if (!verify_page_checksum(&g_flash_page_buffer)) continue;
-
         for (uint8_t i = 0; i < g_flash_page_buffer.page_records_count && read_count < max_count; i++) {
             buf[read_count++] = g_flash_page_buffer.records[i];
         }
@@ -569,48 +540,102 @@ uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t ma
 }
 
 void battery_record_print_next_log(void) {
-    /* Placeholder - re-enable for debug if needed */
+    const uint32_t page_addrs[2] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2};
+    uint8_t printed = 0;
+
+    printk("\r\n=== Exception Record Report ===");
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        flash_read_record(page_addrs[p], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
+        if (g_flash_page_buffer.magic != MAGIC_VALUE) continue;
+        uint8_t cnt = g_flash_page_buffer.page_records_count;
+        if (cnt > MAX_RECORDS_PER_PAGE) cnt = MAX_RECORDS_PER_PAGE;
+
+        for (uint8_t i = 0; i < cnt; i++) {
+            BatteryExceptionRecord_t *r = &g_flash_page_buffer.records[i];
+            printk("\r\n[P%d#%d] id=%d %04d-%02d-%02d %02d:%02d:%02d type=%d sub=%d ",
+                p, i, r->record_id,
+                r->timestamp.year, r->timestamp.month, r->timestamp.day,
+                r->timestamp.hour, r->timestamp.minute, r->timestamp.second,
+                r->error_type, r->sub_type);
+            if (r->error_type == EXCEPTION_TYPE_OVERVOLTAGE) {
+                printk("OV: max=%dmV total=%dmV", r->data.ov_data.max_voltage, r->data.ov_data.total_voltage);
+            } else if (r->error_type == EXCEPTION_TYPE_OVERTEMP || r->error_type == EXCEPTION_TYPE_UNDERTEMP) {
+                const char *state = (r->sub_type == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG";
+                printk("%s: %d.%ddegC", state, r->data.temp_data.max_temperature / 10,
+                    r->data.temp_data.max_temperature % 10);
+            }
+            printed++;
+        }
+    }
+
+    /* Window tracker status */
+    printk("\r\n--- Current Window ---");
+    for (int i = 0; i < 2; i++) {
+        if (g_ov_window[i].triggered)
+            printk("\r\n  OV Cell%d: %dmV", g_ov_window[i].cell_num, g_ov_window[i].max_voltage);
+    }
+    for (int i = 0; i < 2; i++) {
+        if (g_temp_window[i].triggered)
+            printk("\r\n  TEMP %s: %d",
+                (g_temp_window[i].charge_state == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG",
+                g_temp_window[i].max_temperature);
+    }
+    if (!g_ov_window[0].triggered && !g_ov_window[1].triggered &&
+        !g_temp_window[0].triggered && !g_temp_window[1].triggered)
+        printk("\r\n  No exceptions in current window");
+
+    printk("\r\n=== End (%d records) ===\r\n", printed);
 }
 
-/* Erase all exception records */
-void battery_record_erase_all(void) {
-    hal_fmc_erase_page(FLASH_LOG_PAGE1);
-    hal_fmc_erase_page(FLASH_LOG_PAGE2);
+bool battery_record_erase_all(void) {
+    const uint32_t page_addrs[2] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2};
 
-    g_active_page = 0;
-    g_page_sequence = 0;
-    g_write_ptr = 0;
-    g_exception_counter = 0;
+    for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
+        hal_fmc_erase_page(page_addrs[i]);
+        /* Write empty page header (Nanfu pattern) */
+        memset(&g_flash_page_buffer, 0, sizeof(FlashPageLayout_t));
+        g_flash_page_buffer.magic = MAGIC_VALUE;
+        g_flash_page_buffer.page_records_count = 0;
+        g_flash_page_buffer.page_number = i;
+        g_flash_page_buffer.page_seq = 0;
+        g_flash_page_buffer.checksum = calculate_page_checksum(&g_flash_page_buffer);
+        flash_write_record(page_addrs[i], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
+    }
+
+    g_record_storage.magic = MAGIC_VALUE;
+    g_record_storage.exception_counter = 0;
+    g_record_storage.write_ptr = 0;
+    g_record_storage.active_page = 0;
+    g_record_storage.page_sequence = 0;
+    g_record_storage.checksum = calculate_storage_checksum(&g_record_storage);
+
     g_next_record_id = 1;
 
     memset(g_ov_window, 0, sizeof(g_ov_window));
     memset(g_temp_window, 0, sizeof(g_temp_window));
     g_window_initialized = false;
+    memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
 
-    printk("\r\n[BR] All records erased");
+    printk("\r\n[ERASE] All %d log pages erased", LOG_PAGE_COUNT);
+    return true;
 }
 
-/* Reset tracking state without erasing records */
 void battery_record_reset_tracking(void) {
     memset(g_ov_window, 0, sizeof(g_ov_window));
     memset(g_temp_window, 0, sizeof(g_temp_window));
     g_window_initialized = false;
+    memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
     printk("\r\n[BR] Tracking reset");
 }
 
-/* Read single record by page number and record index (for USB Bridge sequential push) */
 bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record) {
-    if (record == NULL || page >= LOG_PAGE_COUNT || index >= MAX_RECORDS_PER_PAGE) {
-        return false;
-    }
+    if (record == NULL || page >= LOG_PAGE_COUNT || index >= MAX_RECORDS_PER_PAGE) return false;
     uint32_t page_addr = GET_ACTIVE_PAGE_ADDR(page);
-    uint32_t record_offset = offsetof(FlashPageLayout_t, records) +
-                             (index * sizeof(BatteryExceptionRecord_t));
-    flash_read_record(page_addr + record_offset, (uint8_t*)record, sizeof(BatteryExceptionRecord_t));
+    uint32_t offset = offsetof(FlashPageLayout_t, records) + (index * sizeof(BatteryExceptionRecord_t));
+    flash_read_record(page_addr + offset, (uint8_t*)record, sizeof(BatteryExceptionRecord_t));
     return true;
 }
 
-/* Get record count for a page (header-only read, 5 bytes) */
 uint8_t battery_record_get_page_count(uint8_t page) {
     if (page >= LOG_PAGE_COUNT) return 0;
     uint32_t addr = GET_ACTIVE_PAGE_ADDR(page);
@@ -618,6 +643,61 @@ uint8_t battery_record_get_page_count(uint8_t page) {
     flash_read_record(addr, (uint8_t*)&hdr, 5);
     if (hdr.magic != MAGIC_VALUE) return 0;
     return (hdr.count <= MAX_RECORDS_PER_PAGE) ? hdr.count : MAX_RECORDS_PER_PAGE;
+}
+
+uint16_t battery_record_get_overtemp_count(void) {
+    uint16_t count = 0;
+    const uint32_t page_addrs[2] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2};
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        flash_read_record(page_addrs[p], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
+        if (g_flash_page_buffer.magic != MAGIC_VALUE) continue;
+        uint8_t n = (g_flash_page_buffer.page_records_count <= MAX_RECORDS_PER_PAGE) ?
+                     g_flash_page_buffer.page_records_count : MAX_RECORDS_PER_PAGE;
+        for (uint8_t i = 0; i < n; i++) {
+            if (g_flash_page_buffer.records[i].error_type == EXCEPTION_TYPE_OVERTEMP)
+                count++;
+        }
+    }
+    return count;
+}
+
+uint16_t battery_record_get_overvolt_count(void) {
+    uint16_t count = 0;
+    const uint32_t page_addrs[2] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2};
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        flash_read_record(page_addrs[p], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
+        if (g_flash_page_buffer.magic != MAGIC_VALUE) continue;
+        uint8_t n = (g_flash_page_buffer.page_records_count <= MAX_RECORDS_PER_PAGE) ?
+                     g_flash_page_buffer.page_records_count : MAX_RECORDS_PER_PAGE;
+        for (uint8_t i = 0; i < n; i++) {
+            if (g_flash_page_buffer.records[i].error_type == EXCEPTION_TYPE_OVERVOLTAGE)
+                count++;
+        }
+    }
+    return count;
+}
+
+bool battery_record_is_tracking_active(void) {
+    for (int i = 0; i < 2; i++) {
+        if (g_ov_window[i].triggered || g_temp_window[i].triggered)
+            return true;
+    }
+    return false;
+}
+
+void battery_record_sleep_check(void) {
+    if (!g_window_initialized) return;
+
+    uint32_t current_seconds;
+    VIC_vModuleDisable();
+    current_seconds = gd->Bat_RTC_Seconds;
+    VIC_vModuleEnable();
+
+    if (is_new_hour(g_window_start_seconds, current_seconds)) {
+        process_window_end();
+        g_window_start_seconds = current_seconds;
+        printk("[BR] Sleep: window flushed\n");
+    }
 }
 
 #endif /* CONFIG_NEW_CCC_LOG_ENABLE */

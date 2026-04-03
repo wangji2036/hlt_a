@@ -37,43 +37,6 @@ typedef struct {
 } ProductInfo_t;  // Total: 20 * 5 = 100 bytes
 
 /********************* Battery Record Structures *********************/
-#define MAX_RECORDS             5           // Maximum number of records
-
-// Bitfield Access Macros
-// ExceptionCache_t.status_flags bitfield layout:
-// bit[0]:   cell1_tracking     - Cell1 overvoltage tracking flag
-// bit[1]:   cell2_tracking     - Cell2 overvoltage tracking flag
-// bit[2]:   temp_tracking      - Temperature abnormal tracking flag
-// bit[3-5]: temp_event_type    - Temperature event type (0=none, 2=over, 3=under)
-// bit[6-7]: charge_state       - Charge/discharge state (0=idle, 1=charge, 2=discharge)
-
-#define CACHE_GET_CELL1_TRACKING(cache)     ((cache)->status_flags & 0x01)
-#define CACHE_SET_CELL1_TRACKING(cache, v)  do { \
-    if (v) (cache)->status_flags |= 0x01; \
-    else (cache)->status_flags &= ~0x01; \
-} while(0)
-
-#define CACHE_GET_CELL2_TRACKING(cache)     (((cache)->status_flags >> 1) & 0x01)
-#define CACHE_SET_CELL2_TRACKING(cache, v)  do { \
-    if (v) (cache)->status_flags |= 0x02; \
-    else (cache)->status_flags &= ~0x02; \
-} while(0)
-
-#define CACHE_GET_TEMP_TRACKING(cache)      (((cache)->status_flags >> 2) & 0x01)
-#define CACHE_SET_TEMP_TRACKING(cache, v)   do { \
-    if (v) (cache)->status_flags |= 0x04; \
-    else (cache)->status_flags &= ~0x04; \
-} while(0)
-
-#define CACHE_GET_TEMP_EVENT_TYPE(cache)    (((cache)->status_flags >> 3) & 0x07)
-#define CACHE_SET_TEMP_EVENT_TYPE(cache, v) do { \
-    (cache)->status_flags = ((cache)->status_flags & 0xC7) | (((v) & 0x07) << 3); \
-} while(0)
-
-#define CACHE_GET_CHARGE_STATE(cache)       (((cache)->status_flags >> 6) & 0x03)
-#define CACHE_SET_CHARGE_STATE(cache, v)    do { \
-    (cache)->status_flags = ((cache)->status_flags & 0x3F) | (((v) & 0x03) << 6); \
-} while(0)
 
 // Timestamp structure (8 bytes)
 typedef struct {
@@ -105,27 +68,28 @@ typedef struct {
     uint32_t record_id;         // 4 bytes: Record sequence number
 } BatteryExceptionRecord_t;     // Total: 20 bytes
 
-// Exception tracking cache (RAM) - optimized version
+// Exception tracking cache (RAM) — X20 dual-cell: 3 independent hour_start fields
 typedef struct {
-    uint8_t  status_flags;          // Bitfield flags (use CACHE_GET/SET macros)
+    uint8_t  status_flags;
     uint8_t  padding1;
-    uint16_t cell1_max_voltage;     // Cell1 realtime max voltage
-    uint16_t cell2_max_voltage;     // Cell2 realtime max voltage
-    int16_t  max_temperature;       // Realtime max temperature (0.1 deg C)
-    uint32_t cell1_hour_start_seconds;   /* OV 1-hour window start for Cell1 */
-    uint32_t cell2_hour_start_seconds;   /* OV 1-hour window start for Cell2 */
-    uint32_t temp_hour_start_seconds;  // Temperature window start seconds
-} ExceptionCache_t;  // ~16 bytes
+    uint16_t cell1_max_voltage;              // Cell1 realtime max voltage
+    uint16_t cell2_max_voltage;              // Cell2 realtime max voltage
+    int16_t  max_temperature;                // Realtime max temperature (0.1 deg C)
+    uint32_t cell1_hour_start_seconds;       // OV window start for Cell1
+    uint32_t cell2_hour_start_seconds;       // OV window start for Cell2
+    uint32_t temp_hour_start_seconds;        // Temperature window start
+} ExceptionCache_t;
 
-// RAM persistent storage structure - optimized version
+// RAM storage metadata (records live in Flash, not RAM — saves ~98B vs old 5-record cache)
 typedef struct {
     uint32_t magic;                 // Magic value
     uint8_t  exception_counter;     // Exception record total count 0-255
-    uint8_t  write_ptr;             // Circular buffer write pointer 0-4
-    uint16_t padding1;              // Alignment to 4-byte boundary
-    BatteryExceptionRecord_t records[MAX_RECORDS];  // 5 exception records
+    uint8_t  write_ptr;             // Write pointer in active page (0-23)
+    uint8_t  active_page;           // Current active page index (0 or 1)
+    uint8_t  page_sequence;         // Page sequence for wear leveling
     uint16_t checksum;              // Simple additive checksum
-} BatteryRecordStorage_t;  // ~110 bytes
+    uint16_t padding;               // Alignment
+} BatteryRecordStorage_t;  // 12 bytes (was ~110 bytes)
 #endif
 
 #if CYCLE_COUNT_FLASH_PERSIST
