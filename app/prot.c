@@ -7,6 +7,7 @@
 #include "_wpc.h"
 #include "config.h"
 #include "tcpm.h"
+#include "buckboost.h"
 
 #define NTC_TEMP_BUFF_SIZE_Max    (                         8)
 #define NTC_TEMP_BUFF_SIZE_Msk    (NTC_TEMP_BUFF_SIZE_Max - 1)
@@ -890,3 +891,42 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 	}
 }
 /*------------------------------------------- POUT_OPP -------------------------------------------*/
+
+/*+++++++++++++++++++++++++++++++++++++++++++ BAT_OV_FORBID +++++++++++++++++++++++++++++++++++++++*/
+void fml_bat_ov_forbid_check(void) {
+    static uint8_t ov_forbid_consec_cnt = 0;
+    if (gd->bat_ov_forbid_flag) {
+        if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
+            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+        }
+        return;
+    }
+
+    /* X20 NU6805 双节: 使用 MCU ADC 独立采样的 cell 电压
+     * cell2_voltage: 全局变量 (app.c 250ms 更新, PC7 - VBAT-)
+     * cell1 = NU6805 总压 - cell2 */
+    extern uint16_t cell2_voltage;
+    uint16_t total = g_buckboost.adc_vbat;
+    uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
+    uint16_t max_cell = (cell1 > cell2_voltage) ? cell1 : cell2_voltage;
+
+    if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD) {
+        ov_forbid_consec_cnt++;
+        printk("\r\n[OV_FORBID] %dmV >= %dmV, cnt=%d",
+               max_cell, OVER_VOLTAGE_FORBID_THRESHOLD, ov_forbid_consec_cnt);
+        if (ov_forbid_consec_cnt >= OVER_VOLTAGE_FORBID_CONSEC_COUNT) {
+            gd->bat_ov_forbid_flag = 1;
+#if OV_FORBID_FLASH_PERSIST
+            /* Persist forbid flag to Flash */
+            cycle_count_save_to_flash();
+            printk("\r\n[OV_FORBID] Persisted to Flash.");
+#else
+            printk("\r\n[OV_FORBID] TRIGGERED! Forbidden until power cycle.");
+#endif
+            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+        }
+    } else {
+        ov_forbid_consec_cnt = 0;
+    }
+}
+/*------------------------------------------- BAT_OV_FORBID --------------------------------------*/

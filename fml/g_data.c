@@ -58,6 +58,24 @@ static uint32_t get_default_rtc_seconds(void) {
 #endif
 }
 #endif
+
+#if CYCLE_COUNT_FLASH_PERSIST
+#include "fmc.h"
+void cycle_count_save_to_flash(void)
+{
+    /* Read all 6 words from config page, update forbid + cycle count, write back */
+    uint32_t cfg[6];
+    for (uint8_t i = 0; i < 6; i++)
+        cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
+    if (gd->bat_ov_forbid_flag)
+        cfg[4] = (uint32_t)gd->bat_ov_forbid_flag;  /* offset+16 = OV_FORBID */
+    cfg[5] = (uint32_t)gd->Battery_cycle_count;      /* offset+20 = cycle count */
+    hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
+    for (uint8_t i = 0; i < 6; i++)
+        hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
+}
+#endif
+
 uint8_t power_on_cnt = 0;
 void ap_data_init(void)
 {

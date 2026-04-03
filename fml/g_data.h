@@ -128,6 +128,10 @@ typedef struct {
 } BatteryRecordStorage_t;  // ~110 bytes
 #endif
 
+#if CYCLE_COUNT_FLASH_PERSIST
+void cycle_count_save_to_flash(void);
+#endif
+
 struct ap_t
 {
 	uint8_t app_info_0; //0-0x2000
@@ -532,6 +536,7 @@ struct gd_t
 	 uint8_t Battery_charger_cnt;
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
+	 uint8_t bat_ov_forbid_flag;   // OV Forbid: 1=permanent shutdown (GB31241 3C)
 	 uint64_t Bat_RTC_Timer;
 #if CONFIG_NEW_CCC_LOG_ENABLE
 	 // System runtime (seconds + milliseconds) - 136 years range

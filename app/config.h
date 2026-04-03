@@ -81,10 +81,19 @@
 
 #define SHIP_MODE_CNT  30                       // ship mode 30 times Q wake-up and no RX,
 
-/*----------- New CCC Log Feature -----------*/
+/*----------- New CCC Log Feature (新国标 GB31241) -----------*/
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
-#define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV threshold (mV); CV=4400mV, +50mV margin
+#define OVER_VOLTAGE_THRESHOLD          4500    // Per-cell OV threshold (mV); aligned with 南孚新国标
+#define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
+#define OVER_VOLTAGE_FORBID_THRESHOLD   (BATTERY_CV_VALUE + 300)  // 4700mV, GB31241 3C permanent forbid
+#define Lion_Battery_Overcharge_Voltage 4500
+#define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
+#define OV_FORBID_FLASH_PERSIST         1       // 1=persist forbid flag to Flash (survives power cycle)
+#define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
 #define CHRG_NTC_OT_TEMP_VALUE          600     // Over-temperature threshold (0.1degC = 60.0degC)
+#define CYCLE_COUNT_FLASH_PERSIST       1       // 1=persist cycle count to Flash
+#define CYCLE_COUNT_FLASH_OFFSET        20      // AP_CFG_ROM_ADDR_BASE + 20
+#define EXCEPTION_WINDOW_SECONDS        120     // Exception record window (seconds): 120=2min, 3600=1h
 
 #define CONFIG_RTC_USE_CUSTOM_TIME      1
 #define CONFIG_RTC_DEFAULT_YEAR         2026

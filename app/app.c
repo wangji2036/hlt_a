@@ -145,6 +145,7 @@ void apl_task_event_handler(uint32_t event)
 			fml_tdie_utp_check(gd->sys_infos.die_temp);
 #if CONFIG_NEW_CCC_LOG_ENABLE
 			battery_record_periodic_check();
+			fml_bat_ov_forbid_check();
 #endif
 			break;
 		case APL_EVT_010ms_POLL:
