@@ -32,10 +32,11 @@ static uint8_t  eng_saved_cycle_count;       /* Real cycle count before override
 static uint32_t eng_entry_virtual_seconds;   /* Virtual RTC seconds at entry */
 static uint8_t  eng_entry_virtual_cycle;     /* Virtual cycle count at entry */
 
-/* Exception record rotation */
-static uint16_t exc_cycle_cnt = 0;
-static uint8_t  exc_rotate_idx = 0;
-static uint8_t  exc_burst_cnt = 0;   /* >0: burst mode, skip interval */
+/* Exception record sequential push (cursor-based, migrated from Nanfu A1052) */
+static uint8_t exc_cursor_page = 0;
+static uint8_t exc_cursor_idx = 0;
+static uint8_t exc_records_sent = 0;
+static uint8_t exc_page_counts[LOG_PAGE_COUNT];
 
 /* Engineering mode virtual override values (sentinel = no override) */
 static uint16_t eng_virtual_cell1 = ENG_SENTINEL_CELL;  /* Virtual Cell1 voltage (mV) */
@@ -257,85 +258,71 @@ void usb_bridge_write_charge_state(void)
 }
 
 /**
- * @brief Write one exception record to WB7720 registers 0x37-0x4D.
+ * @brief Sequential push of exception records to WB7720 (0x37-0x4D).
  *
- * Uses internal rate control: only writes one record every EXC_WRITE_INTERVAL
- * (64) calls. Rotates through valid records in ap->record_storage.
- *
- * Writes 23 bytes:
- *   [0]    = total valid record count (exception_counter, capped at MAX_RECORDS)
- *   [1]    = current record index being written
- *   [2]    = reserved (0x00)
- *   [3-22] = 20-byte BatteryExceptionRecord_t
+ * Migrated from Nanfu A1052: cursor-based sequential traversal of all
+ * Flash pages. Each call pushes one record if WB7720 has consumed the
+ * previous one (handshake via REG_EXC_READY).
  *
  * Called from round-robin step 13.
  */
 void usb_bridge_write_exception_record(void)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
-    uint8_t valid_count;
-    uint8_t buf[23];
+    /* Scan current record counts and always update total */
+    uint8_t total = 0;
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        exc_page_counts[p] = battery_record_get_page_count(p);
+        total += exc_page_counts[p];
+    }
+    hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_TOTAL_COUNT, total);
 
-    if (exc_burst_cnt > 0) {
-        /* Burst mode: write every call until all records pushed */
-        exc_burst_cnt--;
-        exc_cycle_cnt = 0;
-    } else {
-        /* Maintenance mode: slow rotation */
-        exc_cycle_cnt++;
-        if (exc_cycle_cnt < EXC_WRITE_INTERVAL) {
-            return;
-        }
-        exc_cycle_cnt = 0;
+    /* Handshake: check if WB7720 consumed previous record */
+    uint8_t wb_ready = 0;
+    hal_i2cm_read_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, &wb_ready);
+    if (wb_ready == 0xA5) {
+        return;  /* WB7720 hasn't consumed yet, skip this cycle */
     }
 
-    /* Determine how many valid records exist */
-    valid_count = ap->record_storage.exception_counter;
-    if (valid_count > MAX_RECORDS) {
-        valid_count = MAX_RECORDS;
+    if (total == 0) return;
+
+    /* Wrap cursor if out of bounds */
+    if (exc_cursor_page >= LOG_PAGE_COUNT) exc_cursor_page = 0;
+    if (exc_cursor_idx >= exc_page_counts[exc_cursor_page]) {
+        exc_cursor_idx = 0;
     }
 
-    /* 写入前: 清 ready flag，WB7720 看到非 0xA5 则不读，防止半写竞争 */
-    hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0x00);
+    /* Skip empty pages */
+    for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
+        if (exc_page_counts[exc_cursor_page] > 0) break;
+        exc_cursor_page = (exc_cursor_page + 1) % LOG_PAGE_COUNT;
+        exc_cursor_idx = 0;
+    }
 
-    /* If no records, write zeros */
-    if (valid_count == 0) {
-        memset(buf, 0, sizeof(buf));
-        hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                                   REG_EXC_TOTAL_COUNT,
-                                   buf, sizeof(buf));
-        /* 写入完成: 置 ready flag，WB7720 可安全读取 */
+    /* Read and push one record from Flash */
+    BatteryExceptionRecord_t rec;
+    if (battery_record_read_by_page_index(exc_cursor_page, exc_cursor_idx, &rec)
+        && rec.record_id != 0) {
+        hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_CURRENT_IDX, exc_records_sent);
+        hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR, REG_EXC_RECORD_DATA,
+                                   (uint8_t*)&rec, sizeof(BatteryExceptionRecord_t));
         hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0xA5);
-        return;
+        exc_records_sent++;
+
+        /* Advance cursor */
+        exc_cursor_idx++;
+        if (exc_cursor_idx >= exc_page_counts[exc_cursor_page]) {
+            exc_cursor_idx = 0;
+            for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
+                exc_cursor_page = (exc_cursor_page + 1) % LOG_PAGE_COUNT;
+                if (exc_page_counts[exc_cursor_page] > 0) break;
+            }
+        }
+    } else {
+        /* Read failed or empty record — skip to next page */
+        exc_cursor_idx = 0;
+        exc_cursor_page = (exc_cursor_page + 1) % LOG_PAGE_COUNT;
     }
-
-    /* Wrap rotation index within valid record range */
-    if (exc_rotate_idx >= valid_count) {
-        exc_rotate_idx = 0;
-    }
-
-    /* Build 23-byte payload */
-    buf[0] = valid_count;        /* Total valid record count */
-    buf[1] = exc_rotate_idx;     /* Current record index */
-    buf[2] = 0x00;               /* Reserved */
-
-    /* Copy 20-byte record (BatteryExceptionRecord_t) */
-    memcpy(&buf[3],
-           (const void *)&ap->record_storage.records[exc_rotate_idx],
-           sizeof(BatteryExceptionRecord_t));
-
-    hal_i2cm_write_multi_bytes(USB_BRIDGE_WB7720_ADDR,
-                               REG_EXC_TOTAL_COUNT,
-                               buf, sizeof(buf));
-
-    /* Advance rotation for next write */
-    exc_rotate_idx++;
-    if (exc_rotate_idx >= valid_count) {
-        exc_rotate_idx = 0;
-    }
-
-    /* 写入完成: 置 ready flag，WB7720 可安全读取 */
-    hal_i2cm_wirte_one_byte(USB_BRIDGE_WB7720_ADDR, REG_EXC_READY, 0xA5);
 #endif
 }
 
@@ -605,18 +592,16 @@ int16_t  usb_bridge_get_eng_temp(void)  { return eng_virtual_temp; }
 /**
  * @brief Trigger burst sync of N exception records to WB7720.
  *
- * Resets exc_rotate_idx to 0 and sets exc_burst_cnt = count so that
- * usb_bridge_write_exception_record() skips EXC_WRITE_INTERVAL for the
- * next `count` calls, pushing all records at 846ms/record instead of 54s/record.
- *
- * Call after: write_exception_record(), battery_record_init(), battery_record_erase_all().
+ * Resets cursor to page 0 / index 0 for sequential re-push.
+ * Legacy 'count' param unused in sequential mode.
  */
 void usb_bridge_exc_burst(uint8_t count)
 {
 #if CONFIG_NEW_CCC_LOG_ENABLE
-    exc_burst_cnt  = count;
-    exc_rotate_idx = 0;
-    exc_cycle_cnt  = 0;
+    (void)count;
+    exc_cursor_page = 0;
+    exc_cursor_idx = 0;
+    exc_records_sent = 0;
 #endif
 }
 

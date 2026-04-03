@@ -598,4 +598,26 @@ void battery_record_reset_tracking(void) {
     printk("\r\n[BR] Tracking reset");
 }
 
+/* Read single record by page number and record index (for USB Bridge sequential push) */
+bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record) {
+    if (record == NULL || page >= LOG_PAGE_COUNT || index >= MAX_RECORDS_PER_PAGE) {
+        return false;
+    }
+    uint32_t page_addr = GET_ACTIVE_PAGE_ADDR(page);
+    uint32_t record_offset = offsetof(FlashPageLayout_t, records) +
+                             (index * sizeof(BatteryExceptionRecord_t));
+    flash_read_record(page_addr + record_offset, (uint8_t*)record, sizeof(BatteryExceptionRecord_t));
+    return true;
+}
+
+/* Get record count for a page (header-only read, 5 bytes) */
+uint8_t battery_record_get_page_count(uint8_t page) {
+    if (page >= LOG_PAGE_COUNT) return 0;
+    uint32_t addr = GET_ACTIVE_PAGE_ADDR(page);
+    struct { uint32_t magic; uint8_t count; } hdr;
+    flash_read_record(addr, (uint8_t*)&hdr, 5);
+    if (hdr.magic != MAGIC_VALUE) return 0;
+    return (hdr.count <= MAX_RECORDS_PER_PAGE) ? hdr.count : MAX_RECORDS_PER_PAGE;
+}
+
 #endif /* CONFIG_NEW_CCC_LOG_ENABLE */

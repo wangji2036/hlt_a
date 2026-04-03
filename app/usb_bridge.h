@@ -70,11 +70,6 @@
 #define REG_PROD_BATTERY_MODEL      0xCE    // 20B ASCII
 #define REG_PROD_PROD_DATE          0xE2    // 20B ASCII
 
-/*===================== Timing Constants =====================*/
-#define EXC_WRITE_INTERVAL          64      // Maintenance interval in round-robin cycles
-                                            // 64 x 846ms ≈ 54s per record (maintenance only)
-                                            // Fast initial sync uses burst mode instead
-
 /*===================== Function Declarations =====================*/
 
 /* --- Initialization (called from wb7720_init) --- */

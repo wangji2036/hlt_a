@@ -71,6 +71,8 @@ uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t ma
 void battery_record_print_next_log(void);
 void battery_record_erase_all(void);
 void battery_record_reset_tracking(void);
+bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record);
+uint8_t battery_record_get_page_count(uint8_t page);
 
 #endif /* CONFIG_NEW_CCC_LOG_ENABLE */
 #endif /* __BAT_RECORD_H__ */
