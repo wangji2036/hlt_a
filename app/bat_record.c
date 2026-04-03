@@ -36,14 +36,14 @@ static uint32_t g_next_record_id = 1;
 /* Static page buffer (avoid stack overflow with 496B struct) */
 static FlashPageLayout_t g_flash_page_buffer;
 
-/* Print state */
+/* Print state (reserved for debug print functions) */
 static struct {
     uint8_t current_page;
     uint8_t record_index;
     uint8_t total_records;
     uint8_t records_printed;
     uint8_t initialized;
-} print_state = {0};
+} print_state __attribute__((unused)) = {0};
 
 /********************* Flash Operation Functions *********************/
 
