@@ -525,10 +525,20 @@ void battery_record_periodic_check(void) {
         printk("[BR] New window started\n");
     }
 
-    TimeStamp_t ts;
-    get_current_timestamp(&ts);
-    printk("RTC: %04d-%02d-%02d %02d:%02d:%02d\n",
-        ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
+    /* Status log: record counts + window state */
+    {
+        uint16_t ov_cnt = battery_record_get_overvolt_count();
+        uint16_t ot_cnt = battery_record_get_overtemp_count();
+        TimeStamp_t ts;
+        get_current_timestamp(&ts);
+        printk("[BR] %04d-%02d-%02d %02d:%02d:%02d total=%d OV=%d OT=%d id=%d pg=%d/%d w=[%d%d|%d%d]\n",
+            ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
+            g_record_storage.exception_counter, ov_cnt, ot_cnt,
+            g_next_record_id,
+            g_record_storage.active_page, g_record_storage.write_ptr,
+            g_ov_window[0].triggered, g_ov_window[1].triggered,
+            g_temp_window[0].triggered, g_temp_window[1].triggered);
+    }
 }
 
 uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count) {
