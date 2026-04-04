@@ -14,12 +14,12 @@
 
 // Cycle-based CV voltage reduction
 #define CONFIG_CYCLE_CV_REDUCTION_ENABLE	1	// 1=enable, 0=disable
-#define CYCLE_CV_TIER1_COUNT				70
-#define CYCLE_CV_TIER1_OFFSET				200   // CV reduced by 200mV after 70 cycles
-#define CYCLE_CV_TIER2_COUNT				140
-#define CYCLE_CV_TIER2_OFFSET				300   // CV reduced by 300mV after 140 cycles
-#define CYCLE_CV_TIER3_COUNT				210
-#define CYCLE_CV_TIER3_OFFSET				400   // CV reduced by 400mV after 210 cycles
+#define CYCLE_CV_TIER1_COUNT				68
+#define CYCLE_CV_TIER1_OFFSET				100   // CV reduced by 100mV after 68 cycles (4.3V/cell)
+#define CYCLE_CV_TIER2_COUNT				135
+#define CYCLE_CV_TIER2_OFFSET				150   // CV reduced by 150mV after 135 cycles (4.25V/cell)
+#define CYCLE_CV_TIER3_COUNT				200
+#define CYCLE_CV_TIER3_OFFSET				200   // CV reduced by 200mV after 200 cycles (4.2V/cell)
 #define POWERBANK_BUCK_EVK_V02
 
 /*.....7.5w Debug......*/
