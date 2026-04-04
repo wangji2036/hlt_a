@@ -366,7 +366,13 @@ void battery_record_update_temperature(void) {
     } else {
         ntc_temp = gd->sys_infos.ntc_temp_wpc;
     }
-    bool is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);
+    bool is_abnormal;
+    if (mode == BUCKBOOST_CHAGER_MODE)
+        is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);   /* 60°C charging */
+    else if (mode == BUCKBOOST_DISCHG_MODE)
+        is_abnormal = (ntc_temp > DISG_NTC_OT_TEMP_VALUE);   /* 65°C discharging */
+    else
+        is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);   /* default: use charging threshold */
     uint8_t event_type = EXCEPTION_TYPE_OVERTEMP;
 #else
     uint16_t ntc_resistance = g_buckboost.adc_tbat1;

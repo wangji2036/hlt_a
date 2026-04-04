@@ -90,7 +90,8 @@
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST         1       // 1=persist forbid flag to Flash (survives power cycle)
 #define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
-#define CHRG_NTC_OT_TEMP_VALUE          600     // Over-temperature threshold (0.1degC = 60.0degC)
+#define CHRG_NTC_OT_TEMP_VALUE          600     // Charging over-temperature threshold (0.1degC = 60.0degC)
+#define DISG_NTC_OT_TEMP_VALUE          650     // Discharging over-temperature threshold (0.1degC = 65.0degC)
 #define CYCLE_COUNT_FLASH_PERSIST       1       // 1=persist cycle count to Flash
 #define CYCLE_COUNT_FLASH_OFFSET        20      // AP_CFG_ROM_ADDR_BASE + 20
 #define EXCEPTION_WINDOW_SECONDS        120     // Exception record window (seconds): 120=2min, 3600=1h
