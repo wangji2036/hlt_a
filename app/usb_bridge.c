@@ -505,9 +505,6 @@ void usb_bridge_periodic_update(void)
         }
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_TOTAL_COUNT, total);
 
-        uint8_t wb_ready = 0;
-        hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, &wb_ready);
-        if (wb_ready == 0xA5) goto exc_done;
         if (total == 0) goto exc_done;
 
         if (exc_cursor_page >= LOG_PAGE_COUNT) exc_cursor_page = 0;
@@ -523,6 +520,9 @@ void usb_bridge_periodic_update(void)
         BatteryExceptionRecord_t rec;
         if (battery_record_read_by_page_index(exc_cursor_page, exc_cursor_idx, &rec)
             && rec.record_id != 0) {
+            /* NU17112 主导握手: 先清 READY → 写记录 → 设 READY
+             * (WB7720 不清 READY，由 NU17112 每轮自行重置) */
+            hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0x00);
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_CURRENT_IDX, exc_records_sent);
             hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_EXC_RECORD, (uint8_t*)&rec, 20);
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0xA5);
