@@ -80,6 +80,10 @@ typedef struct {
     uint32_t temp_hour_start_seconds;        // Temperature window start
 } ExceptionCache_t;
 
+// Virtual parameter sentinel values (shared by usb_bridge and bat_record)
+#define VIRTUAL_CELL_SENTINEL   0xFFFF
+#define VIRTUAL_TEMP_SENTINEL   0x7FFF
+
 // RAM storage metadata (records live in Flash, not RAM — saves ~98B vs old 5-record cache)
 typedef struct {
     uint32_t magic;                 // Magic value
@@ -501,6 +505,10 @@ struct gd_t
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
 	 uint8_t bat_ov_forbid_flag;   // OV Forbid: 1=permanent shutdown (GB31241 3C)
+	 uint8_t  eng_mode_active;     // Engineering mode flag (1=active)
+	 uint16_t eng_virtual_cell1;   // Virtual Cell1 voltage (0xFFFF=no override)
+	 uint16_t eng_virtual_cell2;   // Virtual Cell2 voltage (0xFFFF=no override)
+	 int16_t  eng_virtual_temp;    // Virtual temperature (0x7FFF=no override)
 	 uint64_t Bat_RTC_Timer;
 #if CONFIG_NEW_CCC_LOG_ENABLE
 	 // System runtime (seconds + milliseconds) - 136 years range

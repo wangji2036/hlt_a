@@ -23,7 +23,6 @@ uint8_t g_wb7720_awake;    // WB7720 wakeup state (1=awake, 0=sleep), separate f
 
 void wb7720_init(void);
 void ubsd_wb7720_report_update(void);
-void ubsd_wb7720_wakeup(void);
 
 void fml_task_init(void)
 {
@@ -147,281 +146,42 @@ void fml_task_event_handler(uint32_t event)
 
 void ubsd_wb7720_report_update(void)
 {
-
-	#define SOC_pct 				0x00
-	#define Capacity_mAh 			0x01
-	#define VBAT_mV 				0x05
-	#define IBAT_mA 				0x07
-	#define TEMP_dC 				0x09
-	#define CycleCount 				0x0b
-	#define R_internal_mOhm 		0x0d
-	
-	#define SOH_pct_x100 			0x0f
-	#define CELL1_VOLTAGE_MV 		0x2D	
-    #define CELL2_VOLTAGE_MV 		0x2F
-
-	#define PCB_Temp_dC				0x35
-
-	#define REG_SLEEP           	0x4E    // REG_SLEEP_CMD (WB7720 config.h:70)
-	#define REG_WAKEUP          	0x4F    // REG_WAKE_CMD  (WB7720 config.h:71)
-
-	uint16_t write_buf;
-
-	static uint8_t cnt = 0;
-	static bool is_usb_enable = false;
-	static uint8_t qc_delay_cnt __attribute__((unused)) = 0;
-
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	/* --- CC-driven WB7720 Sleep/Wake ---
-	 * Read CC to detect cable presence (we are SINK with Rd,
-	 * so a connected host shows Rp: CC_RP_DEF / RP_1_5 / RP_3_0).
-	 * WB7720 awake ONLY when USB_COM active AND cable connected. */
+	/* CC-driven force_usb_mode gate:
+	 * Triple-click sets usb_comm_activated, CC presence confirms cable.
+	 * usb_bridge_periodic_update() uses force_usb_mode to gate telemetry. */
 	{
 		bool want_awake = false;
-		if (gd->usb_comm_activated)
-		{
+		if (gd->usb_comm_activated) {
 			enum tc_cc_status cc1, cc2;
 			hal_tcpc_get_cc(1, &cc1, &cc2);
-			printk("[CC] cc1=%d cc2=%d tc=%d\n", cc1, cc2, g_tc[1].usb_tc_state);
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
-			/* SINK mode: look for remote Rp */
 			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
 				want_awake = true;
 #else
-			/* SOURCE mode: look for remote Rd */
 			if (cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
 				want_awake = true;
 #endif
 		}
+		gd->force_usb_mode = want_awake ? 1 : 0;
+		g_wb7720_awake = gd->force_usb_mode;
+	}
 
-		if (!want_awake)
-		{
-			if (is_usb_enable)
-			{
-				ubsd_wb7720_sleep();
-				is_usb_enable = 0;
-				g_wb7720_awake = 0;
-				printk("[USB] CC lost or COM off -> sleep\n");
-			}
-			cnt = 0;
-			return;
-		}
+	/* DPDM MUX: keep routed when awake */
+	if (gd->force_usb_mode) {
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
+	}
+#endif
 
-		/* want_awake == true: USB_COM active + CC connected */
-		if (!is_usb_enable)
-		{
-			ubsd_wb7720_wakeup();
+	/* All telemetry + eng/prod/time now handled inside usb_bridge */
 #if CONFIG_USB_BRIDGE_ENABLE
-			usb_bridge_reset_product_info();
-			printk("[USB] CC detected -> wakeup, PI reset\n");
-#endif
-			is_usb_enable = 1;
-			g_wb7720_awake = 1;
-		}
-	}
-#endif
-
-	if(cnt == 0)
-	{
-		write_buf = gd->real_soc_show;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,SOC_pct,(uint8_t*)&write_buf,1);
-	}
-	else if(cnt == 1)
-	{
-		write_buf = CONFIG_BATTERY_CAPACITY_MAH;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,Capacity_mAh,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 2)
-	{
-		/* 总电压 = PB6(BAT2+) - PD3(VBAT-)，PD3 有 3.3V 掉电保护 */
-		static int16_t vbat_minus_fml = 0;
-		uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
-		uint16_t pd3_adc   = hal_badc_meas(_BADC_CH_PD3_ADC9);
-		if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
-			uint16_t vdd_mv = hal_badc_get_vdd_mv();
-			int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
-				vbat_minus_fml += (raw - vbat_minus_fml) >> BADC_PD3_VBATN_EMA_SHIFT;
-		}
-		uint16_t total_vbat = (uint16_t)((int16_t)pb6_bat2p - vbat_minus_fml);
-		write_buf = total_vbat;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,VBAT_mV,(uint8_t*)&write_buf,2);
-		printk("PB6=%u PD3=%u vbat-=%d total=%u NU6805=%d cell2=%u\n",
-		       pb6_bat2p, pd3_adc, vbat_minus_fml, total_vbat, g_buckboost.adc_vbat, cell2_voltage);
-	}
-	else if(cnt == 3)
-	{
-		write_buf = g_buckboost.adc_ibat;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,IBAT_mA,(uint8_t*)&write_buf,2);
-		printk("adc_ibat = %d\n",g_buckboost.adc_ibat);
-	}
-	else if(cnt == 4)
-	{
-		g_buckboost.batTemp = (int16_t)binary_search((uint16_t *)ntc_3435_tbl, sizeof(ntc_3435_tbl) / sizeof(ntc_3435_tbl[0]), g_buckboost.adc_tbat1) - 19;
-		write_buf =  g_buckboost.batTemp;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,TEMP_dC,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 5)
-	{
-		write_buf = gd->Battery_cycle_count;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CycleCount,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 6)
-	{
-		write_buf = gd->Bat_Rdc;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,R_internal_mOhm,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 7)
-	{
-		write_buf = gd->Bat_SoH;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,SOH_pct_x100,(uint8_t*)&write_buf,2);
-	}else if(cnt == 8)
-	{
-		{
-		/* PC7=BADC4: Cell2 = PC7采样 - PD3负压 */
-			static int16_t vbat_minus_c2 = 0;
-			uint16_t pc7_adc = hal_badc_meas(_BADC_CH_PC7_ADC4);
-			uint16_t pc7_mv  = (uint16_t)(pc7_adc * BADC_PC7_CELL2_DIV_RATIO);
-			uint16_t pd3_adc = hal_badc_meas(_BADC_CH_PD3_ADC9);
-			if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
-				uint16_t vdd_mv = hal_badc_get_vdd_mv();
-				int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
-					vbat_minus_c2 += (raw - vbat_minus_c2) >> BADC_PD3_VBATN_EMA_SHIFT;
-			}
-			cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus_c2);
-			printk("PC7=%u pc7_v=%u vbat-=%d cell2=%u\n", pc7_adc, pc7_mv, vbat_minus_c2, cell2_voltage);
-		}
-		write_buf = cell2_voltage;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL2_VOLTAGE_MV,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 9)
-	{
-		/* Cell1 = 总电压(PB6 - VBAT-) - Cell2(PC7) */
-		static int16_t vbat_minus_c1 = 0;
-		uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
-		uint16_t pd3_adc   = hal_badc_meas(_BADC_CH_PD3_ADC9);
-		if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
-			uint16_t vdd_mv = hal_badc_get_vdd_mv();
-			int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
-				vbat_minus_c1 += (raw - vbat_minus_c1) >> BADC_PD3_VBATN_EMA_SHIFT;
-		}
-		uint16_t total_vbat = (uint16_t)((int16_t)pb6_bat2p - vbat_minus_c1);
-		write_buf = total_vbat - cell2_voltage;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,CELL1_VOLTAGE_MV,(uint8_t*)&write_buf,2);
-	}
-	else if(cnt == 10)
-	{
-		g_buckboost.batTemp = gd->sys_infos.ntc_temp_typec;
-		write_buf =  g_buckboost.batTemp;
-		hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR,PCB_Temp_dC,(uint8_t*)&write_buf,2);
-	}
-#if CONFIG_USB_BRIDGE_ENABLE
-	else if(cnt == 11)
-	{
-		usb_bridge_write_exception_counts();
-	}
-	else if(cnt == 12)
-	{
-		usb_bridge_write_charge_state();
-	}
-	else if(cnt == 13)
-	{
-		usb_bridge_write_exception_record();
-	}
-	else if(cnt == 14)
-	{
-		usb_bridge_check_engineering_mode();
-		usb_bridge_check_time_sync();
-	}
-	else if(cnt == 15)
-	{
-		usb_bridge_check_production_mode();
-	}
-	else if(cnt == 16)
-	{
-		usb_bridge_ensure_product_info();
-	}
-	else if(cnt == 17)
-	{
-		usb_bridge_check_eng_test_cmds();
-	}
-#endif
-
-	cnt++;
-#if CONFIG_USB_BRIDGE_ENABLE
-	if(cnt >= 18) cnt = 0;
-#else
-	if(cnt >= 11) cnt = 0;
-#endif
-
-#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	/* Sleep/Wake already handled above via CC detection.
-	 * Just set DPDM MUX when awake (we reach here only if want_awake). */
-	DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
-	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
-#else
-	if(g_port.port_state[1] != PORT_STATE_NONE)
-	{
-		if(g_usb_pd_s.explicit_contract || gd->force_usb_mode)
-		{
-			DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-			DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
-			DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
-
-			if(is_usb_enable == 0)
-			{
-				ubsd_wb7720_wakeup();
-#if CONFIG_USB_BRIDGE_ENABLE
-				usb_bridge_reset_product_info();
-				printk("[USB] wakeup, PI reset, cnt=%d\n", cnt);
-#endif
-				is_usb_enable = 1;
-			}
-		}
-		else
-		{
-			qc_delay_cnt++;
-			if(qc_delay_cnt == 10)
-			{
-				if(g_port.port_state[1] == PORT_STATE_SOURCE )
-				{
-					usb_dpdm_select(PORT1_INDEX);
-					osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);
-				}
-			}
-			if(qc_delay_cnt >= 100) qc_delay_cnt = 100;
-		}
-	}
-	else
-	{
-		if(is_usb_enable == 1)
-		{
-			ubsd_wb7720_sleep();
-			is_usb_enable = 0;
-		}
-
-		qc_delay_cnt = 0;
-	}
+	usb_bridge_periodic_update();
 #endif
 }
 
 
-void ubsd_wb7720_sleep(void)
-{
-	hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR,REG_SLEEP,0x01);
-	printk("enter sleep mode\n");
-}
-
-
-void ubsd_wb7720_wakeup(void)
-{
-	/* WAKE_CMD 重试: 第1次触发 EXTI 唤醒，读回操作提供自然延时 */
-	for (int retry = 0; retry < 1; retry++) {
-		hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_WAKEUP, 0x01);
-		uint8_t readback = 0;
-		hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_WAKEUP, &readback);
-		printk("[WB] wake r=%d rb=%02X\n", retry, readback);
-	}
-}
+/* ubsd_wb7720_sleep/wakeup moved to usb_bridge.c (usb_bridge_sleep/wakeup) */
 
 

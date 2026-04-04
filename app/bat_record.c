@@ -11,9 +11,7 @@
 #include "../hal/regdef.h"
 #include "../hal/badc.h"
 #include "_fml.h"
-#if CONFIG_USB_BRIDGE_ENABLE
-#include "usb_bridge.h"
-#endif
+/* Virtual values accessed via gd->eng_virtual_cell1/cell2/temp (no usb_bridge.h needed) */
 
 #if CONFIG_NEW_CCC_LOG_ENABLE
 
@@ -319,35 +317,32 @@ void battery_record_update_overvoltage(void) {
     uint16_t total_voltage, cell1_voltage;
     bool using_virtual = false;
 
-#if CONFIG_USB_BRIDGE_ENABLE
-    {
-        uint16_t eng_c1 = usb_bridge_get_eng_cell1();
-        uint16_t eng_c2 = usb_bridge_get_eng_cell2();
-        if (eng_c1 != ENG_SENTINEL_CELL || eng_c2 != ENG_SENTINEL_CELL) {
-            using_virtual = true;
-            uint16_t real_c2 = cell2_voltage;
-            uint16_t real_total = g_buckboost.adc_vbat;
-            cell1_voltage = (eng_c1 != ENG_SENTINEL_CELL) ? eng_c1 : (real_total > real_c2 ? real_total - real_c2 : 0);
-            uint16_t c2_val = (eng_c2 != ENG_SENTINEL_CELL) ? eng_c2 : real_c2;
-            total_voltage = cell1_voltage + c2_val;
-            process_cell_overvoltage(1, cell1_voltage, total_voltage);
-            process_cell_overvoltage(2, c2_val, total_voltage);
-        } else {
-            total_voltage = g_buckboost.adc_vbat;
-            cell1_voltage = (total_voltage > cell2_voltage) ? (total_voltage - cell2_voltage) : 0;
-            process_cell_overvoltage(1, cell1_voltage, total_voltage);
-            process_cell_overvoltage(2, cell2_voltage, total_voltage);
-        }
+    /* Check gd-> virtual values directly (Nanfu pattern) */
+    if (gd->eng_mode_active &&
+        (gd->eng_virtual_cell1 != VIRTUAL_CELL_SENTINEL ||
+         gd->eng_virtual_cell2 != VIRTUAL_CELL_SENTINEL)) {
+        using_virtual = true;
+        uint16_t real_c2 = cell2_voltage;
+        uint16_t real_total = g_buckboost.adc_vbat;
+        cell1_voltage = (gd->eng_virtual_cell1 != VIRTUAL_CELL_SENTINEL)
+                        ? gd->eng_virtual_cell1
+                        : (real_total > real_c2 ? real_total - real_c2 : 0);
+        uint16_t c2_val = (gd->eng_virtual_cell2 != VIRTUAL_CELL_SENTINEL)
+                          ? gd->eng_virtual_cell2 : real_c2;
+        total_voltage = cell1_voltage + c2_val;
+        process_cell_overvoltage(1, cell1_voltage, total_voltage);
+        process_cell_overvoltage(2, c2_val, total_voltage);
+    } else {
+        total_voltage = g_buckboost.adc_vbat;
+        cell1_voltage = (total_voltage > cell2_voltage) ? (total_voltage - cell2_voltage) : 0;
+        process_cell_overvoltage(1, cell1_voltage, total_voltage);
+        process_cell_overvoltage(2, cell2_voltage, total_voltage);
     }
-#else
-    total_voltage = g_buckboost.adc_vbat;
-    cell1_voltage = (total_voltage > cell2_voltage) ? (total_voltage - cell2_voltage) : 0;
-    process_cell_overvoltage(1, cell1_voltage, total_voltage);
-    process_cell_overvoltage(2, cell2_voltage, total_voltage);
-#endif
 
-    /* Nanfu pattern: flag deferred flush on virtual injection */
+    /* Consume virtual values + flag deferred flush (Nanfu pattern) */
     if (using_virtual) {
+        gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
+        gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
         g_eng_virtual_triggered = true;
     }
 #elif(BUCKBOOST_USED_NU6801 == 1)
@@ -363,19 +358,14 @@ void battery_record_update_temperature(void) {
 
 #if (BUCKBOOST_USED_NU6805 == 1)
     int16_t ntc_temp;
-#if CONFIG_USB_BRIDGE_ENABLE
-    {
-        int16_t eng_temp = usb_bridge_get_eng_temp();
-        if (eng_temp != (int16_t)ENG_SENTINEL_TEMP) {
-            ntc_temp = eng_temp;
-            using_virtual = true;
-        } else {
-            ntc_temp = gd->sys_infos.ntc_temp_wpc;
-        }
+
+    /* Check gd-> virtual temp directly (Nanfu pattern) */
+    if (gd->eng_mode_active && gd->eng_virtual_temp != (int16_t)VIRTUAL_TEMP_SENTINEL) {
+        ntc_temp = gd->eng_virtual_temp;
+        using_virtual = true;
+    } else {
+        ntc_temp = gd->sys_infos.ntc_temp_wpc;
     }
-#else
-    ntc_temp = gd->sys_infos.ntc_temp_wpc;
-#endif
     bool is_abnormal = (ntc_temp > CHRG_NTC_OT_TEMP_VALUE);
     uint8_t event_type = EXCEPTION_TYPE_OVERTEMP;
 #else
@@ -405,7 +395,9 @@ void battery_record_update_temperature(void) {
             (mode == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG", ntc_temp);
     }
 
+    /* Consume virtual value + flag deferred flush (Nanfu pattern) */
     if (using_virtual) {
+        gd->eng_virtual_temp = (int16_t)VIRTUAL_TEMP_SENTINEL;
         g_eng_virtual_triggered = true;
     }
 }

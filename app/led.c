@@ -11,6 +11,7 @@
 #include "buckboost.h"
 #include "_fml.h"
 #include "sleep.h"
+#include "usb_bridge.h"
 extern volatile uint16_t sys_ticks;
 extern uint16_t key_ui_cnt;
 extern uint8_t g_wb7720_awake;
@@ -475,7 +476,7 @@ void ui_update(void)
 	{
 		gd->usb_comm_activated = 0;
 		usb_comm_unlock();
-		ubsd_wb7720_sleep();
+		usb_bridge_sleep();
 		comm_feedback_cnt = 2;  // 1 flash feedback
 		printk("USB comm exit by key %d\n", key_flag);
 		key_flag = 0;
@@ -796,7 +797,7 @@ void key_triple_click_process(void)
 	else
 	{
 		usb_comm_unlock();
-		ubsd_wb7720_sleep();
+		usb_bridge_sleep();
 		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
 		printk("USB comm deactivated by triple-click\n");
 	}

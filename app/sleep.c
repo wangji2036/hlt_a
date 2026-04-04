@@ -13,6 +13,7 @@
 #include "wdt.h"
 #include "ecap.h"
 #include "usb_qc.h"
+#include "usb_bridge.h"
 #include"i2cm.h"
 #include"buckboost.h"
 #include"nu6801.h"
@@ -188,7 +189,7 @@ void SLP_vNormalToSleep(void)
 /*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
     hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
-	ubsd_wb7720_sleep();
+	usb_bridge_sleep();
 #endif
     TCPC->CCA_CTRL.WORD = 0;
     TCPC->CCB_CTRL.WORD = 0;
@@ -500,7 +501,7 @@ void SLP_vSleepToSleep(void)
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x03);
 
-	 	ubsd_wb7720_sleep();
+	 	usb_bridge_sleep();
 	}
 #endif
     GPA->PDEN.BITS.PIN0 = 1;
@@ -516,7 +517,7 @@ void SLP_vSleepToSleep(void)
 	 * 重新发送 SLEEP CMD 确保 WB7720 回到 STOP 模式。 */
 	_SET_I2CM_SDA_OUTPUT();
 	_SET_I2CM_SCL_OUTPUT();
-	ubsd_wb7720_sleep();
+	usb_bridge_sleep();
 
     VIC_vModuleDisable();
     hal_wdt_feed();
