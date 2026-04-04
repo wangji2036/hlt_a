@@ -58,6 +58,7 @@
 #define PROD_BATTERY_MFR        0xBA    // 20 bytes
 #define PROD_BATTERY_MODEL      0xCE    // 20 bytes
 #define PROD_PROD_DATE          0xE2    // 20 bytes
+#define PROD_SERIAL             0x18    // 20 bytes (serial number)
 
 /* ===== Magic / Constants ===== */
 #define ENG_MODE_MAGIC          0xA5

@@ -75,6 +75,7 @@ void hal_nu6805_buckboost_usb_a_dischg(bool en);
 void hal_nu6805_buckboost_vbus_dischg(bool en);
 uint16_t hal_nu6805_buckboost_get_bat_temperature(void);
 void hal_nu6805_buckboost_set_cv(void);
+void hal_nu6805_update_cv_by_cycle(uint16_t cycle_count);
 uint8_t hal_nu6805_buckboost_get_protect(void);
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void);
 void hal_nu6805_buckboost_set_ovp(uint16_t set_volt);

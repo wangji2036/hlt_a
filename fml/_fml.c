@@ -99,31 +99,35 @@ void fml_task_event_handler(uint32_t event)
 				Cyclic();
 
 
-				if(gd->Battery_cycle_count <= 50 )
 				{
-					gd->Bat_Rdc = P_R0Dsg_mOhm[0];
-					gd->Bat_SoH = 100;
-				}
-				else
-				{
-					gd->Bat_Rdc = P_R0Dsg_mOhm[0] + P_R0Dsg_mOhm[0] * ( gd->Battery_cycle_count - 50) * 5 / 10000;
-					gd->Bat_SoH = 100 - ( gd->Battery_cycle_count - 50) * 5 / 100;
-					if(gd->Bat_SoH < 0) gd->Bat_SoH = 0;
+					uint16_t cyc = GET_CYCLE_COUNT(gd);
+					if(cyc <= 50)
+					{
+						gd->Bat_Rdc = P_R0Dsg_mOhm[0];
+						gd->Bat_SoH = 100;
+					}
+					else
+					{
+						gd->Bat_Rdc = P_R0Dsg_mOhm[0] + P_R0Dsg_mOhm[0] * (cyc - 50) * 5 / 10000;
+						gd->Bat_SoH = 100 - (cyc - 50) * 5 / 100;
+						if(gd->Bat_SoH < 0) gd->Bat_SoH = 0;
+					}
 				}
 
 				// Cycle-based CV voltage adjustment
 #if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1 && BUCKBOOST_USED_NU6805 == 1)
 				{
+					static uint16_t last_cv_offset = 0xFFFF;  // force first update
+					uint16_t cyc = GET_CYCLE_COUNT(gd);
 					uint16_t cv_offset_mv = 0;
-					if (gd->Battery_cycle_count >= CYCLE_CV_TIER3_COUNT) {
+					if (cyc >= CYCLE_CV_TIER3_COUNT) {
 						cv_offset_mv = CYCLE_CV_TIER3_OFFSET;
-					} else if (gd->Battery_cycle_count >= CYCLE_CV_TIER2_COUNT) {
+					} else if (cyc >= CYCLE_CV_TIER2_COUNT) {
 						cv_offset_mv = CYCLE_CV_TIER2_OFFSET;
-					} else if (gd->Battery_cycle_count >= CYCLE_CV_TIER1_COUNT) {
+					} else if (cyc >= CYCLE_CV_TIER1_COUNT) {
 						cv_offset_mv = CYCLE_CV_TIER1_OFFSET;
 					}
 
-					static uint16_t last_cv_offset = 0xFFFF;  // force first update
 					if (cv_offset_mv != last_cv_offset) {
 						uint16_t adjusted_cv_pack = (BATTERY_CV_VALUE - cv_offset_mv) * CONFIG_BATTERY_CELL_COUNT;
 						hal_nu6805_buckboost_charge_target_volt(adjusted_cv_pack);

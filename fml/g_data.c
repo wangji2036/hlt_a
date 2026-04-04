@@ -69,7 +69,7 @@ void cycle_count_save_to_flash(void)
         cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
     if (gd->bat_ov_forbid_flag)
         cfg[4] = (uint32_t)gd->bat_ov_forbid_flag;  /* offset+16 = OV_FORBID */
-    cfg[5] = (uint32_t)gd->Battery_cycle_count;      /* offset+20 = cycle count */
+    cfg[5] = (uint32_t)GET_CYCLE_COUNT(gd);            /* offset+20 = cycle count (16-bit) */
     hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
     for (uint8_t i = 0; i < 6; i++)
         hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
@@ -250,6 +250,7 @@ void gd_data_init(void)
 			power_on_cnt = 40;
 		gd->Battery_charger_cnt = 0;
 		gd->Battery_cycle_count = 0;
+		gd->Battery_cycle_count_hi = 0;
 
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
@@ -354,6 +355,11 @@ void product_info_read(ProductInfo_t *info) {
 	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
 		info->battery_prod_date[i] = __read_08bits(ADDR_BATTERY_PROD_DATE + i);
 	}
+
+	// Read serial number
+	for (i = 0; i < SERIAL_FIELD_SIZE; i++) {
+		info->serial[i] = __read_08bits(ADDR_BATTERY_SERIAL + i);
+	}
 }
 
 void product_info_write(const ProductInfo_t *info) {
@@ -363,7 +369,7 @@ void product_info_write(const ProductInfo_t *info) {
 	// (Erase the entire page)
 	hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
 
-	// 2. (Write product information - 100 bytes, 4-byte aligned)
+	// 2. (Write product information - 120 bytes, 4-byte aligned)
 	src_data = (const uint8_t *)info;
 
 	for (i = 0; i < sizeof(ProductInfo_t); i += 4) {

@@ -40,9 +40,9 @@ static uint8_t exc_cursor_idx = 0;
 static uint8_t exc_records_sent = 0;
 static uint8_t exc_page_counts[LOG_PAGE_COUNT];
 
-/* Engineering mode cycle tracking */
-static uint8_t  eng_saved_cycle_count = 0;
-static uint8_t  eng_entry_virtual_cycle = 0;
+/* Engineering mode cycle tracking (16-bit to match GET_CYCLE_COUNT) */
+static uint16_t eng_saved_cycle_count = 0;
+static uint16_t eng_entry_virtual_cycle = 0;
 
 /*===================== ProductInfo Sync =====================*/
 
@@ -61,6 +61,8 @@ void usb_bridge_reset_product_info(void)
                                (uint8_t*)info.battery_model, 20);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_PROD_DATE,
                                (uint8_t*)info.battery_prod_date, 20);
+    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_SERIAL,
+                               (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
 }
 
 /*===================== Init =====================*/
@@ -87,11 +89,11 @@ void usb_bridge_sleep(void)
         gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
         gd->eng_virtual_temp  = (int16_t)VIRTUAL_TEMP_SENTINEL;
 
-        uint8_t cycles_added = (gd->Battery_cycle_count >= eng_entry_virtual_cycle)
-                              ? (gd->Battery_cycle_count - eng_entry_virtual_cycle) : 0;
-        gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
+        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
+                              ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
+        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
 
-        uint16_t cycle_wb = gd->Battery_cycle_count;
+        uint16_t cycle_wb = GET_CYCLE_COUNT(gd);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&cycle_wb, 2);
     }
 
@@ -110,7 +112,7 @@ void usb_bridge_wakeup(void)
 
     usb_bridge_reset_product_info();
 
-    uint16_t cycle_buf = gd->Battery_cycle_count;
+    uint16_t cycle_buf = GET_CYCLE_COUNT(gd);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle_buf, 2);
 }
 
@@ -158,23 +160,33 @@ static void usb_bridge_apply_eng_datetime(void)
 
 static void usb_bridge_exit_eng_mode(void)
 {
-    uint8_t cycles_added = (gd->Battery_cycle_count >= eng_entry_virtual_cycle)
-                          ? (gd->Battery_cycle_count - eng_entry_virtual_cycle) : 0;
-    gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
+    if (eng_entry_virtual_cycle != eng_saved_cycle_count) {
+        /* Virtual cycle was injected -- keep current value */
+        printk("[eng] exit: cycle=%d (injected, kept)\n", GET_CYCLE_COUNT(gd));
+    } else {
+        /* No injection (sentinel) -- restore real + increments */
+        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
+                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
+        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
+        printk("[eng] exit: cycle=%d (restored)\n", GET_CYCLE_COUNT(gd));
+    }
+
+    /* Update CV voltage based on final cycle count */
+#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+    hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
 
     gd->eng_mode_active = 0;
     gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
     gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
     gd->eng_virtual_temp  = (int16_t)VIRTUAL_TEMP_SENTINEL;
 
-    uint16_t cycle_wb = gd->Battery_cycle_count;
+    uint16_t cycle_wb = GET_CYCLE_COUNT(gd);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&cycle_wb, 2);
 
 #if CYCLE_COUNT_FLASH_PERSIST
     cycle_count_save_to_flash();
 #endif
-
-    printk("eng exit: cycle=%d\n", gd->Battery_cycle_count);
 }
 
 /*===================== Engineering Mode Check =====================*/
@@ -193,12 +205,18 @@ static void usb_bridge_check_eng_mode(void)
         uint16_t cycle = 0;
         hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
         if (cycle != 0xFFFF) {
-            eng_saved_cycle_count = gd->Battery_cycle_count;
-            gd->Battery_cycle_count = (uint8_t)cycle;
-            eng_entry_virtual_cycle = (uint8_t)cycle;
+            eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
+            SET_CYCLE_COUNT(gd, cycle);
+            eng_entry_virtual_cycle = cycle;
         } else {
-            eng_entry_virtual_cycle = gd->Battery_cycle_count;
+            eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
+            eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
         }
+
+        /* Update CV voltage based on (possibly injected) cycle count */
+#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+        hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
 
         usb_bridge_read_virtual_params();
 
@@ -242,10 +260,10 @@ static void usb_bridge_check_eng_cmd(void)
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_BUSY);
 
         /* Settle delta */
-        uint8_t cycles_added = (gd->Battery_cycle_count >= eng_entry_virtual_cycle)
-                              ? (gd->Battery_cycle_count - eng_entry_virtual_cycle) : 0;
-        gd->Battery_cycle_count = eng_saved_cycle_count + cycles_added;
-        eng_saved_cycle_count = gd->Battery_cycle_count;
+        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
+                              ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
+        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
+        eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
 
         /* Re-read params */
         usb_bridge_read_virtual_params();
@@ -255,11 +273,16 @@ static void usb_bridge_check_eng_cmd(void)
         uint16_t cycle = 0;
         hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
         if (cycle != 0xFFFF) {
-            gd->Battery_cycle_count = (uint8_t)cycle;
-            eng_entry_virtual_cycle = (uint8_t)cycle;
+            SET_CYCLE_COUNT(gd, cycle);
+            eng_entry_virtual_cycle = cycle;
         } else {
-            eng_entry_virtual_cycle = gd->Battery_cycle_count;
+            eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
         }
+
+        /* Update CV voltage based on refreshed cycle count */
+#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+        hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
 
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_OK);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_ERASE_CMD, 0x00);
@@ -303,6 +326,8 @@ static void usb_bridge_check_prod_mode(void)
                               (uint8_t*)info.battery_model, 20);
     hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_PROD_DATE,
                               (uint8_t*)info.battery_prod_date, 20);
+    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_SERIAL,
+                              (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
 
     product_info_write(&info);
 
@@ -387,27 +412,32 @@ void usb_bridge_periodic_update(void)
         write_buf = vbat_cached;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_VBAT_MV, (uint8_t*)&write_buf, 2);
     }
-    /* ---- cnt 3: IBAT ---- */
+    /* ---- cnt 3: IBAT (0 when idle/shutdown) ---- */
     else if (cnt == 3)
     {
-        write_buf = g_buckboost.adc_ibat;
+        int16_t ibat = g_buckboost.adc_ibat;
+        /* SHUTDOWN mode: force 0 (NU6805 returns stale discharge value in idle) */
+        if (g_buckboost.woke_mode == BUCKBOOST_SHUTDOWM_MODE)
+            ibat = 0;
+        write_buf = (uint16_t)ibat;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_IBAT_MA, (uint8_t*)&write_buf, 2);
     }
-    /* ---- cnt 4: Temperature (batTemp pre-computed in app.c 100ms poll) ---- */
+    /* ---- cnt 4: Temperature (0.1°C units for HID report) ---- */
     else if (cnt == 4)
     {
-        /* Engineering mode: override with virtual temp if set */
         if (gd->eng_mode_active && gd->eng_virtual_temp != (int16_t)VIRTUAL_TEMP_SENTINEL) {
-            write_buf = (uint16_t)gd->eng_virtual_temp;
+            write_buf = (uint16_t)gd->eng_virtual_temp;           /* already 0.1°C */
         } else {
-            write_buf = (uint16_t)g_buckboost.batTemp;
+            /* TypeC NTC: °C → ×10 for 0.1°C units (matches WB7720 HID format) */
+            int16_t temp_c = gd->sys_infos.ntc_temp_typec;
+            write_buf = (uint16_t)(temp_c * 10);
         }
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_TEMP_DC, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 5: Cycle Count ---- */
     else if (cnt == 5)
     {
-        write_buf = gd->Battery_cycle_count;
+        write_buf = GET_CYCLE_COUNT(gd);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 6: Internal Resistance ---- */

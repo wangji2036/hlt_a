@@ -18,23 +18,26 @@
 #define G_DATA_RAM_ADDR_BASE    (0x20000200)
 #if CONFIG_NEW_CCC_LOG_ENABLE
 // (Product information Flash address definitions)
-#define PRODUCT_INFO_FIELD_SIZE 20      // 20 bytes per info
-#define PRODUCT_INFO_VERSION    0x0001  // - version magic
-#define ADDR_MANUFACTURER_NAME    (AP_CFG_ROM_ADDR_PRO_INFO + 0)   // manufacturer
-#define ADDR_MODEL_NAME           (AP_CFG_ROM_ADDR_PRO_INFO  + 20)  // model
-#define ADDR_BATTERY_MFR          (AP_CFG_ROM_ADDR_PRO_INFO  + 40)  // bat manufacturer
-#define ADDR_BATTERY_MODEL        (AP_CFG_ROM_ADDR_PRO_INFO  + 60)  // bat model
-#define ADDR_BATTERY_PROD_DATE    (AP_CFG_ROM_ADDR_PRO_INFO  + 80)  // battery date
-#define ADDR_PRODUCT_INFO_VERSION (AP_CFG_ROM_ADDR_PRO_INFO  + 100) // version identify
+#define PRODUCT_INFO_FIELD_SIZE 20      // 20 bytes per field
+#define SERIAL_FIELD_SIZE       20      // 20 bytes for serial number
+#define PRODUCT_INFO_VERSION    0x0004  // version magic (aligned with Nanfu)
+#define ADDR_MANUFACTURER_NAME    (AP_CFG_ROM_ADDR_PRO_INFO + 0)
+#define ADDR_MODEL_NAME           (AP_CFG_ROM_ADDR_PRO_INFO + 20)
+#define ADDR_BATTERY_MFR          (AP_CFG_ROM_ADDR_PRO_INFO + 40)
+#define ADDR_BATTERY_MODEL        (AP_CFG_ROM_ADDR_PRO_INFO + 60)
+#define ADDR_BATTERY_PROD_DATE    (AP_CFG_ROM_ADDR_PRO_INFO + 80)
+#define ADDR_BATTERY_SERIAL       (AP_CFG_ROM_ADDR_PRO_INFO + 100)
+#define ADDR_PRODUCT_INFO_VERSION (AP_CFG_ROM_ADDR_PRO_INFO + 120)
 
-// Product information structure)
+// Product information structure (aligned with Nanfu: 6 fields, 120 bytes)
 typedef struct {
-	char manufacturer_name[PRODUCT_INFO_FIELD_SIZE];  //  (Manufacturer name)
-	char model_name[PRODUCT_INFO_FIELD_SIZE];         //   (Model name)
-	char battery_mfr[PRODUCT_INFO_FIELD_SIZE];        //   (Battery manufacturer)
-	char battery_model[PRODUCT_INFO_FIELD_SIZE];      //  (Battery model)
-	char battery_prod_date[PRODUCT_INFO_FIELD_SIZE];  //  (Battery production date)
-} ProductInfo_t;  // Total: 20 * 5 = 100 bytes
+	char manufacturer_name[PRODUCT_INFO_FIELD_SIZE];
+	char model_name[PRODUCT_INFO_FIELD_SIZE];
+	char battery_mfr[PRODUCT_INFO_FIELD_SIZE];
+	char battery_model[PRODUCT_INFO_FIELD_SIZE];
+	char battery_prod_date[PRODUCT_INFO_FIELD_SIZE];
+	char serial[SERIAL_FIELD_SIZE];
+} ProductInfo_t;  // Total: 20 * 6 = 120 bytes
 
 /********************* Battery Record Structures *********************/
 
@@ -83,6 +86,11 @@ typedef struct {
 // Virtual parameter sentinel values (shared by usb_bridge and bat_record)
 #define VIRTUAL_CELL_SENTINEL   0xFFFF
 #define VIRTUAL_TEMP_SENTINEL   0x7FFF
+
+// 16-bit cycle count accessor macros (lo=Battery_cycle_count, hi=Battery_cycle_count_hi)
+#define GET_CYCLE_COUNT(gd)  ((uint16_t)(gd)->Battery_cycle_count | ((uint16_t)(gd)->Battery_cycle_count_hi << 8))
+#define SET_CYCLE_COUNT(gd, v) do { (gd)->Battery_cycle_count = (uint8_t)((v) & 0xFF); \
+                                     (gd)->Battery_cycle_count_hi = (uint8_t)(((uint16_t)(v)) >> 8); } while(0)
 
 // RAM storage metadata (records live in Flash, not RAM — saves ~98B vs old 5-record cache)
 typedef struct {
@@ -501,6 +509,7 @@ struct gd_t
 	 uint8_t bat_dead_flag_with_snk1;
 
 	 uint8_t Battery_cycle_count;
+	 uint8_t Battery_cycle_count_hi;
 	 uint8_t Battery_charger_cnt;
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;

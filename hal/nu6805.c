@@ -390,6 +390,22 @@ uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
 	return 0;
 }
 
+#if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+void hal_nu6805_update_cv_by_cycle(uint16_t cycle_count)
+{
+	uint16_t cv_offset_mv = 0;
+	if (cycle_count >= CYCLE_CV_TIER3_COUNT) {
+		cv_offset_mv = CYCLE_CV_TIER3_OFFSET;
+	} else if (cycle_count >= CYCLE_CV_TIER2_COUNT) {
+		cv_offset_mv = CYCLE_CV_TIER2_OFFSET;
+	} else if (cycle_count >= CYCLE_CV_TIER1_COUNT) {
+		cv_offset_mv = CYCLE_CV_TIER1_OFFSET;
+	}
+	uint16_t adjusted_cv_pack = (BATTERY_CV_VALUE - cv_offset_mv) * BAT_CELL_NUM;
+	hal_nu6805_buckboost_charge_target_volt(adjusted_cv_pack);
+}
+#endif
+
 #endif
 
 
