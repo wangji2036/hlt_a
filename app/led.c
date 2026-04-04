@@ -32,6 +32,7 @@ volatile uint8_t charge_flag = 0;
 // following variable will be update to be GB data.
 //uint8_t soc_show = 0;// SOC value, for display
 static uint8_t flash_flag;//1:charging flashing,2, Error - all flashing
+static uint8_t charge_cycle_counted;  // 1=cycle count already incremented this charge session
 static uint8_t flash_light_on;//flash control, 1 means on state when flash, 0 means off state.
 static uint8_t ui_scan_index;// for scan index
 #ifdef LED_DISPLAY
@@ -609,17 +610,26 @@ void ui_update(void)
 	 if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
     {
         zero_soc_cnt = 0;
-		if (gd->real_soc_show >= 100) 
+		if (gd->real_soc_show >= 100)
 		{
 			// Requirement 5: Fully charged, solid lights
 			 buckboost_ops.set_work_mode(0x00);
 			 //clean full chaegr
 			 hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0x10);
+			 /* Cycle count: increment once per charge-to-full (Nanfu bat.c:327 pattern) */
+			 if (!charge_cycle_counted) {
+				 charge_cycle_counted = 1;
+				 SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
+#if CYCLE_COUNT_FLASH_PERSIST
+				 cycle_count_save_to_flash();
+#endif
+			 }
         flash_flag = 0;
 		} else {
 			//buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 			// Requirement 4: Charging, last LED blinks
 			flash_flag = 1;
+			charge_cycle_counted = 0;  /* Reset: next charge-to-100 will count */
 		}
 		// if(bat_charge_ntc_ot_flag)
 		// {
