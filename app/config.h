@@ -83,10 +83,10 @@
 
 /*----------- New CCC Log Feature (新国标 GB31241) -----------*/
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
-#define OVER_VOLTAGE_THRESHOLD          4500    // Per-cell OV threshold (mV); aligned with 南孚新国标
+#define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
-#define OVER_VOLTAGE_FORBID_THRESHOLD   (BATTERY_CV_VALUE + 300)  // 4700mV, GB31241 3C permanent forbid
-#define Lion_Battery_Overcharge_Voltage 4500
+#define OVER_VOLTAGE_FORBID_THRESHOLD   (BATTERY_CV_VALUE + 200)  // 4600mV, GB31241 3C permanent forbid
+#define Lion_Battery_Overcharge_Voltage 4450
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST         1       // 1=persist forbid flag to Flash (survives power cycle)
 #define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
