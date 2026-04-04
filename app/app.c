@@ -146,6 +146,25 @@ void apl_task_event_handler(uint32_t event)
 #if CONFIG_NEW_CCC_LOG_ENABLE
 			battery_record_periodic_check();
 			fml_bat_ov_forbid_check();
+
+			/* Cycle count: cumulative charge integration (standard definition)
+			 * 1 cycle = total charge-in reaches CONFIG_BATTERY_CAPACITY_MAH
+			 * Accumulates charging current × time each 100ms tick.
+			 * Unit: mA per 100ms tick. Threshold: capacity_mAh × 36000 ticks/hour */
+			{
+				static uint32_t charge_accum = 0;
+				#define CYCLE_CHARGE_THRESHOLD  ((uint32_t)CONFIG_BATTERY_CAPACITY_MAH * 36000UL)
+				if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.adc_ibat > 0) {
+					charge_accum += (uint32_t)g_buckboost.adc_ibat;
+					if (charge_accum >= CYCLE_CHARGE_THRESHOLD) {
+						charge_accum -= CYCLE_CHARGE_THRESHOLD;
+						SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
+#if CYCLE_COUNT_FLASH_PERSIST
+						cycle_count_save_to_flash();
+#endif
+					}
+				}
+			}
 #endif
 			break;
 		case APL_EVT_010ms_POLL:
