@@ -461,23 +461,6 @@ void battery_record_init(void) {
            g_record_storage.exception_counter, g_next_record_id);
 }
 
-/* Force immediate detection + flush (called from usb_bridge on eng entry/refresh) */
-void battery_record_force_check(void) {
-    if (!g_window_initialized) return;
-    battery_record_update_overvoltage();
-    battery_record_update_temperature();
-    if (g_eng_virtual_triggered) {
-        g_eng_virtual_triggered = false;
-        for (int i = 0; i < 2; i++) {
-            if (g_ov_window[i].triggered || g_temp_window[i].triggered) {
-                process_window_end();
-                printk("[BR] Force flush\n");
-                break;
-            }
-        }
-    }
-}
-
 void battery_record_periodic_check(void) {
     static uint16_t check_counter = 0;
     if (++check_counter < 10) return;

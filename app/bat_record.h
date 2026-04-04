@@ -64,7 +64,6 @@ void    battery_record_init(void);
 void    battery_record_update_overvoltage(void);
 void    battery_record_update_temperature(void);
 void    battery_record_periodic_check(void);
-void    battery_record_force_check(void);
 uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count);
 void    battery_record_print_next_log(void);
 bool    battery_record_erase_all(void);

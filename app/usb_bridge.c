@@ -220,9 +220,6 @@ static void usb_bridge_check_eng_mode(void)
 
         usb_bridge_read_virtual_params();
 
-        /* Immediate detection + flush: skip periodic_check 1s counter */
-        battery_record_force_check();
-
         printk("eng enter: saved=%d virt=%d\n", eng_saved_cycle_count, eng_entry_virtual_cycle);
     }
     else if (gd->eng_mode_active && work_mode == 0x00) {
@@ -271,9 +268,6 @@ static void usb_bridge_check_eng_cmd(void)
         /* Re-read params */
         usb_bridge_read_virtual_params();
         usb_bridge_apply_eng_datetime();
-
-        /* Immediate detection + flush after refresh */
-        battery_record_force_check();
 
         /* Re-read cycle */
         uint16_t cycle = 0;
