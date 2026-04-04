@@ -218,7 +218,8 @@ static void usb_bridge_check_eng_mode(void)
         hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
 
-        usb_bridge_read_virtual_params();
+        /* Virtual params NOT read here — only on Refresh (0xAA) trigger.
+         * Prevents CC flap re-entry from re-loading stale virtual values. */
 
         printk("eng enter: saved=%d virt=%d\n", eng_saved_cycle_count, eng_entry_virtual_cycle);
     }

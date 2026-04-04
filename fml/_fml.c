@@ -151,23 +151,36 @@ void fml_task_event_handler(uint32_t event)
 void ubsd_wb7720_report_update(void)
 {
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	/* CC-driven force_usb_mode gate:
-	 * Triple-click sets usb_comm_activated, CC presence confirms cable.
-	 * usb_bridge_periodic_update() uses force_usb_mode to gate telemetry. */
+	/* CC-driven force_usb_mode gate with debounce:
+	 * Immediate wake on CC detect, debounced sleep (5 consecutive misses = ~235ms) */
 	{
-		bool want_awake = false;
+		static uint8_t cc_lost_cnt = 0;
+		#define CC_DEBOUNCE_COUNT  5  /* 5 × 47ms ≈ 235ms debounce */
+
+		bool cc_present = false;
 		if (gd->usb_comm_activated) {
 			enum tc_cc_status cc1, cc2;
 			hal_tcpc_get_cc(1, &cc1, &cc2);
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
 			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
-				want_awake = true;
+				cc_present = true;
 #else
 			if (cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
-				want_awake = true;
+				cc_present = true;
 #endif
 		}
-		gd->force_usb_mode = want_awake ? 1 : 0;
+
+		if (cc_present) {
+			cc_lost_cnt = 0;
+			gd->force_usb_mode = 1;
+		} else {
+			if (cc_lost_cnt < CC_DEBOUNCE_COUNT) {
+				cc_lost_cnt++;
+				/* Keep force_usb_mode=1 during debounce — don't trigger sleep */
+			} else {
+				gd->force_usb_mode = 0;
+			}
+		}
 		g_wb7720_awake = gd->force_usb_mode;
 	}
 
