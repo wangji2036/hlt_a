@@ -239,6 +239,9 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
 	}
     *cc1 = hal_tcpc_to_typec_cc(cc_status & 0x03,sink);
     *cc2 = hal_tcpc_to_typec_cc((cc_status & 0x0c) >>2,sink);
+
+    /* Force CCA CC2 to OPEN — this board only uses CC1 (PD2), CC2 (PC8) is repurposed */
+    if(tc_index == 0) *cc2 = TYPEC_CC_OPEN;
 }
 
 enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)
