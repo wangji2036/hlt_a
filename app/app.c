@@ -146,6 +146,7 @@ void apl_task_event_handler(uint32_t event)
 #if CONFIG_NEW_CCC_LOG_ENABLE
 			battery_record_periodic_check();
 			fml_bat_ov_forbid_check();
+			fml_bat_uv_forbid_check();
 
 			/* Cycle count: cumulative charge integration (standard definition)
 			 * 1 cycle = total charge-in reaches CONFIG_BATTERY_CAPACITY_MAH

@@ -930,3 +930,34 @@ void fml_bat_ov_forbid_check(void) {
     }
 }
 /*------------------------------------------- BAT_OV_FORBID --------------------------------------*/
+
+/*+++++++++++++++++++++++++++++++++++++++++++ BAT_UV_FORBID +++++++++++++++++++++++++++++++++++++++*/
+void fml_bat_uv_forbid_check(void) {
+    static uint8_t uv_forbid_consec_cnt = 0;
+    if (gd->bat_uv_forbid_flag) {
+        if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
+            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+        }
+        return;
+    }
+
+    extern uint16_t cell2_voltage;
+    uint16_t total = g_buckboost.adc_vbat;
+    if (total == 0) return;  /* ADC not ready */
+    uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
+    uint16_t min_cell = (cell1 < cell2_voltage) ? cell1 : cell2_voltage;
+
+    if (min_cell > 0 && min_cell <= UNDER_VOLTAGE_FORBID_THRESHOLD) {
+        uv_forbid_consec_cnt++;
+        printk("\r\n[UV_FORBID] %dmV <= %dmV, cnt=%d",
+               min_cell, UNDER_VOLTAGE_FORBID_THRESHOLD, uv_forbid_consec_cnt);
+        if (uv_forbid_consec_cnt >= UV_FORBID_CONSEC_COUNT) {
+            gd->bat_uv_forbid_flag = 1;
+            printk("\r\n[UV_FORBID] TRIGGERED! Forbidden until power cycle.");
+            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+        }
+    } else {
+        uv_forbid_consec_cnt = 0;
+    }
+}
+/*------------------------------------------- BAT_UV_FORBID --------------------------------------*/

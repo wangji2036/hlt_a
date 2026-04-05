@@ -229,7 +229,7 @@ static void ui_update_led(void)
 
 
       	 }
-      else if(gd->bat_ov_forbid_flag)
+      else if(gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)
 		{
 			/* OV Forbid: all LEDs blink fast (same as Nanfu pattern) */
 			if(flash_light % 4 < 2) soc_show_ram_led = 0x1F;

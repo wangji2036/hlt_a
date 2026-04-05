@@ -43,6 +43,7 @@ void fml_pout_opp_init(void);
 void fml_pout_opp_check(uint16_t, uint16_t);
 /*--------------------------------------------------------------------------*/
 void fml_bat_ov_forbid_check(void);
+void fml_bat_uv_forbid_check(void);
 /*--------------------------------------------------------------------------*/
 
 #endif /* PROT_H_ */
