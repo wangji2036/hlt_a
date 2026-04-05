@@ -9,7 +9,7 @@
 #define TX_FW_VER                               0x15
 
 
-#define BATTERY_CV_VALUE					4400  // [NEW-VICTOR] 07/16
+#define BATTERY_CV_VALUE					4350
 #define CONFIG_NU6801_BATLOW_VOLT			2500 // bat low, bat dead   [NEW-VICTOR]
 
 // Cycle-based CV voltage reduction
@@ -85,7 +85,7 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
 #define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
-#define OVER_VOLTAGE_FORBID_THRESHOLD   (BATTERY_CV_VALUE + 200)  // 4600mV, GB31241 3C permanent forbid
+#define OVER_VOLTAGE_FORBID_THRESHOLD   4600    // Per-cell OV permanent forbid (mV), GB31241
 #define Lion_Battery_Overcharge_Voltage 4450
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST         0       // 0=RAM only, cleared by power cycle
