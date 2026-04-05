@@ -389,8 +389,8 @@ void hal_gpio_init(void)
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
-	GPC->PDEN.BITS.PIN8 = 0;
-	GPC->MODE.BITS.PIN8 = 0; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
+	GPC->PDEN.BITS.PIN8 = 1;  // pull-down to avoid floating
+	GPC->MODE.BITS.PIN8 = 2; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED — CC2 unused, set as ADC
 
 
 	/* PD0 */
@@ -736,8 +736,8 @@ void hal_gpio_init_default(void)
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
-	GPC->PDEN.BITS.PIN8 = 0;
-	GPC->MODE.BITS.PIN8 = 0; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
+	GPC->PDEN.BITS.PIN8 = 1;  // pull-down to avoid floating
+	GPC->MODE.BITS.PIN8 = 2; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED — CC2 unused, set as ADC
 	/* PD0 */
 	GPD->I_EN.BITS.PIN0 = 0;//1;
 	GPD->MODE.BITS.PIN0 = 0;//1; //00:PD0 01:BADC8 10:DM_C2 11:RESERVED

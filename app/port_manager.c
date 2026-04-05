@@ -29,6 +29,8 @@ extern uint8_t charge_led_run;
 
 void port_manager_set_state(enum port_state_e state)
 {
+	if (state == PORT_INHANDLING) printk("[ST:IH]\n");
+	else if (g_port.state == PORT_INHANDLING) printk("[ST:RDY]\n");
 	g_port.state = state;
 }
 
@@ -114,6 +116,7 @@ void port_enum_port0_connect_closed(void)
 		}
 #endif
 		port_manager_set_state(PORT_IDLE_OR_READY);
+		printk("[IH-]\n");
 	}
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE  && pdlib_get_tc_state(PORT0_INDEX)  == TC_Disable)  // 锟斤拷锟铰匡拷锟斤拷toogle
@@ -1311,6 +1314,16 @@ void port_enum_scan_handle(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated) return;
 #endif
+	{
+		static uint8_t last_tc = 0xFF, last_st = 0xFF;
+		uint8_t tc = pdlib_get_tc_state(PORT0_INDEX);
+		uint8_t st = g_port.port_state[PORT0_INDEX];
+		if (tc != last_tc || st != last_st) {
+			printk("[P0] tc=%d->%d st=%d->%d\n", last_tc, tc, last_st, st);
+			last_tc = tc; last_st = st;
+		}
+	}
+	static uint16_t inhandling_stuck_cnt = 0;
 	if(gd->flag11&&(time_ticks - gd->timer_cnt>=3000))
 	{
 		gd->flag11 = 0;
@@ -1322,6 +1335,12 @@ void port_enum_scan_handle(void)
 	}
 	if(g_port.state != PORT_IDLE_OR_READY)
 	{
+		if(++inhandling_stuck_cnt > 5000)  /* 5s watchdog: force recovery from stuck INHANDLING */
+		{
+			printk("[PM] INHANDLING stuck >5s, force IDLE ih=%d\n", g_port.inhandle_port);
+			port_manager_set_state(PORT_IDLE_OR_READY);
+			inhandling_stuck_cnt = 0;
+		}
 		if(g_port.port_event & PORT0_EVENT_UNCONNECT && g_port.inhandle_port != PORT0_INDEX)				//TTPEC0
 		{
 			g_port.port_event &= ~PORT0_EVENT_UNCONNECT;
@@ -1339,12 +1358,14 @@ void port_enum_scan_handle(void)
 		return;
 	}
 
+	inhandling_stuck_cnt = 0;
 
 	if(g_port.port_event & PORT0_EVENT_UNCONNECT)				//TTPEC0
 	{
 		g_port.inhandle_port = 0;
 		g_port.port_event &= ~PORT0_EVENT_UNCONNECT;
 		port_manager_set_state(PORT_INHANDLING);
+		printk("[IH+]\n");
 		osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_CLOSED);
 	}
 	else if(g_port.port_event & PORT1_EVENT_UNCONNECT) 			//TYPEC1

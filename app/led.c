@@ -686,6 +686,16 @@ void key_sigle_click_process(void)
 		buckboost_fault_restore();
 
 }
+#if OV_FORBID_KEY_CLEAR_ENABLE
+	if (gd->bat_ov_forbid_flag) {
+		gd->bat_ov_forbid_flag = 0;
+		printk("\r\n[OV_FORBID] Cleared by key press.");
+	}
+	if (gd->bat_uv_forbid_flag) {
+		gd->bat_uv_forbid_flag = 0;
+		printk("\r\n[UV_FORBID] Cleared by key press.");
+	}
+#endif
 	gd->typec_scp =0;
 	gd->vbus_ovp =0;
 
