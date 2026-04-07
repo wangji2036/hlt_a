@@ -21,7 +21,7 @@ app \
 fml \
 gauge \
 hal \
-libpowerbank \
+lib \
 osal \
 power \
 startup \

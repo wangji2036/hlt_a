@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lm -L"../util" -lpowerbank
+LIBS := -lm
 

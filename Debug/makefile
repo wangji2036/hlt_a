@@ -12,7 +12,7 @@ RM := rm -rf
 -include fml/subdir.mk
 -include gauge/subdir.mk
 -include hal/subdir.mk
--include libpowerbank/subdir.mk
+-include lib/subdir.mk
 -include osal/subdir.mk
 -include power/subdir.mk
 -include startup/subdir.mk
