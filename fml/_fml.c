@@ -90,6 +90,7 @@ void fml_task_event_handler(uint32_t event)
 			break;
 		case APL_EVT_GAUGE:
 			battery_task_handle();
+			gd->real_soc_show = g_bat.bat_level_ui;
 			if(power_on_cnt)
 			{
 				power_on_cnt--;

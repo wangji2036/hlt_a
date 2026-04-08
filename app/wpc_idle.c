@@ -19,7 +19,7 @@
 #include "wpc_nego.h"
 
 
-uint8_t rx_may_still_be_flag;
+static uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
 static uint8_t qdt_have_obj_count;
 static uint8_t qdt_obj_remove_count;

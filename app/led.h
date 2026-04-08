@@ -1,13 +1,5 @@
 #ifndef LED_H_
 #define LED_H_
-
-#include "config.h"
-
-#if SUPPORT_LED_LOG
-	#define led_printk 	printk
-#else
-	#define led_printk(...)
-#endif
 #define _UI_PIN1_PORT     GPA
 #define _UI_PIN2_PORT     GPC
 #define _UI_PIN3_PORT     GPC
@@ -29,8 +21,9 @@
 #define _PIN_LEVEL_LO     (0)
 #define _KEY_LEVEL    (_KEY_PORT->D_IN.BITS._KEY_PINx)
 // for long press and click time definition, can update according to real application
-#define LONG_PRESS_TIME_MS 3000
+#define LONG_PRESS_TIME_MS 3000   // [NEW-VICTOR] ½«2Ãë¸Ä³É3s
 #define DOUBLE_CLICK_TIME_MS 1000
+#define KEY_UI_DISPLAY_TICKS  40    // [NEW-VICTOR]  ui_update() µ÷ÓÃÖÜÆÚ 250 ms, 40¡Á250 ms ¡Ö 10 s
 #define _SET_ALL_PINS_IN_PUT() do{\
 		_UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 0; _UI_PIN1_PORT->I_EN.BITS._UI_PIN1_PINx = 1;\
 		_UI_PIN2_PORT-> O_EN.BITS._UI_PIN2_PINx = 0; _UI_PIN2_PORT->I_EN.BITS._UI_PIN2_PINx = 1;\
@@ -57,23 +50,10 @@ enum led_state_t {
 	ELED_STS_CHARGED  = 4,
 	ELED_STS_ERROR    = 5,
 };
-
-#define UI_EVENT_STATE_CHANGE		0x01ul << 0
-#define UI_EVENT_KEY_CLICK			0x01ul << 1
-#define UI_EVENT_FAULT				0x01ul << 2
-#define UI_EVENT_KEY_LONG			0x01ul << 3
-#define UI_EVENT_QDT_CALI_START     0x01ul << 4
-#define UI_EVENT_QDT_CALI_SUCCESS   0x01ul << 5
-#define UI_EVENT_BAT_FULL            0x01ul << 6
-
-#define KEY_UI_DISPLAY_TICKS         20
-
-extern uint8_t ui_evt;
 void ui_update(void);
 void ui_display (void);
 void led_init(void);
 void led_display(void);
 void detectSingleKey(void);
 void initKey(void);
-void led_all_off_before_sleep(void);
 #endif /* LED_H_ */
