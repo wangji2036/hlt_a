@@ -144,12 +144,12 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 {
 	if(tc_index == 0)
 	{
-		buckboost_ops.typca_dischg_en(en);
+		buckboost_ops.typcb_dischg_en(en);
 	}
 
 	if(tc_index == 1)
 	{
-		buckboost_ops.typcb_dischg_en(en);
+		buckboost_ops.typca_dischg_en(en);
 	}
 }
 
@@ -159,9 +159,9 @@ void hal_tcpc_set_gate_en(uint8_t tc_index,bool en)
 {
 	//printk("gate[%d]:%d\n",tc_index,en);
 	if(tc_index == 0)
-		buckboost_set_typeca_gate_en(en);
-	else if(tc_index == 1)
 		buckboost_set_typecb_gate_en(en);
+	else if(tc_index == 1)
+		buckboost_set_typeca_gate_en(en);
 		
 	else if(tc_index == 2)
 		buckboost_set_usb_a_gate_en(en);

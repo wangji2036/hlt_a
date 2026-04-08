@@ -383,13 +383,13 @@ void hal_gpio_init(void)
 		GPC->MODE.BITS.PIN7 = 1; //00:PC7 01:BADC4 — Cell2 分压采样（2M+1M, V_pin = Cell2/3）
 	}
 
-	/* PC8 */
+	/* PC8 — BADC5: C口 NTC1 温度采样 */
 	GPC->I_EN.BITS.PIN8 = 0;
 	GPC->O_EN.BITS.PIN8 = 0;
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
-	GPC->PDEN.BITS.PIN8 = 1;  // pull-down to avoid floating
+	GPC->PDEN.BITS.PIN8 = 0;
 	GPC->MODE.BITS.PIN8 = 2; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED — CC2 unused, set as ADC
 
 
@@ -403,9 +403,14 @@ void hal_gpio_init(void)
 	GPD->ITEN.BITS.PIN1 = 0;
 	GPD->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
 
-	/* PD2 */
+	/* PD2 — LED6 GPIO output */
 	GPD->I_EN.BITS.PIN2 = 0;
-	GPD->MODE.BITS.PIN2 = 0; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED
+	GPD->O_EN.BITS.PIN2 = 1;
+	GPD->DOUT.BITS.PIN2 = 0;
+	GPD->ODEN.BITS.PIN2 = 0;
+	GPD->PUEN.BITS.PIN2 = 0;
+	GPD->PDEN.BITS.PIN2 = 0;
+	GPD->MODE.BITS.PIN2 = 1; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED (LED6 GPIO)
 
 	/* PD3 — BADC9: VBAT- 负压采样（1M→VDD + 2M→VBAT-, V_pin = (VDD×2+VBAT-)/3） */
 	GPD->I_EN.BITS.PIN3 = 0;
@@ -730,14 +735,14 @@ void hal_gpio_init_default(void)
 		GPC->MODE.BITS.PIN7 = 0;//1; //00:PC7 01:BADC4 10:RESERVED 11:RESERVED
 	}
 
-	/* PC8 */
+	/* PC8 — sleep: 关闭 ADC，恢复默认 */
 	GPC->I_EN.BITS.PIN8 = 0;
 	GPC->O_EN.BITS.PIN8 = 0;
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
 	GPC->PUEN.BITS.PIN8 = 0;
-	GPC->PDEN.BITS.PIN8 = 1;  // pull-down to avoid floating
-	GPC->MODE.BITS.PIN8 = 2; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED — CC2 unused, set as ADC
+	GPC->PDEN.BITS.PIN8 = 0;
+	GPC->MODE.BITS.PIN8 = 0; //00:CC2_L 01:PC8 10:BADC5 11:RESERVED
 	/* PD0 */
 	GPD->I_EN.BITS.PIN0 = 0;//1;
 	GPD->MODE.BITS.PIN0 = 0;//1; //00:PD0 01:BADC8 10:DM_C2 11:RESERVED
@@ -748,9 +753,11 @@ void hal_gpio_init_default(void)
 	GPD->ITEN.BITS.PIN1 = 0;
 	GPD->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
 
-	/* PD2 */
+	/* PD2 — sleep: LED6 输出 HIGH 关灯 */
 	GPD->I_EN.BITS.PIN2 = 0;
-	GPD->MODE.BITS.PIN2 = 0; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED
+	GPD->O_EN.BITS.PIN2 = 1;
+	GPD->DOUT.BITS.PIN2 = 1; // HIGH to turn off LED (active-low)
+	GPD->MODE.BITS.PIN2 = 1; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED (LED6 sleep)
 
 	/* PD3 */
 	GPD->I_EN.BITS.PIN3 = 0;//0;

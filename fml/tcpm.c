@@ -23,21 +23,20 @@ const uint32_t source_pdo[] =
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
-	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
-	[3] = PDO_FIXED(15000, 2330, 0),                       // 15 V 2.33 A
-	[4] = PDO_FIXED(20000, 1750, 0),                       // 20 V 1.75 A
-	[5] = PDO_PPS_APDO(5000, 11000, 2700),                 // 5V-11V 2.7A (35W)
+	[2] = PDO_FIXED(12000, 2500, 0),                       // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                       // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                       // 20 V 1.5 A
+	[5] = PDO_PPS_APDO(5000,11000,2700),                   // 5V-11V 2.7A
 };
 
 const uint32_t source_pdo1[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
-	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
-	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
-	[3] = PDO_FIXED(15000, 2330, 0),                       // 15 V 2.33 A
-	[4] = PDO_FIXED(20000, 1750, 0),                       // 20 V 1.75 A
-	[5] = PDO_PPS_APDO(5000, 11000, 2700),                 // 5V-11V 2.7A (35W)
+	[1] = PDO_FIXED(9000, 2220, 0),                        // 9 V 2.22 A
+	[2] = PDO_FIXED(12000, 1670, 0),                       // 12 V 1.67 A
+	//[3] = PDO_FIXED(15000, 1330, 0),                     // 15 V 1.33 A
+	//[4] = PDO_FIXED(20000, 1000, 0),                     // 20 V 1 A
 };
 #elif(BUCKBOOST_USED_NU6801 == 1)
 const uint32_t source_pdo[] =
@@ -46,7 +45,10 @@ const uint32_t source_pdo[] =
 
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
-	[2] = PDO_FIXED(12000, 2910, 0),                       // 12 V 2.91 A
+	[2] = PDO_FIXED(12000, 2500, 0),                       // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                       // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                       // 20 V 1.5 A
+	[5] = PDO_PPS_APDO(5000,11000,2700),                   // 5V-11V 2.7A
 };
 #endif
 
@@ -60,9 +62,9 @@ const uint32_t sink_pdo[] =
 	#define SINK_PDO_FIXED_FLAGS     			(PDO_FIXED_DUAL_ROLE | PDO_FIXED_UNCONSTRAINED_POWER | PDO_HIGH_CAPABILITY)
 	[0] = PDO_FIXED(5000, 3000, SINK_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                      // 9 V 3 A
-	[2] = PDO_FIXED(12000, 2910, 0),                     // 12 V 2.91 A
-	// [3] = PDO_FIXED(15000, 2330, 0),                  // 15 V 2.33 A, disabled for sink charge
-	// [4] = PDO_FIXED(20000, 1750, 0),                  // 20 V 1.75 A, disabled for sink charge
+	[2] = PDO_FIXED(12000, 2500, 0),                     // 12 V 2.5 A
+	[3] = PDO_FIXED(15000, 2000, 0),                     // 15 V 2 A
+	[4] = PDO_FIXED(20000, 1500, 0),                     // 20 V 1.5 A
 };
 
 uint16_t port_vbus = 5000;

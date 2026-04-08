@@ -91,32 +91,32 @@ void usb_dpdm_port1_switch(bool en)
 
 void usb_dpdm_select(uint8_t tc_index)
 {
-	printk("[DPDM] select port=%d\n", tc_index);
-	if(tc_index == 0)
-	{
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
-	}
-	else if(tc_index == 1)
-	{
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;
-	}
-	else if(tc_index == 2)
-	{
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
-	}
-	else
-	{
-		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-	}
-
-	dpdm_sink_deinit();
-
-	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;  // TypeC-A (本项目唯一 C 口)
-	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;  // USB-A 关闭（PC3=LED4, PC4=LED3，不可驱动 DP/DM_A1）
-	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;  // TypeC-B (本项目禁用)
-	bc12_type = 0;
-	dpdm_map = tc_index;
-	printk("[DPDM] dpdm_map=%d PORT1_CTRL=1\n", dpdm_map);
+// 	printk("[DPDM] select port=%d\n", tc_index);
+// 	if(tc_index == 0)
+// 	{
+// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
+// 	}
+// 	else if(tc_index == 1)
+// 	{
+// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;
+// 	}
+// 	else if(tc_index == 2)
+// 	{
+// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
+// 	}
+// 	else
+// 	{
+// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+// 	}
+//
+// 	dpdm_sink_deinit();
+//
+// 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;  // TypeC-A (本项目唯一 C 口)
+// 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;  // USB-A 关闭（PC3=LED4, PC4=LED3，不可驱动 DP/DM_A1）
+// 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;  // TypeC-B (本项目禁用)
+// 	bc12_type = 0;
+// 	dpdm_map = tc_index;
+// 	printk("[DPDM] dpdm_map=%d PORT1_CTRL=1\n", dpdm_map);
 }
 
 void usb_dpdm_autodcp_en(void)

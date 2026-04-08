@@ -626,7 +626,7 @@ void port_enum_port_enum_done(void)
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current_actual);
 	}
 
-	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typecb_gate_en)
+	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
 		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA锟脚碉拷
 		//if(!(g_port.adpater_power < 7500 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE))
@@ -781,15 +781,15 @@ void port_enum_port_snk_setcharge(void)
 		}
 		else if(g_buckboost.adc_vbus < 12500)
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 2910 ? g_port.ibus_limit : 2910;
+			g_port.ibus_limit = g_port.ibus_limit < 2500 ? g_port.ibus_limit : 2500;
 		}
 		else if(g_buckboost.adc_vbus < 15500)
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 2330 ? g_port.ibus_limit : 2330;
+			g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
 		}
 		else
 		{
-			g_port.ibus_limit = g_port.ibus_limit < 1750 ? g_port.ibus_limit : 1750;
+			g_port.ibus_limit = g_port.ibus_limit < 1500 ? g_port.ibus_limit : 1500;
 		}
 	}
 
@@ -823,6 +823,8 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
+	gd->bat_ov_forbid_flag = 0;  // DEBUG: force clear OV forbid for testing
+	printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
 	if(ntc_stop_chrg_flag||bat_charge_ntc_ot_flag||gd->typec_charge_ntc_lock) {
 		printk("\r\n [CHRG_BLOCK] ntc_stop=%d bat_ot=%d tc_lock=%d", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock);
 		buckboost_ops.set_work_mode(0x00);
@@ -884,18 +886,8 @@ void port_enum_port_snk_setvolt(void)
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);
 								g_port.ibus_limit = pdo_max_current(source_pdo);
-								/* Clamp PD Sink current by fixed PDO voltage for ~35W profile:
-								 * 5V/3A, 9V/3A, 12V/2.91A, 15V/2.33A, 20V/1.75A. */
-								if(g_port.snk_set_volt >= 20000)
-								{ if (g_port.ibus_limit > 1750) g_port.ibus_limit = 1750; }
-								else if(g_port.snk_set_volt >= 15000)
-								{ if (g_port.ibus_limit > 2330) g_port.ibus_limit = 2330; }
-								else if(g_port.snk_set_volt >= 12000)
-								{ if (g_port.ibus_limit > 2910) g_port.ibus_limit = 2910; }
-								else if(g_port.snk_set_volt >= 9000)
-								{ if (g_port.ibus_limit > 3000) g_port.ibus_limit = 3000; }
-								else /* 5V and below */
-								{ if (g_port.ibus_limit > 3000) g_port.ibus_limit = 3000; }
+								if(g_port.snk_set_volt >=18000) g_port.ibus_limit = g_port.ibus_limit >1500? 1500:g_port.ibus_limit;
+								else if(g_port.snk_set_volt >=14000) g_port.ibus_limit = g_port.ibus_limit >2000? 2000:g_port.ibus_limit;
 								g_port.adpater_power = (uint32_t)g_port.ibus_limit * pdo_fixed_voltage(source_pdo) / 1000;
 								break;
 							}
@@ -993,7 +985,7 @@ void port_enum_port_snk_setvolt(void)
 
 void port_enum_port0_connect_success(void)
 {
-	printk("%s!\n",__func__);
+	printk("%s! woke=%d tc=%d comm=%d\n",__func__, g_buckboost.woke_mode, pdlib_get_tc_state(PORT0_INDEX), gd->usb_comm_activated);
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated) return;
 #endif
@@ -1027,7 +1019,7 @@ void port_enum_port0_connect_success(void)
 			osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 		}
 	}
-	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
+	else if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE || g_buckboost.woke_mode == BUCKBOOST_SHUTDOWM_MODE)
 	{
 		if(pdlib_get_tc_state(PORT0_INDEX) == TC_SNK_Attached)
 		{
@@ -1056,6 +1048,11 @@ void port_enum_port0_connect_success(void)
 		}
 		else  //TC_SRC_Attached
 		{
+			if(g_buckboost.woke_mode == BUCKBOOST_SHUTDOWM_MODE)
+			{
+				hal_tcpc_pd_set_bus_iv(PORT0_INDEX, g_buckboost.buckboost_out_voltage, 3500, 0, 0);
+				hal_tcpc_set_source_mode(BUCKBOOST_DISCHG_MODE);
+			}
 			buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,6500);
 			printk("mos-1\n");
 			hal_tcpc_set_gate_en(PORT0_INDEX,true);
@@ -1104,7 +1101,7 @@ void port_enum_port1_connect_success(void)
 				pdlib_set_pd_event(PORT1_INDEX,USB_PD_EVT_SNK_ATTACHED);
 				g_port.incharge_port = PORT1_INDEX;
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
 		}
 		else  //TC_SRC_Attached
 		{
@@ -1470,7 +1467,7 @@ void port_manager_event_handle(uint32_t event)
 		case PORT_ENUM_EVT_PORT0_CONNECT_CLOSED:
 			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port0_connect_closed();
-			buckboost_ops.typca_dischg_en(true);
+			buckboost_ops.typcb_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT0_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();
@@ -1492,7 +1489,7 @@ void port_manager_event_handle(uint32_t event)
 		case PORT_ENUM_EVT_PORT1_CONNECT_CLOSED:
 			osal_stop_timerEx(PORT_CONNECT_TIMER);
 			port_enum_port1_connect_closed();
-			buckboost_ops.typcb_dischg_en(true);
+			buckboost_ops.typca_dischg_en(true);
 			break;
 		case PORT_ENUM_EVT_PORT1_SINK_SETVOLT:
 			port_enum_port_snk_setvolt();

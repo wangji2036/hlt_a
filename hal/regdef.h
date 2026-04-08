@@ -2044,11 +2044,11 @@ typedef union {
 typedef struct {
 	__I  TS_GPD_PINx_CTRL D_IN; //4000_50C0, input data register
 	__IO TS_GPD_PINx_CTRL I_EN; //4000_50C4, input enable register
-	__IO uint32_t         REV0; //4000_50C8,
-	__IO uint32_t         REV1; //4000_50CC,
-	__IO uint32_t         REV2; //4000_50D0,
-	__IO uint32_t         REV3; //4000_50D4,
-	__IO uint32_t         REV4; //4000_50D8,
+	__IO TS_GPD_PINx_CTRL DOUT; //4000_50C8, output data register
+	__IO TS_GPD_PINx_CTRL O_EN; //4000_50CC, output enable register
+	__IO TS_GPD_PINx_CTRL ODEN; //4000_50D0, open drain enable control register
+	__IO TS_GPD_PINx_CTRL PUEN; //4000_50D4, pull-up enable control register
+	__IO TS_GPD_PINx_CTRL PDEN; //4000_50D8, pull-down enable control register
 	__IO TS_GPD_MODE_CTRL MODE; //4000_50DC, alternate function control register
 	__IO TS_GPD_INTx_CTRL ITEN; //4000_50E0, interrupt function enable register
 	__IO TS_GPD_ITTY_CTRL ITTP; //4000_50E4, interrupt trigger mode register
