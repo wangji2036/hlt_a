@@ -6,12 +6,14 @@
 #include "_fml.h"
 #include"led.h"
 #include "typdef.h"
-#include "BMS_FixPoint.h"
-#include "BMS_FixPoint_private.h"
-#include "SOC.h"
+// gauge removed — using SOE algorithm
+// #include "BMS_FixPoint.h"
+// #include "BMS_FixPoint_private.h"
+// #include "SOC.h"
 #include "port_manager.h"
 #include "g_data.h"
 #include "usb_pd.h"
+#include "bat.h"
 #include "typec.h"
 #include "usb_bridge.h"
 #include "nu6805.h"
@@ -87,28 +89,30 @@ void fml_task_event_handler(uint32_t event)
 			fml_ask_decode();
 			break;
 		case APL_EVT_GAUGE:
+			battery_task_handle();
 			if(power_on_cnt)
 			{
 				power_on_cnt--;
 			}
 			else
 			{
-				SigPr_CellTemps_C_s = 25;
-				SigPr_CellVolts_mV_s = g_buckboost.adc_vbat;
-				SigPr_PackCurr_mA_s   = g_buckboost.adc_ibat;
-				Cyclic();
+				// SigPr_CellTemps_C_s = 25;
+				// SigPr_CellVolts_mV_s = g_buckboost.adc_vbat;
+				// SigPr_PackCurr_mA_s   = g_buckboost.adc_ibat;
+				// Cyclic();
 
 
+#define BAT_RDC_BASE 50  // 电池基准内阻 mOhm
 				{
 					uint16_t cyc = GET_CYCLE_COUNT(gd);
 					if(cyc <= 50)
 					{
-						gd->Bat_Rdc = P_R0Dsg_mOhm[0];
+						gd->Bat_Rdc = BAT_RDC_BASE;
 						gd->Bat_SoH = 100;
 					}
 					else
 					{
-						gd->Bat_Rdc = P_R0Dsg_mOhm[0] + P_R0Dsg_mOhm[0] * (cyc - 50) * 5 / 10000;
+						gd->Bat_Rdc = BAT_RDC_BASE + BAT_RDC_BASE * (cyc - 50) * 5 / 10000;
 						gd->Bat_SoH = 100 - (cyc - 50) * 5 / 100;
 						if(gd->Bat_SoH < 0) gd->Bat_SoH = 0;
 					}

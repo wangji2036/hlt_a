@@ -11,7 +11,7 @@
 #include "wpc_idle.h"
 #include "wpc_ping.h"
 #include "debug.h"
-#include "BMS_FixPoint.h"
+// #include "BMS_FixPoint.h"  // gauge removed
 #include "mpp.h"
 #include "tcpm.h"
 #include"sleep.h"
@@ -19,7 +19,7 @@
 #include "wpc_nego.h"
 
 
-static uint8_t rx_may_still_be_flag;
+uint8_t rx_may_still_be_flag;
 static uint8_t qdt_try_ping_count;
 static uint8_t qdt_have_obj_count;
 static uint8_t qdt_obj_remove_count;

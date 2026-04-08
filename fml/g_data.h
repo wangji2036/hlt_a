@@ -6,7 +6,10 @@
 #include "adp.h"
 #include "ask.h"
 #include "fsk.h"
+#include "bat.h"
 #include "config.h"
+
+#define BAT_ADDR_BASE    		(0x00001900)
 //0~15ff  LDROM
 //1400~15ff log
 //1600~17FF Q/freq calibration value, gauge.etc.
@@ -548,6 +551,8 @@ struct gd_t
 	 uint8_t flag11;
 	 uint32_t timer_cnt;
 	 uint8_t fault_status;
+	 uint8_t wpc_sleepship;
+	 struct bat_info g_bat;
 	 uint8_t forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed (persistent across sleep)
 
 

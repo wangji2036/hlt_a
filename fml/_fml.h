@@ -12,6 +12,5 @@
 
 void fml_task_init(void);
 void fml_task_event_handler(uint32_t event);
-void ubsd_wb7720_sleep(void);
 
 #endif /* FML_H_ */

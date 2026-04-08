@@ -255,6 +255,7 @@ void gd_data_init(void)
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
 		gd->Bat_RTC_Timer = 0;
+		osal_mem_set((&g_bat),0,sizeof(struct bat_info));
 #if CONFIG_NEW_CCC_LOG_ENABLE
 		gd->Bat_RTC_Seconds = get_default_rtc_seconds();  // Initialize with default time
 		gd->Bat_RTC_Milliseconds = 0;
@@ -271,6 +272,8 @@ void gd_data_init(void)
 #endif
 	}
 
+	osal_mem_copy(&(g_bat),(const void *)&(gd->g_bat),sizeof(struct bat_info));
+	g_bat.bat_soe_in_cali = false;
 	gd->power_on_magic = 0xaaaa;
 
 	printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);

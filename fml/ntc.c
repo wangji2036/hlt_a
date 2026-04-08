@@ -14,6 +14,7 @@
 bool bat_ntc_ut_flag = false;
 bool bat_charge_ntc_ot_flag = false;
 bool ntc_stop_chrg_flag = false;
+uint8_t ntc_lock_flag = 0;
 bool typec_ntc_ot_flag = false;
 extern const uint32_t source_pdo[];
 extern const uint32_t source_pdo_ntc[];

@@ -107,6 +107,7 @@
 extern bool bat_ntc_ut_flag;
 extern bool bat_charge_ntc_ot_flag;
 extern bool ntc_stop_chrg_flag;
+extern uint8_t ntc_lock_flag;
 extern bool typec_ntc_ot_flag;
 void buckboost_ntc_handle(void);
 #endif
