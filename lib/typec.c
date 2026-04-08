@@ -161,7 +161,11 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
     else
     {
-    	if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) >= 28)
+    	/* USB comm mode: stay in SNK, don't fall back to DRP */
+    	if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX) {
+    		tc->tc_timer_cnt = tc_sys_ticks;  /* reset timer, keep waiting for Rp */
+    	}
+    	else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) >= 28)
     	{
     		tc->tc_timer_cnt = tc_sys_ticks;
     		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
@@ -190,7 +194,11 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
     }
     else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > 3 && (tc_snk_is_disconnected(tc)))
     {
-    	usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
+    	/* USB comm mode on Port1: don't escape to SRC, go back to SNK_Unattached and retry */
+    	if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX)
+    		usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
+    	else
+    		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
     }
     else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
     {
@@ -241,34 +249,46 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
-	if(tc_snk_is_disconnected(tc) || g_buckboost.adc_vbus <= 4000) //CC�Ͽ�
+	/* USB comm mode on Port1: skip VBUS check, rely on CC only.
+	 * External device (PC/phone) needs time to provide VBUS after CC connect. */
 	{
-		//tc->tc_timer_cnt++;
-		if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
-		{
+		bool vbus_low = (g_buckboost.adc_vbus <= 4000);
+		if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX)
+			vbus_low = false;
 
-			if(hal_tcpc_vbus_is_removed(tc->tc_index))
+		if(tc_snk_is_disconnected(tc) || vbus_low)
+		{
+			printk("[SNK-D] p%d cc1=%d cc2=%d pol=%d vbus=%d disc=%d\n",
+			       tc->tc_index, cc1, cc2, tc->polarity,
+			       g_buckboost.adc_vbus, tc_snk_is_disconnected(tc));
+			//tc->tc_timer_cnt++;
+			if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > TC_T_PD_DEBOUNCE)
 			{
-				usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
-				usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
-				hal_tcpc_port_dummyload_en(tc->tc_index,true);
-				hal_tcpc_set_gate_en(tc->tc_index,false);
-				if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
-				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-				//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
-				if(tc->tc_index == 0)
+
+				if(hal_tcpc_vbus_is_removed(tc->tc_index))
 				{
-					printk("[UC-A]\n");
-					port_manager_set_event(PORT0_EVENT_UNCONNECT);
+					printk("[SNK-DISC] p%d vbus_removed\n", tc->tc_index);
+					usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
+					usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
+					hal_tcpc_port_dummyload_en(tc->tc_index,true);
+					hal_tcpc_set_gate_en(tc->tc_index,false);
+					if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+					hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
+					//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
+					if(tc->tc_index == 0)
+					{
+						printk("[UC-A]\n");
+						port_manager_set_event(PORT0_EVENT_UNCONNECT);
+					}
+					else
+						port_manager_set_event(PORT1_EVENT_UNCONNECT);
 				}
-				else
-					port_manager_set_event(PORT1_EVENT_UNCONNECT);
 			}
 		}
-	}
-	else
-	{
-		tc->tc_timer_cnt = tc_sys_ticks;
+		else
+		{
+			tc->tc_timer_cnt = tc_sys_ticks;
+		}
 	}
 }
 

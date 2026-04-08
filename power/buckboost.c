@@ -497,7 +497,14 @@ void usb_comm_lock(void)
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	usb_dpdm_port0_switch(false);
 	usb_dpdm_port1_switch(false);              // Release PB2/PD0 for WB7720 USB data
-	pdlib_restart_typec(PORT1_INDEX);           // Port1 → SINK (WB7720 connector)
+	/* Diagnostic: force SNK directly instead of DRP toggle */
+	{
+		extern struct tc_s g_tc[];
+		hal_tcpc_set_cc(PORT1_INDEX, TYPEC_CC_RD);  // Force Rd on CC
+		usb_tc_set_state(&g_tc[PORT1_INDEX], TC_SNK_Unattached, enter_state);
+		g_tc[PORT1_INDEX].typec_delay_ms = 0x00;
+		printk("[DIAG] Force SNK on Port1 (was DRP)\n");
+	}
 	printk("USB comm lock: force SINK on Port1 for WB7720\n");
 #else
 	printk("USB comm lock: all charge/discharge stopped\n");

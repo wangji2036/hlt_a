@@ -158,9 +158,20 @@ void ubsd_wb7720_report_update(void)
 		#define CC_DEBOUNCE_COUNT  5  /* 5 × 47ms ≈ 235ms debounce */
 
 		bool cc_present = false;
+		enum tc_cc_status cc1 = 0, cc2 = 0;
 		if (gd->usb_comm_activated) {
-			enum tc_cc_status cc1, cc2;
 			hal_tcpc_get_cc(1, &cc1, &cc2);
+
+			/* Diagnostic: periodic CC status log (every 100 calls ~4.7s) */
+			{
+				static uint8_t usb_cc_log_cnt = 0;
+				if (++usb_cc_log_cnt >= 100) {
+					usb_cc_log_cnt = 0;
+					printk("[USB-CC] cc1=%d cc2=%d force=%d tc_st=%d\n",
+					       cc1, cc2, gd->force_usb_mode, pdlib_get_tc_state(1));
+				}
+			}
+
 #if (CONFIG_USB_COM_FORCE_SINK == 1)
 			if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
 				cc_present = true;
@@ -178,6 +189,10 @@ void ubsd_wb7720_report_update(void)
 				cc_lost_cnt++;
 				/* Keep force_usb_mode=1 during debounce — don't trigger sleep */
 			} else {
+				if (gd->force_usb_mode != 0) {
+					printk("[USB-CC] force_usb 1->0: cc1=%d cc2=%d tc_st=%d\n",
+					       cc1, cc2, pdlib_get_tc_state(1));
+				}
 				gd->force_usb_mode = 0;
 			}
 		}
