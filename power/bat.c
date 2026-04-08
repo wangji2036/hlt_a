@@ -57,7 +57,7 @@ void nano_battery_soe_handle(void)
     if (g_bat.sbat == BAT_STS_CHNG)
     {
         int16_t vbat = g_bat.vbat > g_bat.ibat * g_bat.rbat / 1000 ? g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000 : 0;
-        if (vbat < BAT_ENERGY_CALI_VOLT)
+        if (vbat / 2 < BAT_ENERGY_CALI_VOLT)
         {
             g_bat.bat_energy_cali = 0;
             g_bat.bat_soe_in_cali = true;
@@ -144,7 +144,7 @@ void nano_battery_ocv_handle(void)
 
     int16_t vbat = g_bat.vbat > g_bat.ibat * g_bat.rbat / 1000 ? g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000 : 0;
 
-    int8_t ocv_level = nano_battery_ocv_level_find(vbat);
+    int8_t ocv_level = nano_battery_ocv_level_find(vbat / 2);
 
     if (g_bat.sbat == BAT_STS_DISG && ocv_level < g_bat.bat_level_ocv)
     {
@@ -210,7 +210,7 @@ void nano_battery_ui_handle(void)
         }
         else if (g_bat.sbat == BAT_STS_DISG)
         {
-            int16_t end_ibat = g_bat.vbat * g_bat.ibat / BAT_BATTERY_EMPTY_VOLTAGE;
+            int16_t end_ibat = (g_bat.vbat / 2) * g_bat.ibat / BAT_BATTERY_EMPTY_VOLTAGE;
             int vbat_end = BAT_BATTERY_EMPTY_VOLTAGE - end_ibat * BAT_BAT_rDC / 1000;
             bat_level_end = nano_battery_ocv_level_find(vbat_end);
 
@@ -232,7 +232,7 @@ void nano_battery_ui_handle(void)
                     temp_bat_ui = 100;
             }
 
-            if (g_bat.vbat < BAT_BATTERY_EMPTY_VOLTAGE)
+            if (g_bat.vbat / 2 < BAT_BATTERY_EMPTY_VOLTAGE)
             {
                 empty_cnt++;
                 if (empty_cnt >= 10)
@@ -274,7 +274,7 @@ void nano_battery_ui_handle(void)
         }
         else if (g_bat.sbat == BAT_STS_DISG)
         {
-            if (g_bat.vbat < (BAT_BATTERY_EMPTY_VOLTAGE + 150) && g_bat.ibat < -100)
+            if (g_bat.vbat / 2 < (BAT_BATTERY_EMPTY_VOLTAGE + 150) && g_bat.ibat < -100)
             {
                 empty_cnt++;
                 if (empty_cnt >= 10)
@@ -395,7 +395,7 @@ void battery_task_handle(void) // 100mS
 
             int16_t vbat = (int16_t)g_bat.vbat > (int16_t)(g_bat.ibat * g_bat.rbat / 1000) ? (g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000) : 0;
 
-            g_bat.bat_level_ocv = nano_battery_ocv_level_find(vbat);
+            g_bat.bat_level_ocv = nano_battery_ocv_level_find(vbat / 2);
             g_bat.bat_level_ui = g_bat.bat_level_ocv;
 
             g_bat.bat_energy_total = BAT_BATTERY_DEFAULT;

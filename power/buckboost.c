@@ -146,6 +146,15 @@ void buckboost_set_work_mode(enum buckboost_mode mode)
 	g_buckboost.chager_ibus_start = 0;
 	g_buckboost.chager_ibus_value = 200;
 	buckboost_ops.set_work_mode(g_buckboost.woke_mode);
+
+#if(BUCKBOOST_USED_NU6805 == 1)
+	{
+		uint8_t reg_mode = 0, reg_status = 0;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, &reg_mode);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_status);
+		printk("\r\n[BB_MODE] set=%d reg_mode=0x%02x sys_status=0x%02x", mode, reg_mode, reg_status);
+	}
+#endif
 }
 
 
@@ -246,7 +255,7 @@ void buckboost_protection_handle(void)
 	
 	printk("Flaut State = 0x%x\n",status);
 	printk("vbus = %d\n",g_buckboost.adc_vbus);
-	printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d]",
+	printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
 		g_buckboost.woke_mode,
 		g_buckboost.set_typeca_gate_en,
 		g_buckboost.set_typecb_gate_en,
@@ -257,8 +266,21 @@ void buckboost_protection_handle(void)
 		g_buckboost.adc_ibus,
 		g_buckboost.adc_vbat,
 		g_buckboost.chager_ibat_limit,
-		g_buckboost.chager_ibus_limit);
+		g_buckboost.chager_ibus_limit,
+		gd->real_soc_show);
 #if(BUCKBOOST_USED_NU6805 == 1)
+	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) {
+		uint8_t reg_mode=0, reg_ibat=0, reg_ibus=0, reg_cv_h=0, reg_cv_l=0, reg_set1=0, reg_sys=0;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, &reg_mode);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Ibat_Limit, &reg_ibat);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Ibus_Limit, &reg_ibus);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_High, &reg_cv_h);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_Low, &reg_cv_l);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting1, &reg_set1);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_sys);
+		printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
+			reg_mode, reg_ibat, reg_ibus, reg_cv_h, reg_cv_l, reg_set1, reg_sys);
+	}
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
@@ -770,10 +792,14 @@ void buckboost_task_event_handler(uint32_t event)
 					g_buckboost.chager_ibus_value += 100;
 					if(g_buckboost.chager_ibus_value > g_buckboost.chager_ibus_limit) g_buckboost.chager_ibus_value = g_buckboost.chager_ibus_limit;
 					buckboost_ops.set_chager_ibus_limit(g_buckboost.chager_ibus_value);
-					//printk("BAT:%dmA --->%dmA\n",g_buckboost.chager_ibus_value,g_buckboost.chager_ibus_limit);
 				}
 				else
 					g_buckboost.chager_ibus_start = 0;
+				printk("\r\n[RAMP] ibus_start=%d ibus_val=%d ilim[%d %d]",
+					g_buckboost.chager_ibus_start,
+					g_buckboost.chager_ibus_value,
+					g_buckboost.chager_ibat_limit,
+					g_buckboost.chager_ibus_limit);
 			}
 			break;
 		case BUCKBOOST_EVT_SWITCH_WORK_MODE:  //

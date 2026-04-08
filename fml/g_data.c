@@ -255,6 +255,9 @@ void gd_data_init(void)
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
 		gd->Bat_RTC_Timer = 0;
+		gd->wpc_sleepship = 0;
+		osal_mem_set(&(gd->g_bat), 0, sizeof(struct bat_info));
+		gd->forbid_bypass_flag = 0;
 		osal_mem_set((&g_bat),0,sizeof(struct bat_info));
 #if CONFIG_NEW_CCC_LOG_ENABLE
 		gd->Bat_RTC_Seconds = get_default_rtc_seconds();  // Initialize with default time

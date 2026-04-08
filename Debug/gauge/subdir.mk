@@ -4,23 +4,23 @@
 
 # Add inputs and outputs from these tool invocations to the build variables
 C_SRCS += \
-../gauge/BMS_data.c \
 ../gauge/BMS_FixPoint.c \
 ../gauge/BMS_FixPoint_data.c \
+../gauge/BMS_data.c \
 ../gauge/SOC.c \
 ../gauge/SOCPack.c \
 
 OBJS += \
-./gauge/BMS_data.o \
 ./gauge/BMS_FixPoint.o \
 ./gauge/BMS_FixPoint_data.o \
+./gauge/BMS_data.o \
 ./gauge/SOC.o \
 ./gauge/SOCPack.o \
 
 C_DEPS += \
-./gauge/BMS_data.d \
 ./gauge/BMS_FixPoint.d \
 ./gauge/BMS_FixPoint_data.d \
+./gauge/BMS_data.d \
 ./gauge/SOC.d \
 ./gauge/SOCPack.d \
 
