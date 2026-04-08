@@ -74,10 +74,6 @@ void SLP_vNormalToSleep(void)
 	fm1210_sleep();
 	SYS->PWR_CTRL.WORD = 0;
 	gd->touch_to_weakup = 0;
-	gd->typec_ntc_lock = 0;
-	gd->typec_charge_ntc_lock = 0;
-	gd->bat_ntc_lock_flag = 0;
-	gd->wirless_ntc_lock = 0;
 	gd->rd0_cnt = 0;
 	gd->rd1_cnt = 0;
 	gd->light0_cnt = 0;

@@ -548,6 +548,7 @@ struct gd_t
 	 uint8_t flag11;
 	 uint32_t timer_cnt;
 	 uint8_t fault_status;
+	 uint8_t forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed (persistent across sleep)
 
 
 };

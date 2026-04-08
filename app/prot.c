@@ -895,20 +895,26 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 /*+++++++++++++++++++++++++++++++++++++++++++ BAT_OV_FORBID +++++++++++++++++++++++++++++++++++++++*/
 void fml_bat_ov_forbid_check(void) {
     static uint8_t ov_forbid_consec_cnt = 0;
+    static uint8_t ov_log_cnt = 0;
+    uint8_t do_log = (++ov_log_cnt >= 100);
+    if (do_log) ov_log_cnt = 0;
+
+    if (gd->forbid_bypass_flag) return;
+
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
         }
+        if (do_log) printk("\r\n[OV_FORBID] Active (flag=1)");
         return;
     }
 
-    /* X20 NU6805 双节: 使用 MCU ADC 独立采样的 cell 电压
-     * cell2_voltage: 全局变量 (app.c 250ms 更新, PC7 - VBAT-)
-     * cell1 = NU6805 总压 - cell2 */
     extern uint16_t cell2_voltage;
     uint16_t total = g_buckboost.adc_vbat;
     uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
     uint16_t max_cell = (cell1 > cell2_voltage) ? cell1 : cell2_voltage;
+
+    if (do_log) printk("\r\n[OV_CHK] c2=%d t=%d max=%d", cell2_voltage, total, max_cell);
 
     if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD) {
         ov_forbid_consec_cnt++;
@@ -917,7 +923,6 @@ void fml_bat_ov_forbid_check(void) {
         if (ov_forbid_consec_cnt >= OVER_VOLTAGE_FORBID_CONSEC_COUNT) {
             gd->bat_ov_forbid_flag = 1;
 #if OV_FORBID_FLASH_PERSIST
-            /* Persist forbid flag to Flash */
             cycle_count_save_to_flash();
             printk("\r\n[OV_FORBID] Persisted to Flash.");
 #else
@@ -934,18 +939,27 @@ void fml_bat_ov_forbid_check(void) {
 /*+++++++++++++++++++++++++++++++++++++++++++ BAT_UV_FORBID +++++++++++++++++++++++++++++++++++++++*/
 void fml_bat_uv_forbid_check(void) {
     static uint8_t uv_forbid_consec_cnt = 0;
+    static uint8_t uv_log_cnt = 0;
+    uint8_t do_log = (++uv_log_cnt >= 100);
+    if (do_log) uv_log_cnt = 0;
+
+    if (gd->forbid_bypass_flag) return;
+
     if (gd->bat_uv_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
         }
+        if (do_log) printk("\r\n[UV_FORBID] Active (flag=1)");
         return;
     }
 
     extern uint16_t cell2_voltage;
     uint16_t total = g_buckboost.adc_vbat;
-    if (total == 0) return;  /* ADC not ready */
+    if (total == 0) return;
     uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
     uint16_t min_cell = (cell1 < cell2_voltage) ? cell1 : cell2_voltage;
+
+    if (do_log) printk("\r\n[UV_CHK] c2=%d t=%d min=%d", cell2_voltage, total, min_cell);
 
     if (min_cell > 0 && min_cell <= UNDER_VOLTAGE_FORBID_THRESHOLD) {
         uv_forbid_consec_cnt++;

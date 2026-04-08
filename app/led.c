@@ -22,6 +22,7 @@ void key_double_click_process(void);
 void key_long_click_process(void);
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void key_triple_click_process(void);
+void key_quad_click_process(void);
 #endif
 volatile uint8_t key_flag = 0;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
@@ -516,6 +517,11 @@ void ui_update(void)
 		key_triple_click_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
+	else if(key_flag == 5)
+	{
+		key_quad_click_process();
+		gd->idle_to_sleep_cnt = 0;
+	}
 #endif
 
 	key_flag = 0;
@@ -820,6 +826,25 @@ void key_triple_click_process(void)
 	}
 	key_ui_cnt = 0;
 }
+
+void key_quad_click_process(void)
+{
+	gd->forbid_bypass_flag ^= 1;
+	if (gd->forbid_bypass_flag) {
+		if (gd->bat_ov_forbid_flag) {
+			gd->bat_ov_forbid_flag = 0;
+			printk("\r\n[FORBID] OV cleared by quad-click");
+		}
+		if (gd->bat_uv_forbid_flag) {
+			gd->bat_uv_forbid_flag = 0;
+			printk("\r\n[FORBID] UV cleared by quad-click");
+		}
+		printk("\r\n[FORBID] Bypass ENABLED by quad-click");
+	} else {
+		printk("\r\n[FORBID] Bypass DISABLED by quad-click");
+	}
+	key_ui_cnt = 0;
+}
 #endif
 
 //// structure for key information
@@ -872,9 +897,9 @@ void key_handle_10ms()
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 			key_click_cnt++;
 			key_delay_ms = 50;
-			if(key_click_cnt >= 3)
+			if(key_click_cnt >= 4)
 			{
-				key_flag = 4;  // triple click
+				key_flag = 5;  // quad click
 				key_click_cnt = 0;
 				key_delay_ms = 0;
 			}
@@ -907,6 +932,8 @@ void key_handle_10ms()
 					key_flag = 1;  // single click
 				else if(key_click_cnt == 2)
 					key_flag = 2;  // double click
+				else if(key_click_cnt == 3)
+					key_flag = 4;  // triple click
 #else
 				key_flag = 1;
 #endif
