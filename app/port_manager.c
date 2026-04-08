@@ -823,7 +823,10 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
-	if(ntc_stop_chrg_flag||bat_charge_ntc_ot_flag||gd->typec_charge_ntc_lock) buckboost_ops.set_work_mode(0x00);
+	if(ntc_stop_chrg_flag||bat_charge_ntc_ot_flag||gd->typec_charge_ntc_lock) {
+		printk("\r\n [CHRG_BLOCK] ntc_stop=%d bat_ot=%d tc_lock=%d", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock);
+		buckboost_ops.set_work_mode(0x00);
+	}
 
 	if(pdlib_is_pps_sink())
 		buckboost_ops.set_ovp(20000);

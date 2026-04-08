@@ -246,6 +246,18 @@ void buckboost_protection_handle(void)
 	
 	printk("Flaut State = 0x%x\n",status);
 	printk("vbus = %d\n",g_buckboost.adc_vbus);
+	printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d]",
+		g_buckboost.woke_mode,
+		g_buckboost.set_typeca_gate_en,
+		g_buckboost.set_typecb_gate_en,
+		gd->bat_ov_forbid_flag,
+		gd->bat_uv_forbid_flag,
+		gd->forbid_bypass_flag,
+		g_buckboost.adc_ibat,
+		g_buckboost.adc_ibus,
+		g_buckboost.adc_vbat,
+		g_buckboost.chager_ibat_limit,
+		g_buckboost.chager_ibus_limit);
 #if(BUCKBOOST_USED_NU6805 == 1)
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
 	if(g_buckboost.adc_vbus <= 4582 && g_buckboost.adc_ibus == 0 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)

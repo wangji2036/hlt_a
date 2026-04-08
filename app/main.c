@@ -52,9 +52,12 @@ int main(void)
 	gd_data_init();
 	lib_para_init();// do not delete.
 	fml_bsp_init();
+	printk("\r\n [D1] post-bsp");
 	apl_gui_init();
+	printk("\r\n [D2] post-gui");
 
 	gd->adp.adp_type = EADP_TYPE_IDUNKNOWN;
+	printk("\r\n [D3] pre-nu103x");
 //	uint32_t timeout = 0;
 //	USBPD_vInit();
 //	while (1)
@@ -70,7 +73,9 @@ int main(void)
 //	fml_usbqc_init();
 
 	fml_nu103x_por_init();
+	printk("\r\n [D4] post-nu103x");
 	hal_wdt_feed();
+	printk("\r\n [D5] post-wdt");
 #if(BUCKBOOST_USED_NU6805 == 1)
 	delay_1ms(500);
 	hal_wdt_feed();
