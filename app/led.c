@@ -78,6 +78,13 @@ static void drv_IO_control(uint8_t pinx, bool status)
 		_UI_PIN1_PORT->DOUT.BITS._UI_PIN1_PINx = status;
 		_UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 1;
 		break;
+	case 6:
+		/* PD2 = LED6 (wireless charging), MODE must be 1 for GPIO */
+		GPD->MODE.BITS.PIN2 = 1;
+		_UI_PIN6_PORT->I_EN.BITS._UI_PIN6_PINx = 0;
+		_UI_PIN6_PORT->DOUT.BITS._UI_PIN6_PINx = status;
+		_UI_PIN6_PORT->O_EN.BITS._UI_PIN6_PINx = 1;
+		break;
     default:
 		break;
 	}
@@ -156,7 +163,7 @@ static batt_level_t drv_ui_coulomb(void)
      }
      return LEVEL_4;
 }
-static uint8_t disp_map[5]={1,2,3,4,5};
+static uint8_t disp_map[6]={1,2,3,4,5,6};
 
 static void ui_update_led(void)
 {

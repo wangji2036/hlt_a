@@ -226,9 +226,15 @@ void gd_data_init(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 		gd->usb_comm_activated = 0;
 #endif
-		gd->real_soc_show = 0;
+		if (gd->soc_backup_magic == 0x5A && gd->soc_sleep_backup <= 100) {
+			gd->real_soc_show = gd->soc_sleep_backup;
+			gd->real_soc_obtained = 1;
+		} else {
+			gd->real_soc_show = 0;
+			gd->real_soc_obtained = 0;
+		}
+		gd->soc_backup_magic = 0;  // one-shot: clear after use
 		gd->bat_dead_flag = 0;
-		gd->real_soc_obtained = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;
 		tc_power_on = true;

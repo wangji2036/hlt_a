@@ -108,6 +108,10 @@ extern bool bat_ntc_ut_flag;
 extern bool bat_charge_ntc_ot_flag;
 extern bool ntc_stop_chrg_flag;
 extern uint8_t ntc_lock_flag;
-extern bool typec_ntc_ot_flag;
+extern bool typec_ntc_ot_dischg_flag;
+extern bool typec_ntc_ot_chrg_flag;
+extern bool bat_ntc_dischg_ut_reduce_flag;
+extern bool bat_ntc_dual_dischg_lock;
+extern uint8_t bat_low_volt_reduce;
 void buckboost_ntc_handle(void);
 #endif

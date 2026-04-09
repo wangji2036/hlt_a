@@ -53,7 +53,7 @@ void pdlib_init(void)
 	pdlib_update_source_pdo(source_pdo_default,sizeof(source_pdo_default)/4);
 	pdlib_update_sink_pdo(sink_pdo_default,sizeof(sink_pdo_default) /4);
 }
-extern bool typec_ntc_ot_flag;
+extern bool typec_ntc_ot_dischg_flag;
 void pdlib_run(void)
 {
 	static uint8_t pre_flag = 0,pre_flag2 = 0,pre_flag3 = 0,soft_flag = 0;
@@ -62,11 +62,11 @@ void pdlib_run(void)
 	usb_tc_run();
 	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
-		if(pre_flag != typec_ntc_ot_flag || pre_flag2 != gd->bat_ntc_dischg_reduce_flag)
+		if(pre_flag != typec_ntc_ot_dischg_flag || pre_flag2 != gd->bat_ntc_dischg_reduce_flag)
 		{
-			pre_flag = typec_ntc_ot_flag;
+			pre_flag = typec_ntc_ot_dischg_flag;
 			pre_flag2 = gd->bat_ntc_dischg_reduce_flag;
-			if (typec_ntc_ot_flag||gd->bat_ntc_dischg_reduce_flag)
+			if (typec_ntc_ot_dischg_flag||gd->bat_ntc_dischg_reduce_flag)
 			{
 				soft_flag = 1;
 				tcpm_update_pdo_for_limit();

@@ -26,6 +26,7 @@ void port_manager_set_event(uint32_t event)
 }
 extern uint8_t charge_led_finish;
 extern uint8_t charge_led_run;
+extern bool bat_ntc_dischg_ut_reduce_flag;
 
 void port_manager_set_state(enum port_state_e state)
 {
@@ -793,20 +794,37 @@ void port_enum_port_snk_setcharge(void)
 		}
 	}
 
-	if(typec_ntc_ot_flag)
+	/* Battery voltage derating: 2S <7400mV → 20W (flag updated in buckboost_ntc_handle) */
+	if (bat_low_volt_reduce)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
+	}
+
+	if(typec_ntc_ot_chrg_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
+	}
+	if(bat_charge_ntc_ot_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit<(12000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:12000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(12000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:12000*1000/g_buckboost.adc_vbus;
 	}
 	if(bat_ntc_ut_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit<(7000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:7000*1000/g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit<(7000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:7000*1000/g_buckboost.adc_vbus;
+		g_port.ibat_limit = g_port.ibat_limit<(5000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:5000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(5000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:5000*1000/g_buckboost.adc_vbus;
 	}
 	if (gd->bat_ntc_dischg_reduce_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
+		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
+	}
+	if (bat_ntc_dischg_ut_reduce_flag)
+	{
+		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
+		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
 	}
 
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
@@ -825,8 +843,8 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
 	gd->bat_ov_forbid_flag = 0;  // DEBUG: force clear OV forbid for testing
 	printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
-	if(ntc_stop_chrg_flag||bat_charge_ntc_ot_flag||gd->typec_charge_ntc_lock) {
-		printk("\r\n [CHRG_BLOCK] ntc_stop=%d bat_ot=%d tc_lock=%d", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock);
+	if(ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) {
+		printk("\r\n [CHRG_BLOCK] ntc_stop=%d tc_lock=%d", ntc_stop_chrg_flag, gd->typec_charge_ntc_lock);
 		buckboost_ops.set_work_mode(0x00);
 	}
 

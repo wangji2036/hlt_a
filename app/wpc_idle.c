@@ -716,6 +716,8 @@ uint32_t rrlen;
 extern uint8_t array_digest[];
 extern uint8_t adt_data_recv_buf[18];
 extern uint8_t cert_chain[];
+extern bool bat_ntc_dischg_ut_reduce_flag;
+extern bool bat_ntc_dual_dischg_lock;
 
 void wpc_idle_phase_process(void)
 {
@@ -763,6 +765,39 @@ void wpc_idle_phase_process(void)
 			wpc_dualsrc_low_soc_lock = 0;
 		}
 	}
+	/* Temperature lock: disable WPC when C-port active and bat temp extreme */
+	static uint8_t wpc_dual_temp_lock = 0;
+	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
+	{
+		if (!wpc_dual_temp_lock)
+		{
+			if (bat_ntc_dual_dischg_lock)
+			{
+				gd->wpc_disable = 0x01;
+				tcpm_stop_wpc(WPC_DELAY);
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+				printk("\r\n WPC disabled: bat temp extreme (dual dischg lock)");
+				wpc_dual_temp_lock = 1;
+			}
+		}
+		else
+		{
+			if (!bat_ntc_dual_dischg_lock)
+			{
+				gd->wpc_disable = 0x00;
+				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
+				printk("\r\n WPC re-enabled: bat temp normal (dual dischg unlock)");
+				wpc_dual_temp_lock = 0;
+			}
+		}
+	}
+	else
+	{
+		if (wpc_dual_temp_lock)
+		{
+			wpc_dual_temp_lock = 0;
+		}
+	}
 	//printk("sigle click %d \r\n",gd->sigle_clicked);
 	// if(gd->vpwr >13000){
 	// 	printk("no wpc due to vbus %d \r\n",gd->vpwr);
@@ -804,7 +839,7 @@ void wpc_idle_phase_process(void)
 		tcpm_qi_work_delay--;
 		return;
 	}
-	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01||gd->wirless_ntc_lock) return;
+	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01||gd->wirless_ntc_lock||gd->bat_ntc_lock_flag) return;
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
 		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag || gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)

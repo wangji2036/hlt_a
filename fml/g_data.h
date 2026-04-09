@@ -554,6 +554,8 @@ struct gd_t
 	 uint8_t wpc_sleepship;
 	 struct bat_info g_bat;
 	 uint8_t forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed (persistent across sleep)
+	 uint8_t soc_sleep_backup;       // SOC value saved before entering sleep (0-100)
+	 uint8_t soc_backup_magic;       // 0x5A = backup valid, any other = invalid
 
 
 };
