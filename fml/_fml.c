@@ -17,6 +17,7 @@
 #include "typec.h"
 #include "usb_bridge.h"
 #include "nu6805.h"
+#include "buckboost.h"
 #define USBD_WB7720_ADDR	0x21
 extern uint8_t power_on_cnt;
 extern uint8_t bat_cell_num;
@@ -165,7 +166,7 @@ void ubsd_wb7720_report_update(void)
 		bool cc_present = false;
 		enum tc_cc_status cc1 = 0, cc2 = 0;
 		if (gd->usb_comm_activated) {
-			hal_tcpc_get_cc(1, &cc1, &cc2);
+			hal_tcpc_get_cc(0, &cc1, &cc2);
 
 			/* Diagnostic: periodic CC status log (every 100 calls ~4.7s) */
 			{
@@ -173,7 +174,7 @@ void ubsd_wb7720_report_update(void)
 				if (++usb_cc_log_cnt >= 100) {
 					usb_cc_log_cnt = 0;
 					printk("[USB-CC] cc1=%d cc2=%d force=%d tc_st=%d\n",
-					       cc1, cc2, gd->force_usb_mode, pdlib_get_tc_state(1));
+					       cc1, cc2, gd->force_usb_mode, pdlib_get_tc_state(0));
 				}
 			}
 
@@ -196,7 +197,7 @@ void ubsd_wb7720_report_update(void)
 			} else {
 				if (gd->force_usb_mode != 0) {
 					printk("[USB-CC] force_usb 1->0: cc1=%d cc2=%d tc_st=%d\n",
-					       cc1, cc2, pdlib_get_tc_state(1));
+					       cc1, cc2, pdlib_get_tc_state(0));
 				}
 				gd->force_usb_mode = 0;
 			}

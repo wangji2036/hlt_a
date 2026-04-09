@@ -124,17 +124,20 @@ static void TC_SNK_Unattached_Entry(struct tc_s * tc)
 {
 	if(gd->tc0_lighting_mode && tc->tc_index == 0)
 	{
+		printk("[SNK-U] p0 light=%d -> DRP!\n", gd->tc0_lighting_mode);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		return;
 	}
 
 	if(gd->tc1_lighting_mode && tc->tc_index == 1)
 	{
+		printk("[SNK-U] p1 light=%d -> DRP!\n", gd->tc1_lighting_mode);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		return;
 	}
 
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
+	printk("[SNK-U] p%d set CC=RD ok\n", tc->tc_index);
 
     tc->tc_timer_cnt = tc_sys_ticks;
     tc->try_snk_cnt = 0;
@@ -162,7 +165,7 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
     else
     {
     	/* USB comm mode: stay in SNK, don't fall back to DRP */
-    	if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX) {
+    	if (gd->usb_comm_activated && tc->tc_index == PORT0_INDEX) {
     		tc->tc_timer_cnt = tc_sys_ticks;  /* reset timer, keep waiting for Rp */
     	}
     	else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) >= 28)
@@ -194,8 +197,8 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
     }
     else if((uint32_t)(tc_sys_ticks - tc->tc_timer_cnt) > 3 && (tc_snk_is_disconnected(tc)))
     {
-    	/* USB comm mode on Port1: don't escape to SRC, go back to SNK_Unattached and retry */
-    	if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX)
+    	/* USB comm mode on Port0: don't escape to SRC, go back to SNK_Unattached and retry */
+    	if (gd->usb_comm_activated && tc->tc_index == PORT0_INDEX)
     		usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
     	else
     		usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
@@ -206,7 +209,8 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
         if(hal_tcpc_vbus_is_present(tc->tc_index) && hal_tcpc_vbus_is_vsafe5v())
         {
 			#if(CONFIG_TC_TRY_SOURCE_SUPPORT_EN)
-				if(tc->try_src_cnt >= 3 || tc->is_deadbattery)
+				if(tc->try_src_cnt >= 3 || tc->is_deadbattery
+				   || (gd->usb_comm_activated && tc->tc_index == PORT0_INDEX))
 				{
 					usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
 					usbpd_printk("try cnt= %d d=%d\n", tc->try_src_cnt,tc->is_deadbattery);
@@ -249,11 +253,11 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
     tc->cc1 = cc1;
     tc->cc2 = cc2;
-	/* USB comm mode on Port1: skip VBUS check, rely on CC only.
+	/* USB comm mode on Port0: skip VBUS check, rely on CC only.
 	 * External device (PC/phone) needs time to provide VBUS after CC connect. */
 	{
 		bool vbus_low = (g_buckboost.adc_vbus <= 4000);
-		if (gd->usb_comm_activated && tc->tc_index == PORT1_INDEX)
+		if (gd->usb_comm_activated && tc->tc_index == PORT0_INDEX)
 			vbus_low = false;
 
 		if(tc_snk_is_disconnected(tc) || vbus_low)
@@ -532,6 +536,8 @@ static uint16_t tc1_delay = 0;
 
 static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 {
+	if (gd->usb_comm_activated)
+		printk("[DRP-E] p%d comm=%d light0=%d\n", tc->tc_index, gd->usb_comm_activated, gd->tc0_lighting_mode);
 
 	if(gd->tc0_lighting_mode && tc->tc_index == PORT0_INDEX)
 	{

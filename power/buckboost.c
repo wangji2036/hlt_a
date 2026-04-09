@@ -14,6 +14,7 @@
 #include "bat.h"
 #include "ntc.h"
 #include "typec.h"
+#include "dpdm.h"
 
 uint8_t buckboost_protection_flag = false;
 uint8_t zero_soc_cnt =0;
@@ -530,16 +531,18 @@ void usb_comm_lock(void)
 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 0;
 	usb_dpdm_port0_switch(false);
-	usb_dpdm_port1_switch(false);              // Release PB2/PD0 for WB7720 USB data
-	/* Diagnostic: force SNK directly instead of DRP toggle */
+	usb_dpdm_port1_switch(false);
+	/* Force SNK directly instead of DRP toggle */
 	{
 		extern struct tc_s g_tc[];
-		hal_tcpc_set_cc(PORT1_INDEX, TYPEC_CC_RD);  // Force Rd on CC
-		usb_tc_set_state(&g_tc[PORT1_INDEX], TC_SNK_Unattached, enter_state);
-		g_tc[PORT1_INDEX].typec_delay_ms = 0x00;
-		printk("[DIAG] Force SNK on Port1 (was DRP)\n");
+		printk("[LOCK] pre: CCA_ROLE=0x%x light=%d\n", TCPC->CCA_ROLE.WORD, gd->tc0_lighting_mode);
+		hal_tcpc_set_cc(PORT0_INDEX, TYPEC_CC_RD);
+		printk("[LOCK] post: CCA_ROLE=0x%x\n", TCPC->CCA_ROLE.WORD);
+		usb_tc_set_state(&g_tc[PORT0_INDEX], TC_SNK_Unattached, enter_state);
+		g_tc[PORT0_INDEX].typec_delay_ms = 0x00;
+		printk("[DIAG] Force SNK on Port0 (was DRP)\n");
 	}
-	printk("USB comm lock: force SINK on Port1 for WB7720\n");
+	printk("USB comm lock: force SINK on Port0 for WB7720\n");
 #else
 	printk("USB comm lock: all charge/discharge stopped\n");
 #endif
@@ -549,7 +552,7 @@ void usb_comm_unlock(void)
 {
 	buckboost_protection_flag = 0;
 
-	usb_dpdm_port1_switch(true);               // Restore PB2/PD0 to DPDM mode
+	usb_dpdm_port0_switch(true);               // Restore DPDM mode
 
 	pdlib_restart_typec(PORT0_INDEX);
 	pdlib_restart_typec(PORT1_INDEX);

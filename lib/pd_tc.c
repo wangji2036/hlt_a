@@ -240,6 +240,16 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
     *cc1 = hal_tcpc_to_typec_cc(cc_status & 0x03,sink);
     *cc2 = hal_tcpc_to_typec_cc((cc_status & 0x0c) >>2,sink);
 
+    /* Diagnostic: log raw CC registers for Port0 (throttled) */
+    if (tc_index == 0) {
+        static uint16_t cc_diag_cnt = 0;
+        if (++cc_diag_cnt >= 500) {
+            cc_diag_cnt = 0;
+            printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
+                   TCPC->CCA_ROLE.WORD, cc_status, sink, *cc1, *cc2);
+        }
+    }
+
     /* Force CCB CC2 to OPEN — Port1 CC2 (PC8) is repurposed as GPIO, not connected to TypeC */
     if(tc_index == 1) *cc2 = TYPEC_CC_OPEN;
 }
