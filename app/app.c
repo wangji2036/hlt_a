@@ -395,9 +395,9 @@ void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
 
 	if ((0x12 == com_pkt->msg.prop.data[0]) && (0x34 == com_pkt->msg.prop.data[1]))
 	{
-		/* Read-Modify-Write: preserve cycle count and OV forbid at offset+16/+20 */
-		uint32_t cfg[6];
-		for (uint8_t i = 0; i < 6; i++)
+		/* Read-Modify-Write: preserve cycle count, OV forbid, Vref at offset+16/+20/+24 */
+		uint32_t cfg[7];
+		for (uint8_t i = 0; i < 7; i++)
 			cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
 		hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
 
@@ -407,7 +407,7 @@ void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
 		u32Tmp = switch_big_little_endian(gd->tx_infos.f_self_air);
 		hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
 
-		for (uint8_t i = 2; i < 6; i++)
+		for (uint8_t i = 2; i < 7; i++)
 			hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 	}
 }

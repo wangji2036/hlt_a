@@ -840,7 +840,8 @@ void key_triple_click_process(void)
 
 void key_quint_click_process(void)
 {
-	printk("\r\n[KEY] quint click");
+	gd->Cali_Vref_Count = 160;
+	printk("\r\n[KEY] quint click: Vref calibration started (160 samples)");
 }
 
 void key_quad_click_process(void)

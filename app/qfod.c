@@ -54,12 +54,18 @@ void qfod_qdt_cali_process(void)
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 			printk(" cali success: %d %d", q_sum, f_sum);
 
-			uint32_t u32Tmp;
+			/* Read-Modify-Write: preserve fields at offset+8..+24 */
+			uint32_t cfg[7];
+			for (uint8_t i = 0; i < 7; i++)
+				cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
 			hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
+			uint32_t u32Tmp;
 			u32Tmp = switch_big_little_endian(q_sum);
 			hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE, u32Tmp);
 			u32Tmp = switch_big_little_endian(f_sum);
 			hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
+			for (uint8_t i = 2; i < 7; i++)
+				hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 		}
 	}
 }

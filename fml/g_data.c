@@ -63,16 +63,17 @@ static uint32_t get_default_rtc_seconds(void) {
 #include "fmc.h"
 void cycle_count_save_to_flash(void)
 {
-    /* Read all 6 words from config page, update forbid + cycle count, write back */
-    uint32_t cfg[6];
-    for (uint8_t i = 0; i < 6; i++)
+    /* Read all 7 words from config page, update forbid + cycle count + Vref, write back */
+    uint32_t cfg[7];
+    for (uint8_t i = 0; i < 7; i++)
         cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
 #if OV_FORBID_FLASH_PERSIST
     cfg[4] = gd->bat_ov_forbid_flag ? (uint32_t)1 : (uint32_t)0xFFFFFFFF;  /* offset+16 = OV_FORBID */
 #endif
     cfg[5] = (uint32_t)GET_CYCLE_COUNT(gd);            /* offset+20 = cycle count (16-bit) */
+    cfg[6] = (uint32_t)gd->Vref;                       /* offset+24 = Vref (mV) */
     hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
-    for (uint8_t i = 0; i < 6; i++)
+    for (uint8_t i = 0; i < 7; i++)
         hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 }
 #endif
@@ -258,6 +259,21 @@ void gd_data_init(void)
 		gd->Battery_charger_cnt = 0;
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;
+		gd->bat_uv_forbid_flag = 0;
+#if Cali_Vref
+        {
+            uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
+            if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
+                gd->Vref = (uint16_t)flash_vref;
+                gd->Cali_Vref_Count = 0;
+                printk("\r\n[VREF] Restored from Flash: %dmV", gd->Vref);
+            } else {
+                gd->Vref = VREF_DEFAULT_MV;
+                gd->Cali_Vref_Count = 160;
+                printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
+            }
+        }
+#endif
 #if CYCLE_COUNT_FLASH_PERSIST
 		/* Restore cycle count from Flash */
 		{
@@ -272,12 +288,12 @@ void gd_data_init(void)
   #if OV_FORBID_FORCE_CLEAR
 		/* Debug: erase forbid flag from Flash, preserve other fields */
 		{
-			uint32_t cfg[6];
-			for (uint8_t i = 0; i < 6; i++)
+			uint32_t cfg[7];
+			for (uint8_t i = 0; i < 7; i++)
 				cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
 			cfg[4] = 0xFFFFFFFF;  /* clear OV_FORBID (+16) */
 			hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
-			for (uint8_t i = 0; i < 6; i++)
+			for (uint8_t i = 0; i < 7; i++)
 				hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 		}
 		gd->bat_ov_forbid_flag = 0;

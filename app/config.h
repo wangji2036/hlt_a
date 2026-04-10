@@ -99,8 +99,10 @@
 #define DISG_NTC_OT_TEMP_VALUE          650     // Discharging over-temperature threshold (0.1degC = 65.0degC)
 #define CYCLE_COUNT_FLASH_PERSIST       1       // 1=persist cycle count to Flash
 #define CYCLE_COUNT_FLASH_OFFSET        20      // AP_CFG_ROM_ADDR_BASE + 20
+#define VREF_FLASH_OFFSET               24      // AP_CFG_ROM_ADDR_BASE + 24
+#define VREF_DEFAULT_MV                 2800    // Default Vref before calibration
 #define EXCEPTION_WINDOW_SECONDS        120     // Exception record window (seconds): 120=2min, 3600=1h
-
+#define Cali_Vref                       1
 #define CONFIG_RTC_USE_CUSTOM_TIME      1
 #define CONFIG_RTC_DEFAULT_YEAR         2026
 #define CONFIG_RTC_DEFAULT_MONTH        2
