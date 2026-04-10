@@ -491,7 +491,6 @@ void ui_update(void)
 	{
 		gd->usb_comm_activated = 0;
 		usb_comm_unlock();
-		usb_bridge_sleep();
 		comm_feedback_cnt = 2;  // 1 flash feedback
 		printk("USB comm exit by key %d\n", key_flag);
 		key_flag = 0;
@@ -827,7 +826,6 @@ void key_triple_click_process(void)
 	else
 	{
 		usb_comm_unlock();
-		usb_bridge_sleep();
 		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
 		printk("USB comm deactivated by triple-click\n");
 	}
