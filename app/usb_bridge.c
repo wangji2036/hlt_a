@@ -13,8 +13,6 @@
 
 /*===================== External References =====================*/
 extern struct buckboost_s g_buckboost;
-extern uint16_t cell2_voltage;  /* MCU ADC sampled Cell2 (app.c 250ms update) */
-
 /********************* Static Variables *********************/
 
 /* Round-robin counter for telemetry writes */
@@ -22,9 +20,6 @@ static uint8_t cnt = 0;
 
 /* USB enable state for force_usb_mode control */
 static bool is_usb_enable = false;
-
-/* Cached vbat_compensated value from cnt 2, reused in cnt 10 */
-static uint16_t vbat_compensated = 0;
 
 /* Exception log sequential push cursor (cnt 12) */
 static uint8_t exc_cursor_page = 0;
@@ -64,7 +59,6 @@ void usb_bridge_init(void)
 {
     cnt = 0;
     is_usb_enable = false;
-    vbat_compensated = 0;
     exc_cursor_page = 0;
     exc_cursor_idx = 0;
     exc_records_sent = 0;
@@ -439,28 +433,10 @@ void usb_bridge_periodic_update(void)
         write_buf = CONFIG_BATTERY_CAPACITY_MAH;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CAPACITY_MAH, (uint8_t*)&write_buf, 2);
     }
-    /* ---- cnt 2: VBAT + Cell1 + Cell2 (MCU ADC triple-sample, one shared PD3 EMA) ---- */
+    /* ---- cnt 2: VBAT total (from buckboost ADC) ---- */
     else if (cnt == 2)
     {
-        /* PD3 = VBAT- negative rail (shared EMA filter for all channels) */
-        static int16_t vbat_minus = 0;
-        uint16_t pd3_adc = hal_badc_meas(_BADC_CH_PD3_ADC9);
-        if (pd3_adc >= BADC_PD3_VBATN_MIN_MV) {
-            uint16_t vdd_mv = hal_badc_get_vdd_mv();
-            int16_t raw = (int16_t)(pd3_adc * 3) - (int16_t)(vdd_mv * 2);
-            vbat_minus += (raw - vbat_minus) >> BADC_PD3_VBATN_EMA_SHIFT;
-        }
-
-        /* PB6 = BAT2+ total voltage */
-        uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
-        vbat_compensated = (uint16_t)((int16_t)pb6_bat2p - vbat_minus);
-
-        /* PC7 = Cell2 midpoint */
-        uint16_t pc7_mv = (uint16_t)(hal_badc_meas(_BADC_CH_PC7_ADC4) * BADC_PC7_CELL2_DIV_RATIO);
-        cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus);
-
-        /* Write VBAT total to 0x05 */
-        write_buf = vbat_compensated;
+        write_buf = g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_VBAT_MV, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 3: IBAT (0 when idle/shutdown) ---- */
@@ -523,13 +499,13 @@ void usb_bridge_periodic_update(void)
             state = 2;
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_CHARGE_STATE, state);
     }
-    /* ---- cnt 10: Cell Info (X20: 2-cell, uses MCU ADC cached from cnt 2) ---- */
+    /* ---- cnt 10: Cell Info (X20: 2-cell, from buckboost ADC) ---- */
     else if (cnt == 10)
     {
         uint8_t cell_buf[5];
         cell_buf[0] = CONFIG_BATTERY_CELL_COUNT;
-        uint16_t c2 = cell2_voltage;  /* MCU ADC PC7, updated at cnt 2 */
-        uint16_t c1 = (vbat_compensated > c2) ? (vbat_compensated - c2) : 0;
+        uint16_t c1 = g_buckboost.adc_vcell1;
+        uint16_t c2 = g_buckboost.adc_vcell2;
 
         /* Engineering mode virtual override */
         if (gd->eng_mode_active) {
