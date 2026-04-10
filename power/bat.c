@@ -79,12 +79,35 @@ void nano_battery_soe_handle(void)
             int32_t flash_bat_energy_total = g_bat.bat_energy_total;
             int32_t flash_bat_energy_total_check = ~flash_bat_energy_total;
 
-            int32_t u32Tmp;
-            hal_fmc_erase_page(BAT_ADDR_BASE);
-            u32Tmp = switch_big_little_endian(flash_bat_energy_total);
-            hal_fmc_write_word(BAT_ADDR_BASE, u32Tmp);
-            u32Tmp = switch_big_little_endian(flash_bat_energy_total_check);
-            hal_fmc_write_word((BAT_ADDR_BASE + 4), u32Tmp);
+            // Read-Modify-Write: preserve entire 512-byte page (0x1800-0x19FF)
+            extern uint8_t g_page_1800_buf[512];
+            uint16_t pg_i;
+            for (pg_i = 0; pg_i < 512; pg_i++) {
+                g_page_1800_buf[pg_i] = __read_08bits(AP_CFG_ROM_ADDR_PRO_INFO + pg_i);
+            }
+
+            // Modify BAT energy at offset 0x100 (BAT_ADDR_BASE - AP_CFG_ROM_ADDR_PRO_INFO)
+            uint16_t bat_off = BAT_ADDR_BASE - AP_CFG_ROM_ADDR_PRO_INFO;  // = 256
+            g_page_1800_buf[bat_off + 0] = (uint8_t)(flash_bat_energy_total >> 0);
+            g_page_1800_buf[bat_off + 1] = (uint8_t)(flash_bat_energy_total >> 8);
+            g_page_1800_buf[bat_off + 2] = (uint8_t)(flash_bat_energy_total >> 16);
+            g_page_1800_buf[bat_off + 3] = (uint8_t)(flash_bat_energy_total >> 24);
+            g_page_1800_buf[bat_off + 4] = (uint8_t)(flash_bat_energy_total_check >> 0);
+            g_page_1800_buf[bat_off + 5] = (uint8_t)(flash_bat_energy_total_check >> 8);
+            g_page_1800_buf[bat_off + 6] = (uint8_t)(flash_bat_energy_total_check >> 16);
+            g_page_1800_buf[bat_off + 7] = (uint8_t)(flash_bat_energy_total_check >> 24);
+
+            // Erase page (use page-aligned address)
+            hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
+
+            // Write back all 512 bytes in big-endian word format
+            for (pg_i = 0; pg_i < 512; pg_i += 4) {
+                uint32_t word = ((uint32_t)g_page_1800_buf[pg_i] << 24) |
+                                ((uint32_t)g_page_1800_buf[pg_i+1] << 16) |
+                                ((uint32_t)g_page_1800_buf[pg_i+2] << 8) |
+                                (uint32_t)g_page_1800_buf[pg_i+3];
+                hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + pg_i, word);
+            }
 
             printk("update bat = %d\n", flash_bat_energy_total);
         }

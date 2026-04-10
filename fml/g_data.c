@@ -374,22 +374,40 @@ void product_info_read(ProductInfo_t *info) {
 	}
 }
 
+static uint8_t g_page_1800_buf[512];
+
 void product_info_write(const ProductInfo_t *info) {
 	uint16_t i;
-	const uint8_t *src_data;
 
-	// (Erase the entire page)
+	// 1. Read entire 512-byte page (0x1800-0x19FF) to preserve BAT_ADDR_BASE data
+	for (i = 0; i < 512; i++) {
+		g_page_1800_buf[i] = __read_08bits(AP_CFG_ROM_ADDR_PRO_INFO + i);
+	}
+
+	// 2. Modify only the product info portion (offset 0, sizeof(ProductInfo_t) bytes)
+	const uint8_t *src_data = (const uint8_t *)info;
+	for (i = 0; i < sizeof(ProductInfo_t); i++) {
+		g_page_1800_buf[i] = src_data[i];
+	}
+
+	// 3. Write version marker at offset 120 (ADDR_PRODUCT_INFO_VERSION - AP_CFG_ROM_ADDR_PRO_INFO)
+	uint16_t ver_offset = ADDR_PRODUCT_INFO_VERSION - AP_CFG_ROM_ADDR_PRO_INFO;
+	g_page_1800_buf[ver_offset + 0] = (uint8_t)(PRODUCT_INFO_VERSION >> 0);
+	g_page_1800_buf[ver_offset + 1] = (uint8_t)(PRODUCT_INFO_VERSION >> 8);
+	g_page_1800_buf[ver_offset + 2] = (uint8_t)(PRODUCT_INFO_VERSION >> 16);
+	g_page_1800_buf[ver_offset + 3] = (uint8_t)(PRODUCT_INFO_VERSION >> 24);
+
+	// 4. Erase page
 	hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
 
-	// 2. (Write product information - 120 bytes, 4-byte aligned)
-	src_data = (const uint8_t *)info;
-
-	for (i = 0; i < sizeof(ProductInfo_t); i += 4) {
-		uint32_t word = (src_data[i+3] << 24) | (src_data[i+2] << 16) | (src_data[i+1] << 8) | src_data[i];
-		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, switch_big_little_endian(word));
+	// 5. Write back all 512 bytes in big-endian word format
+	for (i = 0; i < 512; i += 4) {
+		uint32_t word = ((uint32_t)g_page_1800_buf[i] << 24) |
+		                ((uint32_t)g_page_1800_buf[i+1] << 16) |
+		                ((uint32_t)g_page_1800_buf[i+2] << 8) |
+		                (uint32_t)g_page_1800_buf[i+3];
+		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, word);
 	}
-	// 3. (Write version marker to distinguish new/old format)
-	hal_fmc_write_word(ADDR_PRODUCT_INFO_VERSION, PRODUCT_INFO_VERSION);
 }
 
 void product_info_print(void) {
