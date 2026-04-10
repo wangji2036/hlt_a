@@ -23,6 +23,7 @@ void key_long_click_process(void);
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void key_triple_click_process(void);
 void key_quad_click_process(void);
+void key_quint_click_process(void);
 #endif
 volatile uint8_t key_flag = 0;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
@@ -528,6 +529,11 @@ void ui_update(void)
 		key_quad_click_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
+	else if(key_flag == 6)
+	{
+		key_quint_click_process();
+		gd->idle_to_sleep_cnt = 0;
+	}
 #endif
 
 	key_flag = 0;
@@ -832,6 +838,11 @@ void key_triple_click_process(void)
 	key_ui_cnt = 0;
 }
 
+void key_quint_click_process(void)
+{
+	printk("\r\n[KEY] quint click");
+}
+
 void key_quad_click_process(void)
 {
 	gd->forbid_bypass_flag ^= 1;
@@ -902,9 +913,9 @@ void key_handle_10ms()
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 			key_click_cnt++;
 			key_delay_ms = 50;
-			if(key_click_cnt >= 4)
+			if(key_click_cnt >= 5)
 			{
-				key_flag = 5;  // quad click
+				key_flag = 6;  // quint click
 				key_click_cnt = 0;
 				key_delay_ms = 0;
 			}
@@ -939,6 +950,8 @@ void key_handle_10ms()
 					key_flag = 2;  // double click
 				else if(key_click_cnt == 3)
 					key_flag = 4;  // triple click
+				else if(key_click_cnt == 4)
+					key_flag = 5;  // quad click
 #else
 				key_flag = 1;
 #endif
