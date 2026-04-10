@@ -67,8 +67,9 @@ void cycle_count_save_to_flash(void)
     uint32_t cfg[6];
     for (uint8_t i = 0; i < 6; i++)
         cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
-    if (gd->bat_ov_forbid_flag)
-        cfg[4] = (uint32_t)gd->bat_ov_forbid_flag;  /* offset+16 = OV_FORBID */
+#if OV_FORBID_FLASH_PERSIST
+    cfg[4] = gd->bat_ov_forbid_flag ? (uint32_t)1 : (uint32_t)0xFFFFFFFF;  /* offset+16 = OV_FORBID */
+#endif
     cfg[5] = (uint32_t)GET_CYCLE_COUNT(gd);            /* offset+20 = cycle count (16-bit) */
     hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
     for (uint8_t i = 0; i < 6; i++)
@@ -257,7 +258,45 @@ void gd_data_init(void)
 		gd->Battery_charger_cnt = 0;
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;
-
+#if CYCLE_COUNT_FLASH_PERSIST
+		/* Restore cycle count from Flash */
+		{
+			uint32_t flash_cycle = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + CYCLE_COUNT_FLASH_OFFSET);
+			if (flash_cycle != 0xFFFFFFFF && flash_cycle <= 65535) {
+				SET_CYCLE_COUNT(gd, (uint16_t)flash_cycle);
+				printk("\r\n[CYCLE] Restored from Flash: %d", (int)flash_cycle);
+			}
+		}
+#endif
+#if OV_FORBID_FLASH_PERSIST
+  #if OV_FORBID_FORCE_CLEAR
+		/* Debug: erase forbid flag from Flash, preserve other fields */
+		{
+			uint32_t cfg[6];
+			for (uint8_t i = 0; i < 6; i++)
+				cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
+			cfg[4] = 0xFFFFFFFF;  /* clear OV_FORBID (+16) */
+			hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
+			for (uint8_t i = 0; i < 6; i++)
+				hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
+		}
+		gd->bat_ov_forbid_flag = 0;
+		printk("\r\n[OV_FORBID] Force cleared");
+  #else
+		/* Normal: restore forbid flag from Flash */
+		{
+			uint32_t flash_val = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + 16);
+			if (flash_val == 0xFFFFFFFF) {
+				gd->bat_ov_forbid_flag = 0;  /* Flash erased = never triggered */
+			} else {
+				gd->bat_ov_forbid_flag = 1;  /* Has value = previously triggered */
+				printk("\r\n[OV_FORBID] Restored from Flash! Charge/discharge forbidden.");
+			}
+		}
+  #endif
+#else
+		gd->bat_ov_forbid_flag = 0;
+#endif
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
 		gd->Bat_RTC_Timer = 0;
@@ -374,7 +413,7 @@ void product_info_read(ProductInfo_t *info) {
 	}
 }
 
-static uint8_t g_page_1800_buf[512];
+uint8_t g_page_1800_buf[512];
 
 void product_info_write(const ProductInfo_t *info) {
 	uint16_t i;

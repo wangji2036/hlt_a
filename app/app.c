@@ -49,34 +49,6 @@ void apl_task_event_handler(uint32_t event)
 	{
 		case APL_EVT_250ms_POLL://250ms
 			ui_update();
-			extern uint16_t cell2_voltage;
-			{
-				/* PB6=BADC7: BAT2+ 总电压（2M+1M 分压 ×3） */
-				uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
-				uint16_t bat2_plus  = (uint16_t)(pb6_adc_mv * BADC_PB6_BAT2P_DIV_RATIO);
-
-				/* PC7=BADC4: Cell2 分压采样（2M+1M ×3） */
-				uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
-				uint16_t pc7_mv     = (uint16_t)(pc7_adc_mv * BADC_PC7_CELL2_DIV_RATIO);
-
-				/* PD3=BADC9: VBAT- 负压（1M→VDD + 2M→VBAT-）
-				 * V_pd3 = (VDD×2 + VBAT-) / 3, VBAT- = pd3_adc × 3 - VDD × 2
-				 * 若 3.3V 被拉低 → pd3 读数异常偏低，保持上次有效值 */
-				static int16_t vbat_minus_last = 0;
-				uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
-				if (pd3_adc_mv >= BADC_PD3_VBATN_MIN_MV) {
-					uint16_t vdd_mv = hal_badc_get_vdd_mv();
-					int16_t raw = (int16_t)(pd3_adc_mv * 3) - (int16_t)(vdd_mv * 2);
-					/* EMA 滤波：filtered += (raw - filtered) >> N */
-					vbat_minus_last += (raw - vbat_minus_last) >> BADC_PD3_VBATN_EMA_SHIFT;
-				}
-
-				uint16_t total_vbat = (uint16_t)((int16_t)bat2_plus - vbat_minus_last);
-				cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus_last);
-				printk("PB6=%u PC7=%u PD3=%u VDD=%u PB6_V=%u PC7_V=%u total=%u cell2=%u vbat-=%d NU6805=%d\n",
-				       pb6_adc_mv, pc7_adc_mv, pd3_adc_mv, hal_badc_get_vdd_mv(),
-				       bat2_plus, pc7_mv, total_vbat, cell2_voltage, vbat_minus_last, g_buckboost.adc_vbat);
-			}
 
 
 #if 1
@@ -423,6 +395,10 @@ void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
 
 	if ((0x12 == com_pkt->msg.prop.data[0]) && (0x34 == com_pkt->msg.prop.data[1]))
 	{
+		/* Read-Modify-Write: preserve cycle count and OV forbid at offset+16/+20 */
+		uint32_t cfg[6];
+		for (uint8_t i = 0; i < 6; i++)
+			cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
 		hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
 
 		u32Tmp = switch_big_little_endian(gd->tx_infos.q_fact_air);
@@ -430,5 +406,8 @@ void jig_store_Q_value_process(struct com_prx_ask_pkt_t *com_pkt)
 
 		u32Tmp = switch_big_little_endian(gd->tx_infos.f_self_air);
 		hal_fmc_write_word((AP_CFG_ROM_ADDR_BASE + 4), u32Tmp);
+
+		for (uint8_t i = 2; i < 6; i++)
+			hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 	}
 }
