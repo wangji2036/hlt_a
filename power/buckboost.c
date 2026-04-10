@@ -707,6 +707,26 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6805 == 1)
 				buckboost_ir_drop_handle();
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
+				/*6805 Vcell ADC*/
+				/*battery negative ADC*/
+				uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
+				printk("pd3_adc_mv = %d mV\n", pd3_adc_mv);
+				g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - 6600);
+				printk("g_buckboost.adc_Packnegative = %d mV\n", g_buckboost.adc_Packnegative);
+				/*VCELL1*/
+				uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
+				printk("pc7_adc_mv=%d\n",pc7_adc_mv);
+				int16_t vcell1_raw = 3 * pc7_adc_mv - g_buckboost.adc_Packnegative;
+				g_buckboost.adc_vcell1 = (vcell1_raw > 0) ? vcell1_raw : 0;
+				printk("g_buckboost.adc_vcell1 = %d mV\n", g_buckboost.adc_vcell1);
+				/*VCELL2*/
+				uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
+				int16_t vcell2_raw = 3 * pb6_adc_mv -g_buckboost.adc_Packnegative- g_buckboost.adc_vcell1;
+				printk("pb6_adc_mv=%d\n",pb6_adc_mv);
+				g_buckboost.adc_vcell2 = (vcell2_raw > 0) ? vcell2_raw : 0;
+				printk("g_buckboost.adc_vcell2 = %d mV\n", g_buckboost.adc_vcell2);
+				printk("total voltage = %d mV\n", g_buckboost.adc_vcell2 + g_buckboost.adc_vcell1);
+
 			#else
 				buckboost_ir_drop_handle();
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_VBAT);

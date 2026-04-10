@@ -276,7 +276,7 @@ void hal_gpio_init(void)
 	}
 
 	/* PB6 — BADC7: BAT2+ via 2M+1M divider (V_pin = BAT2+/3) */
-	GPB->I_EN.BITS.PIN6 = 0;
+	GPB->I_EN.BITS.PIN6 = 1;
 		GPB->O_EN.BITS.PIN6 = 0;
 		GPB->DOUT.BITS.PIN6 = 0;
 		GPB->ODEN.BITS.PIN6 = 0;
@@ -384,7 +384,7 @@ void hal_gpio_init(void)
 	}
 
 	/* PC8 — BADC5: C口 NTC1 温度采样 */
-	GPC->I_EN.BITS.PIN8 = 0;
+	GPC->I_EN.BITS.PIN8 = 1;
 	GPC->O_EN.BITS.PIN8 = 0;
 	GPC->DOUT.BITS.PIN8 = 0;
 	GPC->ODEN.BITS.PIN8 = 0;
@@ -413,7 +413,7 @@ void hal_gpio_init(void)
 	GPD->MODE.BITS.PIN2 = 1; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED (LED6 GPIO)
 
 	/* PD3 — BADC9: VBAT- 负压采样（1M→VDD + 2M→VBAT-, V_pin = (VDD×2+VBAT-)/3） */
-	GPD->I_EN.BITS.PIN3 = 0;
+	GPD->I_EN.BITS.PIN3 = 1;
 	GPD->MODE.BITS.PIN3 = 1; //00:PD3 01:BADC9 10:RESERVED 11:RESERVED
 	GPD->ITEN.BITS.PIN3 = 0;
 	GPD->ITTP.BITS.PIN3 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge

@@ -45,6 +45,9 @@ struct buckboost_s
 	int16_t adc_ibat;
 
 	uint16_t adc_vbat;
+	int16_t adc_Packnegative;
+	uint16_t adc_vcell1;
+	uint16_t adc_vcell2;
 	uint16_t adc_tbat1;
 	uint16_t adc_tbat2;
 	uint16_t adc_vbus;
