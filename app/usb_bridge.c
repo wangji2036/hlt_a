@@ -1,56 +1,49 @@
-/**
- * @file usb_bridge.c
- * @brief USB Bridge (WB7720) — unified telemetry, exception log, engineering mode,
- *        production mode. Architecture aligned with Nanfu A1052.
- *
- * Single entry: usb_bridge_periodic_update() called from FML_TASK round-robin.
- * Internal cnt 0-13 dispatch, 14 steps per cycle (~47ms each).
- */
-
 #include "usb_bridge.h"
 
 #if CONFIG_USB_BRIDGE_ENABLE
 
 #include "g_data.h"
+#include "buckboost.h"
+#include "nu6805.h"
+#include "bat_record.h"
 #include "i2cm.h"
 #include "printk.h"
-#include "buckboost.h"
-#include "bat_record.h"
-#include "nu6805.h"
 #include "../hal/badc.h"
 #include <string.h>
-
-/* batTemp is pre-computed in app.c 100ms poll (NTC lookup) */
 
 /*===================== External References =====================*/
 extern struct buckboost_s g_buckboost;
 extern uint16_t cell2_voltage;  /* MCU ADC sampled Cell2 (app.c 250ms update) */
 
-/*===================== Static Variables =====================*/
+/********************* Static Variables *********************/
 
+/* Round-robin counter for telemetry writes */
 static uint8_t cnt = 0;
+
+/* USB enable state for force_usb_mode control */
 static bool is_usb_enable = false;
 
-/* Cached VBAT from cnt 2 MCU ADC, reused by cnt 10 Cell Info */
-static uint16_t vbat_cached = 0;
+/* Cached vbat_compensated value from cnt 2, reused in cnt 10 */
+static uint16_t vbat_compensated = 0;
 
-/* Exception log sequential push cursor */
+/* Exception log sequential push cursor (cnt 12) */
 static uint8_t exc_cursor_page = 0;
 static uint8_t exc_cursor_idx = 0;
 static uint8_t exc_records_sent = 0;
 static uint8_t exc_page_counts[LOG_PAGE_COUNT];
 
-/* Engineering mode cycle tracking (16-bit to match GET_CYCLE_COUNT) */
-static uint16_t eng_saved_cycle_count = 0;
-static uint16_t eng_entry_virtual_cycle = 0;
+/* Saved real cycle count before engineering mode injection */
+static uint16_t eng_saved_cycle_count = 0;   /* Real cycle count before eng mode */
+static uint16_t eng_entry_virtual_cycle = 0; /* Virtual cycle count at entry (baseline for delta) */
 
-/*===================== ProductInfo Sync =====================*/
+/********************* ProductInfo Sync *********************/
 
 void usb_bridge_reset_product_info(void)
 {
     ProductInfo_t info;
     product_info_read(&info);
 
+    /* Write 5 fields (each 20 bytes) + serial (10 bytes) */
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_MANUFACTURER,
                                (uint8_t*)info.manufacturer_name, 20);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_MODEL,
@@ -65,34 +58,52 @@ void usb_bridge_reset_product_info(void)
                                (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
 }
 
-/*===================== Init =====================*/
+/********************* Init *********************/
 
 void usb_bridge_init(void)
 {
     cnt = 0;
     is_usb_enable = false;
+    vbat_compensated = 0;
     exc_cursor_page = 0;
     exc_cursor_idx = 0;
     exc_records_sent = 0;
 
+    /* Sync ProductInfo from Flash to WB7720 I2C buffer */
     usb_bridge_reset_product_info();
+
+    /* WB7720 boots with USB enabled by default.
+     * Explicitly sleep it so USB only activates via triple-click. */
     usb_bridge_sleep();
 }
 
-/*===================== Sleep / Wake =====================*/
+/********************* Sleep / Wake *********************/
 
 void usb_bridge_sleep(void)
 {
+    printk("[sleep] eng=%d saved=%d entry=%d cur=%d\n",
+           gd->eng_mode_active, eng_saved_cycle_count, eng_entry_virtual_cycle, GET_CYCLE_COUNT(gd));
+    /* Exit engineering mode if active */
     if (gd->eng_mode_active) {
         gd->eng_mode_active = 0;
         gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
         gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
-        gd->eng_virtual_temp  = (int16_t)VIRTUAL_TEMP_SENTINEL;
-
+        gd->eng_virtual_temp  = VIRTUAL_TEMP_SENTINEL;
+        /* Restore real cycle count + cycles accumulated during eng mode */
         uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
-                              ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
+                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
         SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
 
+        /* Restore CV voltage based on real cycle count */
+#if (BUCKBOOST_USED_NU6801 == 1)
+        hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
+#if (BUCKBOOST_USED_NU6805 == 1)
+        hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
+
+        printk("[sleep] cycle=%d\n", GET_CYCLE_COUNT(gd));
+        /* Immediately sync restored cycle count to WB7720 before sleep */
         uint16_t cycle_wb = GET_CYCLE_COUNT(gd);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&cycle_wb, 2);
     }
@@ -103,6 +114,10 @@ void usb_bridge_sleep(void)
 
 void usb_bridge_wakeup(void)
 {
+    /* Force USB re-enumeration: disconnect first, then reconnect.
+     * WB7720 usb_enable() only does Init+Connect without Disconnect,
+     * so Windows may not re-enumerate. Send sleep→delay→wakeup sequence. */
+    /* WAKE_CMD 重试: 第1次触发 EXTI 唤醒，读回操作提供自然延时 */
     for (int retry = 0; retry < 5; retry++) {
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_WAKEUP_CMD, 0x01);
         uint8_t readback = 0;
@@ -110,13 +125,17 @@ void usb_bridge_wakeup(void)
         printk("[WB] wake r=%d rb=%02X\n", retry, readback);
     }
 
+    /* Resync ProductInfo after wakeup */
     usb_bridge_reset_product_info();
 
+    /* Resync cycle count: WB7720 resets i2c_buff[0x80] to 0x0000 on sleep/wakeup.
+     * Without this write, the next eng-mode entry would read 0x0000 != 0xFFFF and
+     * overwrite cycle count with 0, corrupting the stored value. */
     uint16_t cycle_buf = GET_CYCLE_COUNT(gd);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle_buf, 2);
 }
 
-/*===================== Engineering Mode Helpers =====================*/
+/********************* Engineering Mode Helpers *********************/
 
 static void usb_bridge_read_virtual_params(void)
 {
@@ -160,11 +179,14 @@ static void usb_bridge_apply_eng_datetime(void)
 
 static void usb_bridge_exit_eng_mode(void)
 {
+    /* If eng mode injected a virtual cycle count (not sentinel),
+     * keep it as the new real value and persist to Flash.
+     * Otherwise restore saved real value + any increments. */
     if (eng_entry_virtual_cycle != eng_saved_cycle_count) {
-        /* Virtual cycle was injected -- keep current value */
+        /* Virtual cycle was injected — keep current value (includes any increments) */
         printk("[eng] exit: cycle=%d (injected, kept)\n", GET_CYCLE_COUNT(gd));
     } else {
-        /* No injection (sentinel) -- restore real + increments */
+        /* No injection (sentinel) — restore real + increments */
         uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
                                ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
         SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
@@ -172,24 +194,23 @@ static void usb_bridge_exit_eng_mode(void)
     }
 
     /* Update CV voltage based on final cycle count */
-#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+#if (BUCKBOOST_USED_NU6801 == 1)
+    hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
+#if (BUCKBOOST_USED_NU6805 == 1)
     hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
 
     gd->eng_mode_active = 0;
     gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
     gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
-    gd->eng_virtual_temp  = (int16_t)VIRTUAL_TEMP_SENTINEL;
-
+    gd->eng_virtual_temp  = VIRTUAL_TEMP_SENTINEL;
     uint16_t cycle_wb = GET_CYCLE_COUNT(gd);
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&cycle_wb, 2);
-
 #if CYCLE_COUNT_FLASH_PERSIST
     cycle_count_save_to_flash();
 #endif
 }
-
-/*===================== Engineering Mode Check =====================*/
 
 static void usb_bridge_check_eng_mode(void)
 {
@@ -197,39 +218,43 @@ static void usb_bridge_check_eng_mode(void)
     hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_WORK_MODE, &work_mode);
 
     if (work_mode == ENG_MODE_MAGIC && !gd->eng_mode_active) {
-        /* ENTER engineering mode */
         gd->eng_mode_active = 1;
 
+        /* Read datetime (7B: 0x60-0x66) */
         usb_bridge_apply_eng_datetime();
 
+        /* Read cycle count (2B: 0x80) */
         uint16_t cycle = 0;
         hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
         if (cycle != 0xFFFF) {
+            /* Save real cycle count before injecting virtual value */
             eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
-            SET_CYCLE_COUNT(gd, cycle);
-            eng_entry_virtual_cycle = cycle;
+            SET_CYCLE_COUNT(gd, (uint16_t)cycle);
+            eng_entry_virtual_cycle = (uint16_t)cycle;
         } else {
-            eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
+            /* Sentinel: keep real value, record it as baseline */
             eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
         }
 
-        /* Update CV voltage based on (possibly injected) cycle count */
-#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+        /* Update CV voltage based on injected cycle count */
+#if (BUCKBOOST_USED_NU6801 == 1)
+        hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
+#if (BUCKBOOST_USED_NU6805 == 1)
         hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
 
-        /* Virtual params NOT read here — only on Refresh (0xAA) trigger.
-         * Prevents CC flap re-entry from re-loading stale virtual values. */
+        /* Read virtual parameters (6B: 0x82-0x87) */
+        usb_bridge_read_virtual_params();
 
-        printk("eng enter: saved=%d virt=%d\n", eng_saved_cycle_count, eng_entry_virtual_cycle);
+        printk("eng mode enter: saved=%d virt=%d\n", eng_saved_cycle_count, eng_entry_virtual_cycle);
     }
     else if (gd->eng_mode_active && work_mode == 0x00) {
-        /* EXIT engineering mode */
+        /* PC wrote 0x00 to REG_WORK_MODE → exit engineering mode */
         usb_bridge_exit_eng_mode();
+        printk("eng mode exit\n");
     }
 }
-
-/*===================== Erase / Refresh Commands =====================*/
 
 static void usb_bridge_check_eng_cmd(void)
 {
@@ -247,6 +272,7 @@ static void usb_bridge_check_eng_cmd(void)
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_TOTAL_COUNT, 0);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0x00);
 
+        /* Reset push cursor so next cnt==12 starts from page 0 */
         exc_cursor_page = 0;
         exc_cursor_idx = 0;
         exc_records_sent = 0;
@@ -260,28 +286,33 @@ static void usb_bridge_check_eng_cmd(void)
     else if (cmd == ENG_CMD_REFRESH) {
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_BUSY);
 
-        /* Settle delta */
+        /* 1. Settle delta from current session: restore real + cycles accumulated */
         uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
-                              ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
+                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
         SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
+
+        /* 2. Update baseline for next session */
         eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
 
-        /* Re-read params */
+        /* 3. Read new virtual params + arm single-shot */
         usb_bridge_read_virtual_params();
         usb_bridge_apply_eng_datetime();
 
-        /* Re-read cycle */
+        /* 4. Re-read cycle count and re-inject */
         uint16_t cycle = 0;
         hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
         if (cycle != 0xFFFF) {
-            SET_CYCLE_COUNT(gd, cycle);
-            eng_entry_virtual_cycle = cycle;
+            SET_CYCLE_COUNT(gd, (uint16_t)cycle);
+            eng_entry_virtual_cycle = (uint16_t)cycle;
         } else {
             eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
         }
 
         /* Update CV voltage based on refreshed cycle count */
-#if (BUCKBOOST_USED_NU6805 == 1 && CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+#if (BUCKBOOST_USED_NU6801 == 1)
+        hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#endif
+#if (BUCKBOOST_USED_NU6805 == 1)
         hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
 
@@ -292,10 +323,10 @@ static void usb_bridge_check_eng_cmd(void)
     }
 }
 
-/*===================== Time Sync =====================*/
-
 static void usb_bridge_check_time_sync(void)
 {
+    /* RTC校准不再限制工程模式，上位机连接时自动同步 */
+
     uint8_t trigger = 0;
     hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_TIME_SYNC, &trigger);
 
@@ -306,16 +337,16 @@ static void usb_bridge_check_time_sync(void)
     }
 }
 
-/*===================== Production Mode =====================*/
-
 static void usb_bridge_check_prod_mode(void)
 {
     uint8_t flag = 0;
     hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &flag);
+
     if (flag != PROD_MODE_MAGIC) return;
 
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_BUSY);
 
+    /* Read 110B ProductInfo from WB7720 */
     ProductInfo_t info;
     hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_MANUFACTURER,
                               (uint8_t*)info.manufacturer_name, 20);
@@ -330,22 +361,31 @@ static void usb_bridge_check_prod_mode(void)
     hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_SERIAL,
                               (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
 
+    /* Write to Flash */
     product_info_write(&info);
 
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_OK);
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, 0x00);
 
+    /* Refresh i2c_buff so WB7720 Type 0x03 reflects new data */
     usb_bridge_reset_product_info();
+
     printk("prod info written\n");
 }
 
-/*===================== Periodic Update (cnt 0-13) =====================*/
+/********************* Periodic Update (47ms) *********************/
 
 void usb_bridge_periodic_update(void)
 {
     uint16_t write_buf;
 
-    /* cnt 13: unconditional — always poll eng/prod/time regardless of force_usb_mode */
+    /* cnt 13: 无论 force_usb_mode 状态如何，始终轮询工程/生产模式。
+     * 工厂生产时 force_usb_mode=false（未三击），但 WB7720 通过 PORT1 VBUS 自动上电
+     * 并启用 USB，PC 可直接写入 PROD_MODE_FLAG，必须无条件轮询。
+     * 工程模式同理，进入条件是 PC 写 REG_WORK_MODE，不依赖三击。
+     *
+     * cnt 在 cnt 0-12 阶段由底部 cnt++ 推进（不论 force_usb_mode），确保每 14 轮
+     * 必然触发一次 cnt==13 检查。 */
     if (cnt == 13)
     {
         usb_bridge_check_eng_mode();
@@ -353,17 +393,25 @@ void usb_bridge_periodic_update(void)
         usb_bridge_check_eng_cmd();
         usb_bridge_check_prod_mode();
         cnt = 0;
-
-        if (!gd->force_usb_mode && is_usb_enable) {
+        /* 管理 WB7720 睡眠状态：非 force_usb_mode 时让 WB7720 回到睡眠 */
+        if (!gd->force_usb_mode && is_usb_enable)
+        {
+            printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
             usb_bridge_sleep();
             is_usb_enable = false;
         }
         return;
     }
 
-    /* cnt 0-12: gated by force_usb_mode */
-    if (!gd->force_usb_mode) {
-        if (is_usb_enable) {
+    /* === USB 通信总开关 (cnt 0-12) === */
+    if (!gd->force_usb_mode)
+    {
+        /* 非通信模式：确保 WB7720 睡眠，停止所有 I2C 写入（避免唤醒 WB7720）。
+         * 注意：仍需执行底部 cnt++ 推进计数器，以便 cnt 最终到达 13 触发
+         * 工程/生产模式轮询。 */
+        if (is_usb_enable)
+        {
+            printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
             usb_bridge_sleep();
             is_usb_enable = false;
         }
@@ -372,7 +420,9 @@ void usb_bridge_periodic_update(void)
         return;
     }
 
-    if (!is_usb_enable) {
+    /* force_usb_mode 激活：按需唤醒 WB7720 */
+    if (!is_usb_enable)
+    {
         usb_bridge_wakeup();
         is_usb_enable = true;
     }
@@ -403,14 +453,14 @@ void usb_bridge_periodic_update(void)
 
         /* PB6 = BAT2+ total voltage */
         uint16_t pb6_bat2p = (uint16_t)(hal_badc_meas(_BADC_CH_PB6_ADC7) * BADC_PB6_BAT2P_DIV_RATIO);
-        vbat_cached = (uint16_t)((int16_t)pb6_bat2p - vbat_minus);
+        vbat_compensated = (uint16_t)((int16_t)pb6_bat2p - vbat_minus);
 
         /* PC7 = Cell2 midpoint */
         uint16_t pc7_mv = (uint16_t)(hal_badc_meas(_BADC_CH_PC7_ADC4) * BADC_PC7_CELL2_DIV_RATIO);
         cell2_voltage = (uint16_t)((int16_t)pc7_mv - vbat_minus);
 
         /* Write VBAT total to 0x05 */
-        write_buf = vbat_cached;
+        write_buf = vbat_compensated;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_VBAT_MV, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 3: IBAT (0 when idle/shutdown) ---- */
@@ -439,6 +489,7 @@ void usb_bridge_periodic_update(void)
     else if (cnt == 5)
     {
         write_buf = GET_CYCLE_COUNT(gd);
+        printk("[cnt5] cycle=%d eng=%d\n", write_buf, gd->eng_mode_active);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 6: Internal Resistance ---- */
@@ -453,13 +504,13 @@ void usb_bridge_periodic_update(void)
         write_buf = gd->Bat_SoH;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_SOH_PCT_X100, (uint8_t*)&write_buf, 2);
     }
-    /* ---- cnt 8: Error Counts (Flash scan) ---- */
+    /* ---- cnt 8: Error Counts (overtemp + overvolt + overcurrent) ---- */
     else if (cnt == 8)
     {
         uint16_t err_buf[3];
         err_buf[0] = battery_record_get_overtemp_count();
         err_buf[1] = battery_record_get_overvolt_count();
-        err_buf[2] = 0;
+        err_buf[2] = 0;  /* overcurrent reserved */
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_ERR_OVERTEMP_CNT, (uint8_t*)err_buf, 6);
     }
     /* ---- cnt 9: Charge State ---- */
@@ -478,7 +529,7 @@ void usb_bridge_periodic_update(void)
         uint8_t cell_buf[5];
         cell_buf[0] = CONFIG_BATTERY_CELL_COUNT;
         uint16_t c2 = cell2_voltage;  /* MCU ADC PC7, updated at cnt 2 */
-        uint16_t c1 = (vbat_cached > c2) ? (vbat_cached - c2) : 0;  /* MCU ADC PB6 - Cell2 */
+        uint16_t c1 = (vbat_compensated > c2) ? (vbat_compensated - c2) : 0;
 
         /* Engineering mode virtual override */
         if (gd->eng_mode_active) {
@@ -521,8 +572,7 @@ void usb_bridge_periodic_update(void)
         BatteryExceptionRecord_t rec;
         if (battery_record_read_by_page_index(exc_cursor_page, exc_cursor_idx, &rec)
             && rec.record_id != 0) {
-            /* NU17112 主导握手: 先清 READY → 写记录 → 设 READY
-             * (WB7720 不清 READY，由 NU17112 每轮自行重置) */
+            /* NU17112 主导握手: 先清 READY → 写记录 → 设 READY */
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0x00);
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_CURRENT_IDX, exc_records_sent);
             hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_EXC_RECORD, (uint8_t*)&rec, 20);

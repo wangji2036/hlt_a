@@ -2,78 +2,141 @@
 #define __BAT_RECORD_H__
 
 #include "g_data.h"
-#include <stdbool.h>
+#include "config.h"
+
+#define BAT_LOG_DEBUG 0
+#if SUPPORT_BAT_RECORD_LOG
+	#define br_printk 	printk
+	#if BAT_LOG_DEBUG
+		#define br_printk_debug 	printk
+	#else
+	#define br_printk_debug(...)
+	#endif
+#else
+	#define br_printk(...)
+#endif
 
 /********************* Flash Address Definitions *********************/
-#define LOG_PAGE_COUNT          2
-#define MAX_RECORDS_PER_PAGE    24
-#define FLASH_LOG_PAGE1         0x1400
-#define FLASH_LOG_PAGE2         0x1200
-#define FLASH_PAGE_SIZE         512
+// Multi-page flash addresses (support 1-3 pages)
+#define FLASH_LOG_PAGE1             AP_CFG_ROM_ADDR_LOG1  // 0x1400 - Page 1
+#define FLASH_LOG_PAGE2             AP_CFG_ROM_ADDR_LOG2  // 0x1200 - Page 2
+#define FLASH_LOG_PAGE3             AP_CFG_ROM_ADDR_LOG3  // 0x1000 - Page 3
+#define FLASH_PAGE_SIZE             512                   // Page size in bytes
 
-#define GET_ACTIVE_PAGE_ADDR(p) ((p) == 0 ? FLASH_LOG_PAGE1 : FLASH_LOG_PAGE2)
+// Get page address by page number (supports 3 pages)
+#define GET_ACTIVE_PAGE_ADDR(page_num) \
+    ((page_num) == FLASH_PAGE_LOG1 ? FLASH_LOG_PAGE1 : \
+     (page_num) == FLASH_PAGE_LOG2 ? FLASH_LOG_PAGE2 : \
+     FLASH_LOG_PAGE3)
 
-/********************* Version Management *********************/
-#define MAGIC_VALUE_V5          0x42415430  /* 'BAT0' */
-#define MAGIC_VALUE_V6          0x42415436  /* 'BAT6' */
-#define MAGIC_VALUE_V7          0x42415437  /* 'BAT7' */
-#define MAGIC_VALUE             MAGIC_VALUE_V7
+// Legacy compatibility (defaults to LOG1 for old code)
+#define FLASH_LOG_BASE              FLASH_LOG_PAGE1
+#define ADDR_MAGIC                  (FLASH_LOG_BASE + 0x00)
+#define ADDR_EXCEPTION_COUNTER      (FLASH_LOG_BASE + 0x04)
+#define ADDR_EXCEPTION_WRITE_PTR    (FLASH_LOG_BASE + 0x08)
+#define ADDR_RESERVED               (FLASH_LOG_BASE + 0x0C)
+#define ADDR_EXCEPTION_RECORDS      (FLASH_LOG_BASE + 0x10)
 
-/********************* Exception Types *********************/
-#define EXCEPTION_TYPE_OVERVOLTAGE  0x01
-#define EXCEPTION_TYPE_OVERTEMP     0x02
-#define EXCEPTION_TYPE_UNDERTEMP    0x03
 
-#if CONFIG_NEW_CCC_LOG_ENABLE
+/********************* Configuration Parameters *********************/
+// Version Management
+#define MAGIC_VALUE_V5          0x42415430  // 'BAT0' (v5) - old version
+#define MAGIC_VALUE_V6          0x42415436  // 'BAT6' (v6) - single page optimized
+#define MAGIC_VALUE_V7          0x42415437  // 'BAT7' (v7) - dual-page version
+#define MAGIC_VALUE             MAGIC_VALUE_V7  // Current version
 
-/********************* Window Tracker Structures (GB31241) *********************/
+#define ONE_HOUR_MS             3600000UL   // One hour in milliseconds
+#define SLEEP_EXCEPTION_CHECK_CYCLES  40    // Check every ~60 sleep cycles (~72 seconds)
 
-typedef struct {
-    bool     triggered;
-    uint16_t max_voltage;
-    uint16_t total_voltage;
-    TimeStamp_t max_timestamp;
-    uint8_t  cell_num;
-} OvWindowTracker_t;
+// Exception type definitions
+#define EXCEPTION_TYPE_OVERVOLTAGE  0x01    // Overvoltage
+#define EXCEPTION_TYPE_OVERTEMP     0x02    // Over temperature
+#define EXCEPTION_TYPE_UNDERTEMP    0x03    // Under temperature
 
-typedef struct {
-    bool     triggered;
-    int16_t  max_temperature;
-    TimeStamp_t max_timestamp;
-    uint8_t  event_type;
-    uint8_t  charge_state;
-} TempWindowTracker_t;
+// Note: Structure definitions and bitfield macros moved to g_data.h
 
-/********************* Flash Page Layout (496B per page) *********************/
 
-typedef struct __attribute__((packed)) {
-    uint32_t magic;
-    uint8_t  page_records_count;
-    uint8_t  page_number;
-    uint8_t  overflow_ptr;
-    uint8_t  page_seq;
-    uint32_t page_timestamp;
-    BatteryExceptionRecord_t records[MAX_RECORDS_PER_PAGE];
-    uint16_t checksum;
-    uint16_t padding;
-} FlashPageLayout_t;
+/********************* Public API Function Declarations *********************/
 
-/********************* Public API *********************/
+/**
+ * @brief Initialize battery record function (check Flash and initialize cache)
+ */
+void battery_record_init(void);
 
-void    battery_record_init(void);
-void    battery_record_update_overvoltage(void);
-void    battery_record_update_temperature(void);
-void    battery_record_periodic_check(void);
+/**
+ * @brief Update overvoltage record (internal call)
+ */
+void battery_record_update_overvoltage(void);
+
+/**
+ * @brief Update temperature abnormal record (internal call)
+ */
+void battery_record_update_temperature(void);
+
+/**
+ * @brief Periodic check function (called in main loop)
+ */
+void battery_record_periodic_check(void);
+
+/**
+ * @brief Read all exception records (unified format)
+ * @param buf Receive buffer
+ * @param max_count Maximum number to read
+ * @return Actual number of records read
+ */
 uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count);
-void    battery_record_print_next_log(void);
-bool    battery_record_erase_all(void);
-void    battery_record_reset_tracking(void);
-bool    battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record);
-uint8_t battery_record_get_page_count(uint8_t page);
-uint16_t battery_record_get_overtemp_count(void);
-uint16_t battery_record_get_overvolt_count(void);
-bool    battery_record_is_tracking_active(void);
-void    battery_record_sleep_check(void);
 
-#endif /* CONFIG_NEW_CCC_LOG_ENABLE */
+
+/**
+ * @brief Print next abnormal record (overvoltage or temperature)
+ */
+void battery_record_print_next_log(void);
+
+/**
+ * @brief Check if any exception is currently being tracked
+ * @return true if tracking active, false otherwise
+ */
+bool battery_record_is_tracking_active(void);
+
+/**
+ * @brief Lightweight exception check for sleep mode
+ * @note Checks 1-hour window and saves to Flash if needed
+ * @return 1 if Flash write occurred, 0 otherwise
+ */
+uint8_t battery_record_sleep_check(void);
+
+/**
+ * @brief Erase all exception records (engineering mode erase command)
+ * @return true if erase succeeded, false otherwise
+ */
+bool battery_record_erase_all(void);
+
+/**
+ * @brief Get count of overtemperature exception records
+ * @return Number of overtemp records across all log pages
+ */
+uint16_t battery_record_get_overtemp_count(void);
+
+/**
+ * @brief Get count of overvoltage exception records
+ * @return Number of overvoltage records across all log pages
+ */
+uint16_t battery_record_get_overvolt_count(void);
+
+/**
+ * @brief Read single record by page and index, with tracking overlay
+ * @param page Page number (0=LOG1, 1=LOG2)
+ * @param index Record index within the page (0-23)
+ * @param record Output buffer for the record (20 bytes)
+ * @return true if read succeeded
+ */
+bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record);
+
+/**
+ * @brief Get record count for a page (header-only read, 5 bytes)
+ * @param page Page number (0=LOG1, 1=LOG2)
+ * @return Number of valid records in the page (0-24)
+ */
+uint8_t battery_record_get_page_count(uint8_t page);
+
 #endif /* __BAT_RECORD_H__ */

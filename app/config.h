@@ -83,6 +83,8 @@
 
 /*----------- New CCC Log Feature (新国标 GB31241) -----------*/
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
+#define SUPPORT_BAT_RECORD_LOG          1   // bat_record.c debug logs
+#define BAT_RECORD_USE_STACK_BUFFER     0   // 0=static buffer (safe), 1=local variable (saves RAM)
 #define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
 #define OVER_VOLTAGE_FORBID_THRESHOLD   4600    // Per-cell OV permanent forbid (mV), GB31241

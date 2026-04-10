@@ -14,7 +14,9 @@
 //1400~15ff log
 //1600~17FF Q/freq calibration value, gauge.etc.
 // 1800~19ff Product information
-#define AP_CFG_ROM_ADDR_LOG         (0x00001400)
+#define AP_CFG_ROM_ADDR_LOG3         (0x00001000)  // Optional third page
+#define AP_CFG_ROM_ADDR_LOG2         (0x00001200)
+#define AP_CFG_ROM_ADDR_LOG1         (0x00001400)
 #define AP_CFG_ROM_ADDR_PRO_INFO    (0x00001800)
 #define AP_CFG_ROM_ADDR_BASE    (0x00001600)
 #define AP_CFG_RAM_ADDR_BASE    (0x20000000)
@@ -43,6 +45,27 @@ typedef struct {
 } ProductInfo_t;  // Total: 20 * 6 = 120 bytes
 
 /********************* Battery Record Structures *********************/
+// ========== CONFIGURABLE: Change this to use 1, 2, or 3 pages ==========
+#define LOG_PAGE_COUNT          2           // Number of log pages (1, 2, or 3)
+// ========================================================================
+
+// Validation
+#if (LOG_PAGE_COUNT < 1) || (LOG_PAGE_COUNT > 3)
+    #error "LOG_PAGE_COUNT must be 1, 2, or 3"
+#endif
+
+// Derived configuration (auto-calculated based on LOG_PAGE_COUNT)
+#define MAX_RECORDS_RAM         0           // No records in RAM (save 100 bytes!)
+#define MAX_RECORDS_PER_PAGE    24          // Maximum records per flash page
+#define MAX_TOTAL_RECORDS       (LOG_PAGE_COUNT * MAX_RECORDS_PER_PAGE)  // Auto-calculated
+
+// Page identifiers (support up to 3 pages)
+#define FLASH_PAGE_LOG1         0           // Page 0: LOG1 (0x1400)
+#define FLASH_PAGE_LOG2         1           // Page 1: LOG2 (0x1200)
+#define FLASH_PAGE_LOG3         2           // Page 2: LOG3 (0x1000)
+
+// Legacy compatibility
+#define MAX_RECORDS             MAX_RECORDS_RAM  // Backward compatibility
 
 // Timestamp structure (8 bytes)
 typedef struct {
@@ -74,16 +97,30 @@ typedef struct {
     uint32_t record_id;         // 4 bytes: Record sequence number
 } BatteryExceptionRecord_t;     // Total: 20 bytes
 
-// Exception tracking cache (RAM) — X20 dual-cell: 3 independent hour_start fields
+// Exception tracking cache (RAM) - unified window version
+// Shared between sleep and non-sleep modes; persists in RAM across sleep cycles
 typedef struct {
-    uint8_t  status_flags;
-    uint8_t  padding1;
-    uint16_t cell1_max_voltage;              // Cell1 realtime max voltage
-    uint16_t cell2_max_voltage;              // Cell2 realtime max voltage
-    int16_t  max_temperature;                // Realtime max temperature (0.1 deg C)
-    uint32_t cell1_hour_start_seconds;       // OV window start for Cell1
-    uint32_t cell2_hour_start_seconds;       // OV window start for Cell2
-    uint32_t temp_hour_start_seconds;        // Temperature window start
+    uint32_t window_start_seconds;      // Unified window start (0 = not initialized)
+
+    uint8_t  ov1_triggered;
+    uint16_t ov1_max_voltage;           // mV
+    uint16_t ov1_total_voltage;         // mV
+    TimeStamp_t ov1_timestamp;
+
+    uint8_t  ov2_triggered;
+    uint16_t ov2_max_voltage;
+    uint16_t ov2_total_voltage;
+    TimeStamp_t ov2_timestamp;
+
+    uint8_t  temp_chg_triggered;
+    int16_t  temp_chg_max;              // 0.1 degC
+    uint8_t  temp_chg_event_type;
+    TimeStamp_t temp_chg_timestamp;
+
+    uint8_t  temp_dchg_triggered;
+    int16_t  temp_dchg_max;             // 0.1 degC
+    uint8_t  temp_dchg_event_type;
+    TimeStamp_t temp_dchg_timestamp;
 } ExceptionCache_t;
 
 // Virtual parameter sentinel values (shared by usb_bridge and bat_record)
@@ -105,6 +142,19 @@ typedef struct {
     uint16_t checksum;              // Simple additive checksum
     uint16_t padding;               // Alignment
 } BatteryRecordStorage_t;  // 12 bytes (was ~110 bytes)
+
+// Flash page layout structure - stored in flash (496 bytes per page)
+typedef struct {
+    uint32_t magic;                 // 4 bytes: Magic value for validation
+    uint8_t  page_records_count;    // 1 byte: Number of records in this page (0-24)
+    uint8_t  page_number;           // 1 byte: Page identifier (0=LOG1, 1=LOG2)
+    uint8_t  overflow_ptr;          // 1 byte: Points to other page (reserved)
+    uint8_t  page_seq;              // 1 byte: Page sequence number (increments on switch, for determining newest)
+    uint32_t page_timestamp;        // 4 bytes: Last write timestamp (seconds)
+    BatteryExceptionRecord_t records[MAX_RECORDS_PER_PAGE];  // 480 bytes: 24 records x 20 bytes
+    uint16_t checksum;              // 2 bytes: Page checksum
+    uint16_t padding;               // 2 bytes: Alignment padding
+} FlashPageLayout_t;  // Total: 496 bytes
 #endif
 
 #if CYCLE_COUNT_FLASH_PERSIST
