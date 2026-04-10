@@ -63,10 +63,10 @@ NU17113A1_APROM_IP162_GB_NewPcb.elf.asm: NU17113A1_APROM_IP162_GB_NewPcb.elf
 	@echo ' '
 
 # Tool invocations
-NU17113A1_APROM_IP162_GB_NewPcb.elf: $(OBJS) $(USER_OBJS) ../startup/ckcpu.ld
+NU17113A1_APROM_IP162_GB_NewPcb.elf: $(OBJS) $(USER_OBJS) ../.claude/worktrees/port0-debug/startup/ckcpu.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: CSky Elf Linker'
-	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections -T"../startup/ckcpu.ld" -o "NU17113A1_APROM_IP162_GB_NewPcb.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)'
+	csky-abiv2-elf-gcc -mcpu=ck802 -nostartfiles -Wl,--gc-sections -T"../.claude/worktrees/port0-debug/startup/ckcpu.ld" -o "NU17113A1_APROM_IP162_GB_NewPcb.elf" $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-ckmap='$(@:%.elf=%.map)'
 	@echo ' '
 	@echo 'Size of $@:'
 	@csky-abiv2-elf-size "$@"
