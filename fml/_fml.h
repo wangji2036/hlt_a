@@ -12,5 +12,6 @@
 
 void fml_task_init(void);
 void fml_task_event_handler(uint32_t event);
+int16_t ntc_to_temp(uint16_t ntc);
 
 #endif /* FML_H_ */

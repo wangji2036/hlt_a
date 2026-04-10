@@ -1007,7 +1007,7 @@ uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t ma
 }
 
 /* Read single record by page/index */
-bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record) {
+uint8_t battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record) {
     if (!read_record_from_flash(page, index, record)) return false;
     return true;
 }
@@ -1233,7 +1233,7 @@ void battery_record_print_next_log(void) {
 /********************* Sleep Mode Functions *********************/
 
 // Check if any exception is currently being tracked (unified window)
-bool battery_record_is_tracking_active(void) {
+uint8_t battery_record_is_tracking_active(void) {
     return g_exception_cache.ov1_triggered || g_exception_cache.ov2_triggered ||
            g_exception_cache.temp_chg_triggered || g_exception_cache.temp_dchg_triggered;
 }
@@ -1445,7 +1445,7 @@ uint8_t battery_record_sleep_check(void) {
  * @brief Erase all exception records (engineering mode 0xEE command)
  * @return true if erase succeeded, false otherwise
  */
-bool battery_record_erase_all(void)
+uint8_t battery_record_erase_all(void)
 {
     const uint32_t page_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
 

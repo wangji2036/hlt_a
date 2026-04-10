@@ -96,7 +96,7 @@ void battery_record_print_next_log(void);
  * @brief Check if any exception is currently being tracked
  * @return true if tracking active, false otherwise
  */
-bool battery_record_is_tracking_active(void);
+uint8_t battery_record_is_tracking_active(void);
 
 /**
  * @brief Lightweight exception check for sleep mode
@@ -109,7 +109,7 @@ uint8_t battery_record_sleep_check(void);
  * @brief Erase all exception records (engineering mode erase command)
  * @return true if erase succeeded, false otherwise
  */
-bool battery_record_erase_all(void);
+uint8_t battery_record_erase_all(void);
 
 /**
  * @brief Get count of overtemperature exception records
@@ -130,7 +130,7 @@ uint16_t battery_record_get_overvolt_count(void);
  * @param record Output buffer for the record (20 bytes)
  * @return true if read succeeded
  */
-bool battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record);
+uint8_t battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record);
 
 /**
  * @brief Get record count for a page (header-only read, 5 bytes)

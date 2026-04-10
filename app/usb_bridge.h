@@ -3,7 +3,6 @@
 
 #include "typdef.h"
 #include "config.h"
-#include <stdbool.h>
 
 #if CONFIG_USB_BRIDGE_ENABLE
 

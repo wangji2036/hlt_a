@@ -81,6 +81,10 @@ int binary_search(uint16_t arr[], uint16_t size, uint16_t target)
     return left;  // 未找到目标值
 }
 
+int16_t ntc_to_temp(uint16_t ntc)
+{
+	return (int16_t)binary_search((uint16_t *)ntc_3435_tbl, sizeof(ntc_3435_tbl) / sizeof(ntc_3435_tbl[0]), ntc) - 19;
+}
 
 void fml_task_event_handler(uint32_t event)
 {
