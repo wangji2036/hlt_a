@@ -711,9 +711,9 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
 // Overvoltage detection and record function
 void battery_record_update_overvoltage(void) {
 #if(BUCKBOOST_USED_NU6805 == 1)
-    uint16_t total_voltage = hal_nu6805_buckboost_get_bat_voltage();
-    uint16_t cell1_voltage = total_voltage / 2;  // Cell 1 voltage estimation
-    uint16_t cell2_voltage = total_voltage / 2;  // Cell 2 voltage estimation
+    uint16_t cell1_voltage = g_buckboost.adc_vcell1;
+    uint16_t cell2_voltage = g_buckboost.adc_vcell2;
+    uint16_t total_voltage = cell1_voltage + cell2_voltage;
 
     // Process cell 1 and cell 2
     process_cell_overvoltage(1, cell1_voltage, total_voltage);
@@ -1326,6 +1326,28 @@ uint8_t battery_record_sleep_check(void) {
 #elif(BUCKBOOST_USED_NU6805 == 1)
     uint16_t current_voltage = hal_nu6805_buckboost_get_bat_voltage();
     uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();
+
+    /* Sleep ADC: temporarily enable BADC mode + input buffer on PB6/PC7/PD3 */
+    GPB->I_EN.BITS.PIN6 = 1;  GPB->MODE.BITS.PIN6 = 1;  /* PB6 → BADC7 (BAT2+) */
+    GPC->I_EN.BITS.PIN7 = 1;  GPC->MODE.BITS.PIN7 = 1;  /* PC7 → BADC4 (Cell2) */
+    GPD->I_EN.BITS.PIN3 = 1;  GPD->MODE.BITS.PIN3 = 1;  /* PD3 → BADC9 (VBAT-) */
+
+    /* Sample Cell1/Cell2 via BADC (same as buckboost.c step3) */
+    uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
+    int16_t pack_neg = (int16_t)(3 * pd3_adc_mv - 3300) / 2;
+
+    uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
+    int16_t vcell1_raw = 2 * pc7_adc_mv - pack_neg;
+    uint16_t sleep_vcell1 = (vcell1_raw > 0) ? vcell1_raw : 0;
+
+    uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
+    int16_t vcell2_raw = 2 * pb6_adc_mv - sleep_vcell1;
+    uint16_t sleep_vcell2 = (vcell2_raw > 0) ? vcell2_raw : 0;
+
+    /* Restore GPIO mode for sleep (disable input buffer to save power) */
+    GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
+    GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 → GPIO */
+    GPD->MODE.BITS.PIN3 = 0;  GPD->I_EN.BITS.PIN3 = 0;  /* PD3 → GPIO */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
     br_printk("sleep adc v:%d ntc:%d t:%d", current_voltage, ntc_resistance, ntc_temp);
@@ -1352,13 +1374,14 @@ uint8_t battery_record_sleep_check(void) {
     }
 #elif(BUCKBOOST_USED_NU6805 == 1)
     {
-        uint16_t cell1_voltage = current_voltage / 2;
-        uint16_t cell2_voltage = current_voltage / 2;
+        uint16_t cell1_voltage = sleep_vcell1;
+        uint16_t cell2_voltage = sleep_vcell2;
+        uint16_t total_voltage = cell1_voltage + cell2_voltage;
         if (cell1_voltage >= BR_OVER_VOLTAGE_THRESHOLD) {
             if (!g_exception_cache.ov1_triggered || cell1_voltage > g_exception_cache.ov1_max_voltage) {
                 g_exception_cache.ov1_triggered = 1;
                 g_exception_cache.ov1_max_voltage = cell1_voltage;
-                g_exception_cache.ov1_total_voltage = current_voltage;
+                g_exception_cache.ov1_total_voltage = total_voltage;
                 get_current_timestamp(&g_exception_cache.ov1_timestamp);
             }
         }
@@ -1366,7 +1389,7 @@ uint8_t battery_record_sleep_check(void) {
             if (!g_exception_cache.ov2_triggered || cell2_voltage > g_exception_cache.ov2_max_voltage) {
                 g_exception_cache.ov2_triggered = 1;
                 g_exception_cache.ov2_max_voltage = cell2_voltage;
-                g_exception_cache.ov2_total_voltage = current_voltage;
+                g_exception_cache.ov2_total_voltage = total_voltage;
                 get_current_timestamp(&g_exception_cache.ov2_timestamp);
             }
         }

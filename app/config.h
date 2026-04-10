@@ -87,10 +87,10 @@
 #define BAT_RECORD_USE_STACK_BUFFER     0   // 0=static buffer (safe), 1=local variable (saves RAM)
 #define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
-#define OVER_VOLTAGE_FORBID_THRESHOLD   4600    // Per-cell OV permanent forbid (mV), GB31241
+#define OVER_VOLTAGE_FORBID_THRESHOLD   4800    // Per-cell OV permanent forbid (mV), GB31241
 #define Lion_Battery_Overcharge_Voltage 4450
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
-#define OV_FORBID_FLASH_PERSIST         0       // 0=RAM only, cleared by power cycle
+#define OV_FORBID_FLASH_PERSIST         1       // 0=RAM only, cleared by power cycle
 #define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
 #define OV_FORBID_KEY_CLEAR_ENABLE      1       // 1=single click clears OV forbid, 0=only power cycle clears
 #define UNDER_VOLTAGE_FORBID_THRESHOLD  1200    // Per-cell UV permanent forbid (mV), GB31241

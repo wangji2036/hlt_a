@@ -893,10 +893,17 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 void fml_bat_ov_forbid_check(void) {
     static uint8_t ov_forbid_consec_cnt = 0;
     static uint8_t ov_log_cnt = 0;
+    static uint8_t ov_boot_delay = 50;  /* 50 × 100ms = 5s cold-boot delay */
     uint8_t do_log = (++ov_log_cnt >= 100);
     if (do_log) ov_log_cnt = 0;
 
     if (gd->forbid_bypass_flag) return;
+
+    /* Cold-boot: skip OV check for first 5s to avoid false trigger */
+    if (ov_boot_delay > 0) {
+        ov_boot_delay--;
+        return;
+    }
 
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
@@ -906,12 +913,12 @@ void fml_bat_ov_forbid_check(void) {
         return;
     }
 
-    extern uint16_t cell2_voltage;
-    uint16_t total = g_buckboost.adc_vbat;
-    uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
-    uint16_t max_cell = (cell1 > cell2_voltage) ? cell1 : cell2_voltage;
+    uint16_t cell1 = g_buckboost.adc_vcell1;
+    uint16_t cell2 = g_buckboost.adc_vcell2;
+    uint16_t total = cell1 + cell2;
+    uint16_t max_cell = (cell1 > cell2) ? cell1 : cell2;
 
-    if (do_log) printk("\r\n[OV_CHK] c2=%d t=%d max=%d", cell2_voltage, total, max_cell);
+    if (do_log) printk("\r\n[OV_CHK] c1=%d c2=%d t=%d max=%d", cell1, cell2, total, max_cell);
 
     if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD) {
         ov_forbid_consec_cnt++;
@@ -950,13 +957,13 @@ void fml_bat_uv_forbid_check(void) {
         return;
     }
 
-    extern uint16_t cell2_voltage;
-    uint16_t total = g_buckboost.adc_vbat;
+    uint16_t cell1 = g_buckboost.adc_vcell1;
+    uint16_t cell2 = g_buckboost.adc_vcell2;
+    uint16_t total = cell1 + cell2;
     if (total == 0) return;
-    uint16_t cell1 = (total > cell2_voltage) ? (total - cell2_voltage) : 0;
-    uint16_t min_cell = (cell1 < cell2_voltage) ? cell1 : cell2_voltage;
+    uint16_t min_cell = (cell1 < cell2) ? cell1 : cell2;
 
-    if (do_log) printk("\r\n[UV_CHK] c2=%d t=%d min=%d", cell2_voltage, total, min_cell);
+    if (do_log) printk("\r\n[UV_CHK] c1=%d c2=%d t=%d min=%d", cell1, cell2, total, min_cell);
 
     if (min_cell > 0 && min_cell <= UNDER_VOLTAGE_FORBID_THRESHOLD) {
         uv_forbid_consec_cnt++;
