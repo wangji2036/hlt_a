@@ -920,11 +920,32 @@ uint8_t tc_check_wake(void)
 	return ret;
 }
 
+/**
+ * @brief  Sleep 唤醒后的复位源检查与分发
+ *
+ * 本函数在 main() 之前由 startup 调用，MCU 每次从 sleep 唤醒都会
+ * 经过此处。根据硬件寄存器 RST_SRC（3-bit）判断唤醒原因，分发到
+ * 不同的处理逻辑：
+ *
+ *   RST_SRC 值 | 宏名               | 含义
+ *   -----------|--------------------|-----------------------------------------
+ *   1          | RST_SRC_WARMUP_DONE| 上电复位(POR)，LDO 稳定后的首次启动
+ *   2          | RST_SRC_1PTIMER    | 定时器唤醒，TMR0 周期溢出(~750ms)
+ *   3          | RST_SRC_GPIO       | GPIO 唤醒，按键(PC6) 或触摸(PB4)
+ *   4          | RST_SRC_PROTOCOL   | TypeC 协议唤醒，CC 线检测到设备接入
+ *
+ * 处理策略：
+ *   - 1PTIMER:  累加 RTC 时间，检查 dead-battery/lighting-mode/Q检测，
+ *               无有效事件则 SleepToSleep 继续休眠
+ *   - GPIO:     验证按键有效性（防误触），有效则退出 sleep 进入正常工作
+ *   - PROTOCOL: TypeC 设备接入，退出 sleep 进入正常工作
+ *   - WARMUP/default: POR 或未知复位，清除 power_on_magic 强制冷启动
+ */
 void RST_vCheck(void)
 {
 	uint32_t tmr_cnt;
 #if SUPPORT_SLEEP_LOG
-	/* PB7 */
+	/* 恢复 UART1 TX (PB7) 用于 sleep log 输出 */
 	GPB->I_EN.BITS.PIN7 = 0;
 	GPB->O_EN.BITS.PIN7 = 1;
 	GPB->DOUT.BITS.PIN7 = 1;
@@ -935,8 +956,7 @@ void RST_vCheck(void)
 	hal_uart_init(UART1);
 #endif
 
-
-
+		/* 打印复位源及 TypeC CC block 状态，用于调试唤醒原因 */
 		sleep_printk("\r\n sleep check");
 		sleep_printk(" rst=%d CCB[S=0x%x C=0x%x R=0x%x] FSM=0x%x WK=%d",
 			SYS->OPR_STAT.BITS.RST_SRC,
@@ -948,6 +968,7 @@ void RST_vCheck(void)
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{
+			/*------ 定时器周期唤醒 (~750ms)：RTC 累加、dead-bat/lighting/Q检测 ------*/
 			case RST_SRC_1PTIMER:
 				tmr_cnt = TMR0->LOAD_CNT.WORD;
 				gd->Bat_RTC_Timer +=  tmr_cnt >> 2;
@@ -1144,22 +1165,25 @@ void RST_vCheck(void)
 #endif
 				}
 				break;
+			/*------ TypeC 协议唤醒：CC 线检测到 SRC/SNK 接入，退出 sleep ------*/
 			case RST_SRC_PROTOCOL:
 				gd ->ship_mode_cnt = 0;
 				sleep_printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				gd->sigle_clicked = 0;
 				break;
+
+			/*------ GPIO 唤醒：按键(PC6) 或触摸(PB4) ------*/
 			case RST_SRC_GPIO:
 
 				if(++gd->ship_mode_cnt > SHIP_MODE_CNT) gd->ship_mode_cnt=0;
 
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 
-				// 锟斤拷锟斤拷欠锟斤拷锟斤拷锟叫э拷陌锟斤拷锟�锟斤拷锟斤拷锟斤拷锟斤拷锟铰硷拷
+				/* 验证是否有真实的按键/触摸输入（防止 GPIO 毛刺误触发） */
 				if(PC6_KEY_PRESSED || PB4_TOUCH_PRESSED)
 				{
-				// 锟斤拷效锟侥伙拷锟斤拷锟铰硷拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷
+				/* 有效唤醒：记录唤醒来源（触摸 or 按键） */
 				 sleep_printk("\r\n GPIO wake-up: PC6=%d PB4=%d", PC6_KEY_PRESSED, PB4_TOUCH_PRESSED);
 				 if(PB4_TOUCH_PRESSED&&!PC6_KEY_PRESSED){
 					gd->touch_to_weakup = 1;
@@ -1169,7 +1193,7 @@ void RST_vCheck(void)
 				}
 				else
 				{
-				// 锟斤拷锟斤拷锟斤拷锟襟触凤拷锟斤拷锟斤拷锟斤拷GPIO锟斤拷锟斤拷锟斤拷睡锟斤拷
+				/* 无有效输入：GPIO 误触发，继续休眠 */
 				sleep_printk("\r\n GPIO false wake-up, continue sleep");
 				SLP_vSleepToSleep();
 				break;
@@ -1190,10 +1214,11 @@ void RST_vCheck(void)
 				key_ui_cnt = KEY_UI_DISPLAY_TICKS;
 				sleep_printk("\r\n sleep check- GPIO");
 				break;
+			/*------ POR 上电复位 / 未知复位源：强制走冷启动完整初始化 ------*/
 			case RST_SRC_WARMUP_DONE:
 			default:
 				sleep_printk("\r\n wake_up");
-				gd->power_on_magic = 0x00;
+				gd->power_on_magic = 0x00;  /* 清除 magic，gd_data_init() 将走冷启动分支 */
 				sleep_printk("sleep power on\n");
 				break;
 
