@@ -711,13 +711,26 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
 // Overvoltage detection and record function
 void battery_record_update_overvoltage(void) {
 #if(BUCKBOOST_USED_NU6805 == 1)
-    uint16_t cell1_voltage = g_buckboost.adc_vcell1;
-    uint16_t cell2_voltage = g_buckboost.adc_vcell2;
+    /* Engineering mode: inject virtual Cell1/Cell2 voltage if set (not sentinel) */
+    bool ov_using_virtual1 = (gd->eng_mode_active && gd->eng_virtual_cell1 != VIRTUAL_CELL_SENTINEL);
+    bool ov_using_virtual2 = (gd->eng_mode_active && gd->eng_virtual_cell2 != VIRTUAL_CELL_SENTINEL);
+    uint16_t cell1_voltage = ov_using_virtual1 ? gd->eng_virtual_cell1 : g_buckboost.adc_vcell1;
+    uint16_t cell2_voltage = ov_using_virtual2 ? gd->eng_virtual_cell2 : g_buckboost.adc_vcell2;
     uint16_t total_voltage = cell1_voltage + cell2_voltage;
 
-    // Process cell 1 and cell 2
+    br_printk("[BR] OV: c1=%d c2=%d thr=%d eng=%d vc1=%d vc2=%d\n",
+              cell1_voltage, cell2_voltage, BR_OVER_VOLTAGE_THRESHOLD,
+              gd->eng_mode_active, gd->eng_virtual_cell1, gd->eng_virtual_cell2);
+
     process_cell_overvoltage(1, cell1_voltage, total_voltage);
     process_cell_overvoltage(2, cell2_voltage, total_voltage);
+
+    /* Engineering mode single-shot: consume virtual values and flag for immediate flush */
+    if (ov_using_virtual1 || ov_using_virtual2) {
+        gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
+        gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
+        g_eng_virtual_triggered = true;
+    }
 #elif(BUCKBOOST_USED_NU6801 == 1)
     /* Engineering mode: inject virtual Cell1 voltage if set (not sentinel) */
     bool ov_using_virtual = (gd->eng_mode_active && gd->eng_virtual_cell1 != VIRTUAL_CELL_SENTINEL);
