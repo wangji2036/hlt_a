@@ -487,13 +487,13 @@ void ui_update(void)
 	}
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-	/* USB_COM 模式下，任何按键先退出 USB_COM 并消费事件 */
-	if (gd->usb_comm_activated && key_flag != 0)
+	/* USB_COM 模式下，三击退出并消费事件；其他按键保留正常行为 */
+	if (gd->usb_comm_activated && key_flag == 4)
 	{
 		gd->usb_comm_activated = 0;
 		usb_comm_unlock();
 		comm_feedback_cnt = 2;  // 1 flash feedback
-		printk("USB comm exit by key %d\n", key_flag);
+		printk("USB comm exit by triple-click\n");
 		key_flag = 0;
 	}
 #endif
