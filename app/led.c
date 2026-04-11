@@ -177,7 +177,14 @@ static void ui_update_led(void)
 	 static uint16_t cycle_count = 0;  // 循环计数器，最多 3600 次 (2 h)
 
 //	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
-     if(g_port.is_mini_current_mode)
+     if(gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)
+		{
+			/* OV/UV Forbid: all LEDs blink fast — highest priority */
+			if(flash_light % 4 < 2) soc_show_ram_led = 0x1F;
+			else soc_show_ram_led = 0x00;
+			flash_light++;
+		}
+      else if(g_port.is_mini_current_mode)
      	{
      		 cnt_time++;
      		 if(cnt_time >= 2) // 2 * 250ms = 500ms
@@ -238,13 +245,6 @@ static void ui_update_led(void)
 
 
       	 }
-      else if(gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)
-		{
-			/* OV Forbid: all LEDs blink fast (same as Nanfu pattern) */
-			if(flash_light % 4 < 2) soc_show_ram_led = 0x1F;
-			else soc_show_ram_led = 0x00;
-			flash_light++;
-		}
       else if(gd->led_fault)
 		{
 			if(flash_light%2)
@@ -840,8 +840,10 @@ void key_triple_click_process(void)
 
 void key_quint_click_process(void)
 {
-	gd->Cali_Vref_Count = 160;
-	printk("\r\n[KEY] quint click: Vref calibration started (160 samples)");
+	extern uint8_t g_vref_cal_delay;
+	g_vref_cal_delay = 15;  /* 15 × 136ms (step3 period) ≈ 2s delay, then calibrate in buckboost task */
+	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
+	printk("\r\n[KEY] quint click: Vref cal scheduled");
 }
 
 void key_quad_click_process(void)

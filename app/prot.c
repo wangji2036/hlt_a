@@ -904,7 +904,7 @@ void fml_bat_ov_forbid_check(void) {
         ov_boot_delay--;
         return;
     }
-
+	printk("gd->bat_ov_forbid_flag=%d\n",gd->bat_ov_forbid_flag);
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);

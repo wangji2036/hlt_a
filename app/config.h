@@ -92,7 +92,7 @@
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST         1       // 0=RAM only, cleared by power cycle
 #define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
-#define OV_FORBID_KEY_CLEAR_ENABLE      1       // 1=single click clears OV forbid, 0=only power cycle clears
+#define OV_FORBID_KEY_CLEAR_ENABLE      0       // 1=single click clears OV forbid, 0=only power cycle clears
 #define UNDER_VOLTAGE_FORBID_THRESHOLD  1200    // Per-cell UV permanent forbid (mV), GB31241
 #define UV_FORBID_CONSEC_COUNT          100     // 100 consecutive 100ms samples = 10s
 #define CHRG_NTC_OT_TEMP_VALUE          600     // Charging over-temperature threshold (0.1degC = 60.0degC)

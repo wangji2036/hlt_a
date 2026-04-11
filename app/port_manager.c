@@ -841,7 +841,6 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
-	gd->bat_ov_forbid_flag = 0;  // DEBUG: force clear OV forbid for testing
 	printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
 	if(ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) {
 		printk("\r\n [CHRG_BLOCK] ntc_stop=%d tc_lock=%d", ntc_stop_chrg_flag, gd->typec_charge_ntc_lock);
