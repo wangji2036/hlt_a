@@ -23,7 +23,8 @@ static bool adc_protect_flag = false;
 static bool adc_err_flag = 0;
 #endif
 struct buckboost_s  g_buckboost;
-/* VREF removed: use gd->Vref (survives sleep in SRAM) */
+uint16_t g_vref_mv = VREF_DEFAULT_MV;
+uint8_t g_vref_cal_delay = 0;
 int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 {
 	int16_t k,b;
@@ -709,20 +710,20 @@ void buckboost_task_event_handler(uint32_t event)
 				buckboost_ir_drop_handle();
 				g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 				uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
-				
-				if(gd->Cali_Vref_Count > 0) {
-					gd->Cali_Vref_Count--;
-					if(gd->Cali_Vref_Count == 0) {
-						gd->Vref = 3 * pd3_adc_mv / 2;
-						printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV, saving to Flash", pd3_adc_mv, gd->Vref);
+
+				if (g_vref_cal_delay > 0) {
+					g_vref_cal_delay--;
+					if (g_vref_cal_delay == 0) {
+						g_vref_mv = 3 * pd3_adc_mv / 2;
+						printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV, saving to Flash", pd3_adc_mv, g_vref_mv);
 						cycle_count_save_to_flash();
 					}
 				}
-				
+
 				/*6805 Vcell ADC*/
 				/*battery negative ADC*/
-				printk("pd3_adc_mv = %d mV Vref=%d\n", pd3_adc_mv,gd->Vref);
-				g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - gd->Vref*2);
+				printk("pd3_adc_mv = %d mV Vref=%d\n", pd3_adc_mv, g_vref_mv);
+				g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - g_vref_mv * 2);
 				printk("g_buckboost.adc_Packnegative = %d mV\n", g_buckboost.adc_Packnegative);
 				/*VCELL1*/
 				uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);

@@ -71,7 +71,8 @@ void cycle_count_save_to_flash(void)
     cfg[4] = gd->bat_ov_forbid_flag ? (uint32_t)1 : (uint32_t)0xFFFFFFFF;  /* offset+16 = OV_FORBID */
 #endif
     cfg[5] = (uint32_t)GET_CYCLE_COUNT(gd);            /* offset+20 = cycle count (16-bit) */
-    cfg[6] = (uint32_t)gd->Vref;                       /* offset+24 = Vref (mV) */
+    extern uint16_t g_vref_mv;
+    cfg[6] = (uint32_t)g_vref_mv;                      /* offset+24 = Vref (mV) */
     hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
     for (uint8_t i = 0; i < 7; i++)
         hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
@@ -260,20 +261,6 @@ void gd_data_init(void)
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;
 		gd->bat_uv_forbid_flag = 0;
-#if Cali_Vref
-        {
-            uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
-            if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
-                gd->Vref = (uint16_t)flash_vref;
-                gd->Cali_Vref_Count = 0;
-                printk("\r\n[VREF] Restored from Flash: %dmV", gd->Vref);
-            } else {
-                gd->Vref = VREF_DEFAULT_MV;
-                gd->Cali_Vref_Count = 160;
-                printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
-            }
-        }
-#endif
 #if CYCLE_COUNT_FLASH_PERSIST
 		/* Restore cycle count from Flash */
 		{
@@ -335,6 +322,20 @@ void gd_data_init(void)
 		printk("\r\n ------------------------------------------------------------poweron reset");
 #endif
 	}
+
+#if Cali_Vref
+	{
+		extern uint16_t g_vref_mv;
+		uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
+		if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
+			g_vref_mv = (uint16_t)flash_vref;
+			printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
+		} else {
+			g_vref_mv = VREF_DEFAULT_MV;
+			printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
+		}
+	}
+#endif
 
 	osal_mem_copy(&(g_bat),(const void *)&(gd->g_bat),sizeof(struct bat_info));
 	g_bat.bat_soe_in_cali = false;

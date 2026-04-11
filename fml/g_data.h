@@ -563,9 +563,7 @@ struct gd_t
 
 	 uint8_t Battery_cycle_count;
 	 uint8_t Battery_cycle_count_hi;
-	 uint8_t Cali_Vref_Count;
 	 uint8_t Battery_charger_cnt;
-	 uint16_t Vref;
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
 	 uint8_t bat_ov_forbid_flag;   // OV Forbid: 1=permanent shutdown (GB31241 3C)
