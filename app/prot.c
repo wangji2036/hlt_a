@@ -892,24 +892,13 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 /*+++++++++++++++++++++++++++++++++++++++++++ BAT_OV_FORBID +++++++++++++++++++++++++++++++++++++++*/
 void fml_bat_ov_forbid_check(void) {
     static uint8_t ov_forbid_consec_cnt = 0;
-    static uint8_t ov_log_cnt = 0;
-    static uint8_t ov_boot_delay = 50;  /* 50 × 100ms = 5s cold-boot delay */
-    uint8_t do_log = (++ov_log_cnt >= 100);
-    if (do_log) ov_log_cnt = 0;
-
-    if (gd->forbid_bypass_flag) return;
-
-    /* Cold-boot: skip OV check for first 5s to avoid false trigger */
-    if (ov_boot_delay > 0) {
-        ov_boot_delay--;
-        return;
-    }
+    // if (gd->forbid_bypass_flag) return;
 	printk("gd->bat_ov_forbid_flag=%d\n",gd->bat_ov_forbid_flag);
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
         }
-        if (do_log) printk("\r\n[OV_FORBID] Active (flag=1)");
+        printk("\r\n[OV_FORBID] Active (flag=1)");
         return;
     }
 
@@ -918,7 +907,31 @@ void fml_bat_ov_forbid_check(void) {
     uint16_t total = cell1 + cell2;
     uint16_t max_cell = (cell1 > cell2) ? cell1 : cell2;
 
-    if (do_log) printk("\r\n[OV_CHK] c1=%d c2=%d t=%d max=%d", cell1, cell2, total, max_cell);
+    printk("\r\n[OV_CHK] c1=%d c2=%d t=%d max=%d", cell1, cell2, total, max_cell);
+
+    /* 可疑高读数去抖：max_cell > 5200mV 时延时 5s (50 × 100ms) 后再判定，
+     * 避免 ADC 瞬态毛刺直接触发 forbid。延时窗口内 return，窗口结束后放行到正常判定。*/
+    static uint8_t suspect_delay_left = 0;
+    static uint8_t suspect_delay_done = 0;
+    if (max_cell > 5200) {
+        if (!suspect_delay_done) {
+            if (suspect_delay_left == 0) {
+                suspect_delay_left = 50;
+                printk("\r\n[OV_CHK] suspect max=%d>5200, delay 5s", max_cell);
+                return;
+            }
+            suspect_delay_left--;
+            if (suspect_delay_left > 0) {
+                return;
+            }
+            suspect_delay_done = 1;
+            printk("\r\n[OV_CHK] 5s elapsed, max=%d, proceed", max_cell);
+        }
+        /* suspect_delay_done==1 → 继续走下面的正常判定 */
+    } else {
+        suspect_delay_left = 0;
+        suspect_delay_done = 0;
+    }
 
     if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD) {
         ov_forbid_consec_cnt++;
