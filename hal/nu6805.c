@@ -3,6 +3,7 @@
 #include "nu6805.h"
 #include "printk.h"
 #include "config.h"
+#include "g_data.h"
 #if(BUCKBOOST_USED_NU6805 == 1)
 
 #define BAT_CELL_EMPTY_VOLT   3050
@@ -17,7 +18,11 @@ void hal_nu6805_buckboost_init(void)
 	uint8_t revision = hal_nu6805_buckboost_get_verision();
 	{
 		hal_nu6805_buckboost_dis_indetb();
+#if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+		hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+#else
 		hal_nu6805_buckboost_charge_target_volt(BATTERY_CV_VALUE*BAT_CELL_NUM);
+#endif
 		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
 
 		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a
@@ -394,9 +399,7 @@ uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
 void hal_nu6805_update_cv_by_cycle(uint16_t cycle_count)
 {
 	uint16_t cv_offset_mv = 0;
-	if (cycle_count >= CYCLE_CV_TIER3_COUNT) {
-		cv_offset_mv = CYCLE_CV_TIER3_OFFSET;
-	} else if (cycle_count >= CYCLE_CV_TIER2_COUNT) {
+	if (cycle_count >= CYCLE_CV_TIER2_COUNT) {
 		cv_offset_mv = CYCLE_CV_TIER2_OFFSET;
 	} else if (cycle_count >= CYCLE_CV_TIER1_COUNT) {
 		cv_offset_mv = CYCLE_CV_TIER1_OFFSET;
