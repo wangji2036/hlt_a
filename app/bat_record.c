@@ -1345,17 +1345,24 @@ uint8_t battery_record_sleep_check(void) {
     GPC->I_EN.BITS.PIN7 = 1;  GPC->MODE.BITS.PIN7 = 1;  /* PC7 → BADC4 (Cell2) */
     GPD->I_EN.BITS.PIN3 = 1;  GPD->MODE.BITS.PIN3 = 1;  /* PD3 → BADC9 (VBAT-) */
 
-    /* Sample Cell1/Cell2 via BADC (same as buckboost.c step3) */
+    /* Sample Cell1/Cell2 via BADC — formula aligned with buckboost.c step3.
+     * Uses calibrated g_vref_mv (from Flash), same divider ratio (3×),
+     * and vcell2 subtracts both pack_neg and raw vcell1 (not clamped). */
+    extern uint16_t g_vref_mv;
     uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
-    int16_t pack_neg = (int16_t)(3 * pd3_adc_mv - 3300) / 2;
+    int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)g_vref_mv;
 
     uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
-    int16_t vcell1_raw = 2 * pc7_adc_mv - pack_neg;
-    uint16_t sleep_vcell1 = (vcell1_raw > 0) ? vcell1_raw : 0;
+    int32_t vcell1_raw = 3 * (int32_t)pc7_adc_mv - pack_neg;
+    if (vcell1_raw < 0) vcell1_raw = 0;
+    if (vcell1_raw > 5500) vcell1_raw = 5500;
+    uint16_t sleep_vcell1 = (uint16_t)vcell1_raw;
 
     uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
-    int16_t vcell2_raw = 2 * pb6_adc_mv - sleep_vcell1;
-    uint16_t sleep_vcell2 = (vcell2_raw > 0) ? vcell2_raw : 0;
+    int32_t vcell2_raw = 3 * (int32_t)pb6_adc_mv - pack_neg - vcell1_raw;
+    if (vcell2_raw < 0) vcell2_raw = 0;
+    if (vcell2_raw > 5500) vcell2_raw = 5500;
+    uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;
 
     /* Restore GPIO mode for sleep (disable input buffer to save power) */
     GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
