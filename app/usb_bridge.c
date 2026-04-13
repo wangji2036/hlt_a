@@ -565,8 +565,12 @@ void usb_bridge_periodic_update(void)
                 }
             }
         } else {
-            exc_cursor_idx = 0;
-            exc_cursor_page = (exc_cursor_page + 1) % LOG_PAGE_COUNT;
+            /* Read failed or record_id==0 — skip to next record (not next page) */
+            exc_cursor_idx++;
+            if (exc_cursor_idx >= exc_page_counts[exc_cursor_page]) {
+                exc_cursor_idx = 0;
+                exc_cursor_page = (exc_cursor_page + 1) % LOG_PAGE_COUNT;
+            }
         }
 exc_done: ;
     }

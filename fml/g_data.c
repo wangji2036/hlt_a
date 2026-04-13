@@ -271,6 +271,10 @@ void gd_data_init(void)
 		gd->Battery_cycle_count_hi = 0;
 		gd->bat_uv_forbid_flag = 0;
 		gd->exception_sleep_counter = 0;
+		gd->eng_mode_active = 0;
+		gd->eng_virtual_cell1 = 0xFFFF;
+		gd->eng_virtual_cell2 = 0xFFFF;
+		gd->eng_virtual_temp = 0x7FFF;
 #if CYCLE_COUNT_FLASH_PERSIST
 		/* Restore cycle count from Flash */
 		{
