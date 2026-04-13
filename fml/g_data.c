@@ -6,6 +6,9 @@
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
+
+/* Save buffer for hot start (sleep wakeup) recovery */
+uint8_t saved_exception_cache[sizeof(ap->exception_cache)];
 #if CONFIG_NEW_CCC_LOG_ENABLE
 /********************* RTC Time Initialization *********************/
 // Helper: Convert date/time to seconds since 2026-01-01
@@ -86,10 +89,16 @@ void ap_data_init(void)
 	uint32_t *pdest0 = (uint32_t *)(AP_CFG_ROM_ADDR_BASE);
 	uint32_t *pdest1 = (uint32_t *)(AP_CFG_ROM_ADDR_BASE + 4);
 
+	/* Save exception_cache before Flash→RAM copy (would be overwritten if offset < 256) */
+	osal_mem_copy(saved_exception_cache, &(ap->exception_cache), sizeof(ap->exception_cache));
+
 	for (i=0; i<256; i++)
 	{
 		__write_08bits(AP_CFG_RAM_ADDR_BASE + i, __read_08bits(AP_CFG_ROM_ADDR_BASE + i));
 	}
+
+	/* Restore exception_cache (overwritten by flash->RAM copy above) */
+	osal_mem_copy(&(ap->exception_cache), saved_exception_cache, sizeof(ap->exception_cache));
 
 	ap->tntc_otp_dis = 0;//0
 	ap->tntc_otp_thd = 85;//80
