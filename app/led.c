@@ -475,7 +475,8 @@ void ui_display (void)
 void ui_update(void)
 {
 	ui_no_timer_scan = 1;
-
+	gd->real_soc_show = g_bat.bat_level_ui;
+	printk("real_soc_show = %d\n",gd->real_soc_show);
 	static uint8_t cnt = 0;
 	static uint8_t one_min_cnt = 0;
 	static uint8_t prev_woke_mode = 0; // Requirement 6: Track previous mode for unplug detection
@@ -568,46 +569,6 @@ void ui_update(void)
 #endif
 #endif
 
-	if(gd->real_soc_obtained == 0 )
-	{
-		if(SOCPack_DisplaySOC_pct >0)
-		{
-			gd->real_soc_show = SOCPack_DisplaySOC_pct;
-			gd->real_soc_obtained = 1;
-			printk("update real show soc");
-		}
-	}
-	else
-	{
-		if(one_min_cnt++>60)//15s
-		{
-			one_min_cnt =0;
-#if(BUCKBOOST_USED_NU6801 == 1)
-			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && g_buckboost.charging_stat)
-#else
-				//charge done
-			hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,(uint8_t*)&charge_read);
-			charge_flag = (charge_read&0x10)>>4;
-			if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-#endif
-			{
-				if(gd->real_soc_show < SOCPack_DisplaySOC_pct){
-					if(gd->real_soc_show < 99){
-						gd->real_soc_show +=1;
-					}else{
-						if(charge_flag == 1){
-							gd->real_soc_show +=1;
-						}
-					}
-				};
-			}
-			else if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
-			{
-				if(gd->real_soc_show > SOCPack_DisplaySOC_pct) gd->real_soc_show -=1;
-			}
-		}
-
-	}
 	if(gd->real_soc_show >100)
 	{
 		gd->real_soc_show = 100;

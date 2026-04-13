@@ -9,17 +9,15 @@
 #define TX_FW_VER                               0x15
 
 
-#define BATTERY_CV_VALUE					4350
+#define BATTERY_CV_VALUE					4400
 #define CONFIG_NU6801_BATLOW_VOLT			2500 // bat low, bat dead   [NEW-VICTOR]
 
-// Cycle-based CV voltage reduction
+// Cycle-based CV voltage reduction (default 4.40V/cell)
 #define CONFIG_CYCLE_CV_REDUCTION_ENABLE	1	// 1=enable, 0=disable
-#define CYCLE_CV_TIER1_COUNT				68
-#define CYCLE_CV_TIER1_OFFSET				100   // CV reduced by 100mV after 68 cycles (4.3V/cell)
-#define CYCLE_CV_TIER2_COUNT				135
-#define CYCLE_CV_TIER2_OFFSET				150   // CV reduced by 150mV after 135 cycles (4.25V/cell)
-#define CYCLE_CV_TIER3_COUNT				200
-#define CYCLE_CV_TIER3_OFFSET				200   // CV reduced by 200mV after 200 cycles (4.2V/cell)
+#define CYCLE_CV_TIER1_COUNT				141   // cycles > 140 -> 4.35V/cell
+#define CYCLE_CV_TIER1_OFFSET				50
+#define CYCLE_CV_TIER2_COUNT				211   // cycles > 210 -> 4.30V/cell
+#define CYCLE_CV_TIER2_OFFSET				100
 #define POWERBANK_BUCK_EVK_V02
 
 /*.....7.5w Debug......*/
@@ -89,7 +87,7 @@
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
 #define OVER_VOLTAGE_FORBID_THRESHOLD   4800    // Per-cell OV permanent forbid (mV), GB31241
 #define Lion_Battery_Overcharge_Voltage 4450
-#define OVER_VOLTAGE_FORBID_CONSEC_COUNT 5      // 5 consecutive 100ms samples = 500ms
+#define OVER_VOLTAGE_FORBID_CONSEC_COUNT 10      // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST         1       // 0=RAM only, cleared by power cycle
 #define OV_FORBID_FORCE_CLEAR           1       // 1=erase forbid flag on boot (debug/recovery), set 0 for production
 #define OV_FORBID_KEY_CLEAR_ENABLE      0       // 1=single click clears OV forbid, 0=only power cycle clears
