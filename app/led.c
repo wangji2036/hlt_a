@@ -590,11 +590,7 @@ void ui_update(void)
         zero_soc_cnt = 0;
 		if (gd->real_soc_show >= 100)
 		{
-			// Requirement 5: Fully charged, solid lights
-			 buckboost_ops.set_work_mode(0x00);
-			 //clean full chaegr
-			 hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0x10);
-        flash_flag = 0;
+            flash_flag = 0;
 		} else {
 			//buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 			// Requirement 4: Charging, last LED blinks
