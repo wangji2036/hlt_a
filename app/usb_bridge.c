@@ -4,6 +4,7 @@
 
 #include "g_data.h"
 #include "buckboost.h"
+#include "_fml.h"
 #include "nu6805.h"
 #include "bat_record.h"
 #include "i2cm.h"
@@ -455,8 +456,8 @@ void usb_bridge_periodic_update(void)
         if (gd->eng_mode_active && gd->eng_virtual_temp != (int16_t)VIRTUAL_TEMP_SENTINEL) {
             write_buf = (uint16_t)gd->eng_virtual_temp;           /* already 0.1°C */
         } else {
-            /* TypeC NTC: °C → ×10 for 0.1°C units (matches WB7720 HID format) */
-            int16_t temp_c = gd->sys_infos.ntc_temp_typec;
+            /* Battery NTC (NU6805 adc_tbat1): resistance → °C → ×10 for 0.1°C */
+            int16_t temp_c = ntc_to_temp(g_buckboost.adc_tbat1);
             write_buf = (uint16_t)(temp_c * 10);
         }
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_TEMP_DC, (uint8_t*)&write_buf, 2);
