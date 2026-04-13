@@ -165,7 +165,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 500))
 	{
-		ap->q_factor_base_value = 110;
+		ap->q_factor_base_value = 226;
 	}
 	else
 	{
@@ -177,7 +177,7 @@ void ap_data_init(void)
 
 	if ((*pdest0 < 0) || (*pdest0 > 1500))
 	{
-		ap->fs_base_value = 833;
+		ap->fs_base_value = 953;
 	}
 	else
 	{
@@ -261,6 +261,7 @@ void gd_data_init(void)
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;
 		gd->bat_uv_forbid_flag = 0;
+		gd->exception_sleep_counter = 0;
 #if CYCLE_COUNT_FLASH_PERSIST
 		/* Restore cycle count from Flash */
 		{

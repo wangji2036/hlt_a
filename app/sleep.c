@@ -14,6 +14,7 @@
 #include "ecap.h"
 #include "usb_qc.h"
 #include "usb_bridge.h"
+#include "bat_record.h"
 #include"i2cm.h"
 #include"buckboost.h"
 #include"nu6801.h"
@@ -985,6 +986,12 @@ void RST_vCheck(void)
 					VIC_vModuleEnable();
 				}
 #endif
+				// Exception tracking during sleep
+				if (++gd->exception_sleep_counter >= SLEEP_EXCEPTION_CHECK_CYCLES) {
+					gd->exception_sleep_counter = 0;
+					battery_record_sleep_check();
+				}
+
 				//sleep_printk("\r\n sleep check- timer[%d]",gd->reset_magicode);
 				if(gd->reset_magicode == 55)
 				{

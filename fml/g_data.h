@@ -533,7 +533,7 @@ struct gd_t
 
 
 	 uint8_t reset_magicode;
-	 uint8_t idle_to_sleep_cnt;
+	 uint16_t idle_to_sleep_cnt;
 	 uint8_t sleep_qdt_complete_charg_count;
 	 uint8_t sleep_qdt_fod_rec_count;
 	 uint8_t sleep_q_times;
@@ -568,6 +568,7 @@ struct gd_t
 	 int8_t Bat_SoH;
 	 uint8_t bat_ov_forbid_flag;   // OV Forbid: 1=permanent shutdown (GB31241 3C)
 	 uint8_t bat_uv_forbid_flag;   // UV Forbid: 1=permanent shutdown (GB31241), cleared by power cycle
+	 uint8_t  exception_sleep_counter;  // Sleep cycles counter for exception tracking
 	 uint8_t  eng_mode_active;     // Engineering mode flag (1=active)
 	 uint16_t eng_virtual_cell1;   // Virtual Cell1 voltage (0xFFFF=no override)
 	 uint16_t eng_virtual_cell2;   // Virtual Cell2 voltage (0xFFFF=no override)
