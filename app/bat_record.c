@@ -716,6 +716,29 @@ void battery_record_update_overvoltage(void) {
     bool ov_using_virtual2 = (gd->eng_mode_active && gd->eng_virtual_cell2 != VIRTUAL_CELL_SENTINEL);
     uint16_t cell1_voltage = ov_using_virtual1 ? gd->eng_virtual_cell1 : g_buckboost.adc_vcell1;
     uint16_t cell2_voltage = ov_using_virtual2 ? gd->eng_virtual_cell2 : g_buckboost.adc_vcell2;
+
+    /* Suspect reading filter: > 5500mV likely ADC glitch.
+     * Must see 50 consecutive readings (5 × 1s = 5s) before trusting it.
+     * Engineering mode virtual values bypass this filter. */
+    static uint8_t suspect_cell1_cnt = 0;
+    static uint8_t suspect_cell2_cnt = 0;
+    if (!ov_using_virtual1 && cell1_voltage > 5500) {
+        if (suspect_cell1_cnt < 5) {
+            suspect_cell1_cnt++;
+            cell1_voltage = 0;  /* 不够 5 次，暂不采信 */
+        }
+        /* >= 5 次：放行原值，让 process_cell_overvoltage 处理 */
+    } else {
+        suspect_cell1_cnt = 0;
+    }
+    if (!ov_using_virtual2 && cell2_voltage > 5500) {
+        if (suspect_cell2_cnt < 5) {
+            suspect_cell2_cnt++;
+            cell2_voltage = 0;
+        }
+    } else {
+        suspect_cell2_cnt = 0;
+    }
     uint16_t total_voltage = cell1_voltage + cell2_voltage;
 
     br_printk("[BR] OV: c1=%d c2=%d thr=%d eng=%d vc1=%d vc2=%d\n",
@@ -1396,6 +1419,22 @@ uint8_t battery_record_sleep_check(void) {
     {
         uint16_t cell1_voltage = sleep_vcell1;
         uint16_t cell2_voltage = sleep_vcell2;
+
+        /* Suspect reading filter (same as non-sleep path):
+         * > 5500mV 连续 3 次才采信 (sleep 每 ~30s 调一次, 5 次 ≈ 150s) */
+        static uint8_t sleep_suspect_c1 = 0;
+        static uint8_t sleep_suspect_c2 = 0;
+        if (cell1_voltage > 5500) {
+            if (sleep_suspect_c1 < 3) { sleep_suspect_c1++; cell1_voltage = 0; }
+        } else {
+            sleep_suspect_c1 = 0;
+        }
+        if (cell2_voltage > 5500) {
+            if (sleep_suspect_c2 < 3) { sleep_suspect_c2++; cell2_voltage = 0; }
+        } else {
+            sleep_suspect_c2 = 0;
+        }
+
         uint16_t total_voltage = cell1_voltage + cell2_voltage;
         if (cell1_voltage >= BR_OVER_VOLTAGE_THRESHOLD) {
             if (!g_exception_cache.ov1_triggered || cell1_voltage > g_exception_cache.ov1_max_voltage) {
