@@ -720,24 +720,43 @@ void buckboost_task_event_handler(uint32_t event)
 					}
 				}
 
-				/*6805 Vcell ADC*/
-				/*battery negative ADC*/
-				printk("pd3_adc_mv = %d mV Vref=%d\n", pd3_adc_mv, g_vref_mv);
+				/* ========== 6805 Vcell ADC + 跨周期 3 点中值滤波 ==========
+				 * 保留最近 3 次调用 (~150ms 间隔) 的计算结果，取中值输出。
+				 * 偶发毛刺在 3 次中最多命中 1 次，被中值自动剔除。
+				 * 真实变化连续 2 次即可跟上，最大延迟 1 周期。 */
+				#define MEDIAN3(a,b,c) ((a)>(b) ? ((b)>(c)?(b):((a)>(c)?(c):(a))) \
+				                               : ((a)>(c)?(a):((b)>(c)?(c):(b))))
+
+				static uint16_t c1_hist[3], c2_hist[3];
+				static uint8_t hist_idx = 0;
+				static uint8_t hist_cnt = 0;  /* 已填入的采样数 0~3 */
+
 				g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - g_vref_mv * 2);
-				printk("g_buckboost.adc_Packnegative = %d mV\n", g_buckboost.adc_Packnegative);
-				/*VCELL1*/
+
 				uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
-				printk("pc7_adc_mv=%d\n",pc7_adc_mv);
 				int16_t vcell1_raw = 3 * pc7_adc_mv - g_buckboost.adc_Packnegative;
-				g_buckboost.adc_vcell1 = (vcell1_raw > 0) ? vcell1_raw : 0;
-				printk("g_buckboost.adc_vcell1 = %d mV\n", g_buckboost.adc_vcell1);
-				/*VCELL2*/
+				c1_hist[hist_idx] = (vcell1_raw > 0) ? (uint16_t)vcell1_raw : 0;
+
 				uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
-				int16_t vcell2_raw = 3 * pb6_adc_mv -g_buckboost.adc_Packnegative- g_buckboost.adc_vcell1;
-				printk("pb6_adc_mv=%d\n",pb6_adc_mv);
-				g_buckboost.adc_vcell2 = (vcell2_raw > 0) ? vcell2_raw : 0;
-				printk("g_buckboost.adc_vcell2 = %d mV\n", g_buckboost.adc_vcell2);
-				printk("total voltage = %d mV\n", g_buckboost.adc_vcell2 + g_buckboost.adc_vcell1);
+				int16_t vcell2_raw = 3 * pb6_adc_mv - g_buckboost.adc_Packnegative - c1_hist[hist_idx];
+				c2_hist[hist_idx] = (vcell2_raw > 0) ? (uint16_t)vcell2_raw : 0;
+
+				hist_idx = (hist_idx + 1) % 3;
+				if (hist_cnt < 3) hist_cnt++;
+
+				if (hist_cnt >= 3) {
+					g_buckboost.adc_vcell1 = MEDIAN3(c1_hist[0], c1_hist[1], c1_hist[2]);
+					g_buckboost.adc_vcell2 = MEDIAN3(c2_hist[0], c2_hist[1], c2_hist[2]);
+				} else {
+					/* 未填满：直接用最新值 */
+					g_buckboost.adc_vcell1 = c1_hist[hist_idx ? hist_idx - 1 : 2];
+					g_buckboost.adc_vcell2 = c2_hist[hist_idx ? hist_idx - 1 : 2];
+				}
+
+				printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] total=%d\n",
+				       g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
+				       g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
+				       g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
 
 			#else
 				buckboost_ir_drop_handle();
