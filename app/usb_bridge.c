@@ -499,6 +499,9 @@ void usb_bridge_periodic_update(void)
         else if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
             state = 2;
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_CHARGE_STATE, state);
+        /* RTC timestamp piggyback on cnt==9 */
+        uint32_t rtc_sec = gd->Bat_RTC_Seconds;
+        hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_RTC_SECONDS, (uint8_t*)&rtc_sec, 4);
     }
     /* ---- cnt 10: Cell Info (X20: 2-cell, from buckboost ADC) ---- */
     else if (cnt == 10)

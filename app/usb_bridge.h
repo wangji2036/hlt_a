@@ -40,6 +40,7 @@
 /* ===== Time Sync Register ===== */
 #define REG_TIME_SYNC           0x51    // u8: write 0xCA to trigger RTC calibration
 #define TIME_SYNC_MAGIC         0xCA
+#define REG_RTC_SECONDS         0x52    // u32 LE: Bat_RTC_Seconds (powerbank → WB7720 → host)
 
 /* ===== Engineering Mode Registers ===== */
 #define REG_WORK_MODE           0x50    // u8: 0x00=user, 0xA5=eng mode
