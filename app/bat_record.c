@@ -1369,11 +1369,16 @@ uint8_t battery_record_sleep_check(void) {
     GPD->I_EN.BITS.PIN3 = 1;  GPD->MODE.BITS.PIN3 = 1;  /* PD3 → BADC9 (VBAT-) */
 
     /* Sample Cell1/Cell2 via BADC — formula aligned with buckboost.c step3.
-     * Uses calibrated g_vref_mv (from Flash), same divider ratio (3×),
-     * and vcell2 subtracts both pack_neg and raw vcell1 (not clamped). */
-    extern uint16_t g_vref_mv;
+     * Vref 直接从 Flash 读取，不依赖 SRAM g_vref_mv（POR 后可能未恢复）。*/
+    uint16_t vref_mv;
+    uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
+    if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
+        vref_mv = (uint16_t)flash_vref;
+    } else {
+        vref_mv = VREF_DEFAULT_MV;
+    }
     uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
-    int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)g_vref_mv;
+    int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)vref_mv;
 
     uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
     int32_t vcell1_raw = 3 * (int32_t)pc7_adc_mv - pack_neg;
@@ -1386,14 +1391,14 @@ uint8_t battery_record_sleep_check(void) {
     if (vcell2_raw < 0) vcell2_raw = 0;
     if (vcell2_raw > 5500) vcell2_raw = 5500;
     uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;
-
+    br_printk("Sleep_Vref=%d,Vcell1=%d,Vcell2=%d,ADC=[%d,%d]\n",vref_mv,sleep_vcell1,sleep_vcell2,pc7_adc_mv,pb6_adc_mv);
     /* Restore GPIO mode for sleep (disable input buffer to save power) */
     GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
     GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 → GPIO */
     GPD->MODE.BITS.PIN3 = 0;  GPD->I_EN.BITS.PIN3 = 0;  /* PD3 → GPIO */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
-    br_printk("sleep adc v:%d ntc:%d t:%d", current_voltage, ntc_resistance, ntc_temp);
+    br_printk("ntc:%d t:%d\n",  ntc_resistance, ntc_temp);
 
     // Window init (cold boot, erase, or uninitialized RAM)
     if (g_exception_cache.window_start_seconds == 0 ||
