@@ -13,6 +13,8 @@
 #include "led.h"
 #include "g_data.h"
 #include "osal.h"
+#include "nu6805.h"
+#include "i2cm.h"
 #include "_fml.h"
 #include "_wpc.h"
 #include "wpc_ping.h"
@@ -77,8 +79,14 @@ int main(void)
 	hal_wdt_feed();
 	printk("\r\n [D5] post-wdt");
 #if(BUCKBOOST_USED_NU6805 == 1)
-	delay_1ms(500);
-	hal_wdt_feed();
+	/* 等待 NU6805 稳定 500ms, 每 100ms 做一次 I2C dummy read 保持 SCL 活跃,
+	 * 防止复位 IC 因 250ms 无 I2C 活动而拉 RESET 导致冷启动 */
+	for (uint8_t i = 0; i < 5; i++) {
+		delay_1ms(100);
+		hal_wdt_feed();
+		uint8_t dummy;
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, 0x00, &dummy);
+	}
 #endif
 //	WPC_vInit();
 
