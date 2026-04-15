@@ -5,7 +5,11 @@
 #include "osal.h"
 #include "config.h"
 
-
+#if SUPPORT_PORTMGR_LOG
+	#define pm_printk 	printk
+#else
+	#define pm_printk(...)
+#endif
 
 #define PORT_ENUM_EVT_PORT0_CONNECT_START						osal_event_declare(0)
 #define PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS						osal_event_declare(1)

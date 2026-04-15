@@ -71,14 +71,14 @@ static void wpc_pkt_print(void)
 	}
 
 #if 0
-	printk("\r\n @:");
+	wpc_printk("\r\n @:");
 	fml_test_ask_info_print(gd->wpc_pkt.src);
 #else
-	printk("\r\n @:[%d]", gd->wpc_pkt.src);
+	wpc_printk("\r\n @:[%d]", gd->wpc_pkt.src);
 #endif
 	for (int i=0; i<gd->wpc_pkt.len; i++)
 	{
-		printk(" %02X", gd->wpc_pkt.data[i]);
+		wpc_printk(" %02X", gd->wpc_pkt.data[i]);
 	}
 }
 
@@ -104,7 +104,7 @@ void wpc_stop_power(void)
 		if (gd->tx_infos.flg_mode_cloak != TRUE)
 		{
 			gd->tx_infos.dig_ping_type = _128K_HB;
-			printk("back to 128k\r\n");
+			wpc_printk("back to 128k\r\n");
 		}
 	}
 
@@ -117,7 +117,7 @@ void wpc_stop_power(void)
 	{
 		gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
 
-		printk("\r\n cloak_1: %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping);
+		wpc_printk("\r\n cloak_1: %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping);
 		cnt_cloak_dig_ping = 0;
 		cnt_cloak_det_ping = 0;
 	}
@@ -238,7 +238,7 @@ static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_RES;
 			break;
 		case EPT_CODE_0C_RePing:
-			printk("\r\n re_ping_cnt: %d", gd->tx_infos.reping_cnt);
+			wpc_printk("\r\n re_ping_cnt: %d", gd->tx_infos.reping_cnt);
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_EPT_REP;
 			break;
 		default:
@@ -347,7 +347,7 @@ void wpc_pkt_hdr_handler(void)
 		{
 //			osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
 			osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT_EX, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
-			printk("\r\n cloak_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
+			wpc_printk("\r\n cloak_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
 		}
 	}
 }
@@ -495,7 +495,7 @@ void wpc_task_event_handler(uint32_t event)
 
 				osal_start_timerEx(WPC_NEXT_TIMER, T_TERMINATE, 0, WPC_TASK, WPC_EVT_STOP_AFTER_FSK);
 				osal_start_timerEx(WPC_PING_TIMER, T_CLOAK_PING, T_CLOAK_PING, WPC_TASK, WPC_EVT_CLOAK_PING);
-				printk("\r\n need stop after fsk");
+				wpc_printk("\r\n need stop after fsk");
 			}
 
 			if (gd->tx_infos.fsk_done_event & 8)

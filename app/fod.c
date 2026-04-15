@@ -109,32 +109,32 @@ uint8_t pfod_action(void)
 
 		if (mpla_count >= 5)
 		{
-			printk("\r\n 1");
+			wpc_printk("\r\n 1");
             if ((fod_count == 0) && (pfo_avg < pfo_thd_reco))
             {
-            	printk("\r\n 2");
+            	wpc_printk("\r\n 2");
             	//p_target is safe
                 if (p_rect_max + 200 >= gd->tx_infos.nego_cap)
                 {
-                	printk("\r\n 3");
+                	wpc_printk("\r\n 3");
 					if (gd->tx_infos.tar_cap_fod == gd->tx_infos.nego_cap && gd->tx_infos.tar_cap_fod < gd->tx_infos.max_cap)
 					{
-						printk("\r\n 4");
+						wpc_printk("\r\n 4");
 						/* prect is close to p_target and power limit reason is fod, should increase p_target */
 						if (gd->tx_infos.tar_cap_fod + 2 < gd->tx_infos.max_cap)
 						{
-							printk("\r\n 5");
+							wpc_printk("\r\n 5");
 							gd->tx_infos.tar_cap_fod += 2;
 							gd->tx_infos.power_limit_reason = 2;
 						}
 						else
 						{
-							printk("\r\n 6");
+							wpc_printk("\r\n 6");
 							gd->tx_infos.tar_cap_fod = gd->tx_infos.max_cap;
 							gd->tx_infos.power_limit_reason = 0;
 							if (gd->tx_infos.fo_exist)
 							{
-								printk("\r\n 7");
+								wpc_printk("\r\n 7");
 								gd->tx_infos.fo_exist = 0;
 							}
 						}
@@ -154,17 +154,17 @@ uint8_t pfod_action(void)
             	//p_target is not safe
 				gd->tx_infos.tar_cap_fod = (gd->tx_infos.tar_cap_fod > 32) ? (gd->tx_infos.tar_cap_fod - 2) : 30;
 
-				printk("\r\n A: %d %d", gd->tx_infos.tar_cap_fod, p_rect_max);
+				wpc_printk("\r\n A: %d %d", gd->tx_infos.tar_cap_fod, p_rect_max);
 
 				if (gd->tx_infos.tar_cap_fod > p_rect_max / 100)
 				{
-					printk("\r\n B");
+					wpc_printk("\r\n B");
 					gd->tx_infos.tar_cap_fod = p_rect_max / 100;
 				}
 
 				if (gd->tx_infos.nego_cap > gd->tx_infos.tar_cap_fod)
 				{
-					printk("\r\n C");
+					wpc_printk("\r\n C");
 					gd->tx_infos.nego_cap = gd->tx_infos.tar_cap_fod;
 					gd->tx_infos.need_renego_cap = 1;
 					gd->tx_infos.power_limit_reason = 2;
@@ -187,17 +187,17 @@ uint8_t pfod_action(void)
         	//p_target is not safe
 			gd->tx_infos.tar_cap_fod = (gd->tx_infos.tar_cap_fod > 32) ? (gd->tx_infos.tar_cap_fod - 2) : 30;
 
-			printk("\r\n A1");
+			wpc_printk("\r\n A1");
 
 			if (gd->tx_infos.tar_cap_fod > p_rect_max / 100)
 			{
-				printk("\r\n B1");
+				wpc_printk("\r\n B1");
 				gd->tx_infos.tar_cap_fod = p_rect_max / 100;
 			}
 
 			if (gd->tx_infos.nego_cap > gd->tx_infos.tar_cap_fod)
 			{
-				printk("\r\n C1");
+				wpc_printk("\r\n C1");
 				gd->tx_infos.nego_cap = gd->tx_infos.tar_cap_fod;
 				gd->tx_infos.need_renego_cap = 1;
 				gd->tx_infos.power_limit_reason = 2;
@@ -395,7 +395,7 @@ uint8_t pfod_common(void)
 	}else if (gd->rx_infos.rx_type == EPRX_TYPE_SAMSUNG)
 	{
 		pfo = gd->tx_power - ploss - gd->rx_power + 750;
-		printk("\r\n SAMSUNG");
+		wpc_printk("\r\n SAMSUNG");
 	}
 	else
 	{
@@ -479,7 +479,7 @@ uint8_t pfod_common(void)
 void pfod_log_print(void)// print long log and avoid the fsk window
 {
 #ifdef _PRINT_FOD_MSG
-	printk("\r\n FOD-> %d %d %d %d t:%d %d ctx:%d v:%d %d i:%d %d p:%d %d(%d) r:%d %d pfo:%d %d %d",
+	wpc_printk("\r\n FOD-> %d %d %d %d t:%d %d ctx:%d v:%d %d i:%d %d p:%d %d(%d) r:%d %d pfo:%d %d %d",
 		   gd->rx_infos.rx_type, gd->tx_infos.nego_cap, 144000000 / gd->pid_perd, gd->pid_phas,
 		   gd->sys_infos.die_temp, gd->sys_infos.ntc_temp_wpc, gd->ctx,
 		   gd->vbus, gd->vpwr_avg, gd->isns_avg, gd->icol_rms,

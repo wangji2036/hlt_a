@@ -81,9 +81,9 @@ int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 			b = 995;
 		}
 	}
-	//printk(" \r\nvbus = %d vbat= %d k= %d b= %d\n",vbus,vbat,k,b);
+	//bb_printk(" \r\nvbus = %d vbat= %d k= %d b= %d\n",vbus,vbat,k,b);
 	actual_effiency = (k*(vbus/100))/1000 +b;
-	//printk("\r\n effi = %d \n",actual_effiency);
+	//bb_printk("\r\n effi = %d \n",actual_effiency);
 //	temp_ibat = ((actual_effiency*((vbus*ibus) /1000))/vbat);
 
 	if(ibus>=0)
@@ -99,14 +99,14 @@ int16_t ibus_to_ibat(int16_t ibus,int16_t vbus,int16_t vbat)
 void buckboost_set_bus_iv(uint16_t voltage,uint16_t current,uint16_t wait, uint16_t delay)
 {
 
-	printk("OUT = %d %d\n",voltage,current);
+	bb_printk("OUT = %d %d\n",voltage,current);
 
 	if(voltage != g_buckboost.buckboost_out_voltage)
 	{
 		osal_start_timerEx(BUCKBOOST_VBUS_DISG_TIMER, 300, 0, BUCKBOOST_TASK, BUCKBOOST_EVT_DUMMYLOADOVER);
 		buckboost_ops.vbus_dischg_en(true);
 		buckboost_ops.set_ovp(20000);
-		printk("vbus disg start\n");
+		bb_printk("vbus disg start\n");
 	}
 
 	osal_stop_timerEx(BUCKBOOST_REGULATOR_TIMER);
@@ -131,7 +131,7 @@ void buckboost_set_charge_current(uint16_t ibat,uint16_t ibus)
 	buckboost_ops.set_chager_ibat_limit(ibat);
 	g_buckboost.chager_ibus_value = 300;
 	g_buckboost.chager_ibus_start = 1;
-	printk("Charging = [%d %d]!\n",ibat,ibus);
+	bb_printk("Charging = [%d %d]!\n",ibat,ibus);
 }
 
 void buckboost_set_work_mode(enum buckboost_mode mode)
@@ -155,7 +155,7 @@ void buckboost_set_work_mode(enum buckboost_mode mode)
 		uint8_t reg_mode = 0, reg_status = 0;
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, &reg_mode);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_status);
-		printk("\r\n[BB_MODE] set=%d reg_mode=0x%02x sys_status=0x%02x", mode, reg_mode, reg_status);
+		bb_printk("\r\n[BB_MODE] set=%d reg_mode=0x%02x sys_status=0x%02x", mode, reg_mode, reg_status);
 	}
 #endif
 }
@@ -256,9 +256,9 @@ void buckboost_protection_handle(void)
 
 	status = buckboost_ops.get_protect_status();
 	
-	printk("Flaut State = 0x%x\n",status);
-	printk("vbus = %d\n",g_buckboost.adc_vbus);
-	printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
+	bb_printk("Flaut State = 0x%x\n",status);
+	bb_printk("vbus = %d\n",g_buckboost.adc_vbus);
+	bb_printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
 		g_buckboost.woke_mode,
 		g_buckboost.set_typeca_gate_en,
 		g_buckboost.set_typecb_gate_en,
@@ -281,7 +281,7 @@ void buckboost_protection_handle(void)
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_Low, &reg_cv_l);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting1, &reg_set1);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_sys);
-		printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
+		bb_printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
 			reg_mode, reg_ibat, reg_ibus, reg_cv_h, reg_cv_l, reg_set1, reg_sys);
 	}
 	 if(g_buckboost.adc_vbus > g_buckboost.ovp_value&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) status |= VBUS_FUALT_VBUS_OVP;
@@ -291,7 +291,7 @@ void buckboost_protection_handle(void)
 	}
 	if(g_buckboost.adc_vbat < 6000)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
-		printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);    
+		bb_printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);    
         cnt++;
 		if(cnt >= 10)
 		{
@@ -301,12 +301,12 @@ void buckboost_protection_handle(void)
 			{
 				status |= VBUS_FUALT_VBAT_UVP;
 				gd->bat_dead_flag = 1;
-				printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);
+				bb_printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);
 			}
 			else
 			{
 				gd->bat_dead_flag = 0;
-				printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d (sink,cleared)", g_buckboost.adc_vbat, gd->bat_dead_flag);
+				bb_printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d (sink,cleared)", g_buckboost.adc_vbat, gd->bat_dead_flag);
 				if(pdlib_get_deadbat() == 0)
 				{
 					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -340,7 +340,7 @@ void buckboost_protection_handle(void)
 		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT) nu6805_ocp_cnt++;
 		if(nu6805_ocp_cnt < NU6805_OCP_LOCK_COUNT)
 		{
-			printk("ocp debounce %d/%d\n", nu6805_ocp_cnt, NU6805_OCP_LOCK_COUNT);
+			bb_printk("ocp debounce %d/%d\n", nu6805_ocp_cnt, NU6805_OCP_LOCK_COUNT);
 			status &= ~VBUS_FUALT_VBUS_OCP;
 		}
 	}
@@ -371,8 +371,8 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault1 = 0;
 	}
-	//printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
-	//printk("ssss=%d\r\n",status & 0x4060);
+	//bb_printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
+	//bb_printk("ssss=%d\r\n",status & 0x4060);
 	gd->fault_status = status;
 	if(status != 0)
 	{
@@ -380,15 +380,15 @@ void buckboost_protection_handle(void)
 		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC))
 		{
 			nu6805_ocp_cnt = 0;
-			printk("protect lock =0x%x\n",status);
+			bb_printk("protect lock =0x%x\n",status);
 
-			//printk("vbus = %d\n",g_buckboost.adc_vbus);
+			//bb_printk("vbus = %d\n",g_buckboost.adc_vbus);
 
 			if(status & VBUS_FAULT_VBUS_NTC)
 			{
-				printk("\r\n[VBUS_NTC] VBUS_FAULT_VBUS_NTC triggered!");
-				printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d", gd->typec_ntc_lock, gd->bat_ntc_lock_flag);
-				printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
+				bb_printk("\r\n[VBUS_NTC] VBUS_FAULT_VBUS_NTC triggered!");
+				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d", gd->typec_ntc_lock, gd->bat_ntc_lock_flag);
+				bb_printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
 					gd->sys_infos.ntc_temp_typec, g_buckboost.batTemp, gd->sys_infos.ntc_temp_wpc);
 			}
 
@@ -427,7 +427,7 @@ void buckboost_protection_handle(void)
 		//static bool protection_lock = false;
 		if(status & (BST_UV_FLAG | URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW  | PPS_UV | NTC_PCT | ADC_ERR | VBUS_SOFT_PROTECT))
 		{
-			printk("protect lock =0x%x\n",status);
+			bb_printk("protect lock =0x%x\n",status);
 
 			if(status & (URB_DET  | VBAT_OV_FLAG | VBUS_OV_FLAG | HFET_OCP | VBUS_UV_FLAG  | DIS_VBAT_LOW | PPS_UV | VBUS_SOFT_PROTECT | DIS_VBAT_LOW))
 			{
@@ -476,7 +476,7 @@ void buckboost_protection_handle(void)
 			osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
-			printk("protect unlock\n");
+			bb_printk("protect unlock\n");
 			//buckboost_ops.init();
 			buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 			buckboost_set_bus_iv(5000,3300,0,0);
@@ -494,7 +494,7 @@ void buckboost_fault_restore(void)
 	osal_set_event(USB_TASK, TCPM_EVT_USBA_REDETECT);
 	tcpm_stop_wpc(WPC_DELAY);
 	tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
-	printk("protect unlock\n");
+	bb_printk("protect unlock\n");
 	buckboost_ops.init();
 	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 	buckboost_set_bus_iv(5000,3300,0,0);
@@ -537,16 +537,16 @@ void usb_comm_lock(void)
 	/* Force SNK directly instead of DRP toggle */
 	{
 		extern struct tc_s g_tc[];
-		printk("[LOCK] pre: CCA_ROLE=0x%x light=%d\n", TCPC->CCA_ROLE.WORD, gd->tc0_lighting_mode);
+		bb_printk("[LOCK] pre: CCA_ROLE=0x%x light=%d\n", TCPC->CCA_ROLE.WORD, gd->tc0_lighting_mode);
 		hal_tcpc_set_cc(PORT0_INDEX, TYPEC_CC_RD);
-		printk("[LOCK] post: CCA_ROLE=0x%x\n", TCPC->CCA_ROLE.WORD);
+		bb_printk("[LOCK] post: CCA_ROLE=0x%x\n", TCPC->CCA_ROLE.WORD);
 		usb_tc_set_state(&g_tc[PORT0_INDEX], TC_SNK_Unattached, enter_state);
 		g_tc[PORT0_INDEX].typec_delay_ms = 0x00;
-		printk("[DIAG] Force SNK on Port0 (was DRP)\n");
+		bb_printk("[DIAG] Force SNK on Port0 (was DRP)\n");
 	}
-	printk("USB comm lock: force SINK on Port0 for WB7720\n");
+	bb_printk("USB comm lock: force SINK on Port0 for WB7720\n");
 #else
-	printk("USB comm lock: all charge/discharge stopped\n");
+	bb_printk("USB comm lock: all charge/discharge stopped\n");
 #endif
 }
 
@@ -568,7 +568,7 @@ void usb_comm_unlock(void)
 	buckboost_set_work_mode(BUCKBOOST_DISCHG_MODE);
 	buckboost_set_bus_iv(5000, 3300, 0, 0);
 
-	printk("USB comm unlock: charge/discharge restored\n");
+	bb_printk("USB comm unlock: charge/discharge restored\n");
 }
 #endif /* CONFIG_TRIPLE_CLICK_COMM_ENABLE */
 
@@ -588,7 +588,7 @@ void buckboost_ir_drop_handle(void)
 			if(cnt_delay >= 5)
 			{
 				g_buckboost.ir_drop = ir_drop;
-				printk("ir drop = %d\n",g_buckboost.ir_drop);
+				bb_printk("ir drop = %d\n",g_buckboost.ir_drop);
 				buckboost_ops.set_out(g_buckboost.buckboost_out_voltage + g_buckboost.ir_drop,g_buckboost.buckboost_out_current_actual);
 			}
 		}
@@ -628,7 +628,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
 			#else
-				//printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
+				//bb_printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
 				g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature()/100;
 				buckboost_ntc_handle();
 			#endif
@@ -662,7 +662,7 @@ void buckboost_task_event_handler(uint32_t event)
 					{
 						pdlib_set_deadbat(false);
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-						printk("%s\n",__func__);
+						bb_printk("%s\n",__func__);
 					}
 				}
 				osal_set_event(USB_TASK,TCPM_EVT_USBA_SCAN);
@@ -682,7 +682,7 @@ void buckboost_task_event_handler(uint32_t event)
 				{
 					uint8_t flag = buckboost_ops.get_charge_flag();
 
-					printk("charge flag = 0x%x\n",flag);
+					bb_printk("charge flag = 0x%x\n",flag);
 
 					if(flag & 0x02) g_buckboost.bat_full_flag = 1;
 					if((g_buckboost.bat_full_flag && g_buckboost.adc_vbat < 4000) || (flag & 0x01 ))
@@ -690,7 +690,7 @@ void buckboost_task_event_handler(uint32_t event)
 						g_buckboost.bat_full_flag = 0;
 						buckboost_ops.set_work_mode(BUCKBOOST_CHAGER_MODE);
 //						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-//						printk("------------------------- rechage \n");
+//						bb_printk("------------------------- rechage \n");
 					}
 				}
 				else
@@ -715,7 +715,7 @@ void buckboost_task_event_handler(uint32_t event)
 					g_vref_cal_delay--;
 					if (g_vref_cal_delay == 0) {
 						g_vref_mv = 3 * pd3_adc_mv / 2;
-						printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV, saving to Flash", pd3_adc_mv, g_vref_mv);
+						bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV, saving to Flash", pd3_adc_mv, g_vref_mv);
 						cycle_count_save_to_flash();
 					}
 				}
@@ -753,7 +753,7 @@ void buckboost_task_event_handler(uint32_t event)
 					g_buckboost.adc_vcell2 = c2_hist[hist_idx ? hist_idx - 1 : 2];
 				}
 
-				printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref=%d total=%d\n",
+				bb_printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref=%d total=%d\n",
 				       g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
 				       g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
 				       g_vref_mv,g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
@@ -807,7 +807,7 @@ void buckboost_task_event_handler(uint32_t event)
 					static uint8_t src_log_cnt = 0;
 					if(++src_log_cnt >= 50) { /* ~1s @ 20ms period */
 						src_log_cnt = 0;
-						printk("SRC VBUS set=%d adc=%d ir=%d\n",
+						bb_printk("SRC VBUS set=%d adc=%d ir=%d\n",
 							g_buckboost.buckboost_out_voltage, g_buckboost.adc_vbus, g_buckboost.ir_drop);
 					}
 				}
@@ -815,14 +815,14 @@ void buckboost_task_event_handler(uint32_t event)
 						//g_buckboost.adc_vbus < g_buckboost.buckboost_out_voltage * 80 / 100 ||
 						g_buckboost.adc_vbus > g_buckboost.buckboost_out_voltage * 115 / 100)
 				{
-					printk("adc vbus = %d\n",g_buckboost.adc_vbus);
+					bb_printk("adc vbus = %d\n",g_buckboost.adc_vbus);
 
 					adc_protect_cnt++;
 					if(adc_protect_cnt >= 50)
 					{
 						adc_protect_cnt = 0;
 						adc_protect_flag = true;
-						printk("adc uvp or ovp [%d %d]\n",g_buckboost.adc_vbus,g_buckboost.buckboost_out_voltage);
+						bb_printk("adc uvp or ovp [%d %d]\n",g_buckboost.adc_vbus,g_buckboost.buckboost_out_voltage);
 					}
 				}
 				else
@@ -849,7 +849,7 @@ void buckboost_task_event_handler(uint32_t event)
 				}
 				else
 					g_buckboost.chager_ibus_start = 0;
-				printk("\r\n[RAMP] ibus_start=%d ibus_val=%d ilim[%d %d]",
+				bb_printk("\r\n[RAMP] ibus_start=%d ibus_val=%d ilim[%d %d]",
 					g_buckboost.chager_ibus_start,
 					g_buckboost.chager_ibus_value,
 					g_buckboost.chager_ibat_limit,
@@ -901,7 +901,7 @@ void buckboost_task_event_handler(uint32_t event)
 			#if(BUCKBOOST_USED_NU6801 == 1)
 				if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) buckboost_ops.set_ovp(g_buckboost.buckboost_out_voltage);
 			#endif
-			printk("vbus disg end\n");
+			bb_printk("vbus disg end\n");
 			break;
 		case BUCKBOOST_EVT_ADC_PERIOD:
 		#if(BUCKBOOST_USED_NU6801 == 1)
@@ -912,7 +912,7 @@ void buckboost_task_event_handler(uint32_t event)
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 					uint32_t vbat = row* 120  * 25 / nu6801_vref;
 					g_buckboost.adc_vbat = vbat;
-					printk("adc_vbat = %d\n",g_buckboost.adc_vbat);
+					bb_printk("adc_vbat = %d\n",g_buckboost.adc_vbat);
 					break;
 				case NU6801_ADC_IBAT:
                   #if 0
@@ -940,8 +940,8 @@ void buckboost_task_event_handler(uint32_t event)
 						g_buckboost.adc_ibat = ibat;
 					else
 						g_buckboost.adc_ibat = -ibat;
-					//printk("adc_ibat = %d\n",g_buckboost.adc_ibat);
-					printk("\r\n adc_ibat = %d row:%d 6801_vref:%d ibat_level:%d  \r\n",g_buckboost.adc_ibat,row,nu6801_vref,g_buckboost.ibat_level);
+					//bb_printk("adc_ibat = %d\n",g_buckboost.adc_ibat);
+					bb_printk("\r\n adc_ibat = %d row:%d 6801_vref:%d ibat_level:%d  \r\n",g_buckboost.adc_ibat,row,nu6801_vref,g_buckboost.ibat_level);
 					g_buckboost.ibat_level = 0;
                  #endif
 					break;
@@ -949,7 +949,7 @@ void buckboost_task_event_handler(uint32_t event)
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 					uint32_t vbus = row* 120  * 100 / nu6801_vref;
 					g_buckboost.adc_vbus = vbus;
-					//printk("adc_vbus = %d\n",g_buckboost.adc_vbus);
+					//bb_printk("adc_vbus = %d\n",g_buckboost.adc_vbus);
 					break;
 				case NU6801_ADC_IBUS:
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
@@ -958,19 +958,19 @@ void buckboost_task_event_handler(uint32_t event)
 						g_buckboost.adc_ibus = ibus;
 					else
 						g_buckboost.adc_ibus = -ibus;
-					//printk("adc_ibus = %d\n",g_buckboost.adc_ibus);
+					//bb_printk("adc_ibus = %d\n",g_buckboost.adc_ibus);
 					break;
 				case NU6801_ADC_IAC1:
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 					uint32_t iac1 = row* 1200* 4 / CONFIG_TYPEC_MOS_R  / nu6801_vref;
 					g_buckboost.adc_iac1 = iac1;
-					printk("adc_iac1 [%d %d]\n",g_buckboost.adc_iac1,row);
+					bb_printk("adc_iac1 [%d %d]\n",g_buckboost.adc_iac1,row);
 					break;
 				case NU6801_ADC_IAC2:
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
 					uint32_t iac2 = row* 1200* 4 / CONFIG_TYPEC_MOS_R  / nu6801_vref;
 					g_buckboost.adc_iac2 = iac2;
-					printk("adc_iac2 [%d %d]\n",g_buckboost.adc_iac2,row);
+					bb_printk("adc_iac2 [%d %d]\n",g_buckboost.adc_iac2,row);
 					break;
 				case NU6801_ADC_RNTC1:
 					row = (uint32_t) hal_badc_meas(_BADC_CH_PD3_ADC9);
@@ -986,7 +986,7 @@ void buckboost_task_event_handler(uint32_t event)
 					if(is_220uA) adc = adc / 22; //220uA
 					else adc = adc / 2; //220uA
 					g_buckboost.adc_tbat1 = adc;
-					printk("RNTC1 [%d %d] ntc_v = %d rntc = %d \n",is_220uA,ntc1_level,ntc1_v,g_buckboost.adc_tbat1);
+					bb_printk("RNTC1 [%d %d] ntc_v = %d rntc = %d \n",is_220uA,ntc1_level,ntc1_v,g_buckboost.adc_tbat1);
 				#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 					buckboost_ntc_handle();
 					//hal_nu6801_buckboost_switch_isrc();
@@ -1007,7 +1007,7 @@ void buckboost_task_event_handler(uint32_t event)
 					if(is_220uA) adc = adc / 22; //220uA
 					else adc = adc / 2; //220uA
 					g_buckboost.adc_tbat2 = adc;
-					printk("RNTC2 [%d %d] ntc_v = %d rntc = %d \n",is_220uA,ntc2_level,ntc2_v,g_buckboost.adc_tbat2);
+					bb_printk("RNTC2 [%d %d] ntc_v = %d rntc = %d \n",is_220uA,ntc2_level,ntc2_v,g_buckboost.adc_tbat2);
 				#if(CONFIG_USE_NTC_FOR_CHAGER == 1)
 					//buckboost_ntc_handle();
 					//hal_nu6801_buckboost_switch_isrc();
@@ -1019,14 +1019,14 @@ void buckboost_task_event_handler(uint32_t event)
 
 					if(vref < 1500)
 					{
-						printk("adc_vref = %d\n",nu6801_vref);
+						bb_printk("adc_vref = %d\n",nu6801_vref);
 						uint8_t read_0x10,read_0x11,read_0x06,read_0x00;
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_AMUX_CTRL,&read_0x11);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_MISC_CTRL,&read_0x10);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_BUBO_FAULT_FLAG,&read_0x06);
 						hal_i2cm_read_one_byte(NU6801_I2C_DEV_ADDR,REG_INT_FLAG,&read_0x00);
 						adc_err_flag = 1;
-						printk("adc_err [0x00]=0x%x [0x06]=0x%x [0x10]=0x%x [0x11]=0x%x\n",read_0x00,read_0x06,read_0x10,read_0x11);
+						bb_printk("adc_err [0x00]=0x%x [0x06]=0x%x [0x10]=0x%x [0x11]=0x%x\n",read_0x00,read_0x06,read_0x10,read_0x11);
 					}
 					else
 					{

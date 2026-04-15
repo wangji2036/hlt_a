@@ -476,7 +476,7 @@ void ui_update(void)
 {
 	ui_no_timer_scan = 1;
 	gd->real_soc_show = g_bat.bat_level_ui;
-	printk("real_soc_show = %d\n",gd->real_soc_show);
+	led_printk("real_soc_show = %d\n",gd->real_soc_show);
 	static uint8_t cnt = 0;
 	static uint8_t one_min_cnt = 0;
 	static uint8_t prev_woke_mode = 0; // Requirement 6: Track previous mode for unplug detection
@@ -494,7 +494,7 @@ void ui_update(void)
 		gd->usb_comm_activated = 0;
 		usb_comm_unlock();
 		comm_feedback_cnt = 2;  // 1 flash feedback
-		printk("USB comm exit by triple-click\n");
+		led_printk("USB comm exit by triple-click\n");
 		key_flag = 0;
 	}
 #endif
@@ -503,7 +503,7 @@ void ui_update(void)
 	{
 		key_sigle_click_process();
 		gd->idle_to_sleep_cnt = 0;
-	//	printk("\r\n ----------222------------------//-------key single click");
+	//	led_printk("\r\n ----------222------------------//-------key single click");
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if(key_flag == 2)
@@ -517,7 +517,7 @@ void ui_update(void)
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 		gd->idle_to_sleep_cnt = 0;
 		key_long_click_process();
-	//  printk("\r\n ----------222------------------//-------key long click");
+	//  led_printk("\r\n ----------222------------------//-------key long click");
 	}
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	else if(key_flag == 4)
@@ -634,16 +634,16 @@ void ui_update(void)
 			flash_flag = 3;
 		}
     }
-	// printk("\r\n gd->ntc_led_off %d,gd->touch_to_weakup %d\r\n",gd->ntc_led_off,gd->touch_to_weakup);
+	// led_printk("\r\n gd->ntc_led_off %d,gd->touch_to_weakup %d\r\n",gd->ntc_led_off,gd->touch_to_weakup);
 	prev_woke_mode = g_buckboost.woke_mode;
-	//printk("flash_flag = %d",flash_flag);
-//   printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
-//   printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
+	//led_printk("flash_flag = %d",flash_flag);
+//   led_printk("\r\n ------------------------real show=%d SOC display=%d  real SOC=%d RAW SOC=%d Ah SOC=%d",gd->real_soc_show, SOCPack_DisplaySOC_pct,SOCPack_RealSOC_pct,gd->SOC_RawSOC_mpct,SOC_AhIntegralSOC_mpct);
+//   led_printk("\r\n SOC_OCVSOC_mpct-> %d  SOC_AhIntegralSOC_mpct-> %d SOC_VirtOCVSOC_mpct-> %d ",
 //   		SOC_OCVSOC_mpct,SOC_AhIntegralSOC_mpct,  SOC_VirtOCVSOC_mpct);
 //
-//   printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
+//   led_printk("\r\n SOC_OCVUpd_flg-> %d  SOC_CHG_flg-> %d SOCPack_RealSOC_pct--> %d SOCPack_EmptySOC_mpct-> %d  SOCPack_DisplaySOC_pct-> %d",
 //   		SOC_OCVUpd_flg,SOC_CHG_flg, SOCPack_RealSOC_pct, SOCPack_EmptySOC_mpct,SOCPack_DisplaySOC_pct);
-//   printk("\r\n ibat-->%d,vbat-->%d",g_buckboost.adc_ibat,g_buckboost.adc_vbat);
+//   led_printk("\r\n ibat-->%d,vbat-->%d",g_buckboost.adc_ibat,g_buckboost.adc_vbat);
 
 #ifdef LED_DISPLAY
 	ui_update_led();
@@ -664,11 +664,11 @@ void key_sigle_click_process(void)
 #if OV_FORBID_KEY_CLEAR_ENABLE
 	if (gd->bat_ov_forbid_flag) {
 		gd->bat_ov_forbid_flag = 0;
-		printk("\r\n[OV_FORBID] Cleared by key press.");
+		led_printk("\r\n[OV_FORBID] Cleared by key press.");
 	}
 	if (gd->bat_uv_forbid_flag) {
 		gd->bat_uv_forbid_flag = 0;
-		printk("\r\n[UV_FORBID] Cleared by key press.");
+		led_printk("\r\n[UV_FORBID] Cleared by key press.");
 	}
 #endif
 	gd->typec_scp =0;
@@ -736,7 +736,7 @@ void key_double_click_process(void)
 		if(g_port.port_state[0] != PORT_STATE_SINK)
 		{
 			g_port.is_mini_current_mode ^= 1;
-			printk("mini_current mode -> %d\n", g_port.is_mini_current_mode);
+			led_printk("mini_current mode -> %d\n", g_port.is_mini_current_mode);
 
 		}
 //		pdlib_restart_typec(PORT0_INDEX);
@@ -751,7 +751,7 @@ void key_double_click_process(void)
 void key_long_click_process(void)
 {
     {
-        printk("\r\n long press power-off - no input detected, wpc_mode=%d\n", wpc_mode);
+        led_printk("\r\n long press power-off - no input detected, wpc_mode=%d\n", wpc_mode);
 
         if(g_port.port_state[0] == PORT_STATE_SOURCE) gd->tc0_lighting_mode = 1;
 
@@ -767,7 +767,7 @@ void key_long_click_process(void)
 //        else
 //        {
 //            g_port.is_mini_current_mode = 1;
-//            printk("is_mini_current mode\n");
+//            led_printk("is_mini_current mode\n");
 //        }
 //
 //        g_port.light0_cnt = 0;
@@ -784,13 +784,13 @@ void key_triple_click_process(void)
 	{
 		usb_comm_lock();
 		comm_feedback_cnt = 6;  // 3 flashes (on-off-on-off-on-off @ 250ms)
-		printk("USB comm activated by triple-click\n");
+		led_printk("USB comm activated by triple-click\n");
 	}
 	else
 	{
 		usb_comm_unlock();
 		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
-		printk("USB comm deactivated by triple-click\n");
+		led_printk("USB comm deactivated by triple-click\n");
 	}
 	key_ui_cnt = 0;
 }
@@ -800,7 +800,7 @@ void key_quint_click_process(void)
 	extern uint8_t g_vref_cal_delay;
 	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
 	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
-	printk("\r\n[KEY] quint click: Vref cal scheduled");
+	led_printk("\r\n[KEY] quint click: Vref cal scheduled");
 }
 
 void key_quad_click_process(void)
@@ -809,15 +809,15 @@ void key_quad_click_process(void)
 	if (gd->forbid_bypass_flag) {
 		if (gd->bat_ov_forbid_flag) {
 			gd->bat_ov_forbid_flag = 0;
-			printk("\r\n[FORBID] OV cleared by quad-click");
+			led_printk("\r\n[FORBID] OV cleared by quad-click");
 		}
 		if (gd->bat_uv_forbid_flag) {
 			gd->bat_uv_forbid_flag = 0;
-			printk("\r\n[FORBID] UV cleared by quad-click");
+			led_printk("\r\n[FORBID] UV cleared by quad-click");
 		}
-		printk("\r\n[FORBID] Bypass ENABLED by quad-click");
+		led_printk("\r\n[FORBID] Bypass ENABLED by quad-click");
 	} else {
-		printk("\r\n[FORBID] Bypass DISABLED by quad-click");
+		led_printk("\r\n[FORBID] Bypass DISABLED by quad-click");
 	}
 	key_ui_cnt = 0;
 }
@@ -941,26 +941,26 @@ void key_handle_10ms()
 //                            key.is_single_click = 1;
 //                            key_ui_cnt = 20;
 //                            //key_sigle_click_process();
-//                            printk("\r\n ----------222------------------//-------key single click");
+//                            led_printk("\r\n ----------222------------------//-------key single click");
 //                        }
 //                        else{
 //                        	//key_double_click_process();
 //                        key.click_count = 0;
 //                        key.is_single_click = 0;
-//                        printk("\r\n --------------111------------------//-------key double click");
+//                        led_printk("\r\n --------------111------------------//-------key double click");
 //                        }
 //                    } else {
 //                        key.click_count = 0;
 //                        key.is_single_click = 1;
 //                        //key_sigle_click_process();
 //                        key_ui_cnt = 20;
-//                        printk("\r\n -------------333--------------------//------key single click");
+//                        led_printk("\r\n -------------333--------------------//------key single click");
 //                    }
 //                }
 //            } else {
 //                key.click_count = 0;
 //                key.is_single_click = 0;
-//                printk("\r\n ---------------444---------//----------key long press");
+//                led_printk("\r\n ---------------444---------//----------key long press");
 //            }
 //            key.last_release_time = release_time;
 //        }

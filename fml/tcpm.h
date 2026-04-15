@@ -3,6 +3,13 @@
 
 #include "typdef.h"
 #include "osal.h"
+#include "config.h"
+
+#if SUPPORT_TCPM_LOG
+	#define tcpm_printk 	printk
+#else
+	#define tcpm_printk(...)
+#endif
 
 #define V_VBUS_PRESENT_TH			3800
 

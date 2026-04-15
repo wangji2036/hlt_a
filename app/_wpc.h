@@ -1,6 +1,15 @@
 #ifndef _WPC_H_
 #define _WPC_H_
 
+#include "config.h"
+#include "printk.h"
+
+#if SUPPORT_WPC_LOG
+#define wpc_printk(...)    printk(__VA_ARGS__)
+#else
+#define wpc_printk(...)
+#endif
+
 typedef enum {
 	ESYS_ERR_CODE_NONE                              = 0x00,
 	ESYS_ERR_CODE_PING_PHASE_1ST_PKT_TYPE_ERR       = 0x01,

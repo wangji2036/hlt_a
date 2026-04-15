@@ -29,6 +29,13 @@
 #include"bsp.h"
 #include "bat.h"
 #include "bat_record.h"
+#include "config.h"
+
+#if SUPPORT_MAIN_LOG
+	#define main_printk 	printk
+#else
+	#define main_printk(...)
+#endif
 
 uint32_t rrlen;
 
@@ -54,12 +61,12 @@ int main(void)
 	gd_data_init();
 	lib_para_init();// do not delete.
 	fml_bsp_init();
-	printk("\r\n [D1] post-bsp");
+	main_printk("\r\n [D1] post-bsp");
 	apl_gui_init();
-	printk("\r\n [D2] post-gui");
+	main_printk("\r\n [D2] post-gui");
 
 	gd->adp.adp_type = EADP_TYPE_IDUNKNOWN;
-	printk("\r\n [D3] pre-nu103x");
+	main_printk("\r\n [D3] pre-nu103x");
 //	uint32_t timeout = 0;
 //	USBPD_vInit();
 //	while (1)
@@ -75,9 +82,9 @@ int main(void)
 //	fml_usbqc_init();
 
 	fml_nu103x_por_init();
-	printk("\r\n [D4] post-nu103x");
+	main_printk("\r\n [D4] post-nu103x");
 	hal_wdt_feed();
-	printk("\r\n [D5] post-wdt");
+	main_printk("\r\n [D5] post-wdt");
 #if(BUCKBOOST_USED_NU6805 == 1)
 	/* 等待 NU6805 稳定 500ms, 每 100ms 做一次 I2C dummy read 保持 SCL 活跃,
 	 * 防止复位 IC 因 250ms 无 I2C 活动而拉 RESET 导致冷启动 */
@@ -90,12 +97,12 @@ int main(void)
 #endif
 //	WPC_vInit();
 
-	printk("\r\n ap_t size-> %d", sizeof(struct ap_t));
-	printk("\r\n base_q [%d]", ap->q_factor_base_value);
-	printk("\r\n base_fre [%d]", ap->fs_base_value);
-	printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
-	printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
-    printk("system state---> %x",SYS->OPR_STAT.WORD);
+	main_printk("\r\n ap_t size-> %d", sizeof(struct ap_t));
+	main_printk("\r\n base_q [%d]", ap->q_factor_base_value);
+	main_printk("\r\n base_fre [%d]", ap->fs_base_value);
+	main_printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
+	main_printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
+    main_printk("system state---> %x",SYS->OPR_STAT.WORD);
 	//SLP_vNormalToSleep();
 
 	if (ap->auth_seic_type == 1)

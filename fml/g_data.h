@@ -9,6 +9,12 @@
 #include "bat.h"
 #include "config.h"
 
+#if SUPPORT_GDATA_LOG
+	#define gdata_printk 	printk
+#else
+	#define gdata_printk(...)
+#endif
+
 #define BAT_ADDR_BASE    		(0x00001900)
 //0~15ff  LDROM
 //1400~15ff log

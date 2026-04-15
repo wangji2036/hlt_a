@@ -35,7 +35,7 @@ void qfod_qdt_cali_process(void)
 				tool_remove_cnt = 0;
 				q_sum = f_sum = 0;
 				cali_ready = 1;
-				printk(" cali ready");
+				wpc_printk(" cali ready");
 			}
 		}
 		else
@@ -52,7 +52,7 @@ void qfod_qdt_cali_process(void)
 			q_sum >>= 3;
 			f_sum >>= 3;
 			gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
-			printk(" cali success: %d %d", q_sum, f_sum);
+			wpc_printk(" cali success: %d %d", q_sum, f_sum);
 
 			/* Read-Modify-Write: preserve fields at offset+8..+24 */
 			uint32_t cfg[7];
@@ -82,7 +82,7 @@ uint8_t qfod_nego(uint8_t ref_q, uint8_t ref_f)
 		{
 			result = 1;
 		}
-		printk("\r\n TPR.MP3");
+		wpc_printk("\r\n TPR.MP3");
 	}
 	///MP.TPR#7
 //	else if (ref_q == 0x81)
@@ -100,7 +100,7 @@ uint8_t qfod_nego(uint8_t ref_q, uint8_t ref_f)
 		{
 			result = 1;
 		}
-		printk("\r\n TPR.MP4");
+		wpc_printk("\r\n TPR.MP4");
 	}
 	///MP.TPR#MP1B
 	else if (ref_q >= 0x85 && ref_q <= 0x8C && ref_f >= 0x6B && ref_f <= 0x6F)
@@ -110,7 +110,7 @@ uint8_t qfod_nego(uint8_t ref_q, uint8_t ref_f)
 		{
 			result = 1;
 		}
-		printk("\r\n TPR.MP1B");
+		wpc_printk("\r\n TPR.MP1B");
 	}
 	///MP.TPR#1F
 	else if (ref_q >= 0x7C && ref_q <= 0x83 && ref_f >= 0x70 && ref_f <= 0x74)
@@ -120,7 +120,7 @@ uint8_t qfod_nego(uint8_t ref_q, uint8_t ref_f)
 		{
 			result = 1;
 		}
-		printk("\r\n TPR.#1F");
+		wpc_printk("\r\n TPR.#1F");
 	}
 
 	return result;

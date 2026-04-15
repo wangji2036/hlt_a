@@ -205,7 +205,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 
 							gd->k_est = temp*107/100;
 
-							printk(" {%d,%d,%d,%d,%d,k=%d}", alpha0, alpha1, vrect, gd->vpwr, gd->vctx_pp, gd->k_est);
+							wpc_printk(" {%d,%d,%d,%d,%d,k=%d}", alpha0, alpha1, vrect, gd->vpwr, gd->vctx_pp, gd->k_est);
 
 							gd->tx_infos._128_nego_gd = 1;
 						}
@@ -222,7 +222,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 							gd->tx_infos.dig_ping_type = _360K_FB;//OK, restricted mode reping
 							gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 							wpc_stop_to_idle(ESYS_ERR_CODE_IDCFG_PHASE_MPP_RESTRICTED_REP);
-							printk("\r\n 360k-1");
+							wpc_printk("\r\n 360k-1");
 							goto __CNFG_PHASE_ERR__;
 						}
 					}
@@ -284,7 +284,7 @@ void wpc_cnfg_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->fsk_cfg.cycle = _FSK_BIT_CYCLES_512;
 			gd->fsk_cfg.prmbl = FSK_PRMBL_NONE;
 			fml_fsk_param_set(EPWM1, gd->fsk_cfg.polar, gd->fsk_cfg.depth, gd->fsk_cfg.cycle, gd->fsk_cfg.prmbl);
-			printk("\r\n --------------> %d %d %d", gd->rx_infos.power_profile_mode, gd->adp.pwr_high, gd->rx_infos.mpp_restricted_mode);
+			wpc_printk("\r\n --------------> %d %d %d", gd->rx_infos.power_profile_mode, gd->adp.pwr_high, gd->rx_infos.mpp_restricted_mode);
 			if (gd->rx_infos.power_profile_mode == MPP && gd->adp.pwr_high >= 30 && 0 == gd->rx_infos.mpp_restricted_mode)
 			{
 				gd->rx_infos.opt_cnt = 0;
@@ -379,7 +379,7 @@ goto __CNFG_PHASE_ERR__;
 						hal_ecap_close(ECAP4);
 						fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
 
-						printk("\r\n ----- disable digital ddm");
+						wpc_printk("\r\n ----- disable digital ddm");
 					}
 #endif
 				}
@@ -410,7 +410,7 @@ goto __CNFG_PHASE_ERR__;
 						pid_set_freq_limit(144000000/112000, 144000000/147000, 144000000/204000);
 						pid_set_duty_limit(500, 350, 50);
 						fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_VCAP, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
-						printk("\r\n IOC_Test,TPR#1C,6.2.09,#23");
+						wpc_printk("\r\n IOC_Test,TPR#1C,6.2.09,#23");
 					}*/
 					/*--------------------- ATL TPR#1C 6.2.09 Test#23 workaround ---------------------*/
 

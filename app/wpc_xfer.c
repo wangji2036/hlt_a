@@ -1,5 +1,6 @@
 #include "regdef.h"
 #include "printk.h"
+#include "_wpc.h"
 #include "g_data.h"
 #include "delay.h"
 #include "fsk.h"
@@ -121,7 +122,7 @@ void bpp_epp_prop_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 					qfod_qdt_cali_init();
 					gd->ptx_idle_phase_status = WPC_IDLE_STAT_QDT_CALI;
 					wpc_stop_to_idle(ESYS_ERR_CODE_NEED_QDT_CALIBRATION);
-					printk("\r\n stop for cali");
+					wpc_printk("\r\n stop for cali");
 				}
 			}
 			break;
@@ -171,12 +172,12 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			{
 				if (gd->rx_infos.cep_val == -60)
 				{
-					printk("\r\n LDSTP_BPP -60");
+					wpc_printk("\r\n LDSTP_BPP -60");
 					gd->atl_test_ldstp_bpp_N60 = 1;
 				}
 				else if (gd->rx_infos.cep_val == 60)
 				{
-					printk("\r\n LDSTP_BPP +60");
+					wpc_printk("\r\n LDSTP_BPP +60");
 					gd->atl_test_ldstp_bpp_P60 = 1;
 				}
 			}
@@ -199,7 +200,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
 				{
 					gd->rx_infos.cep_val = 0;
-					printk("#");
+					wpc_printk("#");
 				}
 			}
 
@@ -246,7 +247,7 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case WPC_PRx_PKT_TYP_CHS_05:
 			gd->rx_infos.chr_status = com_ask->msg.chs.chs_value;
-			printk(" %%: [charge status %d%%]", gd->rx_infos.chr_status);
+			wpc_printk(" %%: [charge status %d%%]", gd->rx_infos.chr_status);
 			break;
 		default:
 			if (is_bpp_epp_prop_pkt(com_ask->hdr))
@@ -280,7 +281,7 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		gd->tx_infos.fsk_done_event |= 8;//set reported event print long log
 
 		res = pfod_mpla();
-		printk("\r\n ---> res-> %d", res);
+		wpc_printk("\r\n ---> res-> %d", res);
 		if (res == 0)
 		{
 			if (1 == gd->power_limit_sts.tntc_ot_flag)
@@ -473,7 +474,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val >= 0)
 				{
 					gd->rx_infos.cep_val = -2;
-					printk("#");
+					wpc_printk("#");
 				}
 
 				osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
@@ -504,7 +505,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case WPC_PRx_PKT_TYP_CHS_05:
 			gd->rx_infos.chr_status = com_ask->msg.chs.chs_value;
-			printk(" %%: [charge status %d%%]", gd->rx_infos.chr_status);
+			wpc_printk(" %%: [charge status %d%%]", gd->rx_infos.chr_status);
 			break;
 		case MPP_PRx_PKT_TYP_XCE_19:
 			if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
@@ -637,7 +638,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			if (gd->power_mode != mpp_ask->msg.msr.main_mode)
 			{
 				gd->power_mode = mpp_ask->msg.msr.main_mode; //high;
-				printk(" [MSR trans:%d aux:%d]",mpp_ask->msg.msr.main_mode, mpp_ask->msg.msr.aux);
+				wpc_printk(" [MSR trans:%d aux:%d]",mpp_ask->msg.msr.main_mode, mpp_ask->msg.msr.aux);
 				fsk_pkt.mpp_fsk.mss.status = 0;//success, power mode trans without break
 			}
 			else
@@ -646,9 +647,9 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			}
 
 			if (fsk_pkt.mpp_fsk.mss.status)
-				printk(" MSS pending");
+				wpc_printk(" MSS pending");
 			else
-				printk(" MSS success");
+				wpc_printk(" MSS success");
 				
 			fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 			break;
@@ -658,7 +659,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				operation = mpp_ask->msg.data[0] >> 5;
 				if (operation == 1)//0: initialize, 1: commit
 				{
-					printk(" [CAL_OP_CMT]");
+					wpc_printk(" [CAL_OP_CMT]");
 					gd->dploss_cal.cmt = 1;
 					if (pfod_dploss_cal_cmt((uint16_t *)&gd->tx_infos.dp_alpha, (uint16_t *)&gd->tx_infos.dp_beta) == 0)//TODO: cal success
 					{
@@ -671,7 +672,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 				}
 				else
 				{
-					printk(" [CAL_OP_INIT]");
+					wpc_printk(" [CAL_OP_INIT]");
 					osal_mem_clear((void *)&gd->dploss_cal, sizeof(gd->dploss_cal));
 					pfod_dploss_init();
 				}
@@ -682,7 +683,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			}
 			break;
 		case 0x2C://CAL_START CAL_ENTER
-			printk(" [CAL_START resum:%d]", mpp_ask->msg.data[0]&0x01);
+			wpc_printk(" [CAL_START resum:%d]", mpp_ask->msg.data[0]&0x01);
 			osal_mem_clear((void *)&gd->dploss_cal, sizeof(gd->dploss_cal));
 			pfod_dploss_init();
 
@@ -698,7 +699,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.mpp_fsk.data[0], wpc_msg_size_get(fsk_pkt.mpp_fsk.data[0]) + 1);
 			break;
 		case 0x2D://CAL_END
-			printk(" [CAL_END clear:%d]", mpp_ask->msg.data[0]&0x01);
+			wpc_printk(" [CAL_END clear:%d]", mpp_ask->msg.data[0]&0x01);
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			break;
 		case MPP_PRx_PKT_TYP_CAL_CAP_96:
@@ -801,7 +802,7 @@ void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 
 			if (tmp_base_id != tmp_id)
 			{
-				printk("\r\n %x %x", tmp_base_id, tmp_id);
+				wpc_printk("\r\n %x %x", tmp_base_id, tmp_id);
 				goto _CLOAK_PHASE_ERR_;
 			}
 			else

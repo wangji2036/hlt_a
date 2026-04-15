@@ -152,7 +152,7 @@ uint8_t qfod_detect(void)
 //		rx_may_still_be_flag = 0;
 //	}
 
-	printk("\r\n idle: [%d] [q:%d,%d,%d,%d] [f:%d,%d,%d,%d] [t:%d,%d] [fo:%d,%d]",
+	wpc_printk("\r\n idle: [%d] [q:%d,%d,%d,%d] [f:%d,%d,%d,%d] [t:%d,%d] [fo:%d,%d]",
 			gd->ptx_idle_phase_status,
 			gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
 			gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre,
@@ -554,7 +554,7 @@ void wpc_idle_dig_ping_init_360K(void)
 		wpc_mode_pre = wpc_mode;
 	}
 
-		printk(" [ctx:%d k:%d pid-v %d]", gd->ctx, gd->k_est,gd->pid_volt);
+		wpc_printk(" [ctx:%d k:%d pid-v %d]", gd->ctx, gd->k_est,gd->pid_volt);
 
 		//config_1
 		fml_nu103x_config(_1030_CFG_DMO1_OUT_MODE_DDM);
@@ -598,7 +598,7 @@ void wpc_idle_dig_ping_init_360K(void)
 			hal_eadc_ddm_init();
 			fml_nu103x_dmo2_param_set(_1030_CFG_DMO2_DDM_SRC_PHAS, _1030_CFG_DMO2_DDM_GAIN_MODE_FIXD, _1030_CFG_DMO2_DDM_FIXED_GAIN_X60, _1030_CFG_DMO2_VCAP_RATIO_K1);
 			fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
-			printk("\r\n ----- enable digital ddm");
+			wpc_printk("\r\n ----- enable digital ddm");
 		}
 #endif
 }
@@ -609,7 +609,7 @@ void wpc_idle_cloak_phase_process(void)
 {
 	if (TRUE == gd->tx_infos.flg_mode_cloak)
 	{
-		printk("\r\n cloak_2: %d %d %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping, gd->tx_infos.cloak_dig_ping_delay, gd->tx_infos.cloak_det_ping_delay);
+		wpc_printk("\r\n cloak_2: %d %d %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping, gd->tx_infos.cloak_dig_ping_delay, gd->tx_infos.cloak_det_ping_delay);
 		cnt_cloak_dig_ping++;
 		cnt_cloak_det_ping++;
 
@@ -623,7 +623,7 @@ void wpc_idle_cloak_phase_process(void)
 
 			wpc_idle_dig_ping_init_360K();
 
-			printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp_wpc, gd->sys_infos.die_temp,
+			wpc_printk("\r\n dig_ping [%d %d %d %d %d][%d %d %d %d]", gd->vbus, gd->vpwr, gd->isns, gd->sys_infos.ntc_temp_wpc, gd->sys_infos.die_temp,
 					gd->pid_volt, 144000000/gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
 
 			gd->ptx_protocol_phase = WPC_PHASE_CLOAK;
@@ -644,7 +644,7 @@ void wpc_idle_cloak_phase_process(void)
 
 			delay_1ms(5);
 
-			printk("\r\n idle:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
+			wpc_printk("\r\n idle:%d [q:%d,%d,%d,%d] [f:%d,%d,%d,%d]", gd->ptx_idle_phase_status,
 					gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
 					gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre);
 
@@ -652,7 +652,7 @@ void wpc_idle_cloak_phase_process(void)
 			{
 				gd->tx_infos.q_fact_air = gd->tx_infos.q_fact;
 				gd->tx_infos.f_self_air = gd->tx_infos.f_self;
-				printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
+				wpc_printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
 			}
 
 			enter_buff(gd->tx_infos.q_fact, gd->tx_infos.f_self);
@@ -731,7 +731,7 @@ void wpc_idle_phase_process(void)
 		bat_low_sleep++;
 		if(g_port.port_state[0] == PORT_STATE_SINK) {gd->bat_dead_flag = 0;bat_low_sleep =0;}
 
-		printk("low cnt [%d]",bat_low_sleep);
+		wpc_printk("low cnt [%d]",bat_low_sleep);
 		if(bat_low_sleep >= 50)
 		{
 			bat_low_sleep = 0;
@@ -751,7 +751,7 @@ void wpc_idle_phase_process(void)
 			gd->wpc_disable = 0x01;
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-			printk("\r\n WPC disabled: SOC<=1%% (SOC=%d)", gd->real_soc_show);
+			wpc_printk("\r\n WPC disabled: SOC<=1%% (SOC=%d)", gd->real_soc_show);
 			wpc_dualsrc_low_soc_lock = 1;
 		}
 	}
@@ -761,7 +761,7 @@ void wpc_idle_phase_process(void)
 		{
 			gd->wpc_disable = 0x00;
 		tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
-			printk("\r\n WPC re-enabled: SOC>=2%% (SOC=%d)", gd->real_soc_show);
+			wpc_printk("\r\n WPC re-enabled: SOC>=2%% (SOC=%d)", gd->real_soc_show);
 			wpc_dualsrc_low_soc_lock = 0;
 		}
 	}
@@ -776,7 +776,7 @@ void wpc_idle_phase_process(void)
 				gd->wpc_disable = 0x01;
 				tcpm_stop_wpc(WPC_DELAY);
 				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-				printk("\r\n WPC disabled: bat temp extreme (dual dischg lock)");
+				wpc_printk("\r\n WPC disabled: bat temp extreme (dual dischg lock)");
 				wpc_dual_temp_lock = 1;
 			}
 		}
@@ -786,7 +786,7 @@ void wpc_idle_phase_process(void)
 			{
 				gd->wpc_disable = 0x00;
 				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
-				printk("\r\n WPC re-enabled: bat temp normal (dual dischg unlock)");
+				wpc_printk("\r\n WPC re-enabled: bat temp normal (dual dischg unlock)");
 				wpc_dual_temp_lock = 0;
 			}
 		}
@@ -816,7 +816,7 @@ void wpc_idle_phase_process(void)
 		else
 		{
 			gd->idle_to_sleep_cnt++;
-			printk("idle cnt [%d]",gd->idle_to_sleep_cnt);
+			wpc_printk("idle cnt [%d]",gd->idle_to_sleep_cnt);
 		}
 	}
 	else
@@ -844,19 +844,19 @@ void wpc_idle_phase_process(void)
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
 		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag || gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)
 	{
-		printk("\r\n system protection ");
-		if (gd->prot_sts.tntc_otp_flag) printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp_wpc);
-		if (gd->prot_sts.tntc_utp_flag) printk("[tntc_utp:%d]", gd->sys_infos.ntc_temp_wpc);
-		if (gd->prot_sts.tdie_otp_flag) printk("[tdie_otp:%d]", gd->sys_infos.die_temp);
-		if (gd->prot_sts.tdie_utp_flag) printk("[tdie_utp:%d]", gd->sys_infos.die_temp);
-		if (gd->prot_sts.isns_ocp_flag) printk("[isns_ocp:%d]", gd->isns);
-		if (gd->prot_sts.vbus_ovp_flag) printk("[vbus_ovp:%d]", gd->vbus);
-		if (gd->prot_sts.vbus_uvp_flag) printk("[vbus_uvp:%d]", gd->vbus);
-		if (gd->prot_sts.vbus_dpl_flag) printk("[vbus_dpl:%d]", gd->vbus);
-		if (gd->prot_sts.vpwr_ovp_flag) printk("[vpwr_ovp:%d]", gd->vpwr);
-		if (gd->prot_sts.pout_opp_flag) printk("[pout_opp:%d %d]", gd->vpwr, gd->isns);
-		if (gd->bat_ov_forbid_flag) printk("[bat_ov_forbid]");
-		if (gd->bat_uv_forbid_flag) printk("[bat_uv_forbid]");
+		wpc_printk("\r\n system protection ");
+		if (gd->prot_sts.tntc_otp_flag) wpc_printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp_wpc);
+		if (gd->prot_sts.tntc_utp_flag) wpc_printk("[tntc_utp:%d]", gd->sys_infos.ntc_temp_wpc);
+		if (gd->prot_sts.tdie_otp_flag) wpc_printk("[tdie_otp:%d]", gd->sys_infos.die_temp);
+		if (gd->prot_sts.tdie_utp_flag) wpc_printk("[tdie_utp:%d]", gd->sys_infos.die_temp);
+		if (gd->prot_sts.isns_ocp_flag) wpc_printk("[isns_ocp:%d]", gd->isns);
+		if (gd->prot_sts.vbus_ovp_flag) wpc_printk("[vbus_ovp:%d]", gd->vbus);
+		if (gd->prot_sts.vbus_uvp_flag) wpc_printk("[vbus_uvp:%d]", gd->vbus);
+		if (gd->prot_sts.vbus_dpl_flag) wpc_printk("[vbus_dpl:%d]", gd->vbus);
+		if (gd->prot_sts.vpwr_ovp_flag) wpc_printk("[vpwr_ovp:%d]", gd->vpwr);
+		if (gd->prot_sts.pout_opp_flag) wpc_printk("[pout_opp:%d %d]", gd->vpwr, gd->isns);
+		if (gd->bat_ov_forbid_flag) wpc_printk("[bat_ov_forbid]");
+		if (gd->bat_uv_forbid_flag) wpc_printk("[bat_uv_forbid]");
 		return;
 	}
 
@@ -886,7 +886,7 @@ void wpc_idle_phase_process(void)
 	{
 		gd->tx_infos.q_fact_air = gd->tx_infos.q_fact;
 		gd->tx_infos.f_self_air = gd->tx_infos.f_self;
-		printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
+		wpc_printk("\r\n air_q [%d %d]", gd->tx_infos.q_fact_air, gd->tx_infos.f_self_air);
 	}
 
 	enter_buff(gd->tx_infos.q_fact, gd->tx_infos.f_self);
@@ -905,17 +905,17 @@ void wpc_idle_phase_process(void)
 	else if (gd->tx_infos.dig_ping_type == _360K_FB)
 	{
 		gd->tx_infos.dig_ping_type = _128K_HB;
-		printk("back to 128k-2\r\n");
+		wpc_printk("back to 128k-2\r\n");
 		wpc_idle_dig_ping_init_360K();
 	}
 	fml_nu103x_config(_1030_CFG_QDT_PRECHARGE_V1P8);// set to 1.8v again, for better DDM
-	printk("\r\n ping: [%d] [%d %d] [%d %d %d %d]", gd->tx_infos.dig_ping_type, gd->vbus, gd->vpwr,
+	wpc_printk("\r\n ping: [%d] [%d %d] [%d %d %d %d]", gd->tx_infos.dig_ping_type, gd->vbus, gd->vpwr,
 			gd->pid_volt, 144000000 / gd->pid_perd, gd->dig_ping_duty, gd->pid_phas);
 
-	printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
+	wpc_printk(" <dmo1-%d-%d%d%d>", gd->dmo1_phase, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC,
 			gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO1_DDM_GAIN_FIX);
 
-	printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
+	wpc_printk(" <dmo2-%d-%d%d%d%d>", gd->dmo2_phase, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC,
 		gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_MOD, gd->nu103x_sts_curr.BITS.DMO2_DDM_GAIN_FIX, gd->nu103x_sts_curr.BITS.DMO2_VCAP_RATIO_K);
 
 //	fml_ask_enable();

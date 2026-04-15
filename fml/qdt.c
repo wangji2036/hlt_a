@@ -1,5 +1,6 @@
 #include "regdef.h"
 #include "printk.h"
+#include "_wpc.h"
 #include "nu103x.h"
 #include "g_data.h"
 #include "delay.h"
@@ -261,7 +262,7 @@ static void fml_qdt_discharged(void)
 	gd->tx_infos.q_fact = q_tmp;
 	gd->tx_infos.f_self = f_tmp;
 
-	printk("\r\n QDT-> %d %d %d %d %d %d", vqm_decay_time_cnt, vqm_width_last_cnt, nqm_reson_freq_cnt, vpeak_th2, q_tmp, f_tmp);
+	wpc_printk("\r\n QDT-> %d %d %d %d %d %d", vqm_decay_time_cnt, vqm_width_last_cnt, nqm_reson_freq_cnt, vpeak_th2, q_tmp, f_tmp);
 }
 
 void fml_qdt_detect_1(enum qdt_state_t state)

@@ -145,7 +145,7 @@ void tcpm_task_init(void)
 //uint32_t tcpm_dp_get_result(void)
 //{
 //	uint32_t ret = DPDM_QC_SINK->DPDM_MANUAL.BITS.VDP_RD;
-//	printk("dp ret = 0x%x\n",ret);
+//	tcpm_printk("dp ret = 0x%x\n",ret);
 //	return ret;
 //}
 //
@@ -154,7 +154,7 @@ void tcpm_stop_wpc(uint8_t delay_ping_unit)
 {
 	tcpm_qi_work_delay = delay_ping_unit;
 	wpc_stop_to_idle(ESYS_ERR_CODE_TYPEC_CHANGE);
-	printk("wpc stop = %d\n",delay_ping_unit);
+	tcpm_printk("wpc stop = %d\n",delay_ping_unit);
 }
 
 void tcpm_disable_usba_detect(void)
@@ -177,7 +177,7 @@ void tcpm_set_port_sdp(uint8_t tc_index)
 
 	pdlib_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
 
-	printk("PORT[%d] set sdp\n",tc_index);
+	tcpm_printk("PORT[%d] set sdp\n",tc_index);
 }
 
 
@@ -212,7 +212,7 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
            #endif
 		#endif
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			//printk("\r\n adapter updated! BOOST");
+			//tcpm_printk("\r\n adapter updated! BOOST");
 			break;
 		case TCPM_WPC_WORK_PD_PPS:
 			source_pdo = pdlib_snk_get_work_pdo();
@@ -222,12 +222,12 @@ void tcpm_update_wpc_work_mode(enum wpc_work_mode mode)
 			fml_adp_type_set(EADP_TYPE_POWERBANK_PPS,  5000, pdo_pps_apdo_max_voltage(source_pdo), 15 * 2);
 #endif
 			pid_set_volt_limit(gd->adp.volt_max, gd->adp.volt_min, gd->adp.volt_min);
-			//printk("\r\n adapter updated! PPS");
+			//tcpm_printk("\r\n adapter updated! PPS");
 			break;
 		case TCPM_WPC_WORK_DISABLE:
 			break;
 	}
-	printk("wpc_mode= %d\n",mode);
+	tcpm_printk("wpc_mode= %d\n",mode);
 }
 
 
@@ -247,7 +247,7 @@ void tcpm_task_event_handler(uint32_t event)
 				test_pin2_out(1);
 #endif
 				usba_cnt = 0;
-				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+				tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 				if(usba_state == 0)
 				{
 					port_manager_set_event(PORT2_EVENT_TRY_CONNECT);
@@ -269,7 +269,7 @@ void tcpm_task_event_handler(uint32_t event)
 						test_pin2_out(0);
 #endif
 						port_manager_set_event(PORT2_EVENT_UNCONNECT);
-						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+						tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					}
 				}
 				else
@@ -288,13 +288,13 @@ void tcpm_task_event_handler(uint32_t event)
 #endif
 						port_manager_set_event(PORT2_EVENT_UNCONNECT);
 						g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(false);
-						printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+						tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					}
 				}
 				else
 					usba_cnt = 0;
 #endif
-				//printk("usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+				//tcpm_printk("usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
 #endif
 
@@ -307,16 +307,16 @@ void tcpm_task_event_handler(uint32_t event)
 					qi_state = 0;
 					gd->sigle_clicked = 0;
 					qi_cnt = 0;
-					printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+					tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 					port_manager_set_event(PORT3_EVENT_UNCONNECT);
 				}
 			}
 			else
 				qi_cnt = 0;
-			//printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+			//tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 		#if(CONFIG_TYPECA_SUPPORT == 1)
 
-			//printk("[%d]ibus = %d\n",g_port.light0_cnt,g_buckboost.adc_ibus);
+			//tcpm_printk("[%d]ibus = %d\n",g_port.light0_cnt,g_buckboost.adc_ibus);
 
 			if(pdlib_get_tc_state(PORT0_INDEX) == TC_SRC_Attached && g_port.port_state[1] == PORT_STATE_NONE
 					&& g_port.port_state[2] == PORT_STATE_NONE && g_port.port_state[3] == PORT_STATE_NONE )
@@ -331,16 +331,16 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 						g_port.light0_cnt = 0;
 						gd->tc0_lighting_mode = 1;
-						printk("TC[0] light = 0x%x\n",gd->dp_result);
+						tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 
 						/* AUTO POWER-OFF AFTER 2 H LOW-CURRENT */
-						printk("port0 unconnect1\n");
+						tcpm_printk("port0 unconnect1\n");
 						port_manager_set_event(PORT0_EVENT_UNCONNECT);   // ?? Type-C A ???
 						g_port.is_mini_current_mode = 0;                 // ???????
 						// ???????????,??? WPC;????
 						if(wpc_mode != TCPM_WPC_WORK_BOOST)
 						tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-						printk("mini-current 2H timeout -> power-off\n");
+						tcpm_printk("mini-current 2H timeout -> power-off\n");
 												}
 					else if(g_port.light0_cnt >= 60000) // fallback for non-mini current
 
@@ -349,7 +349,7 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
-							printk("TC[0] light = 0x%x\n",gd->dp_result);
+							tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 						}
 					}
 					else
@@ -358,7 +358,7 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
-							printk("TC[0] light = 0x%x\n",gd->dp_result);
+							tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 						}
 					}
 
@@ -395,7 +395,7 @@ void tcpm_task_event_handler(uint32_t event)
 						//tcpm_dp_set_10uA();
 						//gd->dp_result = tcpm_dp_get_result();
 
-						printk("TC[1] light = 0x%x\n",gd->dp_result);
+						tcpm_printk("TC[1] light = 0x%x\n",gd->dp_result);
 					}
 				}
 				else
@@ -434,7 +434,7 @@ void tcpm_task_event_handler(uint32_t event)
 			test_pin1_out(1);
 #endif
 			buckboost_ops.vbus_dischg_en(false);
-			printk("enable A det\n");
+			tcpm_printk("enable A det\n");
 #endif
 			break;
 		case TCPM_EVT_QI_SET_VOLT:
@@ -448,14 +448,14 @@ void tcpm_task_event_handler(uint32_t event)
 				uint32_t source_pdo = (uint32_t)pdlib_snk_get_work_pdo();
 				pdlib_snk_requsrt_voltage(pdlib_snk_get_work_pdo_index(),qi_volt,pdo_pps_apdo_max_current(source_pdo));
 			}
-			printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
+			tcpm_printk("wpc[%d] set volt = %d\n",wpc_mode,qi_volt);
 			break;
 		case TCPM_EVT_QI_WORK:
 			if(qi_state == 0)   
 			{
 				qi_state = 1;
 				port_manager_set_event(PORT3_EVENT_TRY_CONNECT);
-				printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
+				tcpm_printk("qi_state= %d usba_state =%d wpc_mode=%d \n",qi_state,usba_state,wpc_mode);
 			}
 			break;
 		default:

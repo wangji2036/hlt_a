@@ -1,5 +1,14 @@
 #ifndef LED_H_
 #define LED_H_
+
+#include "config.h"
+
+#if SUPPORT_LED_LOG
+	#define led_printk 	printk
+#else
+	#define led_printk(...)
+#endif
+
 #define _UI_PIN1_PORT     GPA
 #define _UI_PIN2_PORT     GPC
 #define _UI_PIN3_PORT     GPC

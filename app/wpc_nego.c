@@ -1,5 +1,6 @@
 #include "regdef.h"
 #include "printk.h"
+#include "_wpc.h"
 #include "g_data.h"
 #include "delay.h"
 #include "fsk.h"
@@ -119,7 +120,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 				osal_mem_copy((uint8_t *)&prx_power_contract, (uint8_t *)&ptx_power_contract, sizeof(struct power_transfer_contract_t));
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_NAK);
 			}
-			printk(" [SRQ/end]");
+			wpc_printk(" [SRQ/end]");
 
 			if (gd->pid_perd == 1127)//128K
 			{
@@ -138,7 +139,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 					hal_ecap_close(ECAP4);
 					fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
 
-					printk("\r\n ----- disable digital ddm");
+					wpc_printk("\r\n ----- disable digital ddm");
 				}
 #endif
 			}
@@ -155,7 +156,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			{
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_NAK);
 			}
-			printk(" [SRQ/rep]");
+			wpc_printk(" [SRQ/rep]");
 			break;
 		case SRQ_PCH_07:
 			if (gd->rx_infos.qi_version >= 0x21)
@@ -175,7 +176,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			{
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
 			}
-			printk(" [SRQ/pch]");
+			wpc_printk(" [SRQ/pch]");
 			break;
 		case SRQ_FREQ_SEL_F0:
 			if ((mpp_ask->msg.srq.parameter & 0x3) == 1)
@@ -188,7 +189,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			{
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
 			}
-			printk(" [SRQ/freqsel]");
+			wpc_printk(" [SRQ/freqsel]");
 			break;
 		case SRQ_EPGL_F3:
 			if (mpp_ask->msg.srq.parameter > 150)
@@ -200,7 +201,7 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 				prx_power_contract.ext_nego_power = mpp_ask->msg.srq.parameter;
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
 			}
-			printk(" [SRQ/egpl]");
+			wpc_printk(" [SRQ/egpl]");
 			break;
 		case SRQ_CLOAK_DIG_PING_LSB_F5:
 			prx_power_contract.cloak_dig_ping_delay &= ~0x00FF;
@@ -208,12 +209,12 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			gd->tx_infos.cloak_dig_ping_delay &= ~0x00FF;
 			gd->tx_infos.cloak_dig_ping_delay |= mpp_ask->msg.srq.parameter;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-			printk(" [SRQ/cloakl]");
+			wpc_printk(" [SRQ/cloakl]");
 			break;
 		case SRQ_PCP_F6:
 			prx_power_contract.power_control_profile = (mpp_ask->msg.srq.parameter & 0x01);
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-			printk(" [SRQ/pcp]");
+			wpc_printk(" [SRQ/pcp]");
 			break;
 		case SRQ_CLOAK_DIG_PING_MSB_F7:
 			prx_power_contract.cloak_dig_ping_delay &= ~0x0300;
@@ -221,13 +222,13 @@ void mpp_srq_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			gd->tx_infos.cloak_dig_ping_delay &= ~0x0300;
 			gd->tx_infos.cloak_dig_ping_delay |= (mpp_ask->msg.srq.parameter & 0x03) << 8;
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-			printk(" [SRQ/cloakh]");
+			wpc_printk(" [SRQ/cloakh]");
 			break;
 		case SRQ_CLOAK_DET_PING_F8:
 			prx_power_contract.cloak_det_ping_delay = mpp_ask->msg.srq.parameter;
 			gd->tx_infos.cloak_det_ping_delay = mpp_ask->msg.srq.parameter;//unit: 100mS_Cloak_Ping
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
-			printk(" [SRQ/detect]");
+			wpc_printk(" [SRQ/detect]");
 			break;
 		default:
 			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
@@ -270,7 +271,7 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			fsk_pkt.mpp_fsk.ecap.cal_support = 0;
 			if (gd->tx_infos.fo_exist)
 			{
-				printk("\r\n xxxx");
+				wpc_printk("\r\n xxxx");
 				gd->tx_infos.tar_cap_fod = 100;
 				gd->tx_infos.nego_cap = 100;
 				gd->tx_infos.power_limit_reason = 2;
@@ -380,7 +381,7 @@ void wpc_mpp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->rx_infos.alpha_fm = (int16_t)((mpp_ask->msg.plap.alpha_fm.msb<<8) + mpp_ask->msg.plap.alpha_fm.lsb);//unit 0.5mW
 			gd->rx_infos.alpha_fm_dc = (int16_t)((mpp_ask->msg.plap.alpha_fm_dc.msb<<8) + mpp_ask->msg.plap.alpha_fm_dc.lsb);//unit 0.5mW
 
-			printk(" gcoil_tx:%d fm:%d fm_dc:%d", gd->rx_infos.gcoil_tx, gd->rx_infos.alpha_fm, gd->rx_infos.alpha_fm_dc);
+			wpc_printk(" gcoil_tx:%d fm:%d fm_dc:%d", gd->rx_infos.gcoil_tx, gd->rx_infos.alpha_fm, gd->rx_infos.alpha_fm_dc);
 
 			if ((gd->rx_infos.alpha_fm == 112 && gd->rx_infos.alpha_fm_dc == 419) || (gd->rx_infos.alpha_fm == 67 && gd->rx_infos.alpha_fm_dc == 237))//@: 78 00 00 70 01 A3 27 10 9D, SGS NOK9 gcoil_tx:1 fm:56 112 fm_dc:209 419
 				gd->rx_infos.rx_type = ERX_TYPE_NOK9_MPP_SGS;

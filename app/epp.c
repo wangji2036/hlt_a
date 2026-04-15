@@ -211,7 +211,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 
         if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_gp_01))
         {
-        	printk("\r\n contract.guaranteed_power= %d gd->rx_infos.gant_power=%d", contract.guaranteed_power, gd->rx_infos.guaranteed_power);
+        	wpc_printk("\r\n contract.guaranteed_power= %d gd->rx_infos.gant_power=%d", contract.guaranteed_power, gd->rx_infos.guaranteed_power);
         	if (contract.guaranteed_power == gd->rx_infos.guaranteed_power)
         	{
         		cnt--;
@@ -220,7 +220,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 
         if (IS_BIT_SET(contract.nego_mask, EPP_SRQ_rp_04))
         {
-        	printk("\r\n contract.ref_power= %d gd->rx_infos.max_power=%d", contract.ref_power, gd->rx_infos.max_power);
+        	wpc_printk("\r\n contract.ref_power= %d gd->rx_infos.max_power=%d", contract.ref_power, gd->rx_infos.max_power);
         	if (contract.ref_power == gd->rx_infos.max_power)
         	{
         		cnt--;
@@ -242,7 +242,7 @@ void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         		{
         			if (contract.nego_fod_mask != 0x03)// Qi > 1.3 must send FOD/qf and FOD/rf
         			{
-                        printk("\r\n enter bpp xfer");
+                        wpc_printk("\r\n enter bpp xfer");
                         EPP_Debug("\r\n No Send FOD/rq or FOD/rf"); // for IEC 8.3.48
                         EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_NAK);
 
@@ -565,7 +565,7 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
     	if (gd->nego_flag == 1)
     	{
         	gd->rx_infos.power_profile_mode = BPP;
-        	printk("\r\n enter bpp xfer");
+        	wpc_printk("\r\n enter bpp xfer");
     	}
         gd->ptx_protocol_phase = WPC_PHASE_XFER;
         osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
@@ -576,7 +576,7 @@ void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
     	if (gd->nego_flag == 1)
     	{
         	gd->rx_infos.power_profile_mode = BPP;
-        	printk("\r\n enter bpp xfer");
+        	wpc_printk("\r\n enter bpp xfer");
             gd->ptx_protocol_phase = WPC_PHASE_XFER;
             osal_start_timerEx(WPC_RPP_TIMER, T_COM_RP_TO, 0, WPC_TASK, WPC_EVT_RPP_TO);
             osal_start_timerEx(WPC_CEP_TIMER, T_COM_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
@@ -844,7 +844,7 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		if (gd->rx_infos.mpp_restricted_power_limit && gd->rx_infos.cep_val > 0)
 		{
 			gd->rx_infos.cep_val = 0;
-			printk("#");
+			wpc_printk("#");
 		}
 
 		if (cali_cep_flag) //for IOC test
@@ -855,7 +855,7 @@ void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 
 		if (gd->rx_infos.cep_val == -60 && gd->rx_infos.pch_t_delay == 0x32)
 		{
-			printk("\r\n LDSTP_EPP");
+			wpc_printk("\r\n LDSTP_EPP");
 			gd->atl_test_ldstp_epp_N60 = 1;
 		}
 
@@ -1063,7 +1063,7 @@ void wpc_epp_ADT_pkt_process(struct com_prx_ask_pkt_t *com_ask)
             EPP_Debug("\r\n ---> slot:%d", com_ask->msg.adt.data[1] & 0x0F);
 
             epp_auth.send_digest_slot = com_ask->msg.adt.data[1] & 0x0F;
-            printk("\r\n epp_auth.send_digest_slot: %d", epp_auth.send_digest_slot);
+            wpc_printk("\r\n epp_auth.send_digest_slot: %d", epp_auth.send_digest_slot);
             epp_auth.EPP_auth_status = EPP_Auth_GET_DIGEST;
 
             epp_auth.fsk_adt_is_odd = 1;        //initial the odd bit
@@ -1391,7 +1391,7 @@ void wpc_epp_DSR_ack_handler(void)
                     //and publish the remaining portion using small heads.
                     fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
 
-                    printk("\r\n send end1: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
+                    wpc_printk("\r\n send end1: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
 
                     // fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.epp_fsk.data[0], wpc_msg_size_get(fsk_pkt.epp_fsk.data[0]) + 1);
                     break;
@@ -1427,7 +1427,7 @@ void wpc_epp_DSR_ack_handler(void)
 
 //				fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
 
-				printk("\r\n send end2");
+				wpc_printk("\r\n send end2");
 
 				break;
 			}

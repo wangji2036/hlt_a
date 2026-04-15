@@ -1,6 +1,13 @@
 #ifndef DPDM_H_
 #define DPDM_H_
 
+#include "config.h"
+
+#if SUPPORT_DPDM_LOG
+	#define dpdm_printk 	printk
+#else
+	#define dpdm_printk(...)
+#endif
 
 enum dpdm_state_e
 {

@@ -64,6 +64,7 @@
 
 #include "regdef.h"
 #include "printk.h"
+#include "_wpc.h"
 #include "g_data.h"
 #include "osal.h"
 #include "fsk.h"
@@ -237,10 +238,10 @@ static void fml_fsk_data_response(TS_EPWM *epwm, uint16_t delay_ms)
 		epwm->AFD_CTRL.BITS.AFD_EN = 0;
 	}
 
-	printk(" $:");
+	wpc_printk(" $:");
 	for (int i=0; i<fsk_need_send_cnt[idx]; i++)
 	{
-		printk(" %02X", fsk_original_data_buff[idx][i]);
+		wpc_printk(" %02X", fsk_original_data_buff[idx][i]);
 	}
 }
 

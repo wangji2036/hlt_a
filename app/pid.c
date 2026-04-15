@@ -147,7 +147,7 @@ void pid_init(void)
 	}
 
 #ifdef _PRINT_PID_MSG
-	printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
+	wpc_printk("\r\n pid_lim [%d %d %d] [%d %d %d] [%d %d %d] [%d %d %d]",
 			gd->pid_limit.volt_lim_hi, gd->pid_limit.volt_lim_mi, gd->pid_limit.volt_lim_lo,
 			gd->pid_limit.perd_lim_hi, gd->pid_limit.perd_lim_mi, gd->pid_limit.perd_lim_lo,
 			gd->pid_limit.duty_lim_hi, gd->pid_limit.duty_lim_mi, gd->pid_limit.duty_lim_lo,
@@ -263,7 +263,7 @@ void pid_cep_handler(int8_t cep)
 					delay_1us(5);
 				}
 				gd->pid_volt = i;
-				printk("bpp_ldstp %d",gd->pid_volt);
+				wpc_printk("bpp_ldstp %d",gd->pid_volt);
 				// power bank application,needs special process. for IOC.
 /*				uint16_t tmp_duty, tmp;
 				tmp_duty = (20091 - gd->pid_volt) * 100 / 1263;
@@ -272,7 +272,7 @@ void pid_cep_handler(int8_t cep)
 
 				tmp = BPWM8->PWM_CTRL.BITS.DUTY;
 
-				printk("\r\n tmp_duty,tmp: %d %d", tmp_duty, BPWM8->PWM_CTRL.BITS.DUTY);
+				wpc_printk("\r\n tmp_duty,tmp: %d %d", tmp_duty, BPWM8->PWM_CTRL.BITS.DUTY);
 
 				if (tmp < tmp_duty)
 				{
@@ -407,7 +407,7 @@ void pid_cep_handler(int8_t cep)
 	gd->atl_test_ldstp_bpp_P60 = 0;
 
 #ifdef _PRINT_PID_MSG
-	printk(" #:[%02x] %5d %6d %3d %2d", (m_pid_ctrl_evnt << 4) | m_pid_ctrl_mode, gd->pid_volt, 144000000/gd->pid_perd, gd->pid_duty, gd->pid_phas);
+	wpc_printk(" #:[%02x] %5d %6d %3d %2d", (m_pid_ctrl_evnt << 4) | m_pid_ctrl_mode, gd->pid_volt, 144000000/gd->pid_perd, gd->pid_duty, gd->pid_phas);
 #endif
 }
 
@@ -450,7 +450,7 @@ void PID_vDDMEventHandler(void)
 	hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
 
 #ifdef _PRINT_PID_MSG
-	printk("\r\n &&&& %d %d %d", gd->pid_volt, gd->pid_perd, gd->pid_duty);
+	wpc_printk("\r\n &&&& %d %d %d", gd->pid_volt, gd->pid_perd, gd->pid_duty);
 #endif
 }
 

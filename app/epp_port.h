@@ -2,6 +2,7 @@
 #define EPP_PORT_H
 
 #include "epp.h"
+#include "_wpc.h"
 
 
 
@@ -10,7 +11,7 @@
 
 #define EPP_FSK_Transmit(EPWM1, delay_ms , pattern)  fml_fsk_patt_send(EPWM1, delay_ms, pattern)        //fsk send function
 
-#define EPP_Debug_Print(fmt, args...)  printk(fmt, ##args)  //debug print function
+#define EPP_Debug_Print(fmt, args...)  wpc_printk(fmt, ##args)  //debug print function
 
 
 #endif /* EPP_PORT_H */

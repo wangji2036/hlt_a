@@ -5,6 +5,12 @@
 #include "osal.h"
 #include "config.h"
 
+#if SUPPORT_BUCKBOOST_LOG
+	#define bb_printk 	printk
+#else
+	#define bb_printk(...)
+#endif
+
 #if(BUCKBOOST_USED_NU6805 == 1)
 	#define BAT_DEAD_BATTER_V   	6000
 	#define BAT_ACTIVE_RBATTER_V   	6500

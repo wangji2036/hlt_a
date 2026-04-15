@@ -1,5 +1,6 @@
 #include "regdef.h"
 #include "printk.h"
+#include "_wpc.h"
 #include "g_data.h"
 #include "delay.h"
 #include "pfod.h"
@@ -30,7 +31,7 @@ void ioc_bpp_fod_handler(uint16_t curr_rpp, uint16_t last_rpp, uint16_t rpp_coun
 				{
 					bpp_continous_count = 3;
 					gd->rx_infos.rx_type = EPRX_TYPE_NOK9_BPP_FOD_TPR_5;
-					printk(" [BPP_FOD_TPR#5]");
+					wpc_printk(" [BPP_FOD_TPR#5]");
 				}
 			}
 		}

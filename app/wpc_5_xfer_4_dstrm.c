@@ -175,7 +175,7 @@ static void ds_mpp_ptx_sadc_open(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 
 			if (((cert_chain[0] << 8) | cert_chain[1]) < get_cert_ofs + get_cert_len)
 			{
-				printk("\r\n error %d %d %d", (cert_chain[0] << 8) | cert_chain[1], get_cert_ofs, get_cert_len);
+				wpc_printk("\r\n error %d %d %d", (cert_chain[0] << 8) | cert_chain[1], get_cert_ofs, get_cert_len);
 				auth_request_type = RSP_ERROR;
 				array_chall[0] = RSP_ERROR_CODE_INVALID_REQUEST;
 				array_chall[1] = 0x00;
@@ -234,16 +234,16 @@ static void ds_mpp_ptx_sadc_open(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 	switch (auth_request_type)
 	{
 		case GET_DIGESTS:
-			printk(" [RSP_DIGESTS]");
+			wpc_printk(" [RSP_DIGESTS]");
 			break;
 		case GET_CERTIFICATE:
-			printk(" [RSP_CERTIFICATE] [cert: %d %d]", get_cert_ofs, get_cert_len);
+			wpc_printk(" [RSP_CERTIFICATE] [cert: %d %d]", get_cert_ofs, get_cert_len);
 			break;
 		case GET_CHALLENGE_AUTH:
-			printk(" [RSP_CHALLENGE_AUTH]");
+			wpc_printk(" [RSP_CHALLENGE_AUTH]");
 			break;
 		default:
-			printk(" [RSP_ERROR]");
+			wpc_printk(" [RSP_ERROR]");
 			break;
 	}
 }
@@ -317,7 +317,7 @@ static void ds_mpp_ptx_sadt_xfer(struct mpp_ptx_fsk_pkt_t *fsk_pkt)
 	adt_buff_send_crc = crc16_ccitt(&fsk_pkt->mpp_fsk.sadt.data[0], adt_last_send_len, adt_have_send_len == 0 ? CRC_INITIAL_VALUE : adt_buff_send_crc);
 	ds_record_ptx_fsk_data(fsk_pkt);
 
-	printk(" [%02d,%03d]", ++adt_buff_send_log, adt_have_send_len + adt_last_send_len);
+	wpc_printk(" [%02d,%03d]", ++adt_buff_send_log, adt_have_send_len + adt_last_send_len);
 }
 
 void ds_mpp_prx_sdsr_pkt_handler(struct mpp_prx_ask_pkt_t *mpp_ask)
@@ -493,13 +493,13 @@ void ds_mpp_prx_sadt_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		switch (auth_request_type)
 		{
 			case GET_DIGESTS:
-				printk(" [GET_DIGESTS]");
+				wpc_printk(" [GET_DIGESTS]");
 				break;
 			case GET_CERTIFICATE:
-				printk(" [GET_CERTIFICATE]");
+				wpc_printk(" [GET_CERTIFICATE]");
 				break;
 			case GET_CHALLENGE_AUTH:
-				printk(" [GET_CHALLENGE_AUTH]");
+				wpc_printk(" [GET_CHALLENGE_AUTH]");
 				break;
 			default:
 				break;

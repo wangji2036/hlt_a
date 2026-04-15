@@ -1,7 +1,15 @@
 #ifndef GUI_H_
 #define GUI_H_
 
+#include "config.h"
+
 #define APP_REG_BUFF_SIZE    64
+
+#if SUPPORT_GUI_LOG
+	#define gui_printk 	printk
+#else
+	#define gui_printk(...)
+#endif
 
 typedef enum {
 	tx_fw_version = 0x00,

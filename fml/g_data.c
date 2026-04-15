@@ -203,8 +203,8 @@ void ap_data_init(void)
 
 	ap->t_next_ping = 100;
 
-	printk("\r\n base_q [%d]", ap->q_factor_base_value);
-	printk("\r\n base_fre [%d]", ap->fs_base_value);
+	gdata_printk("\r\n base_q [%d]", ap->q_factor_base_value);
+	gdata_printk("\r\n base_fre [%d]", ap->fs_base_value);
 
 #if CONFIG_NEW_CCC_LOG_ENABLE
 	// Print product information - read directly from Flash, no global RAM usage
@@ -227,7 +227,7 @@ void gd_data_init(void)
 	{
 		__write_08bits(addr, 0);
 	}
-    printk(" \r\n magic code %x",gd->power_on_magic);
+    gdata_printk(" \r\n magic code %x",gd->power_on_magic);
 	if(gd->power_on_magic != 0xaaaa)
 	{
 		gd->tc0_lighting_mode = 0x00;
@@ -281,7 +281,7 @@ void gd_data_init(void)
 			uint32_t flash_cycle = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + CYCLE_COUNT_FLASH_OFFSET);
 			if (flash_cycle != 0xFFFFFFFF && flash_cycle <= 65535) {
 				SET_CYCLE_COUNT(gd, (uint16_t)flash_cycle);
-				printk("\r\n[CYCLE] Restored from Flash: %d", (int)flash_cycle);
+				gdata_printk("\r\n[CYCLE] Restored from Flash: %d", (int)flash_cycle);
 			}
 		}
 #endif
@@ -298,7 +298,7 @@ void gd_data_init(void)
 				hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 		}
 		gd->bat_ov_forbid_flag = 0;
-		printk("\r\n[OV_FORBID] Force cleared");
+		gdata_printk("\r\n[OV_FORBID] Force cleared");
   #else
 		/* Normal: restore forbid flag from Flash */
 		{
@@ -307,7 +307,7 @@ void gd_data_init(void)
 				gd->bat_ov_forbid_flag = 0;  /* Flash erased = never triggered */
 			} else {
 				gd->bat_ov_forbid_flag = 1;  /* Has value = previously triggered */
-				printk("\r\n[OV_FORBID] Restored from Flash! Charge/discharge forbidden.");
+				gdata_printk("\r\n[OV_FORBID] Restored from Flash! Charge/discharge forbidden.");
 			}
 		}
   #endif
@@ -325,15 +325,15 @@ void gd_data_init(void)
 		gd->Bat_RTC_Seconds = get_default_rtc_seconds();  // Initialize with default time
 		gd->Bat_RTC_Milliseconds = 0;
 
-		printk("\r\n ------------------------------------------------------------poweron reset");
+		gdata_printk("\r\n ------------------------------------------------------------poweron reset");
 #if (CONFIG_RTC_USE_CUSTOM_TIME == 1)
-		printk("\r\n RTC init: %lu seconds (custom: %d-%02d-%02d %02d:%02d:%02d)",
+		gdata_printk("\r\n RTC init: %lu seconds (custom: %d-%02d-%02d %02d:%02d:%02d)",
 		       gd->Bat_RTC_Seconds,
 		       CONFIG_RTC_DEFAULT_YEAR, CONFIG_RTC_DEFAULT_MONTH, CONFIG_RTC_DEFAULT_DAY,
 		       CONFIG_RTC_DEFAULT_HOUR, CONFIG_RTC_DEFAULT_MINUTE, CONFIG_RTC_DEFAULT_SECOND);
 #endif
 #else
-		printk("\r\n ------------------------------------------------------------poweron reset");
+		gdata_printk("\r\n ------------------------------------------------------------poweron reset");
 #endif
 	}
 
@@ -343,10 +343,10 @@ void gd_data_init(void)
 		uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
 		if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
 			g_vref_mv = (uint16_t)flash_vref;
-			printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
+			gdata_printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
 		} else {
 			g_vref_mv = VREF_DEFAULT_MV;
-			printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
+			gdata_printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
 		}
 	}
 #endif
@@ -355,7 +355,7 @@ void gd_data_init(void)
 	g_bat.bat_soe_in_cali = false;
 	gd->power_on_magic = 0xaaaa;
 
-	printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);
+	gdata_printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;
 //	gd->tx_infos.fo_exist = 1;
@@ -497,7 +497,7 @@ void product_info_print(void) {
 		{ ADDR_BATTERY_PROD_DATE, "Battery Date" }
 	};
 
-	printk("\r\n===== Product Information =====");
+	gdata_printk("\r\n===== Product Information =====");
 
 	// (Loop to read and print each field)
 	for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
@@ -509,9 +509,9 @@ void product_info_print(void) {
 		}
 		temp_buf[PRODUCT_INFO_FIELD_SIZE] = '\0';  // (Ensure null termination)
 
-		printk("\r\n%-13s: %s", fields[i].label, temp_buf);
+		gdata_printk("\r\n%-13s: %s", fields[i].label, temp_buf);
 	}
 
-	printk("\r\n===============================");
+	gdata_printk("\r\n===============================");
 }
 #endif
