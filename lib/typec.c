@@ -106,7 +106,7 @@ static void TC_Disable_Entry(struct tc_s * tc)
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_OPEN);
 	if(tc->tc_index == PORT0_INDEX) gd->tc0_lighting_mode= 0;
 	if(tc->tc_index == PORT1_INDEX) gd->tc1_lighting_mode= 0;
-	if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+	if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(false); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
 	usb_tc_set_state(tc,TC_Disable,exit_state);
 }
 static void TC_Disable_Exit(struct tc_s * tc)
@@ -243,7 +243,7 @@ static void TC_SNK_Attached_Entry(struct tc_s * tc)
     else
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT1_CONNECT_SUCCESS);
 
-    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(true); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
 }
 
 
@@ -276,7 +276,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 					usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 					hal_tcpc_port_dummyload_en(tc->tc_index,true);
 					hal_tcpc_set_gate_en(tc->tc_index,false);
-					if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+					if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(false); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
 					hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
 					//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
 					if(tc->tc_index == 0)
@@ -398,7 +398,7 @@ static void TC_SRC_Attached_Entry(struct tc_s * tc)
 	hal_tcpc_set_roles(tc->tc_index,TYPEC_SOURCE,TYPEC_HOST);
     usb_tc_set_state(tc,TC_SRC_Attached,exit_state);
     //tc->try_src_cnt = 0;
-    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(true);
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(true); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
     if(tc->tc_index == PORT0_INDEX)
     	osal_set_event(PORT_MANAGER_TASK,PORT_ENUM_EVT_PORT0_CONNECT_SUCCESS);
     else
@@ -452,7 +452,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 			if(tc->try_src_cnt >= 3) usb_tc_set_state(tc,TC_TryWAIT_SNK,enter_state);
 			else usb_tc_set_state(tc,TC_SRC_Unattached,enter_state);
-			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+			if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(false); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
 			hal_tcpc_port_dummyload_en(tc->tc_index,true);
 			hal_tcpc_set_gate_en(tc->tc_index,false);
 			hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
@@ -585,7 +585,7 @@ static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
     //tc->try_src_cnt = 0;
     usb_tc_set_state(tc,TC_DRP_TOGGLE,exit_state);
     hal_tcpc_port_dummyload_en(tc->tc_index,false);
-    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port0_switch(false);
+    if(tc->tc_index == PORT0_INDEX) usb_dpdm_port1_switch(false); /* PORT0_INDEX = 物理 TypeC-B (PB2/PD0) */
     if(g_port.inhandle_port == tc->tc_index && g_port.state == PORT_INHANDLING)
     {
 //    	if(tc->tc_index == 0)

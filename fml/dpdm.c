@@ -91,32 +91,35 @@ void usb_dpdm_port1_switch(bool en)
 
 void usb_dpdm_select(uint8_t tc_index)
 {
-// 	printk("[DPDM] select port=%d\n", tc_index);
-// 	if(tc_index == 0)
-// 	{
-// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
-// 	}
-// 	else if(tc_index == 1)
-// 	{
-// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;
-// 	}
-// 	else if(tc_index == 2)
-// 	{
-// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2; //DPDM-A
-// 	}
-// 	else
-// 	{
-// 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
-// 	}
-//
-// 	dpdm_sink_deinit();
-//
-// 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;  // TypeC-A (本项目唯一 C 口)
-// 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;  // USB-A 关闭（PC3=LED4, PC4=LED3，不可驱动 DP/DM_A1）
-// 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;  // TypeC-B (本项目禁用)
-// 	bc12_type = 0;
-// 	dpdm_map = tc_index;
-// 	printk("[DPDM] dpdm_map=%d PORT1_CTRL=1\n", dpdm_map);
+	/* IP162_GB 单 C 口配置：物理 TypeC-B (PB2/PD0)，软件 PORT0_INDEX 映射到 TypeC-B。
+	 * 必须设置 DPDM block 内部 MUX 路由到对应物理 pin，否则 BC1.2/QC 检测悬空 pin。
+	 * 历史回归：c617026 把本函数体整体注释掉，导致 QC/AFC/FCP 全部失效。 */
+	dpdm_printk("[DPDM] select port=%d\n", tc_index);
+	if(tc_index == 0)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;  // TypeC-B (PB2=DP_C2 / PD0=DM_C2)
+	}
+	else if(tc_index == 1)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;  // TypeC-A (本项目禁用)
+	}
+	else if(tc_index == 2)
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2;  // USB-A
+	}
+	else
+	{
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+	}
+
+	dpdm_sink_deinit();
+
+	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;  // TypeC-A 关闭
+	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;  // USB-A 关闭
+	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 1;  // TypeC-B 启用（本项目唯一 C 口）
+	bc12_type = 0;
+	dpdm_map = tc_index;
+	dpdm_printk("[DPDM] dpdm_map=%d PORT3_CTRL=1\n", dpdm_map);
 }
 
 void usb_dpdm_autodcp_en(void)
@@ -150,8 +153,8 @@ void usb_dpdm_autodcp_en(void)
 
 	DPDM->AFC_CTRL.BITS.AFC_RX_DATA_MASK = 0;
 	DPDM->AFC_CTRL.BITS.SCP_RX_DATA_MASK = 0;
-	//printk("AFC_CTRL=0x%x\n",(uint32_t)(&DPDM->AFC_CTRL));
-	//printk("AFC_CTRL=0x%x\n",DPDM->AFC_CTRL.WORD);
+	//dpdm_printk("AFC_CTRL=0x%x\n",(uint32_t)(&DPDM->AFC_CTRL));
+	//dpdm_printk("AFC_CTRL=0x%x\n",DPDM->AFC_CTRL.WORD);
 }
 
 extern union scp_packet_t scp_tx;
@@ -169,7 +172,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			dpdm_ufcs_init();
 		#endif
 			is_enter_dpdm_prot = false;
-			//printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
+			//dpdm_printk("SOURCE_CTRL=0x%x\n",DPDM->SOURCE_CTRL.WORD);
 			break;
 		case DPDM_EVT_SRC_UNATTCHED:
 			is_enter_dpdm_prot = false;
@@ -180,16 +183,16 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 		case DPDM_EVT_ENTER_DCP:
 			if(is_enter_dpdm_prot) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
-			printk("enter dcp\n");
+			dpdm_printk("enter dcp\n");
 			//usb_dpdm_autodcp_en();
 			break;
 		case DPDM_EVT_ENTER_HVDCP://if enter dpdm,buck to 5v
 			if(is_enter_dpdm_prot) hal_tcpc_pd_set_bus_iv(PORT0_INDEX,5000,3500,0,0);
-			printk("hvdcp\n");
+			dpdm_printk("hvdcp\n");
 			break;
 		case DPDM_EVT_TIMER_PERIOD:
-			//printk("SOURCE_CTRL=0x%x\n",(uint32_t)(&DPDM->SOURCE_CTRL));
-			//printk("DPDM_RESULT=0x%x\n",DPDM->SOURCE_STAT.WORD);
+			//dpdm_printk("SOURCE_CTRL=0x%x\n",(uint32_t)(&DPDM->SOURCE_CTRL));
+			//dpdm_printk("DPDM_RESULT=0x%x\n",DPDM->SOURCE_STAT.WORD);
 			break;
 		case DPDM_EVT_QC_FIXED_5V:
 		case DPDM_EVT_QC_FIXED_9V:
@@ -198,7 +201,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			is_enter_dpdm_prot = true;
 			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
-				printk("pd has work,qc should not work\n");
+				dpdm_printk("pd has work,qc should not work\n");
 				return;
 			}
 
@@ -227,7 +230,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 			hal_tcpc_pd_set_bus_iv(0,qc_volt,qc_current + 300,0,10);
 
-			printk("qc2 v= %d i= %d\n",qc_volt,qc_current);
+			dpdm_printk("qc2 v= %d i= %d\n",qc_volt,qc_current);
 			break;
 		case DPDM_EVT_QC_CONTINUES:
 			break;
@@ -242,7 +245,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			is_enter_dpdm_prot = true;
 			if(pdlib_is_connect() && pdlib_get_source_supply_voltage() != 5000)
 			{
-				printk("pd has work,qc should not work\n");
+				dpdm_printk("pd has work,qc should not work\n");
 				return;
 			}
 			if(DPDM->QC_SRC_FLAG.BITS.QC_SRC_STAT == QC_CONTINUOUS_MODE)
@@ -251,31 +254,31 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				qc3_current = qc3_current > 3000? 3000 : qc3_current;
 				hal_tcpc_pd_set_bus_iv(0,qc_volt,qc3_current + 300,0,10);
 
-				printk("qc3 v= %d i= %d\n",qc_volt,qc3_current);
+				dpdm_printk("qc3 v= %d i= %d\n",qc_volt,qc3_current);
 			}
 
 			break;
 		case DPDM_EVT_AFC_RX_DATA:
-			//printk("afc rx = 0x%x\n",DPDM->AFC_RX_0.WORD);
+			//dpdm_printk("afc rx = 0x%x\n",DPDM->AFC_RX_0.WORD);
 			break;
 		case DPDM_EVT_SCP_RX_DATA:
-			printk("\n");
-			printk("SCP RX:");
+			dpdm_printk("\n");
+			dpdm_printk("SCP RX:");
 			for(uint8_t i = 0; i < scp_packet.bytes.msg_len;i++)
 			{
-				printk(" 0x%x",((uint8_t *)(&scp_packet.bytes.msg_0))[i]);
+				dpdm_printk(" 0x%x",((uint8_t *)(&scp_packet.bytes.msg_0))[i]);
 			}
-			printk("\n");
+			dpdm_printk("\n");
 
 			break;
 		case DPDM_EVT_SCP_TX_DATA:
 
-			printk("SCP TX:");
+			dpdm_printk("SCP TX:");
 			for(uint8_t i = 0; i < scp_tx.bytes.msg_len;i++)
 			{
-				printk(" 0x%x",((uint8_t *)(&scp_tx.bytes.msg_0))[i]);
+				dpdm_printk(" 0x%x",((uint8_t *)(&scp_tx.bytes.msg_0))[i]);
 			}
-			printk("\n");
+			dpdm_printk("\n");
 			break;
 
 		case DPDM_EVT_SNK_ATTACHED:
@@ -286,7 +289,28 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			dpdm_sink_deinit();
 			break;
 		case DPDM_EVT_SNK_BC12DONE:
-			printk("\r\n  BC12 bc12_type=0x%x  UNSTANDARD_TYPE = 0x%x \r\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE,DPDM_QC_SINK->BC1P2_STAT.BITS.UNSTANDARD_TYPE);
+			dpdm_printk("\r\n  BC12 bc12_type=0x%x  UNSTANDARD_TYPE = 0x%x \r\n",DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE,DPDM_QC_SINK->BC1P2_STAT.BITS.UNSTANDARD_TYPE);
+			/* === DPDM 直接电压诊断（确认适配器是否短接 D+/D-） ===
+			 * VDP_RD / VDM_RD 是 3-bit 阈值编码 (0..7)，越大代表电压越高。
+			 * - DCP 适配器：D+ 被注入 ~0.6V 电流源后，由于 D+/D- 短接，D- 也升高 → 两值相近且 > 0
+			 * - SDP/无连接：D- 浮空 → VDM_RD ≈ 0
+			 * - 线缆 D+/D- 断开：两值都 ≈ 0
+			 */
+			{
+				uint32_t bc12_raw  = DPDM_QC_SINK->BC1P2_STAT.WORD;
+				uint32_t ctrl_raw  = DPDM_QC_SINK->BC1P2_INTMSK_CTRL.WORD;
+				dpdm_printk("[DPDM-DBG] BC1P2_STAT=0x%08X CTRL=0x%08X dpdm_map=%d\n",
+					   bc12_raw, ctrl_raw, dpdm_map);
+				/* 启用 D+/D- 读回（manual mode 用于诊断，读完关掉避免影响后续 QC 流程）*/
+				DPDM_QC_SINK->DPDM_MANUAL.BITS.DP_RD_EN = 1;
+				DPDM_QC_SINK->DPDM_MANUAL.BITS.DM_RD_EN = 1;
+				delay_1ms(2);
+				uint8_t vdp = DPDM_QC_SINK->DPDM_MANUAL.BITS.VDP_RD;
+				uint8_t vdm = DPDM_QC_SINK->DPDM_MANUAL.BITS.VDM_RD;
+				DPDM_QC_SINK->DPDM_MANUAL.BITS.DP_RD_EN = 0;
+				DPDM_QC_SINK->DPDM_MANUAL.BITS.DM_RD_EN = 0;
+				dpdm_printk("[DPDM-DBG] VDP_RD=%d VDM_RD=%d (3bit code, equal&>0 => DCP short)\n", vdp, vdm);
+			}
 			if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x02)
 				bc12_type = BC1P2_CDP;
 			else if(DPDM_QC_SINK->BC1P2_STAT.BITS.BC1P2_TYPE == 0x03)
@@ -302,13 +326,13 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			break;
 		case DPDM_EVT_SNK_HVDCP_START:
 			osal_stop_timerEx(DPDM_SINK_TIMER);
-			printk("hvdcp start\n");
+			dpdm_printk("hvdcp start\n");
 			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_EN = 1;
 			DPDM_QC_SINK->QC_INTMSK_CTRL.BITS.QC_MODE = 0x03;
 			DPDM->SOURCE_CTRL.BITS.EN_900K_PD = 1;
 			break;
 		case DPDM_EVT_SNK_HVDCP_DONE:
-			printk("hvdcp done\n");
+			dpdm_printk("hvdcp done\n");
 			//osal_set_event(USB_TASK,TCPM_EVT_HVDCP_DONE);
 
 			if(g_port.snk_5v_only == 0 && pdlib_is_connect() == false)
@@ -336,10 +360,10 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				adc_input = hal_nu6801_buckboost_typeca_vbus_present();
 			else
 				adc_input = hal_nu6801_buckboost_typecb_vbus_present();
-			printk("Set Qc 12V=%d\n",adc_input);
+			dpdm_printk("Set Qc 12V=%d\n",adc_input);
 			if(adc_input >= 10500)
 		#else
-			printk("Set Qc 12V=%d\n",g_buckboost.adc_vbus);
+			dpdm_printk("Set Qc 12V=%d\n",g_buckboost.adc_vbus);
 			if(g_buckboost.adc_vbus >= 10500)
 		#endif
 			{
@@ -361,10 +385,10 @@ void usb_dpdm_task_event_handler(uint32_t event)
 				adc_input = hal_nu6801_buckboost_typeca_vbus_present();
 			else
 				adc_input = hal_nu6801_buckboost_typecb_vbus_present();
-			printk("Set Qc 9V=%d\n",adc_input);
+			dpdm_printk("Set Qc 9V=%d\n",adc_input);
 			if(adc_input >= 7500)
 		#else
-			printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
+			dpdm_printk("Set Qc 9V=%d\n",g_buckboost.adc_vbus);
 			if(g_buckboost.adc_vbus >= 7500)
 		#endif
 			{
@@ -384,7 +408,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 			ufcs_psread_handle();
 			break;
 		case DPDM_EVT_UFCS_RX_RESET:
-			printk("UFCS HARDRESET\n");
+			dpdm_printk("UFCS HARDRESET\n");
 			ufcs_exit_handle();
 			break;
 #endif
@@ -424,7 +448,7 @@ void __attribute__((isr)) QC_SRC_IRQHandler(void)
 
     uint32_t int_flag = (DPDM->QC_SRC_FLAG.WORD) & 0x3F80;
 
-    //printk("qc3 int_flag = 0x%x\n",DPDM->QC_SRC_FLAG.WORD);
+    //dpdm_printk("qc3 int_flag = 0x%x\n",DPDM->QC_SRC_FLAG.WORD);
     do
     {
 		if(int_flag & (0x01<<7))
