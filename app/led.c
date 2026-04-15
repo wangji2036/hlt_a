@@ -798,7 +798,7 @@ void key_triple_click_process(void)
 void key_quint_click_process(void)
 {
 	extern uint8_t g_vref_cal_delay;
-	g_vref_cal_delay = 15;  /* 15 × 136ms (step3 period) ≈ 2s delay, then calibrate in buckboost task */
+	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
 	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
 	printk("\r\n[KEY] quint click: Vref cal scheduled");
 }
