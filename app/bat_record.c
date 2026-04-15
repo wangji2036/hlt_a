@@ -1014,34 +1014,6 @@ static uint8_t get_total_record_count(void) {
     return (total > MAX_TOTAL_RECORDS) ? MAX_TOTAL_RECORDS : total;
 }
 */
-// Read all exception records - read directly from Flash
-uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count) {
-    if (buf == NULL || max_count == 0) return 0;
-
-    uint8_t count = 0;
-    const uint32_t page_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
-
-    // Read from all configured pages (use static buffer to avoid stack overflow)
-    for (uint8_t page = 0; page < LOG_PAGE_COUNT && count < max_count; page++) {
-        flash_read_record(page_addrs[page], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
-
-        if (g_flash_page_buffer.magic == MAGIC_VALUE) {
-            uint8_t records_in_page = (g_flash_page_buffer.page_records_count <= MAX_RECORDS_PER_PAGE) ?
-                                       g_flash_page_buffer.page_records_count : MAX_RECORDS_PER_PAGE;
-
-            // Copy records from this page
-            for (uint8_t i = 0; i < records_in_page && count < max_count; i++) {
-                buf[count++] = g_flash_page_buffer.records[i];
-            }
-        }
-    }
-
-    /* New GB standard: no in-flight tracking records to overlay, all records
-     * are written to Flash at window end via process_window_end() */
-
-    return count;
-}
-
 /* Read single record by page/index */
 uint8_t battery_record_read_by_page_index(uint8_t page, uint8_t index, BatteryExceptionRecord_t *record) {
     if (!read_record_from_flash(page, index, record)) return false;
@@ -1268,13 +1240,6 @@ void battery_record_print_next_log(void) {
 
 /********************* Sleep Mode Functions *********************/
 
-// Check if any exception is currently being tracked (unified window)
-uint8_t battery_record_is_tracking_active(void) {
-    return g_exception_cache.ov1_triggered || g_exception_cache.ov2_triggered ||
-           g_exception_cache.temp_chg_triggered || g_exception_cache.temp_dchg_triggered;
-}
-
-
 // Disable ADC after sleep wakeup reading
 static void sleep_adc_deinit(void) {
     BADC->CTRL.WORD = 0;  // Disable BADC to save power
@@ -1360,9 +1325,7 @@ uint8_t battery_record_sleep_check(void) {
     printk("current_voltage:%d\n",  current_voltage);
     uint16_t ntc_resistance = hal_nu6801_buckboost_get_bat_temperature();
 #elif(BUCKBOOST_USED_NU6805 == 1)
-    uint16_t current_voltage = hal_nu6805_buckboost_get_bat_voltage();
-    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();
-
+    
     /* Sleep ADC: temporarily enable BADC mode + input buffer on PB6/PC7/PD3 */
     GPB->I_EN.BITS.PIN6 = 1;  GPB->MODE.BITS.PIN6 = 1;  /* PB6 → BADC7 (BAT2+) */
     GPC->I_EN.BITS.PIN7 = 1;  GPC->MODE.BITS.PIN7 = 1;  /* PC7 → BADC4 (Cell2) */
@@ -1396,6 +1359,11 @@ uint8_t battery_record_sleep_check(void) {
     GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
     GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 → GPIO */
     GPD->MODE.BITS.PIN3 = 0;  GPD->I_EN.BITS.PIN3 = 0;  /* PD3 → GPIO */
+
+    /* 触发 NTC 通道切换 → 阻塞 1ms 等 ADC 采样 → 读真实值 */
+    (void)hal_nu6805_buckboost_get_bat_temperature();
+    delay_1us(300);
+    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature() / 100;  /* Ohm → Ohm/100 */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
     br_printk("ntc:%d t:%d\n",  ntc_resistance, ntc_temp);
@@ -1455,6 +1423,8 @@ uint8_t battery_record_sleep_check(void) {
                 g_exception_cache.ov2_max_voltage = cell2_voltage;
                 g_exception_cache.ov2_total_voltage = total_voltage;
                 get_current_timestamp(&g_exception_cache.ov2_timestamp);
+                // printk("[SLP-OV2] max=%d ADC=[%d,%d,%d] vref=%d\n",
+                    //    cell2_voltage, pd3_adc_mv, pc7_adc_mv, pb6_adc_mv, vref_mv);
             }
         }
     }
@@ -1512,7 +1482,7 @@ uint8_t battery_record_sleep_check(void) {
                     }
                 }
                 g_next_record_id = (max_rid > 0) ? max_rid + 1 : 1;
-                printk("[BR-SLEEP] restored rid=%u\n", (unsigned)g_next_record_id);
+                // printk("[BR-SLEEP] restored rid=%u\n", (unsigned)g_next_record_id);
             }
         }
         process_window_end();

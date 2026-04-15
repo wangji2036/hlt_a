@@ -79,24 +79,9 @@ void battery_record_update_temperature(void);
 void battery_record_periodic_check(void);
 
 /**
- * @brief Read all exception records (unified format)
- * @param buf Receive buffer
- * @param max_count Maximum number to read
- * @return Actual number of records read
- */
-uint8_t battery_record_read_exceptions(BatteryExceptionRecord_t *buf, uint8_t max_count);
-
-
-/**
  * @brief Print next abnormal record (overvoltage or temperature)
  */
 void battery_record_print_next_log(void);
-
-/**
- * @brief Check if any exception is currently being tracked
- * @return true if tracking active, false otherwise
- */
-uint8_t battery_record_is_tracking_active(void);
 
 /**
  * @brief Lightweight exception check for sleep mode
