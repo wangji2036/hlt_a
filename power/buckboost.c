@@ -753,10 +753,10 @@ void buckboost_task_event_handler(uint32_t event)
 					g_buckboost.adc_vcell2 = c2_hist[hist_idx ? hist_idx - 1 : 2];
 				}
 
-				printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] total=%d\n",
+				printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref=%d total=%d\n",
 				       g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
 				       g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
-				       g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
+				       g_vref_mv,g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
 
 			#else
 				buckboost_ir_drop_handle();

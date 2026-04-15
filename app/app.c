@@ -116,8 +116,14 @@ void apl_task_event_handler(uint32_t event)
 			fml_tdie_otp_check(gd->sys_infos.die_temp);
 			fml_tdie_utp_check(gd->sys_infos.die_temp);
 #if CONFIG_NEW_CCC_LOG_ENABLE
-			battery_record_periodic_check();
-			fml_bat_ov_forbid_check();
+			/* 按键期间跳过异常记录和过压禁用检测：
+			 * 硬件 bug — 按键按下时 ADC 采样受干扰，读数偏高，
+			 * 会误触发过压异常记录或 OV_FORBID 永久禁用。
+			 * _KEY_LEVEL == 0 表示按键正在被物理按下（低有效，实时 GPIO 电平）。*/
+			if (_KEY_LEVEL != 0) {
+				battery_record_periodic_check();
+				fml_bat_ov_forbid_check();
+			}
 
 			/* Cycle count: cumulative charge integration (standard definition)
 			 * 1 cycle = total charge-in reaches CONFIG_BATTERY_CAPACITY_MAH
