@@ -92,7 +92,7 @@
 #define SUPPORT_DPDM_LOG                1   // dpdm.c debug logs
 #define SUPPORT_PORTMGR_LOG             1   // port_manager.c debug logs
 #define SUPPORT_LED_LOG                 1   // led.c debug logs
-#define SUPPORT_WPC_LOG                 1   // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
+#define SUPPORT_WPC_LOG                 0   // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
 #define BAT_RECORD_USE_STACK_BUFFER     0   // 0=static buffer (safe), 1=local variable (saves RAM)
 #define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)

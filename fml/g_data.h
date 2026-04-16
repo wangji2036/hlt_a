@@ -135,8 +135,11 @@ typedef struct {
 
 // 16-bit cycle count accessor macros (lo=Battery_cycle_count, hi=Battery_cycle_count_hi)
 #define GET_CYCLE_COUNT(gd)  ((uint16_t)(gd)->Battery_cycle_count | ((uint16_t)(gd)->Battery_cycle_count_hi << 8))
-#define SET_CYCLE_COUNT(gd, v) do { (gd)->Battery_cycle_count = (uint8_t)((v) & 0xFF); \
-                                     (gd)->Battery_cycle_count_hi = (uint8_t)(((uint16_t)(v)) >> 8); } while(0)
+#define SET_CYCLE_COUNT(gd, v) do { \
+    VIC_vModuleDisable(); \
+    (gd)->Battery_cycle_count = (uint8_t)((v) & 0xFF); \
+    (gd)->Battery_cycle_count_hi = (uint8_t)(((uint16_t)(v)) >> 8); \
+    VIC_vModuleEnable(); } while(0)
 
 // RAM storage metadata (records live in Flash, not RAM — saves ~98B vs old 5-record cache)
 typedef struct {

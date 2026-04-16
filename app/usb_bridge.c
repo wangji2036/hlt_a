@@ -134,7 +134,7 @@ void usb_bridge_wakeup(void)
         printk("[WB] wake r=%d rb=%02X\n", retry, readback);
     }
 
-    /* Resync ProductInfo after wakeup */
+    /* Initial ProductInfo sync on wakeup; cnt==14 handles periodic refresh */
     usb_bridge_reset_product_info();
 
     /* Resync cycle count: WB7720 resets i2c_buff[0x80] to 0x0000 on sleep/wakeup.
@@ -401,7 +401,6 @@ void usb_bridge_periodic_update(void)
         usb_bridge_check_time_sync();
         usb_bridge_check_eng_cmd();
         usb_bridge_check_prod_mode();
-        cnt = 0;
         /* 管理 WB7720 睡眠状态：非 force_usb_mode 时让 WB7720 回到睡眠 */
         if (!gd->force_usb_mode && is_usb_enable)
         {
@@ -409,6 +408,37 @@ void usb_bridge_periodic_update(void)
             usb_bridge_sleep();
             is_usb_enable = false;
         }
+        cnt++;
+        return;
+    }
+
+    /* ---- cnt 14: 周期性刷新生产信息到 WB7720 (每 ~30s) ---- */
+    if (cnt == 14)
+    {
+        static uint8_t prodinfo_refresh_cnt = 0;
+        if (++prodinfo_refresh_cnt >= 42) {  /* 42 × 15×47ms ≈ 30s */
+            prodinfo_refresh_cnt = 0;
+            /* 生产模式写入进行中则跳过，避免覆盖 host 新写的数据 */
+            uint8_t prod_flag = 0;
+            hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &prod_flag);
+            if (prod_flag != PROD_MODE_MAGIC) {
+                /* 刷新前：读回 WB7720 当前值（可能已被踩） */
+                static const char *fn[] = {"MFR","MDL","BMFR","BMDL","DATE","SN"};
+                static const uint8_t fa[] = {PROD_MANUFACTURER, PROD_MODEL, PROD_BATTERY_MFR,
+                                             PROD_BATTERY_MODEL, PROD_PROD_DATE, PROD_SERIAL};
+                uint8_t tmp[20];
+                for (uint8_t f = 0; f < 6; f++) {
+                    uint8_t sz = (f == 5) ? SERIAL_FIELD_SIZE : PRODUCT_INFO_FIELD_SIZE;
+                    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, fa[f], tmp, sz);
+                    printk("[WB_%s] ", fn[f]);
+                    for (uint8_t k = 0; k < sz; k++) printk("%02X ", tmp[k]);
+                    printk("\n");
+                }
+                /* 用 Flash 正确数据覆盖（reset 里会打印 [PB_MFR] 等源数据） */
+                usb_bridge_reset_product_info();
+            }
+        }
+        cnt = 0;
         return;
     }
 
@@ -425,7 +455,7 @@ void usb_bridge_periodic_update(void)
             is_usb_enable = false;
         }
         cnt++;
-        if (cnt >= 14) cnt = 0;
+        if (cnt >= 15) cnt = 0;
         return;
     }
 

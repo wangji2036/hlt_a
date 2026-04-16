@@ -333,7 +333,7 @@ void nano_battery_ui_handle(void)
                 if (g_bat.bat_level_ui < 100)
                     g_bat.bat_level_ui++;
                     if(g_bat.bat_level_ui == 100){
-                        gd->Battery_cycle_count ++;
+                        SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
                     }
                 level_ui_cnt = 0;
             }
