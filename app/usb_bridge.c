@@ -39,6 +39,20 @@ void usb_bridge_reset_product_info(void)
     ProductInfo_t info;
     product_info_read(&info);
 
+    /* Diagnostic: dump all 6 Flash-read fields BEFORE I2C writes */
+    static const char *fnames[] = {"MFR","MDL","BMFR","BMDL","DATE","SN"};
+    const uint8_t *fptrs[] = {
+        (uint8_t*)info.manufacturer_name, (uint8_t*)info.model_name,
+        (uint8_t*)info.battery_mfr, (uint8_t*)info.battery_model,
+        (uint8_t*)info.battery_prod_date, (uint8_t*)info.serial
+    };
+    for (uint8_t f = 0; f < 6; f++) {
+        printk("[PB_%s] ", fnames[f]);
+        uint8_t sz = (f == 5) ? SERIAL_FIELD_SIZE : PRODUCT_INFO_FIELD_SIZE;
+        for (uint8_t k = 0; k < sz; k++) printk("%02X ", fptrs[f][k]);
+        printk("\n");
+    }
+
     /* Write 5 fields (each 20 bytes) + serial (10 bytes) */
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_MANUFACTURER,
                                (uint8_t*)info.manufacturer_name, 20);
