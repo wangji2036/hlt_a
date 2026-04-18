@@ -11,7 +11,7 @@
 #define BAT_BATTERY_DEFAULT 6676543 // 18wh ~~ 5000mAh
 #define BAT_ENERGY_CALI_VOLT 3250
 #define BAT_BATTERY_EMPTY_VOLTAGE 3150
-#define BAT_ENERGY_FULL_LEVEL 96
+#define BAT_ENERGY_FULL_LEVEL 100
 #define BAT_BAT_rDC 50
 #define BAT_DISG_RATE 100 / 94
 uint8_t temp_bat_ui;
@@ -52,7 +52,7 @@ uint8_t nano_battery_ocv_level_find(int16_t bat_volt)
 
 void nano_battery_soe_handle(void)
 {
-    int32_t bat_soe_uint = g_bat.vbat * g_bat.ibat / 1000 / 100; // V * A * s = V*0.1A *0.1s = 0.01wS
+    int32_t bat_soe_uint = g_bat.vbat/2 * g_bat.ibat / 1000 / 100; // V * A * s = V*0.1A *0.1s = 0.01wS
 
     if (g_bat.sbat == BAT_STS_CHNG)
     {
@@ -334,6 +334,9 @@ void nano_battery_ui_handle(void)
                     g_bat.bat_level_ui++;
                     if(g_bat.bat_level_ui == 100){
                         SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
+#if CYCLE_COUNT_FLASH_PERSIST
+                        cycle_count_save_to_flash();
+#endif
                     }
                 level_ui_cnt = 0;
             }
