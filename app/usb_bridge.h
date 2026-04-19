@@ -38,7 +38,7 @@
 #define REG_WAKEUP_CMD          0x4F    // write 0x01 -> WB7720 USB re-enumerate
 
 /* ===== Time Sync Register ===== */
-#define REG_TIME_SYNC           0x51    // u8: write 0xCA to trigger RTC calibration
+#define REG_TIME_SYNC           0x51    // u8: host/WB7720 置 0xCA；MCU 读到后按 REG_ENG_CURRENT_DATE 同步 Bat_RTC_Seconds 并写回 0
 #define TIME_SYNC_MAGIC         0xCA
 #define REG_RTC_SECONDS         0x52    // u32 LE: Bat_RTC_Seconds (powerbank → WB7720 → host)
 

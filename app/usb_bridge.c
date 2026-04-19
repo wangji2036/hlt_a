@@ -28,10 +28,6 @@ static uint8_t exc_cursor_idx = 0;
 static uint8_t exc_records_sent = 0;
 static uint8_t exc_page_counts[LOG_PAGE_COUNT];
 
-/* Saved real cycle count before engineering mode injection */
-static uint16_t eng_saved_cycle_count = 0;   /* Real cycle count before eng mode */
-static uint16_t eng_entry_virtual_cycle = 0; /* Virtual cycle count at entry (baseline for delta) */
-
 /********************* ProductInfo Sync *********************/
 
 void usb_bridge_reset_product_info(void)
@@ -90,20 +86,15 @@ void usb_bridge_init(void)
 
 void usb_bridge_sleep(void)
 {
-    printk("[sleep] eng=%d saved=%d entry=%d cur=%d\n",
-           gd->eng_mode_active, eng_saved_cycle_count, eng_entry_virtual_cycle, GET_CYCLE_COUNT(gd));
+    printk("[sleep] eng=%d cur=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
     /* Exit engineering mode if active */
     if (gd->eng_mode_active) {
         gd->eng_mode_active = 0;
         gd->eng_virtual_cell1 = VIRTUAL_CELL_SENTINEL;
         gd->eng_virtual_cell2 = VIRTUAL_CELL_SENTINEL;
         gd->eng_virtual_temp  = VIRTUAL_TEMP_SENTINEL;
-        /* Restore real cycle count + cycles accumulated during eng mode */
-        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
-                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
-        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
 
-        /* Restore CV voltage based on real cycle count */
+        /* Keep current cycle count and apply matching CV profile */
 #if (BUCKBOOST_USED_NU6801 == 1)
         hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
@@ -188,19 +179,9 @@ static void usb_bridge_apply_eng_datetime(void)
 
 static void usb_bridge_exit_eng_mode(void)
 {
-    /* If eng mode injected a virtual cycle count (not sentinel),
-     * keep it as the new real value and persist to Flash.
-     * Otherwise restore saved real value + any increments. */
-    if (eng_entry_virtual_cycle != eng_saved_cycle_count) {
-        /* Virtual cycle was injected — keep current value (includes any increments) */
-        printk("[eng] exit: cycle=%d (injected, kept)\n", GET_CYCLE_COUNT(gd));
-    } else {
-        /* No injection (sentinel) — restore real + increments */
-        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
-                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
-        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
-        printk("[eng] exit: cycle=%d (restored)\n", GET_CYCLE_COUNT(gd));
-    }
+    /* Simplified policy: use current cycle count as final value on exit.
+     * This applies to both injected and non-injected sessions. */
+    printk("[eng] exit: cycle=%d (kept current)\n", GET_CYCLE_COUNT(gd));
 
     /* Update CV voltage based on final cycle count */
 #if (BUCKBOOST_USED_NU6801 == 1)
@@ -229,34 +210,13 @@ static void usb_bridge_check_eng_mode(void)
     if (work_mode == ENG_MODE_MAGIC && !gd->eng_mode_active) {
         gd->eng_mode_active = 1;
 
-        /* Read datetime (7B: 0x60-0x66) */
-        usb_bridge_apply_eng_datetime();
-
-        /* Read cycle count (2B: 0x80) */
-        uint16_t cycle = 0;
-        hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
-        if (cycle != 0xFFFF) {
-            /* Save real cycle count before injecting virtual value */
-            eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
-            SET_CYCLE_COUNT(gd, (uint16_t)cycle);
-            eng_entry_virtual_cycle = (uint16_t)cycle;
-        } else {
-            /* Sentinel: keep real value, record it as baseline */
-            eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
-        }
-
-        /* Update CV voltage based on injected cycle count */
-#if (BUCKBOOST_USED_NU6801 == 1)
-        hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
-#endif
-#if (BUCKBOOST_USED_NU6805 == 1)
-        hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
-#endif
-
         /* Read virtual parameters (6B: 0x82-0x87) */
         usb_bridge_read_virtual_params();
+        printk("eng enter virtual: c1=%u c2=%u t=%d\n",
+               gd->eng_virtual_cell1,
+               gd->eng_virtual_cell2,
+               gd->eng_virtual_temp);
 
-        printk("eng mode enter: saved=%d virt=%d\n", eng_saved_cycle_count, eng_entry_virtual_cycle);
     }
     else if (gd->eng_mode_active && work_mode == 0x00) {
         /* PC wrote 0x00 to REG_WORK_MODE → exit engineering mode */
@@ -265,8 +225,13 @@ static void usb_bridge_check_eng_mode(void)
     }
 }
 
+/* 工程模式扩展命令：上位机经 WB7720 在 REG_ENG_ERASE_CMD(0x88) 写入命令码，MCU 在周期任务里轮询并执行。
+ * 0xEE(ENG_CMD_ERASE_ALL)：擦除 MCU 侧电池异常记录，并通知 WB7720 清异常缓存、重置推送游标。
+ * 0xAA(ENG_CMD_REFRESH)：从 WB7720 重读虚拟量/日期时间/循环次数，更新 gd 与充电 CV。
+ * 握手：MCU 发现 0x88 非 0 后置 REG_ENG_CMD_STATUS=BUSY；执行完写 OK 或 FAIL（仅擦除分支），最后由 MCU 将 0x88 写 0 表示命令已消费。 */
 static void usb_bridge_check_eng_cmd(void)
 {
+    /* 非工程模式不处理，避免误响应 0x88 残留值 */
     if (!gd->eng_mode_active) return;
 
     uint8_t cmd = 0;
@@ -277,11 +242,11 @@ static void usb_bridge_check_eng_cmd(void)
 
         bool ok = battery_record_erase_all();
 
-        /* Notify WB7720 to clear exc_cache */
+        /* 通知 WB7720 清空异常缓存侧状态 */
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_TOTAL_COUNT, 0);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0x00);
 
-        /* Reset push cursor so next cnt==12 starts from page 0 */
+        /* 下次 cnt==12 推送异常记录时从第 0 页重新开始 */
         exc_cursor_page = 0;
         exc_cursor_idx = 0;
         exc_records_sent = 0;
@@ -295,35 +260,32 @@ static void usb_bridge_check_eng_cmd(void)
     else if (cmd == ENG_CMD_REFRESH) {
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_BUSY);
 
-        /* 1. Settle delta from current session: restore real + cycles accumulated */
-        uint16_t cycles_added = (GET_CYCLE_COUNT(gd) >= eng_entry_virtual_cycle)
-                               ? (GET_CYCLE_COUNT(gd) - eng_entry_virtual_cycle) : 0;
-        SET_CYCLE_COUNT(gd, eng_saved_cycle_count + cycles_added);
-
-        /* 2. Update baseline for next session */
-        eng_saved_cycle_count = GET_CYCLE_COUNT(gd);
-
-        /* 3. Read new virtual params + arm single-shot */
+        /* 从 WB7720 拉取最新虚拟电芯/温度等 */
         usb_bridge_read_virtual_params();
         usb_bridge_apply_eng_datetime();
 
-        /* 4. Re-read cycle count and re-inject */
+        /* 循环次数：0xFFFF 表示本次不改，否则覆盖 MCU 侧计数 */
         uint16_t cycle = 0;
         hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle, 2);
         if (cycle != 0xFFFF) {
-            SET_CYCLE_COUNT(gd, (uint16_t)cycle);
-            eng_entry_virtual_cycle = (uint16_t)cycle;
-        } else {
-            eng_entry_virtual_cycle = GET_CYCLE_COUNT(gd);
+            /* 上位机刷新循环充次数立即写进flash */
+            if (cycle != GET_CYCLE_COUNT(gd)) {
+                SET_CYCLE_COUNT(gd, (uint16_t)cycle);
+                #if CYCLE_COUNT_FLASH_PERSIST
+                    cycle_count_save_to_flash();
+                #endif
+                /* 循环次数变化时才按新档位重算并下发 CV */
+                #if (BUCKBOOST_USED_NU6801 == 1)
+                    hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+                #endif
+                #if (BUCKBOOST_USED_NU6805 == 1)
+                    hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
+                #endif
+                printk("eng mode cycle count refresh: cycle=%d\n", GET_CYCLE_COUNT(gd));
+            } else {
+                printk("eng mode cycle count keep: cycle=%d (no change)\n", GET_CYCLE_COUNT(gd));
+            }
         }
-
-        /* Update CV voltage based on refreshed cycle count */
-#if (BUCKBOOST_USED_NU6801 == 1)
-        hal_nu6801_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
-#endif
-#if (BUCKBOOST_USED_NU6805 == 1)
-        hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
-#endif
 
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_OK);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_ERASE_CMD, 0x00);
@@ -334,7 +296,8 @@ static void usb_bridge_check_eng_cmd(void)
 
 static void usb_bridge_check_time_sync(void)
 {
-    /* RTC校准不再限制工程模式，上位机连接时自动同步 */
+    /* 不判断 eng_mode_active：WB7720 将 REG_TIME_SYNC 置为 0xCA 时，从 REG_ENG_CURRENT_DATE
+     * 读日期时间写入 gd->Bat_RTC_Seconds（软件 RTC 秒计数），再将 0x51 清 0，避免重复触发。 */
 
     uint8_t trigger = 0;
     hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_TIME_SYNC, &trigger);
