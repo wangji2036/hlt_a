@@ -336,11 +336,12 @@ static void usb_bridge_check_prod_mode(void)
     /* Write to Flash */
     product_info_write(&info);
 
-    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_OK);
-    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, 0x00);
-
     /* Refresh i2c_buff so WB7720 Type 0x03 reflects new data */
     usb_bridge_reset_product_info();
+
+    /* Mark done after WB7720 cache is refreshed to avoid OK-before-refresh window */
+    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_OK);
+    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, 0x00);
 
     printk("prod info written\n");
 }
@@ -385,19 +386,7 @@ void usb_bridge_periodic_update(void)
             uint8_t prod_flag = 0;
             hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &prod_flag);
             if (prod_flag != PROD_MODE_MAGIC) {
-                /* 刷新前：读回 WB7720 当前值（可能已被踩） */
-                static const char *fn[] = {"MFR","MDL","BMFR","BMDL","DATE","SN"};
-                static const uint8_t fa[] = {PROD_MANUFACTURER, PROD_MODEL, PROD_BATTERY_MFR,
-                                             PROD_BATTERY_MODEL, PROD_PROD_DATE, PROD_SERIAL};
-                uint8_t tmp[20];
-                for (uint8_t f = 0; f < 6; f++) {
-                    uint8_t sz = (f == 5) ? SERIAL_FIELD_SIZE : PRODUCT_INFO_FIELD_SIZE;
-                    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, fa[f], tmp, sz);
-                    printk("[WB_%s] ", fn[f]);
-                    for (uint8_t k = 0; k < sz; k++) printk("%02X ", tmp[k]);
-                    printk("\n");
-                }
-                /* 用 Flash 正确数据覆盖（reset 里会打印 [PB_MFR] 等源数据） */
+                /* 每 30s 仅执行 Flash -> WB7720 同步，不回读 WB 缓存 */
                 usb_bridge_reset_product_info();
             }
         }
