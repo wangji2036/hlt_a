@@ -24,7 +24,7 @@ void nano_battery_soe_handle(void);
 void nano_battery_ui_handle(void);
 
 // OCV表：对应0%-100% SOC（每10%一个点），适用于3.85V标称电压、5000mAh电池
-const uint16_t level_ocv_table[] = {6000, 6568, 6960, 7140, 7308, 7264, 7666, 7930, 8200, 8400, 8800};
+const uint16_t level_ocv_table[] = {6000, 6568, 6960, 7136, 7308, 7464, 7666, 7930, 8198, 8402, 8800};
 
 uint8_t nano_battery_ocv_level_find(int16_t bat_volt)
 {
@@ -336,7 +336,7 @@ void nano_battery_ui_handle(void)
                     {
                         g_bat.bat_level_ui++;
                         g_bat.bat_cycle_n++;
-                        printk("g_bat.bat_cycle_n=%d",g_bat.bat_cycle_n);
+                        printk("g_bat.bat_cycle_n=%d\n",g_bat.bat_cycle_n);
                         if(g_bat.bat_cycle_n>=100)
                         {
                             g_bat.bat_cycle_n = 0;
