@@ -7,7 +7,7 @@ struct bat_info
     int16_t ibat;   //mA
     int16_t rbat;   //mR
     int16_t sbat;   //0: 放电  1: 充电  2: 充满
-
+    uint8_t bat_cycle_n;
     bool bat_soe_calied;
     bool bat_soe_in_cali;
     uint32_t bat_is_inited;

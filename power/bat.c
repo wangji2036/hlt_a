@@ -8,11 +8,11 @@
 #define BAT_STS_CHNG 0x01
 #define BAT_STS_FULL 0x02
 
-#define BAT_BATTERY_DEFAULT 6676543 // 18wh ~~ 5000mAh
-#define BAT_ENERGY_CALI_VOLT 3250
-#define BAT_BATTERY_EMPTY_VOLTAGE 3150
+#define BAT_BATTERY_DEFAULT 13353086 // 18wh ~~ 5000mAh
+#define BAT_ENERGY_CALI_VOLT 6500
+#define BAT_BATTERY_EMPTY_VOLTAGE 6300
 #define BAT_ENERGY_FULL_LEVEL 100
-#define BAT_BAT_rDC 50
+#define BAT_BAT_rDC 100
 #define BAT_DISG_RATE 100 / 94
 uint8_t temp_bat_ui;
 static uint8_t bat_level_end = 0;
@@ -24,7 +24,7 @@ void nano_battery_soe_handle(void);
 void nano_battery_ui_handle(void);
 
 // OCV表：对应0%-100% SOC（每10%一个点），适用于3.85V标称电压、5000mAh电池
-const uint16_t level_ocv_table[] = {2750, 3250, 3450, 3550, 3650, 3750, 3850, 3950, 4050, 4150, 4300};
+const uint16_t level_ocv_table[] = {6000, 6568, 6960, 7140, 7308, 7264, 7666, 7930, 8200, 8400, 8800};
 
 uint8_t nano_battery_ocv_level_find(int16_t bat_volt)
 {
@@ -52,12 +52,12 @@ uint8_t nano_battery_ocv_level_find(int16_t bat_volt)
 
 void nano_battery_soe_handle(void)
 {
-    int32_t bat_soe_uint = g_bat.vbat/2 * g_bat.ibat / 1000 / 100; // V * A * s = V*0.1A *0.1s = 0.01wS
+    int32_t bat_soe_uint = g_bat.vbat * g_bat.ibat / 1000 / 100; // V * A * s = V*0.1A *0.1s = 0.01wS
 
     if (g_bat.sbat == BAT_STS_CHNG)
     {
         int16_t vbat = g_bat.vbat > g_bat.ibat * g_bat.rbat / 1000 ? g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000 : 0;
-        if (vbat / 2 < BAT_ENERGY_CALI_VOLT)
+        if (vbat  < BAT_ENERGY_CALI_VOLT)
         {
             g_bat.bat_energy_cali = 0;
             g_bat.bat_soe_in_cali = true;
@@ -169,7 +169,7 @@ void nano_battery_ocv_handle(void)
 
     int16_t vbat = g_bat.vbat > g_bat.ibat * g_bat.rbat / 1000 ? g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000 : 0;
 
-    int8_t ocv_level = nano_battery_ocv_level_find(vbat / 2);
+    int8_t ocv_level = nano_battery_ocv_level_find(vbat);
 
     if (g_bat.sbat == BAT_STS_DISG && ocv_level < g_bat.bat_level_ocv)
     {
@@ -235,7 +235,7 @@ void nano_battery_ui_handle(void)
         }
         else if (g_bat.sbat == BAT_STS_DISG)
         {
-            int16_t end_ibat = (g_bat.vbat / 2) * g_bat.ibat / BAT_BATTERY_EMPTY_VOLTAGE;
+            int16_t end_ibat = g_bat.vbat * g_bat.ibat / BAT_BATTERY_EMPTY_VOLTAGE;
             int vbat_end = BAT_BATTERY_EMPTY_VOLTAGE - end_ibat * BAT_BAT_rDC / 1000;
             bat_level_end = nano_battery_ocv_level_find(vbat_end);
 
@@ -257,7 +257,7 @@ void nano_battery_ui_handle(void)
                     temp_bat_ui = 100;
             }
 
-            if (g_bat.vbat / 2 < BAT_BATTERY_EMPTY_VOLTAGE)
+            if (g_bat.vbat < BAT_BATTERY_EMPTY_VOLTAGE)
             {
                 empty_cnt++;
                 if (empty_cnt >= 10)
@@ -299,7 +299,7 @@ void nano_battery_ui_handle(void)
         }
         else if (g_bat.sbat == BAT_STS_DISG)
         {
-            if (g_bat.vbat / 2 < (BAT_BATTERY_EMPTY_VOLTAGE + 150) && g_bat.ibat < -100)
+            if (g_bat.vbat  < (BAT_BATTERY_EMPTY_VOLTAGE + 150) && g_bat.ibat < -100)
             {
                 empty_cnt++;
                 if (empty_cnt >= 10)
@@ -333,14 +333,20 @@ void nano_battery_ui_handle(void)
             if (level_ui_cnt >= 100)
             {
                 if (g_bat.bat_level_ui < 100)
-                    g_bat.bat_level_ui++;
-                    if(g_bat.bat_level_ui == 100){
-                        SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
+                    {
+                        g_bat.bat_level_ui++;
+                        g_bat.bat_cycle_n++;
+                        printk("g_bat.bat_cycle_n=%d",g_bat.bat_cycle_n);
+                        if(g_bat.bat_cycle_n>=100)
+                        {
+                            g_bat.bat_cycle_n = 0;
+                            SET_CYCLE_COUNT(gd, GET_CYCLE_COUNT(gd) + 1);
 #if CYCLE_COUNT_FLASH_PERSIST
-                        cycle_count_save_to_flash();
+                            cycle_count_save_to_flash();
 #endif
+                        }
                     }
-                level_ui_cnt = 0;
+                    level_ui_cnt = 0;                
             }
         }
         else if (temp_bat_ui < g_bat.bat_level_ui && g_bat.sbat == BAT_STS_DISG)
@@ -381,6 +387,7 @@ void battery_task_handle(void) // 100mS
     g_bat.vbat = g_buckboost.adc_vbat;
     g_bat.rbat = BAT_BAT_rDC;
     g_bat.ibat = g_buckboost.adc_ibat;
+    printk(" g_bat.vbat =%d g_bat.ibat=%d\n",g_bat.vbat,g_bat.ibat);
     if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
     {
         if (g_buckboost.bat_full_flag)
@@ -391,14 +398,13 @@ void battery_task_handle(void) // 100mS
     else
         g_bat.sbat = BAT_STS_DISG;
 
-    if (g_buckboost.adc_ibus > 0)
-        g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 90 / g_buckboost.adc_vbat / 100;
-    else
-        g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 100 / g_buckboost.adc_vbat / 90;
+    // if (g_buckboost.adc_ibus > 0)
+    //     g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 90 / g_buckboost.adc_vbat / 100;
+    // else
+    //     g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 100 / g_buckboost.adc_vbat / 90;
 
     if (g_bat.ibat == 0)
         return;
-
 #define INIT_VALUE 0xff89
     if (g_bat.bat_is_inited != INIT_VALUE)
     {
@@ -423,7 +429,7 @@ void battery_task_handle(void) // 100mS
 
             int16_t vbat = (int16_t)g_bat.vbat > (int16_t)(g_bat.ibat * g_bat.rbat / 1000) ? (g_bat.vbat - g_bat.ibat * g_bat.rbat / 1000) : 0;
 
-            g_bat.bat_level_ocv = nano_battery_ocv_level_find(vbat / 2);
+            g_bat.bat_level_ocv = nano_battery_ocv_level_find(vbat);
             g_bat.bat_level_ui = g_bat.bat_level_ocv;
 
             g_bat.bat_energy_total = BAT_BATTERY_DEFAULT;
