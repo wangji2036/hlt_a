@@ -22,6 +22,9 @@ static bool adc_protect_flag = false;
 #if(BUCKBOOST_USED_NU6801 == 1)
 static bool adc_err_flag = 0;
 #endif
+#if(BUCKBOOST_USED_NU6805 == 1)
+extern uint8_t bat_cell_num;
+#endif
 struct buckboost_s  g_buckboost;
 uint16_t g_vref_mv = VREF_DEFAULT_MV;
 uint8_t g_vref_cal_delay = 0;
@@ -677,6 +680,26 @@ void buckboost_task_event_handler(uint32_t event)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_IBUS);
 			#endif
 				buckboost_protection_handle();
+
+			#if(BUCKBOOST_USED_NU6805 == 1)
+				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+				{
+					if(hal_nu6805_buckboost_is_charge_full())
+					{
+						g_buckboost.bat_full_flag = 1;
+						bb_printk("bat full\n");
+					}
+					if(g_buckboost.bat_full_flag && g_buckboost.adc_vbat < 4000 * bat_cell_num)
+					{
+						g_buckboost.bat_full_flag = 0;
+						bb_printk("bat full flag cleared by vbat drop\n");
+					}
+				}
+				else
+				{
+					g_buckboost.bat_full_flag = 0;
+				}
+			#endif
 
 			#if(BUCKBOOST_USED_NU6801 == 1)
 				if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)

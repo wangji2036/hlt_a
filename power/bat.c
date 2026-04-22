@@ -324,7 +324,7 @@ void nano_battery_ui_handle(void)
             empty_flg = 0;
         }
     }
-
+    printk("temp_bat_ui=%d\n",temp_bat_ui);
     if (temp_bat_ui != g_bat.bat_level_ui)
     {
         level_ui_cnt++;

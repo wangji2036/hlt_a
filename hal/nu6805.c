@@ -46,6 +46,7 @@ void hal_nu6805_buckboost_init(void)
 		//200ma
 		hal_nu6805_REG_Charger_Setting1();
 
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, 0x10);
 
 		//return;
 	}
@@ -393,6 +394,18 @@ void hal_nu6805_buckboost_set_ovp(uint16_t set_volt)
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
 {
 	return 0;
+}
+
+bool hal_nu6805_buckboost_is_charge_full(void)
+{
+	uint8_t read = 0;
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, &read);
+	printk("bat_full_flag=%d",read & 0x10);
+	if (read & 0x10) {
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, 0x10);
+		return true;
+	}
+	return false;
 }
 
 #if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
