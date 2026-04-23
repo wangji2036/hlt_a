@@ -449,3 +449,85 @@ void buckboost_ntc_handle(void)
 
 #endif
 
+uint8_t wpc_ntc_power_reduce_flag = 0;
+
+void wpc_power_handle(int16_t tntc)
+{
+	static uint8_t otp_cnt = 0;
+	static uint8_t otp_rec_cnt = 0;
+	static uint8_t reduce_cnt = 0;
+	static uint8_t reduce_rec_cnt = 0;
+
+	// 75°C OTP + NTC开路(<=2)/短路(==12)保护
+	if (!gd->wirless_ntc_lock)
+	{
+		if (tntc >= 75 || tntc <= 2 || tntc == 12)
+		{
+			if (++otp_cnt >= 5)
+			{
+				otp_cnt = 0;
+				gd->wirless_ntc_lock = 1;
+				gd->wpc_disable = 1;
+				tcpm_stop_wpc(10);
+				printk("\r\n[WPC_NTC] OTP lock tntc=%d", tntc);
+			}
+		}
+		else
+		{
+			otp_cnt = 0;
+		}
+	}
+	else
+	{
+		// 65°C解锁，65>43故wpc_ntc_power_reduce_flag仍置位→恢复7.5W放电
+		if (tntc < 65 && tntc > 5)
+		{
+			if (++otp_rec_cnt >= 5)
+			{
+				otp_rec_cnt = 0;
+				gd->wirless_ntc_lock = 0;
+				gd->wpc_disable = 0;
+				printk("\r\n[WPC_NTC] OTP unlock tntc=%d", tntc);
+			}
+		}
+		else
+		{
+			otp_rec_cnt = 0;
+		}
+		return;
+	}
+
+	// 43°C降7.5W，30°C恢复15W
+	if (!wpc_ntc_power_reduce_flag)
+	{
+		if (tntc >= 43)
+		{
+			if (++reduce_cnt > 10)
+			{
+				reduce_cnt = 0;
+				wpc_ntc_power_reduce_flag = 1;
+				printk("\r\n[WPC_NTC] power reduce tntc=%d", tntc);
+			}
+		}
+		else
+		{
+			reduce_cnt = 0;
+		}
+	}
+	else
+	{
+		if (tntc <= 30)
+		{
+			if (++reduce_rec_cnt > 10)
+			{
+				reduce_rec_cnt = 0;
+				wpc_ntc_power_reduce_flag = 0;
+				printk("\r\n[WPC_NTC] power restore tntc=%d", tntc);
+			}
+		}
+		else
+		{
+			reduce_rec_cnt = 0;
+		}
+	}
+}

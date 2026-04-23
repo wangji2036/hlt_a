@@ -6,7 +6,7 @@
 #include "g_data.h"
 #if(BUCKBOOST_USED_NU6805 == 1)
 
-#define BAT_CELL_EMPTY_VOLT   3050
+#define BAT_CELL_EMPTY_VOLT   3150
 
 uint8_t bat_cell_num = 2;
 #define BAT_CELL_NUM bat_cell_num
