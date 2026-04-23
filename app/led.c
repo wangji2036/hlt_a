@@ -230,11 +230,11 @@ static void ui_update_led(void)
 			   }
 			   if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
 			   {
-				   soc_show_ram_led |= 0x20;// wireless LED is on
+				   soc_show_ram_led |= 0x10;// wireless LED5 is on
 			   }
 			   if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
 			   {
-				   soc_show_ram_led ^= (1 << 5);// for blink-off
+				   soc_show_ram_led ^= (1 << 4);// for blink-off
 			   }
 
      		 /* 2h 内保持唤醒 */
@@ -367,7 +367,7 @@ static void ui_update_led(void)
      		 }
      		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
      		 {
-     			 soc_show_ram_led |= 0x20;// wireless LED is on
+     			 soc_show_ram_led |= 0x10;// wireless LED5 is on
      		 }
      	     uint8_t _index= 3;// to get the highest bit to blink.
      	     for(; _index> 0; _index--)
@@ -379,7 +379,7 @@ static void ui_update_led(void)
      	     }
      		 if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
-     			 soc_show_ram_led ^= (1 << 5);// for blink-off
+     			 soc_show_ram_led ^= (1 << 4);// for blink-off
      		 }
      	     if(flash_flag == 1 && flash_light_on)
      	     {
@@ -412,11 +412,11 @@ static void ui_update_led(void)
      		 }
      		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
      		 {
-     			 soc_show_ram_led |= 0x20;// wireless LED is on
+     			 soc_show_ram_led |= 0x10;// wireless LED5 is on
      		 }
 			  if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
-     			 soc_show_ram_led ^= (1 << 5);// for blink-off
+     			 soc_show_ram_led ^= (1 << 4);// for blink-off
      		 }
      	     }
 

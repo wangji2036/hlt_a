@@ -135,6 +135,23 @@ void usb_bridge_wakeup(void)
     hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CYCLE_COUNT, (uint8_t*)&cycle_buf, 2);
 }
 
+/********************* NTC Raw Readout (WB7720 -> NU17112) *********************/
+
+/* 4-byte burst read of WB7720 NTC mirror registers.
+ * ch=COIL: 0x56..0x59, ch=AUX: 0x5A..0x5D.
+ * Returns 0 on I2C OK; non-zero on NAK/bus error. */
+int usb_bridge_read_ntc_raw(ntc_ch_t ch, uint16_t *raw, uint8_t *status, uint8_t *seq)
+{
+    uint8_t base = (ch == NTC_CH_COIL) ? REG_COIL_NTC_ADC_RAW : REG_AUX_NTC_ADC_RAW;
+    uint8_t buf[4];
+    int r = hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, base, buf, 4);
+    if (r != 0) return r;
+    if (raw)    *raw    = (uint16_t)(buf[0] | ((uint16_t)buf[1] << 8));
+    if (status) *status = buf[2];
+    if (seq)    *seq    = buf[3];
+    return 0;
+}
+
 /********************* Engineering Mode Helpers *********************/
 
 static void usb_bridge_read_virtual_params(void)

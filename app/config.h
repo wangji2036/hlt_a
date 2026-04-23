@@ -122,6 +122,7 @@
 
 /*----------- USB Bridge Configuration -----------*/
 #define CONFIG_USB_BRIDGE_ENABLE        1       // USB Bridge (WB7720) total switch
+#define CONFIG_WLS_NTC_FAIL_MASK        1       // 1=屏蔽WB7720 I2C故障(调试用), 0=故障停WPC
 #define CONFIG_BATTERY_CAPACITY_MAH     5000    // Rated capacity (mAh)
 #define CONFIG_BATTERY_CELL_COUNT       2       // Cell count (2S series)
 

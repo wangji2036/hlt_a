@@ -8,6 +8,9 @@
 #include "config.h"
 #include "tcpm.h"
 #include "buckboost.h"
+#include "usb_bridge.h"
+
+extern volatile uint32_t tc_sys_ticks;
 
 #define NTC_TEMP_BUFF_SIZE_Max    (                         8)
 #define NTC_TEMP_BUFF_SIZE_Msk    (NTC_TEMP_BUFF_SIZE_Max - 1)
@@ -134,51 +137,148 @@ int16_t fml_ntc_temp_get_typec(void)
 	return ((int)i - 40);
 }
 
-//wpc
+/* ===== WB7720 NTC 硬件参数 =====
+ * WB7720 ADC: 10-bit (0..1023), Vref=4.5V; NTC分压: VDDH(4.84V) → 100K上拉 → ADC → 100K@25°C NTC → GND
+ * 查表基准为旧 12-bit/Vref=VDDH, 需两步归一化: ×4095/1023 再 ×4500/4840 */
+#define WB7720_ADC_VREF_MV      4500U
+#define WB7720_NTC_VDDH_MV      4840U
+#define WB7720_ADC_FULL_SCALE   1023U
+#define LEGACY_ADC_FULL_SCALE   4095U
+
+/* WPC 线圈 NTC 锚点反查表 (TODO: 生产前实测 25+60°C 两点校准) */
+static const int16_t  ntc_wb7720_anchors_temp[] = { -20,  0,    25,   50,   75,  100,  125  };
+static const uint16_t ntc_wb7720_anchors_raw[]  = { 3580, 3135, 2048, 1085, 528,  260,  135  };
+#define NTC_WB7720_ANCHORS_N (sizeof(ntc_wb7720_anchors_temp)/sizeof(ntc_wb7720_anchors_temp[0]))
+
+static int16_t ntc_wb7720_raw_to_temp_c(uint16_t raw)
+{
+	if (raw >= ntc_wb7720_anchors_raw[0]) return ntc_wb7720_anchors_temp[0];
+	if (raw <= ntc_wb7720_anchors_raw[NTC_WB7720_ANCHORS_N-1]) return ntc_wb7720_anchors_temp[NTC_WB7720_ANCHORS_N-1];
+	for (uint8_t i = 0; i < NTC_WB7720_ANCHORS_N - 1; i++) {
+		uint16_t r_hi = ntc_wb7720_anchors_raw[i];
+		uint16_t r_lo = ntc_wb7720_anchors_raw[i+1];
+		if (raw <= r_hi && raw >= r_lo) {
+			int16_t t_lo = ntc_wb7720_anchors_temp[i];
+			int16_t t_hi = ntc_wb7720_anchors_temp[i+1];
+			int32_t dt = t_hi - t_lo;
+			int32_t dr = r_hi - r_lo;
+			int32_t di = r_hi - raw;
+			return (int16_t)(t_lo + (di * dt) / dr);
+		}
+	}
+	return 25;
+}
+
+/* WPC线圈NTC: WB7720 I2C采样 → 三条件校验(I2C/STATUS/SEQ) → 归一化 → 锚点反查 → 8深滑动平均
+ * Fail-safe: 任一条件异常时返回上次有效值(首次25°C)并置coil_ntc_source_fault */
+#define NTC_WPC_SEQ_TIMEOUT_MS  1000
+
 int16_t fml_ntc_temp_get_wpc(void)
 {
-	/* PD3 reused for VBAT- sampling — return safe temp */
-	return 25;
+	static uint16_t s_hist[8] = {0};
+	static uint8_t  s_hist_idx = 0;
+	static uint8_t  s_hist_primed = 0;
+	static int16_t  s_last_good_temp = 25;
 
-	static uint8_t  vntc_idx = 0;
+	static uint8_t  s_last_seq = 0xFF;
+	static uint32_t s_last_seq_tk = 0;
+	static bool     s_seq_ever = false;
 
-#if IC_PN_17111
-		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1813, 1813, 1813, 1813, 1813, 1813, 1813, 1813 };
+	static bool     s_get_logged    = false;
+	static int      s_last_log_r    = -999;
+	static uint8_t  s_last_log_st   = 0xFF;
+	static int16_t  s_last_log_temp = 0x7FFF;
+
+	uint16_t raw = 0;
+	uint8_t  st  = 0;
+	uint8_t  seq = 0;
+	int r = usb_bridge_read_ntc_raw(NTC_CH_COIL, &raw, &st, &seq);
+
+	printk("[WLS_NTC_RAW] r=%d raw=%d st=0x%02X seq=%d\n", r, raw, st, seq);
+
+	/* Condition 1: I2C 通讯失败 */
+	if (r != 0) {
+#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
+		gd->prot_sts.coil_ntc_source_fault = 0;
 #else
-		static uint16_t vntc_buf[NTC_TEMP_BUFF_SIZE_Max] = { 1650, 1650, 1650, 1650, 1650, 1650, 1650, 1650 };
+		gd->prot_sts.coil_ntc_source_fault = 1;
 #endif
-
-	uint16_t i, v_ntc = 0;
-
-	if (SYS->PID_INFO.BITS.PID == NU17111)
-	{
-		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PB5_ADC6);
-	}
-	else
-	{
-		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PD3_ADC9);
-	}
-
-
-	vntc_idx &= NTC_TEMP_BUFF_SIZE_Msk;
-
-	for (i=0; i<NTC_TEMP_BUFF_SIZE_Max; ++i)
-	{
-		v_ntc += vntc_buf[i];
-	}
-
-	v_ntc /= NTC_TEMP_BUFF_SIZE_Max;
-	//printk("\r\n wpc_adc = %d",v_ntc);
-	i = 0;
-	while (i < sizeof(ntc_tbl)/sizeof(ntc_100r_5v_tbl_rev[0]))
-	{
-		if (v_ntc >= ntc_100r_5v_tbl_rev[i])
-		{
-			break;
+		if (!s_get_logged || r != s_last_log_r) {
+			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=i2c_fail\n", r, st, seq, s_last_good_temp);
+			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
 		}
-		++i;
+		return s_last_good_temp;
 	}
-	return ((int)i - 51);
+
+	/* Condition 2: STATUS 异常 */
+	if (st == COIL_NTC_STATUS_ERR) {
+#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
+		gd->prot_sts.coil_ntc_source_fault = 0;
+#else
+		gd->prot_sts.coil_ntc_source_fault = 1;
+#endif
+		if (!s_get_logged || st != s_last_log_st) {
+			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=status_err\n", r, st, seq, s_last_good_temp);
+			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
+		}
+		return s_last_good_temp;
+	}
+	if (st != COIL_NTC_STATUS_VALID) {
+		if (!s_get_logged || st != s_last_log_st) {
+			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=status_invalid\n", r, st, seq, s_last_good_temp);
+			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
+		}
+		return s_last_good_temp;
+	}
+
+	/* Condition 3: SEQ 冻死 (>1000ms 不变视为 WB7720 卡死) */
+	uint32_t now = tc_sys_ticks;
+	if (s_seq_ever && seq == s_last_seq) {
+		if ((uint32_t)(now - s_last_seq_tk) > NTC_WPC_SEQ_TIMEOUT_MS) {
+#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
+			gd->prot_sts.coil_ntc_source_fault = 0;
+#else
+			gd->prot_sts.coil_ntc_source_fault = 1;
+#endif
+			printk("[WLS_NTC_LOCK] GET seq_freeze seq=%d age=%lu\n", seq, (unsigned long)(now - s_last_seq_tk));
+			return s_last_good_temp;
+		}
+	} else {
+		s_last_seq = seq;
+		s_last_seq_tk = now;
+		s_seq_ever = true;
+	}
+
+	/* 三条件全过: 清 fault, 消费 RAW */
+	gd->prot_sts.coil_ntc_source_fault = 0;
+
+	/* 8深滑动平均 */
+	s_hist[s_hist_idx & 0x07] = raw;
+	s_hist_idx++;
+	if (s_hist_idx >= 8) s_hist_primed = 1;
+
+	uint16_t raw_avg;
+	if (s_hist_primed) {
+		uint32_t sum = 0;
+		for (uint8_t i = 0; i < 8; i++) sum += s_hist[i];
+		raw_avg = (uint16_t)(sum >> 3);
+	} else {
+		raw_avg = raw;
+	}
+
+	/* 两步归一化: 10-bit→12-bit 位宽扩展 + Vref/VDDH 电压校正 */
+	uint32_t raw_12bit = ((uint32_t)raw_avg * LEGACY_ADC_FULL_SCALE) / WB7720_ADC_FULL_SCALE;
+	uint16_t raw_norm  = (uint16_t)((raw_12bit * WB7720_ADC_VREF_MV) / WB7720_NTC_VDDH_MV);
+
+	int16_t temp = ntc_wb7720_raw_to_temp_c(raw_norm);
+
+	if (!s_get_logged || temp != s_last_log_temp) {
+		printk("[WLS_NTC_RAW] raw=%u norm=%u temp=%d\n", raw_avg, raw_norm, temp);
+		s_get_logged = true; s_last_log_r = r; s_last_log_st = st; s_last_log_temp = temp;
+	}
+
+	s_last_good_temp = temp;
+	return temp;
 }
 
 int16_t fml_die_temp_get(void)

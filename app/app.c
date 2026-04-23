@@ -109,6 +109,7 @@ void apl_task_event_handler(uint32_t event)
 //			gd->sys_infos.ntc_temp = fml_ntc_temp_get();
 			gd->sys_infos.ntc_temp_typec = fml_ntc_temp_get_typec();
 			gd->sys_infos.ntc_temp_wpc = fml_ntc_temp_get_wpc();
+			printk("WPC temp:%d\n",gd->sys_infos.ntc_temp_wpc);
 //			gd->sys_infos.die_temp = fml_die_temp_get();
 			// printk("\r\n ntc_typec --> %d,ntc_wpc --> %d",gd->sys_infos.ntc_temp_typec,gd->sys_infos.ntc_temp_wpc);
 //			fml_tntc_otp_check(gd->sys_infos.ntc_temp);

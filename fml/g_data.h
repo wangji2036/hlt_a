@@ -432,7 +432,8 @@ struct gd_t
 		 uint32_t pout_opp_flag : 1;
 		 uint32_t q_fod_flag : 1;
 		 uint32_t xfer_fod_flag : 1;
-		 uint32_t               :20;
+		 uint32_t coil_ntc_source_fault : 1;
+		 uint32_t               :19;
 	 } prot_sts; //set pro_evnt
 
 	 struct {

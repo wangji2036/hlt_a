@@ -77,6 +77,26 @@
 #define VIRTUAL_CELL_SENTINEL   0xFFFF  // do not override, use real ADC
 #define VIRTUAL_TEMP_SENTINEL   0x7FFF  // do not override, use real NTC
 
+/* ---- WPC 线圈/辅助 NTC: WB7720 i2c_buff 镜像 ---- */
+#define REG_COIL_NTC_ADC_RAW    0x56
+#define REG_COIL_NTC_ADC_STATUS 0x58
+#define REG_COIL_NTC_ADC_SEQ    0x59
+#define REG_AUX_NTC_ADC_RAW     0x5A
+#define REG_AUX_NTC_ADC_STATUS  0x5C
+#define REG_AUX_NTC_ADC_SEQ     0x5D
+#define COIL_NTC_STATUS_INVALID 0x00
+#define COIL_NTC_STATUS_VALID   0xA5
+#define COIL_NTC_STATUS_ERR     0xFF
+
+typedef enum {
+    NTC_CH_COIL = 0,
+    NTC_CH_AUX  = 1,
+} ntc_ch_t;
+
+/* 读 WB7720 一路 NTC 寄存器（4 字节突发: RAW_LO, RAW_HI, STATUS, SEQ）.
+ * ret: 0=I2C ok, 非0=I2C 失败. */
+int usb_bridge_read_ntc_raw(ntc_ch_t ch, uint16_t *raw, uint8_t *status, uint8_t *seq);
+
 /* ===== Public API ===== */
 
 /** Initialize USB Bridge module (called in fml_task_init) */
