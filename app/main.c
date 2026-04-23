@@ -48,8 +48,11 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
-	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
+	if(gd->power_on_magic = 0xaaaa)
+	{
+		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+		TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
+	}
 	
 	VIC_vModuleDisable();
 
@@ -61,7 +64,7 @@ int main(void)
 	gd_data_init();
 	lib_para_init();// do not delete.
 	fml_bsp_init();
-	main_printk("\r\n [D1] post-bsp");
+	main_printk("\r\n [D1-] post-bsp");
 	apl_gui_init();
 	main_printk("\r\n [D2] post-gui");
 

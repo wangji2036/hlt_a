@@ -957,15 +957,15 @@ void RST_vCheck(void)
 	hal_uart_init(UART1);
 #endif
 
-		/* 打印复位源及 TypeC CC block 状态，用于调试唤醒原因 */
-		sleep_printk("\r\n sleep check");
-		sleep_printk(" rst=%d CCB[S=0x%x C=0x%x R=0x%x] FSM=0x%x WK=%d",
-			SYS->OPR_STAT.BITS.RST_SRC,
-			TCPC->CCB_STAT.WORD,   // CC1(bit1:0) CC2(bit3:2) 实际检测值
-			TCPC->CCB_CTRL.WORD,   // CC block/LPMODE 配置
-			TCPC->CCB_ROLE.WORD,   // CC1/CC2 role + DRP
-			TCPC->FSM_STAT.WORD,   // DRP FSM 状态
-			SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS);  // 0=唤醒使能 1=禁用
+		// /* 打印复位源及 TypeC CC block 状态，用于调试唤醒原因 */
+		// sleep_printk("\r\n sleep check");
+		// sleep_printk(" rst=%d CCB[S=0x%x C=0x%x R=0x%x] FSM=0x%x WK=%d",
+		// 	SYS->OPR_STAT.BITS.RST_SRC,
+		// 	TCPC->CCB_STAT.WORD,   // CC1(bit1:0) CC2(bit3:2) 实际检测值
+		// 	TCPC->CCB_CTRL.WORD,   // CC block/LPMODE 配置
+		// 	TCPC->CCB_ROLE.WORD,   // CC1/CC2 role + DRP
+		// 	TCPC->FSM_STAT.WORD,   // DRP FSM 状态
+		// 	SYS->PWR_CTRL.BITS.TCPC_WKUP_DIS);  // 0=唤醒使能 1=禁用
 		gd->idle_to_sleep_cnt = 0;
 		switch(SYS->OPR_STAT.BITS.RST_SRC)
 		{

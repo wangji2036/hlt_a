@@ -328,7 +328,8 @@ void buckboost_protection_handle(void)
 
 	if(status&VBUS_FUALT_VBAT_UVP)
 	{
-	    if(g_port.port_state[0] == PORT_STATE_SINK) status &= ~VBUS_FUALT_VBAT_UVP;
+	    if(g_port.port_state[0] != PORT_STATE_SOURCE && g_port.port_state[3] != PORT_STATE_SOURCE) status &= ~VBUS_FUALT_VBAT_UVP;
+		//if(g_tc[0].usb_tc_state == TC_SNK_Attached) status &= ~VBUS_FUALT_VBAT_UVP;
 	}
 
 		//---1014      //
