@@ -300,67 +300,6 @@ int16_t fml_die_temp_get(void)
 
 	return t_die;
 }
-uint8_t wirless_ntc_power_reduce = 0;
-
-/*+++++++++++++++++++++++++++++++++++++++++++ TNTC_OTP +++++++++++++++++++++++++++++++++++++++++++*/
-void fml_tntc_otp_limit_power(int16_t tntc)
-{
-	uint8_t DeltaTemp __attribute__((unused)) = 0;
-	//flg_action = 0;//default value, no action.
-	//flg_action = 1;//cep=-5, reduce power
-	//flg_action = 2;//go to send ATN and update the nego cap
-//	uint8_t flg_action = 0;
-	static uint8_t cnt = 0;
-	if(!gd->wirless_ntc_lock)
-	{
-		if (tntc >= 75|| tntc <= 2 || tntc == 12)
-		{
-			gd->wirless_ntc_lock = 1;
-			gd->wpc_disable = 1;
-			tcpm_stop_wpc(10);
-			return;
-		}
-	}
-	else
-	{
-		if(tntc<66&&tntc>5)
-		{
-			gd->wirless_ntc_lock = 0;
-			gd->wpc_disable = 0;
-		}
-	}
-	if(!gd->wirless_ntc_lock)
-	{
-		if(!wirless_ntc_power_reduce)
-		{
-			if(tntc>=43)
-			{
-				if(cnt++>10)
-				wirless_ntc_power_reduce = 1;
-				// tcpm_stop_wpc(10);
-			}
-			else
-			{
-				cnt = 0;
-			}
-		}
-		else
-		{
-			if(tntc<=30)
-			{
-				if(cnt++>10)
-				{
-					wirless_ntc_power_reduce = 0;
-					// tcpm_stop_wpc(10);
-				}
-			}
-			else
-			{
-				cnt = 0;
-			}
-		}
-	}
-}
 
 /*
 static struct tntc_otp_t
