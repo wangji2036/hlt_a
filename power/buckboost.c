@@ -292,7 +292,7 @@ void buckboost_protection_handle(void)
 	{
 		status |= VBUS_FAULT_VBUS_UVP;
 	}
-	if(g_buckboost.adc_vbat < 6000)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
+	if(g_buckboost.adc_vbat < 6300)// ||  zero_soc_cnt >240)// && g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE)// && !g_tc[TYPEC_PORT_A].is_deadbattery)
 	{
 		bb_printk("\r\n [BAT_DEAD] adc_vbat=%d bat_dead_flag=%d", g_buckboost.adc_vbat, gd->bat_dead_flag);    
         cnt++;
