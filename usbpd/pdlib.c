@@ -54,30 +54,38 @@ void pdlib_init(void)
 	pdlib_update_sink_pdo(sink_pdo_default,sizeof(sink_pdo_default) /4);
 }
 extern bool typec_ntc_ot_dischg_flag;
+
+#define PDO_STATE_NORMAL  0
+#define PDO_STATE_LIMIT   1   // 9V2.22A/12V1.67A 限档
+#define PDO_STATE_NTC     2   // 严格 5V/2A 单档
+
 void pdlib_run(void)
 {
-	static uint8_t pre_flag = 0,pre_flag2 = 0,pre_flag3 = 0,soft_flag = 0;
+	static uint8_t pre_state = PDO_STATE_NORMAL;
 	usb_pdevt_run();
 	usb_pd_run();
 	usb_tc_run();
 	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
-		if(pre_flag != typec_ntc_ot_dischg_flag || pre_flag2 != gd->bat_ntc_dischg_reduce_flag)
+		uint8_t state;
+		// 优先级：C 口 bat NTC 降功率(5V/2A 严格) > typec NTC OT / wpc bat 降功率(limit) > 正常
+		if (gd->bat_ntc_cport_dischg_reduce_flag)
+			state = PDO_STATE_NTC;
+		else if (typec_ntc_ot_dischg_flag || gd->bat_ntc_dischg_reduce_flag)
+			state = PDO_STATE_LIMIT;
+		else
+			state = PDO_STATE_NORMAL;
+
+		if (state != pre_state)
 		{
-			pre_flag = typec_ntc_ot_dischg_flag;
-			pre_flag2 = gd->bat_ntc_dischg_reduce_flag;
-			if (typec_ntc_ot_dischg_flag||gd->bat_ntc_dischg_reduce_flag)
+			pre_state = state;
+			switch (state)
 			{
-				soft_flag = 1;
-				tcpm_update_pdo_for_limit();
+				case PDO_STATE_NTC:    tcpm_update_pdo_for_ntc();    break;
+				case PDO_STATE_LIMIT:  tcpm_update_pdo_for_limit();  break;
+				default:               tcpm_update_pdo_for_normal(); break;
 			}
-			else
-			{
-				soft_flag = 0;
-				tcpm_update_pdo_for_normal();
-			}
-			if(soft_flag != pre_flag3) pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
-			pre_flag3 = soft_flag;
+			pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
 		}
 	}
 }

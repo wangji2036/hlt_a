@@ -355,7 +355,7 @@ void buckboost_protection_handle(void)
 #endif
 	if(status&0x2006) gd->typec_scp = 1;
 	if(status & VBUS_FUALT_VBUS_OVP) gd->vbus_ovp = 1;
-	if(!gd->led_fault&&((status & 0x4060)||ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)||gd->vbus_ovp))
+	if(!gd->led_fault&&((status & 0x4060)||bat_ntc_stop_chrg_flag||(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)||gd->vbus_ovp))
 	{
 		gd->led_fault = 1;
 	}
@@ -367,7 +367,7 @@ void buckboost_protection_handle(void)
 	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag) status|=VBUS_FAULT_VBUS_NTC;
 #endif
 #endif
-	if(gd->led_fault&&!(status&0x6060)&&!ntc_stop_chrg_flag&&!(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)&&!gd->vbus_ovp)
+	if(gd->led_fault&&!(status&0x6060)&&!bat_ntc_stop_chrg_flag&&!(gd->typec_charge_ntc_lock&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)&&!gd->vbus_ovp)
 	{
 		gd->led_fault = 0;
 	}

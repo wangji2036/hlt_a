@@ -815,7 +815,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(5000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:5000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(5000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:5000*1000/g_buckboost.adc_vbus;
 	}
-	if (gd->bat_ntc_dischg_reduce_flag)
+	if (gd->bat_ntc_dischg_reduce_flag || gd->bat_ntc_cport_dischg_reduce_flag)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
@@ -835,9 +835,9 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
-	pm_printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
-	if(ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) {
-		pm_printk("\r\n [CHRG_BLOCK] ntc_stop=%d tc_lock=%d", ntc_stop_chrg_flag, gd->typec_charge_ntc_lock);
+	pm_printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", bat_ntc_stop_chrg_flag, bat_charge_ntc_ot_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
+	if(bat_ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) {
+		pm_printk("\r\n [CHRG_BLOCK] ntc_stop=%d tc_lock=%d", bat_ntc_stop_chrg_flag, gd->typec_charge_ntc_lock);
 		buckboost_ops.set_work_mode(0x00);
 	}
 
@@ -892,7 +892,9 @@ void port_enum_port_snk_setvolt(void)
 						}
 						else
 						{
-							if(pdo_fixed_voltage(source_pdo) <= VOLTAGE_20V)
+							// 充电 OT 限制输入最大 12V：bat NTC 43-52°C 段 或 typec NTC ≥68°C 段
+							uint32_t volt_cap = (bat_charge_ntc_ot_flag || typec_ntc_ot_chrg_flag) ? VOLTAGE_12V : VOLTAGE_20V;
+							if(pdo_fixed_voltage(source_pdo) <= volt_cap)
 							{
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 								g_port.snk_set_volt = pdo_fixed_voltage(source_pdo);

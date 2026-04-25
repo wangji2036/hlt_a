@@ -10,10 +10,11 @@
 #include "tcpm.h"
 #include "g_data.h"
 #include "ntc.h"
+#include "_fml.h"
 
 bool bat_ntc_ut_flag = false;
 bool bat_charge_ntc_ot_flag = false;
-bool ntc_stop_chrg_flag = false;
+bool bat_ntc_stop_chrg_flag = false;
 uint8_t ntc_lock_flag = 0;
 bool typec_ntc_ot_dischg_flag = false;
 bool typec_ntc_ot_chrg_flag = false;
@@ -35,21 +36,25 @@ void buckboost_ntc_handle(void)
 	static uint8_t dual_dischg_lock_cnt = 0;
 	static uint8_t typec_ntc_lock_cnt = 0;
 	static uint8_t typec_chrg_lock_cnt = 0;
-	// printk("adc_tbat1 = %d , ntc_temp_typec = %d",g_buckboost.adc_tbat1,gd->sys_infos.ntc_temp_typec);
+	static uint8_t bat_dischg_reduce_cnt = 0;
+	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
+	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			if(!ntc_stop_chrg_flag)
+			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充，与 OT 同步在 30°C 解除
+			bool ot_full_stop = (bat_charge_ntc_ot_flag && g_buckboost.adc_vbat >= 8200);
+
+			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 也锁
+			if(!bat_ntc_stop_chrg_flag)
 			{
-				//3搴� 52搴�
-				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_52 || g_buckboost.adc_tbat1> NTC_10K_3435_REAL_RT_3 || g_buckboost.adc_tbat1 == 470)
+				if(bat_temp > 52 || bat_temp < 3 || ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
 					if(ntc_stop_chg_cnt >= 20)
 					{
 						ntc_stop_chg_cnt = 0;
-						ntc_stop_chrg_flag = 1;
-						// hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x00);
+						bat_ntc_stop_chrg_flag = 1;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
@@ -60,14 +65,13 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//8搴� 47搴�
-				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_47 && g_buckboost.adc_tbat1< NTC_10K_3435_REAL_RT_5)
+				if(bat_temp >= 5 && bat_temp <= 47 && !ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
 					if(ntc_stop_chg_cnt >= 20)
 					{
 						ntc_stop_chg_cnt = 0;
-						ntc_stop_chrg_flag = 0;
+						bat_ntc_stop_chrg_flag = 0;
 						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
@@ -77,10 +81,10 @@ void buckboost_ntc_handle(void)
 					ntc_stop_chg_cnt = 0;
 				}
 			}
+			// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
 			if(!bat_ntc_ut_flag)
 			{
-				//15搴�
-				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_18)
+				if(bat_temp < 18)
 				{
 					if(bat_ntc_ut_cnt++>10)
 					{
@@ -96,8 +100,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//20搴�
-				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_20)
+				if(bat_temp >= 20)
 				{
 					if(bat_ntc_ut_cnt++>10)
 					{
@@ -111,10 +114,10 @@ void buckboost_ntc_handle(void)
 					bat_ntc_ut_cnt = 0;
 				}
 			}
+			// 充电限 12W：≥43°C 触发，≤30°C 恢复 30W
 			if(!bat_charge_ntc_ot_flag)
 			{
-				//43°
-				if(g_buckboost.adc_tbat1<NTC_10K_3435_REAL_RT_43)
+				if(bat_temp >= 43)
 				{
 					if(bat_ntc_ot_cnt++>10)
 					{
@@ -130,8 +133,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				//40搴�
-				if(g_buckboost.adc_tbat1>NTC_10K_3435_REAL_RT_38)
+				if(bat_temp <= 30)
 				{
 					if(bat_ntc_ot_cnt++>10)
 					{
@@ -166,12 +168,13 @@ void buckboost_ntc_handle(void)
 
 		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			ntc_stop_chrg_flag = 0;
+			bat_ntc_stop_chrg_flag = 0;
 			bat_charge_ntc_ot_flag = 0;
 
+			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
 			if(!bat_ntc_dual_dischg_lock)
 			{
-				if(g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_45 || g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_0)
+				if(bat_temp <= -15 || bat_temp >= 55)
 				{
 					if(dual_dischg_lock_cnt++>=10)
 					{
@@ -186,7 +189,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				if(g_buckboost.adc_tbat1 > NTC_10K_3435_REAL_RT_40 && g_buckboost.adc_tbat1 < NTC_10K_3435_REAL_RT_5)
+				if(bat_temp >= -10 && bat_temp <= 50)
 				{
 					if(dual_dischg_lock_cnt++>=10)
 					{
@@ -197,6 +200,38 @@ void buckboost_ntc_handle(void)
 				else
 				{
 					dual_dischg_lock_cnt = 0;
+				}
+			}
+
+			// 放电限 10W (PD 5V 2A，关 QC/SCP)：≤-3°C 或 ≥43°C 触发，[0, 30] 恢复 30W
+			if(!gd->bat_ntc_cport_dischg_reduce_flag)
+			{
+				if(bat_temp <= -3 || bat_temp >= 43)
+				{
+					if(bat_dischg_reduce_cnt++>10)
+					{
+						bat_dischg_reduce_cnt = 0;
+						gd->bat_ntc_cport_dischg_reduce_flag = 1;
+					}
+				}
+				else
+				{
+					bat_dischg_reduce_cnt = 0;
+				}
+			}
+			else
+			{
+				if(bat_temp >= 0 && bat_temp <= 30)
+				{
+					if(bat_dischg_reduce_cnt++>10)
+					{
+						bat_dischg_reduce_cnt = 0;
+						gd->bat_ntc_cport_dischg_reduce_flag = 0;
+					}
+				}
+				else
+				{
+					bat_dischg_reduce_cnt = 0;
 				}
 			}
 		}
@@ -223,7 +258,8 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				if(gd->sys_infos.ntc_temp_typec <= 82 && gd->sys_infos.ntc_temp_typec >-10)
+				// 105°C 锁解：温度回落到 ≤75°C（OT 仍在 20W 降功率档，到 35°C 才彻底恢复）
+				if(gd->sys_infos.ntc_temp_typec <= 75 && gd->sys_infos.ntc_temp_typec >-10)
 				{
 					if(typec_ntc_lock_cnt++>=10)
 					{
@@ -238,10 +274,11 @@ void buckboost_ntc_handle(void)
 					typec_ntc_lock_cnt = 0;
 				}
 			}
-			
+
+			// 放电 OT 限 20W (最大 12V)：≥75°C 触发，<35°C 恢复 30W
 			if(!typec_ntc_ot_dischg_flag)
 			{
-				if(gd->sys_infos.ntc_temp_typec >= 81)
+				if(gd->sys_infos.ntc_temp_typec >= 75)
 				{
 					if(typec_ntc_ot_dischg_cnt++>10)
 					{
