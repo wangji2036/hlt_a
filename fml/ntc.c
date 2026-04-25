@@ -45,11 +45,12 @@ void buckboost_ntc_handle(void)
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充并闭锁；vbat 回落到 4.1V 以下不能解锁，
-			// 必须等温度降到 ≤30°C 让 OT 清掉才一并解
-			if (bat_charge_ntc_ot_flag) {
-				if (g_buckboost.adc_vbat >= 8200) ot_full_stop = true;
-			} else {
+			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充并闭锁；vbat 回落到 4.1V 以下不解，
+			// 必须等温度降到 ≤30°C 才解
+			if (bat_charge_ntc_ot_flag && g_buckboost.adc_vbat >= 8200) {
+				ot_full_stop = true;
+			}
+			if (bat_temp <= 30) {
 				ot_full_stop = false;
 			}
 
@@ -243,7 +244,7 @@ void buckboost_ntc_handle(void)
 				}
 			}
 
-			// 放电限 10W (PD 5V 2A，关 QC/SCP)：≤-3°C 或 ≥43°C 触发，[0, 30] 恢复 30W
+			// 放电限 10W (PD 5V 2A)：≤-3°C 或 ≥43°C 触发，[0, 30] 恢复 30W
 			if(!gd->bat_ntc_cport_dischg_reduce_flag)
 			{
 				if(bat_temp <= -3 || bat_temp >= 43)
@@ -556,7 +557,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 		return;
 	}
 
-	// 电池NTC降功率：tbat>=43°C或<=-3°C降7.5W，回到[0,38]区间恢复15W
+	// 电池NTC降功率：tbat>=43°C或<=-3°C降7.5W，回到[0,30]区间恢复15W
 	if (!gd->bat_ntc_dischg_reduce_flag)
 	{
 		if (tbat >= 43 || tbat <= -3)
@@ -575,7 +576,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	}
 	else
 	{
-		if (tbat <= 38 && tbat >= 0)
+		if (tbat <= 30 && tbat >= 0)
 		{
 			if (++bat_reduce_rec_cnt > 10)
 			{
