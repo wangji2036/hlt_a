@@ -39,15 +39,21 @@ void buckboost_ntc_handle(void)
 	static uint8_t typec_chrg_lock_cnt = 0;
 	static uint8_t bat_dischg_reduce_cnt = 0;
 	static uint8_t dual_dischg_inhibit_cnt = 0;
+	static bool ot_full_stop = false;   // 4.1V 停充闭锁：在 OT 区间 vbat≥8200 触发，OT 解时清；vbat 回落不解锁
 	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
 	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充，与 OT 同步在 30°C 解除
-			bool ot_full_stop = (bat_charge_ntc_ot_flag && g_buckboost.adc_vbat >= 8200);
+			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充并闭锁；vbat 回落到 4.1V 以下不能解锁，
+			// 必须等温度降到 ≤30°C 让 OT 清掉才一并解
+			if (bat_charge_ntc_ot_flag) {
+				if (g_buckboost.adc_vbat >= 8200) ot_full_stop = true;
+			} else {
+				ot_full_stop = false;
+			}
 
-			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 也锁
+			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 闭锁
 			if(!bat_ntc_stop_chrg_flag)
 			{
 				if(bat_temp > 52 || bat_temp < 3 || ot_full_stop)
@@ -292,8 +298,8 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				// 105°C 锁解：温度回落到 ≤75°C（OT 仍在 20W 降功率档，到 35°C 才彻底恢复）
-				if(gd->sys_infos.ntc_temp_typec <= 75 && gd->sys_infos.ntc_temp_typec >-10)
+				// 105°C 锁解：温度回落到 ≤80°C（OT 仍在 20W 降功率档，到 35°C 才彻底恢复）
+				if(gd->sys_infos.ntc_temp_typec <= 80 && gd->sys_infos.ntc_temp_typec >-10)
 				{
 					if(typec_ntc_lock_cnt++>=10)
 					{
@@ -309,10 +315,10 @@ void buckboost_ntc_handle(void)
 				}
 			}
 
-			// 放电 OT 限 20W (最大 12V)：≥75°C 触发，<35°C 恢复 30W
+			// 放电 OT 限 20W (最大 12V)：≥80°C 触发，<35°C 恢复 30W
 			if(!typec_ntc_ot_dischg_flag)
 			{
-				if(gd->sys_infos.ntc_temp_typec >= 75)
+				if(gd->sys_infos.ntc_temp_typec >= 80)
 				{
 					if(typec_ntc_ot_dischg_cnt++>10)
 					{

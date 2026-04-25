@@ -892,8 +892,9 @@ void port_enum_port_snk_setvolt(void)
 						}
 						else
 						{
-							// 充电 OT 限制输入最大 12V：bat NTC 43-52°C 段 或 typec NTC ≥68°C 段
-							uint32_t volt_cap = (bat_charge_ntc_ot_flag || typec_ntc_ot_chrg_flag) ? VOLTAGE_12V : VOLTAGE_20V;
+							// 充电限制输入最大 12V：
+							//   bat NTC 3-18°C(UT 5W) / 43-52°C(OT 12W)，typec NTC ≥68°C(20W)，单节电压<3.7V(20W)
+							uint32_t volt_cap = (bat_ntc_ut_flag || bat_charge_ntc_ot_flag || typec_ntc_ot_chrg_flag || bat_low_volt_reduce) ? VOLTAGE_12V : VOLTAGE_20V;
 							if(pdo_fixed_voltage(source_pdo) <= volt_cap)
 							{
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
