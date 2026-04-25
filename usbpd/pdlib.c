@@ -79,13 +79,31 @@ void pdlib_run(void)
 		if (state != pre_state)
 		{
 			pre_state = state;
+			// 切档：在 PD 合约内→soft reset 让对端重协商；非 PD（BC1.2/无协议）→直接物理钳到 PDO[0] 的 V/I
 			switch (state)
 			{
-				case PDO_STATE_NTC:    tcpm_update_pdo_for_ntc();    break;
-				case PDO_STATE_LIMIT:  tcpm_update_pdo_for_limit();  break;
-				default:               tcpm_update_pdo_for_normal(); break;
+				case PDO_STATE_NTC:
+					tcpm_update_pdo_for_ntc();
+					if (pdlib_is_connect())
+						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+					else
+						buckboost_set_bus_iv(5000, 2000, 500, 0);   // source_pdo_ntc 5V/2A
+					break;
+				case PDO_STATE_LIMIT:
+					tcpm_update_pdo_for_limit();
+					if (pdlib_is_connect())
+						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+					else
+						buckboost_set_bus_iv(5000, 3000, 500, 0);   // source_pdo1[0] 5V/3A
+					break;
+				default:
+					tcpm_update_pdo_for_normal();
+					if (pdlib_is_connect())
+						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
+					else
+						buckboost_set_bus_iv(5000, 3000, 500, 0);   // source_pdo[0] 5V/3A 还原默认
+					break;
 			}
-			pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
 		}
 	}
 }
