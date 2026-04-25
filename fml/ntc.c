@@ -212,38 +212,7 @@ void buckboost_ntc_handle(void)
 				}
 			}
 
-			// 同时放电温度抑制：<0°C 或 ≥45°C 禁止 C 口+无线充同时输出（仅留 C 口），[5, 40] 恢复同时放电（max 5V/3A）
-			if(!bat_ntc_dual_dischg_inhibit)
-			{
-				if(bat_temp < 0 || bat_temp >= 45)
-				{
-					if(dual_dischg_inhibit_cnt++>=10)
-					{
-						dual_dischg_inhibit_cnt = 0;
-						bat_ntc_dual_dischg_inhibit = 1;
-					}
-				}
-				else
-				{
-					dual_dischg_inhibit_cnt = 0;
-				}
-			}
-			else
-			{
-				if(bat_temp >= 5 && bat_temp <= 40)
-				{
-					if(dual_dischg_inhibit_cnt++>=10)
-					{
-						dual_dischg_inhibit_cnt = 0;
-						bat_ntc_dual_dischg_inhibit = 0;
-					}
-				}
-				else
-				{
-					dual_dischg_inhibit_cnt = 0;
-				}
-			}
-
+			
 			// 放电限 10W (PD 5V 2A)：≤-3°C 或 ≥43°C 触发，[0, 30] 恢复 30W
 			if(!gd->bat_ntc_cport_dischg_reduce_flag)
 			{
@@ -275,6 +244,47 @@ void buckboost_ntc_handle(void)
 					bat_dischg_reduce_cnt = 0;
 				}
 			}
+
+			// 同放温度抑制：仅当 C 口 + 无线充同时 SOURCE 才判定
+			// <0°C 或 ≥45°C 禁止同放（仅留 C 口），[5, 40] 恢复同放（max 5V/3A）
+			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
+			{
+				if(!bat_ntc_dual_dischg_inhibit)
+				{
+					if(bat_temp < 0 || bat_temp >= 45)
+					{
+						if(dual_dischg_inhibit_cnt++>=10)
+						{
+							dual_dischg_inhibit_cnt = 0;
+							bat_ntc_dual_dischg_inhibit = 1;
+						}
+					}
+					else
+					{
+						dual_dischg_inhibit_cnt = 0;
+					}
+				}
+				else
+				{
+					if(bat_temp >= 5 && bat_temp <= 40)
+					{
+						if(dual_dischg_inhibit_cnt++>=10)
+						{
+							dual_dischg_inhibit_cnt = 0;
+							bat_ntc_dual_dischg_inhibit = 0;
+						}
+					}
+					else
+					{
+						dual_dischg_inhibit_cnt = 0;
+					}
+				}
+			}
+			else
+			{
+				dual_dischg_inhibit_cnt = 0;
+			}
+
 		}
 	}
 	//typec
