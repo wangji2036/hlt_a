@@ -137,147 +137,56 @@ int16_t fml_ntc_temp_get_typec(void)
 	return ((int)i - 40);
 }
 
-/* ===== WB7720 NTC 硬件参数 =====
- * WB7720 ADC: 10-bit (0..1023), Vref=4.5V; NTC分压: VDDH(4.84V) → 100K上拉 → ADC → 100K@25°C NTC → GND
- * 查表基准为旧 12-bit/Vref=VDDH, 需两步归一化: ×4095/1023 再 ×4500/4840 */
-#define WB7720_ADC_VREF_MV      4500U
-#define WB7720_NTC_VDDH_MV      4840U
-#define WB7720_ADC_FULL_SCALE   1023U
-#define LEGACY_ADC_FULL_SCALE   4095U
-
-/* WPC 线圈 NTC 锚点反查表 (TODO: 生产前实测 25+60°C 两点校准) */
-static const int16_t  ntc_wb7720_anchors_temp[] = { -20,  0,    25,   50,   75,  100,  125  };
-static const uint16_t ntc_wb7720_anchors_raw[]  = { 3580, 3135, 2048, 1085, 528,  260,  135  };
-#define NTC_WB7720_ANCHORS_N (sizeof(ntc_wb7720_anchors_temp)/sizeof(ntc_wb7720_anchors_temp[0]))
-
-static int16_t ntc_wb7720_raw_to_temp_c(uint16_t raw)
+/* WPC 线圈 NTC: 100K@25°C (B=3950) 接 GND, 100K 上拉 VDDH=4.8V, WB7720 ADC 10-bit Vref=4.5V.
+ * 按 1°C 步进, tbl[0]=-20°C, raw 单调递减. 查不到时高端钳位 91°C, 低端钳位 -20°C.
+ * 公式: raw = round( 4.8 × R/(R+100K) × 1023/4.5 ).
+ * TODO: 生产前两点实测校准(25/60°C). */
+static const uint16_t ntc_wpc_raw_tbl[] =
 {
-	if (raw >= ntc_wb7720_anchors_raw[0]) return ntc_wb7720_anchors_temp[0];
-	if (raw <= ntc_wb7720_anchors_raw[NTC_WB7720_ANCHORS_N-1]) return ntc_wb7720_anchors_temp[NTC_WB7720_ANCHORS_N-1];
-	for (uint8_t i = 0; i < NTC_WB7720_ANCHORS_N - 1; i++) {
-		uint16_t r_hi = ntc_wb7720_anchors_raw[i];
-		uint16_t r_lo = ntc_wb7720_anchors_raw[i+1];
-		if (raw <= r_hi && raw >= r_lo) {
-			int16_t t_lo = ntc_wb7720_anchors_temp[i];
-			int16_t t_hi = ntc_wb7720_anchors_temp[i+1];
-			int32_t dt = t_hi - t_lo;
-			int32_t dr = r_hi - r_lo;
-			int32_t di = r_hi - raw;
-			return (int16_t)(t_lo + (di * dt) / dr);
-		}
-	}
-	return 25;
-}
-
-/* WPC线圈NTC: WB7720 I2C采样 → 三条件校验(I2C/STATUS/SEQ) → 归一化 → 锚点反查 → 8深滑动平均
- * Fail-safe: 任一条件异常时返回上次有效值(首次25°C)并置coil_ntc_source_fault */
-#define NTC_WPC_SEQ_TIMEOUT_MS  1000
+	 997,                                                       //-20
+	 991, 986, 980, 974, 967, 960, 953, 946, 939, 931,          //-19 ~ -10
+	 924, 915, 907, 898, 889, 880, 871, 861, 851, 841,          // -9 ~   0
+	 831, 820, 809, 799, 787, 776, 765, 753, 741, 729,          //  1 ~  10
+	 717, 705, 694, 681, 669, 657, 644, 632, 619, 607,          // 11 ~  20
+	 594, 582, 570, 558, 546, 534, 522, 510, 498, 486,          // 21 ~  30
+	 475, 463, 452, 441, 430, 419, 409, 398, 388, 378,          // 31 ~  40
+	 368, 359, 349, 340, 331, 322, 313, 305, 296, 288,          // 41 ~  50
+	 280, 272, 265, 258, 250, 244, 237, 230, 224, 217,          // 51 ~  60
+	 211, 205, 200, 194, 188, 183, 178, 173, 168, 163,          // 61 ~  70
+	 159, 154, 150, 146, 142, 138, 134, 130, 127, 123,          // 71 ~  80
+	 120, 116, 113, 110, 107, 104, 101,  98,  96,  93           // 81 ~  90
+};
 
 int16_t fml_ntc_temp_get_wpc(void)
 {
-	static uint16_t s_hist[8] = {0};
-	static uint8_t  s_hist_idx = 0;
-	static uint8_t  s_hist_primed = 0;
-	static int16_t  s_last_good_temp = 25;
+	static int16_t  last_temp = 25;
+	static uint32_t outlier_start_tk = 0;
+	static bool     outlier_pending = false;
 
-	static uint8_t  s_last_seq = 0xFF;
-	static uint32_t s_last_seq_tk = 0;
-	static bool     s_seq_ever = false;
-
-	static bool     s_get_logged    = false;
-	static int      s_last_log_r    = -999;
-	static uint8_t  s_last_log_st   = 0xFF;
-	static int16_t  s_last_log_temp = 0x7FFF;
-
-	uint16_t raw = 0;
-	uint8_t  st  = 0;
-	uint8_t  seq = 0;
-	int r = usb_bridge_read_ntc_raw(NTC_CH_COIL, &raw, &st, &seq);
-
-	printk("[WLS_NTC_RAW] r=%d raw=%d st=0x%02X seq=%d\n", r, raw, st, seq);
-
-	/* Condition 1: I2C 通讯失败 */
-	if (r != 0) {
-#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
-		gd->prot_sts.coil_ntc_source_fault = 0;
-#else
-		gd->prot_sts.coil_ntc_source_fault = 1;
-#endif
-		if (!s_get_logged || r != s_last_log_r) {
-			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=i2c_fail\n", r, st, seq, s_last_good_temp);
-			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
-		}
-		return s_last_good_temp;
+	uint16_t raw;
+	if (usb_bridge_read_ntc_raw(NTC_CH_COIL, &raw, NULL, NULL) != 0)
+		return last_temp;
+	uint16_t i = 0;
+	while (i < sizeof(ntc_wpc_raw_tbl)/sizeof(ntc_wpc_raw_tbl[0]))
+	{
+		if (raw >= ntc_wpc_raw_tbl[i]) break;
+		++i;
 	}
+	int16_t temp = (int16_t)i - 20 - 3;
 
-	/* Condition 2: STATUS 异常 */
-	if (st == COIL_NTC_STATUS_ERR) {
-#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
-		gd->prot_sts.coil_ntc_source_fault = 0;
-#else
-		gd->prot_sts.coil_ntc_source_fault = 1;
-#endif
-		if (!s_get_logged || st != s_last_log_st) {
-			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=status_err\n", r, st, seq, s_last_good_temp);
-			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
+	/* 偏差 > 10°C 延迟 3s 再接受 (避免瞬态抖动/采样异常被采信) */
+	int16_t delta = temp - last_temp;
+	if (delta > 10 || delta < -10) {
+		if (!outlier_pending) {
+			outlier_pending = true;
+			outlier_start_tk = tc_sys_ticks;
 		}
-		return s_last_good_temp;
-	}
-	if (st != COIL_NTC_STATUS_VALID) {
-		if (!s_get_logged || st != s_last_log_st) {
-			printk("[WLS_NTC_LOCK] GET r=%d st=%d seq=%d temp=%d path=status_invalid\n", r, st, seq, s_last_good_temp);
-			s_get_logged = true; s_last_log_r = r; s_last_log_st = st;
-		}
-		return s_last_good_temp;
-	}
-
-	/* Condition 3: SEQ 冻死 (>1000ms 不变视为 WB7720 卡死) */
-	uint32_t now = tc_sys_ticks;
-	if (s_seq_ever && seq == s_last_seq) {
-		if ((uint32_t)(now - s_last_seq_tk) > NTC_WPC_SEQ_TIMEOUT_MS) {
-#if (CONFIG_WLS_NTC_FAIL_MASK == 1)
-			gd->prot_sts.coil_ntc_source_fault = 0;
-#else
-			gd->prot_sts.coil_ntc_source_fault = 1;
-#endif
-			printk("[WLS_NTC_LOCK] GET seq_freeze seq=%d age=%lu\n", seq, (unsigned long)(now - s_last_seq_tk));
-			return s_last_good_temp;
-		}
+		if ((uint32_t)(tc_sys_ticks - outlier_start_tk) < 3000)
+			return last_temp;
 	} else {
-		s_last_seq = seq;
-		s_last_seq_tk = now;
-		s_seq_ever = true;
+		outlier_pending = false;
 	}
-
-	/* 三条件全过: 清 fault, 消费 RAW */
-	gd->prot_sts.coil_ntc_source_fault = 0;
-
-	/* 8深滑动平均 */
-	s_hist[s_hist_idx & 0x07] = raw;
-	s_hist_idx++;
-	if (s_hist_idx >= 8) s_hist_primed = 1;
-
-	uint16_t raw_avg;
-	if (s_hist_primed) {
-		uint32_t sum = 0;
-		for (uint8_t i = 0; i < 8; i++) sum += s_hist[i];
-		raw_avg = (uint16_t)(sum >> 3);
-	} else {
-		raw_avg = raw;
-	}
-
-	/* 两步归一化: 10-bit→12-bit 位宽扩展 + Vref/VDDH 电压校正 */
-	uint32_t raw_12bit = ((uint32_t)raw_avg * LEGACY_ADC_FULL_SCALE) / WB7720_ADC_FULL_SCALE;
-	uint16_t raw_norm  = (uint16_t)((raw_12bit * WB7720_ADC_VREF_MV) / WB7720_NTC_VDDH_MV);
-
-	int16_t temp = ntc_wb7720_raw_to_temp_c(raw_norm);
-
-	if (!s_get_logged || temp != s_last_log_temp) {
-		printk("[WLS_NTC_RAW] raw=%u norm=%u temp=%d\n", raw_avg, raw_norm, temp);
-		s_get_logged = true; s_last_log_r = r; s_last_log_st = st; s_last_log_temp = temp;
-	}
-
-	s_last_good_temp = temp;
+	last_temp = temp;
 	return temp;
 }
 
