@@ -26,7 +26,6 @@ void port_manager_set_event(uint32_t event)
 }
 extern uint8_t charge_led_finish;
 extern uint8_t charge_led_run;
-extern bool bat_ntc_dischg_ut_reduce_flag;
 
 void port_manager_set_state(enum port_state_e state)
 {
@@ -817,11 +816,6 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibus_limit = g_port.ibus_limit<(5000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:5000*1000/g_buckboost.adc_vbus;
 	}
 	if (gd->bat_ntc_dischg_reduce_flag)
-	{
-		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
-	}
-	if (bat_ntc_dischg_ut_reduce_flag)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;

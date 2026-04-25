@@ -716,7 +716,6 @@ uint32_t rrlen;
 extern uint8_t array_digest[];
 extern uint8_t adt_data_recv_buf[18];
 extern uint8_t cert_chain[];
-extern bool bat_ntc_dischg_ut_reduce_flag;
 extern bool bat_ntc_dual_dischg_lock;
 
 void wpc_idle_phase_process(void)

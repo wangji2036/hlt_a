@@ -12,6 +12,7 @@
 #include "ask.h"
 #include "bat_record.h"
 #include "ntc.h"
+#include "_fml.h"
 
 #define T_APP_250ms_POLL    250
 #define T_APP_100ms_POLL    100
@@ -113,7 +114,7 @@ void apl_task_event_handler(uint32_t event)
 //			gd->sys_infos.die_temp = fml_die_temp_get();
 			// printk("\r\n ntc_typec --> %d,ntc_wpc --> %d",gd->sys_infos.ntc_temp_typec,gd->sys_infos.ntc_temp_wpc);
 //			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
-			wpc_power_handle(gd->sys_infos.ntc_temp_wpc);
+			wpc_power_handle(gd->sys_infos.ntc_temp_wpc, ntc_to_temp(g_buckboost.adc_tbat1));
 		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
 			fml_tdie_otp_check(gd->sys_infos.die_temp);
 			fml_tdie_utp_check(gd->sys_infos.die_temp);

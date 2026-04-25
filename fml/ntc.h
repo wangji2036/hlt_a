@@ -110,10 +110,9 @@ extern bool ntc_stop_chrg_flag;
 extern uint8_t ntc_lock_flag;
 extern bool typec_ntc_ot_dischg_flag;
 extern bool typec_ntc_ot_chrg_flag;
-extern bool bat_ntc_dischg_ut_reduce_flag;
 extern bool bat_ntc_dual_dischg_lock;
 extern uint8_t bat_low_volt_reduce;
 void buckboost_ntc_handle(void);
 extern uint8_t wpc_ntc_power_reduce_flag;
-void wpc_power_handle(int16_t tntc);
+void wpc_power_handle(int16_t tntc, int16_t tbat);
 #endif

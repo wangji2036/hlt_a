@@ -26,7 +26,6 @@ uint8_t need_atn_cnt;
 uint8_t need_atn_evt;
 uint8_t renego_flag;
 extern uint8_t wpc_ntc_power_reduce_flag;
-extern bool bat_ntc_dischg_ut_reduce_flag;
 void auth_init(void)
 {
 	need_atn_cnt = 0;
@@ -294,12 +293,12 @@ void mpp_report_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 					gd->tntc_ot_flag_atn = 2;
 				}
 			}
-			else if((wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag || bat_ntc_dischg_ut_reduce_flag) && renego_flag == 1)
+			else if((wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag) && renego_flag == 1)
 			{
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ATN);
 				renego_flag = 2;
 			}
-			else if(!wpc_ntc_power_reduce_flag && !gd->bat_ntc_dischg_reduce_flag && !bat_ntc_dischg_ut_reduce_flag && renego_flag == 3)
+			else if(!wpc_ntc_power_reduce_flag && !gd->bat_ntc_dischg_reduce_flag && renego_flag == 3)
 			{
 				fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ATN);
 				renego_flag = 4;
@@ -510,7 +509,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case MPP_PRx_PKT_TYP_XCE_19:
 			if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
 			{
-				if(wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag || bat_ntc_dischg_ut_reduce_flag)
+				if(wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag)
 				{
 					if (gd->tx_power > 8500)
 					{
@@ -544,12 +543,12 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					need_cloak_atn = 1;
 				}
 			}
-			if((wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag || bat_ntc_dischg_ut_reduce_flag) && renego_flag == 0)
+			if((wpc_ntc_power_reduce_flag || gd->bat_ntc_dischg_reduce_flag) && renego_flag == 0)
 			{
 				gd->tx_infos.nego_cap = 75;
 				renego_flag = 1;
 			}
-			else if(!wpc_ntc_power_reduce_flag && !gd->bat_ntc_dischg_reduce_flag && !bat_ntc_dischg_ut_reduce_flag && renego_flag == 2)
+			else if(!wpc_ntc_power_reduce_flag && !gd->bat_ntc_dischg_reduce_flag && renego_flag == 2)
 			{
 				renego_flag = 3;
 				gd->tx_infos.nego_cap = 150;
