@@ -19,6 +19,7 @@ uint8_t ntc_lock_flag = 0;
 bool typec_ntc_ot_dischg_flag = false;
 bool typec_ntc_ot_chrg_flag = false;
 bool bat_ntc_dual_dischg_lock = false;
+bool bat_ntc_dual_dischg_inhibit = false;   // C 口+无线充同时放电温度抑制：<0/≥45 锁，[5,40] 恢复 max 5V/3A
 uint8_t bat_low_volt_reduce = 0;
 extern const uint32_t source_pdo[];
 extern const uint32_t source_pdo_ntc[];
@@ -37,6 +38,7 @@ void buckboost_ntc_handle(void)
 	static uint8_t typec_ntc_lock_cnt = 0;
 	static uint8_t typec_chrg_lock_cnt = 0;
 	static uint8_t bat_dischg_reduce_cnt = 0;
+	static uint8_t dual_dischg_inhibit_cnt = 0;
 	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
 	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
 	{
@@ -200,6 +202,38 @@ void buckboost_ntc_handle(void)
 				else
 				{
 					dual_dischg_lock_cnt = 0;
+				}
+			}
+
+			// 同时放电温度抑制：<0°C 或 ≥45°C 禁止 C 口+无线充同时输出（仅留 C 口），[5, 40] 恢复同时放电（max 5V/3A）
+			if(!bat_ntc_dual_dischg_inhibit)
+			{
+				if(bat_temp < 0 || bat_temp >= 45)
+				{
+					if(dual_dischg_inhibit_cnt++>=10)
+					{
+						dual_dischg_inhibit_cnt = 0;
+						bat_ntc_dual_dischg_inhibit = 1;
+					}
+				}
+				else
+				{
+					dual_dischg_inhibit_cnt = 0;
+				}
+			}
+			else
+			{
+				if(bat_temp >= 5 && bat_temp <= 40)
+				{
+					if(dual_dischg_inhibit_cnt++>=10)
+					{
+						dual_dischg_inhibit_cnt = 0;
+						bat_ntc_dual_dischg_inhibit = 0;
+					}
+				}
+				else
+				{
+					dual_dischg_inhibit_cnt = 0;
 				}
 			}
 
