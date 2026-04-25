@@ -68,4 +68,6 @@ void led_init(void);
 void led_display(void);
 void detectSingleKey(void);
 void initKey(void);
+void led_open_wrd(void);
+void led_close_wrd(void);
 #endif /* LED_H_ */

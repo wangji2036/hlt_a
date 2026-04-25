@@ -48,6 +48,24 @@ static uint32_t soc_show_ram = 0;//temporary variable, where each bit is used to
 
 static uint8_t ui_no_timer_scan = 0;
 
+void led_open_wrd(void)
+{
+	uint32_t *TCPC_PD_OVRD_SEL = (uint32_t *)(0x40002000 + 0x0054);
+	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
+
+	*TCPC_PD_OVRD_SEL = 0x0B;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	*TCPC_PD_OVRD_SEL = 0x01;
+	*TCPC_PD_OVRD_CMD = 0x30;
+}
+
+void led_close_wrd(void)
+{
+	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
+
+	*TCPC_PD_OVRD_CMD = 0x80;
+}
 static void drv_IO_control(uint8_t pinx, bool status)
 {
 	switch (pinx)
@@ -55,6 +73,14 @@ static void drv_IO_control(uint8_t pinx, bool status)
 	case 5:
 		_UI_PIN5_PORT->I_EN.BITS._UI_PIN5_PINx = 0;
 		_UI_PIN5_PORT->DOUT.BITS._UI_PIN5_PINx = status;
+		if(status == true)
+		{
+			led_close_wrd();
+		}
+		else
+		{
+			led_open_wrd();
+		}
 		_UI_PIN5_PORT-> O_EN.BITS._UI_PIN5_PINx = 1;
 		break;
 	case 4:
@@ -230,7 +256,7 @@ static void ui_update_led(void)
 			   }
 			   if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
 			   {
-				   soc_show_ram_led |= 0x10;// wireless LED5 is on
+				   soc_show_ram_led |= 0x20;// wireless LED6 is on
 			   }
 			   if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
 			   {
@@ -335,7 +361,7 @@ static void ui_update_led(void)
 					{
 						soc_show_ram_led ^= 1;
 					}
-					// soc_show_ram_led|=0x10;
+					soc_show_ram_led|=0x10;
 					if(button_cnt == 18)
 					{
 						soc_show_ram_led = 0;
@@ -367,7 +393,7 @@ static void ui_update_led(void)
      		 }
      		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
      		 {
-     			 soc_show_ram_led |= 0x10;// wireless LED5 is on
+     			 soc_show_ram_led |= 0x20;// wireless LED6 is on
      		 }
      	     uint8_t _index= 3;// to get the highest bit to blink.
      	     for(; _index> 0; _index--)
@@ -412,7 +438,7 @@ static void ui_update_led(void)
      		 }
      		 if (gd->ptx_protocol_phase >= WPC_PHASE_CNFG || gd->ptx_idle_phase_status == WPC_IDLE_STAT_EPT_REP || gd->ptx_idle_phase_status == WPC_IDLE_STAT_CLOAKING)
      		 {
-     			 soc_show_ram_led |= 0x10;// wireless LED5 is on
+     			 soc_show_ram_led |= 0x20;// wireless LED6 is on
      		 }
 			  if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
