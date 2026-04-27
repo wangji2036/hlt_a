@@ -310,7 +310,7 @@ uint16_t hal_nu6805_buckboost_get_bus_voltage(void)
 
 uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 {
-	uint16_t ntc = 0;
+	uint32_t ntc = 0;
 	uint8_t read = 0;
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,9);
 	//	delay_1us(50);
@@ -320,17 +320,10 @@ uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
 	ntc |= read & 0x0F;
 
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Ntc_Setting2,&read);
+	//hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Ntc_Setting2,&read);
 
-	// printk("n read = %d\n",ntc);
-
-	if(read == 0)
-		return ntc*550/20;// in Ohm, 20uA
-	else if(read == 1)
-		return ntc*1100/40;// in Ohm, 40uA
-	else
-		return ntc*2200/80;// in Ohm, 80uA
-
+	printk("n read = %d\n",ntc);
+	return ntc*550/20 / 100;// in Ohm, 20uA
 }
 
 
