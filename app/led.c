@@ -53,11 +53,31 @@ void led_open_wrd(void)
 	uint32_t *TCPC_PD_OVRD_SEL = (uint32_t *)(0x40002000 + 0x0054);
 	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
 
-	*TCPC_PD_OVRD_SEL = 0x0B;
+	*TCPC_PD_OVRD_SEL = 0x0b;
 	*TCPC_PD_OVRD_CMD = 0x30;
+
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
+
+	*TCPC_PD_OVRD_SEL = 0x15;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
+	*TCPC_PD_OVRD_SEL = 0x09;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
 
 	*TCPC_PD_OVRD_SEL = 0x01;
 	*TCPC_PD_OVRD_CMD = 0x30;
+
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
 }
 
 void led_close_wrd(void)
@@ -73,14 +93,7 @@ static void drv_IO_control(uint8_t pinx, bool status)
 	case 5:
 		_UI_PIN5_PORT->I_EN.BITS._UI_PIN5_PINx = 0;
 		_UI_PIN5_PORT->DOUT.BITS._UI_PIN5_PINx = status;
-		if(status == true)
-		{
-			led_close_wrd();
-		}
-		else
-		{
-			led_open_wrd();
-		}
+
 		_UI_PIN5_PORT-> O_EN.BITS._UI_PIN5_PINx = 1;
 		break;
 	case 4:
@@ -107,10 +120,14 @@ static void drv_IO_control(uint8_t pinx, bool status)
 		break;
 	case 6:
 		/* PD2 = LED6 (wireless charging), MODE must be 1 for GPIO */
-		GPD->MODE.BITS.PIN2 = 1;
-		_UI_PIN6_PORT->I_EN.BITS._UI_PIN6_PINx = 0;
-		_UI_PIN6_PORT->DOUT.BITS._UI_PIN6_PINx = status;
-		_UI_PIN6_PORT->O_EN.BITS._UI_PIN6_PINx = 1;
+		if(status == true)
+		{
+			led_close_wrd();
+		}
+		else
+		{
+			led_open_wrd();
+		}
 		break;
     default:
 		break;
@@ -258,6 +275,14 @@ static void ui_update_led(void)
 			   {
 				   soc_show_ram_led |= 0x20;// wireless LED6 is on
 			   }
+			   // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮（与无线充互斥）
+			   else if (gd->vpwr > 6200
+				   && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+				   && !buckboost_protection_flag
+				   && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+			   {
+				   soc_show_ram_led |= 0x10;// fast LED5 is on
+			   }
 			   if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
 			   {
 				   soc_show_ram_led ^= (1 << 4);// for blink-off
@@ -286,7 +311,7 @@ static void ui_update_led(void)
 		}
 		else if(gd->led_fault1)
 		{
-			if(gd->flash_times<=6)
+			if(gd->flash_times<=5)
 			{
 				if(flash_light%2)
 				{
@@ -395,6 +420,14 @@ static void ui_update_led(void)
      		 {
      			 soc_show_ram_led |= 0x20;// wireless LED6 is on
      		 }
+     		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮（与无线充互斥）
+     		 else if (gd->vpwr > 6200
+     			 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+     			 && !buckboost_protection_flag
+     			 && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+     		 {
+     			 soc_show_ram_led |= 0x10;// fast LED5 is on
+     		 }
      	     uint8_t _index= 3;// to get the highest bit to blink.
      	     for(; _index> 0; _index--)
      	     {
@@ -440,6 +473,14 @@ static void ui_update_led(void)
      		 {
      			 soc_show_ram_led |= 0x20;// wireless LED6 is on
      		 }
+     		 // LED5: 快速充电/放电指示灯 - 设备被充电或放电时都点亮（与无线充互斥）
+     		 else if (gd->vpwr > 6200
+     			 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE
+     			 && !buckboost_protection_flag
+     			 && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE || gd->real_soc_show < 100))
+     		 {
+     			 soc_show_ram_led |= 0x10;// fast LED5 is on
+     		 }
 			  if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
      			 soc_show_ram_led ^= (1 << 4);// for blink-off
@@ -452,6 +493,12 @@ static void ui_update_led(void)
      	     }
 			 
      	}
+
+ 	//if (!gd->touch_to_weakup || g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE)
+ 	{
+ 			ui_display();
+ 	}
+
 }
 #endif
 
@@ -463,15 +510,37 @@ static void ui_update_led(void)
 /*********************************************************************/
 void ui_display (void)
 {
-
+/*
 	if(ui_no_timer_scan)
 	{
 		return;
 	}
-
+*/
 #ifdef LED_DISPLAY
 //	_SET_ALL_PINS_IN_PUT();// reserved for multi IO control method
     // led map scan,如果用快速扫描方式
+
+	//#define BIT(n)	(0x01ul<<n)
+
+	if(soc_show_ram_led & BIT(0)) drv_IO_control(disp_map[0], false);
+	else drv_IO_control(disp_map[0], true);
+
+	if(soc_show_ram_led & BIT(1)) drv_IO_control(disp_map[1], false);
+	else drv_IO_control(disp_map[1], true);
+
+	if(soc_show_ram_led & BIT(2)) drv_IO_control(disp_map[2], false);
+	else drv_IO_control(disp_map[2], true);
+
+	if(soc_show_ram_led & BIT(3)) drv_IO_control(disp_map[3], false);
+	else drv_IO_control(disp_map[3], true);
+
+	if(soc_show_ram_led & BIT(4)) drv_IO_control(disp_map[4], false);
+	else drv_IO_control(disp_map[4], true);
+
+	if(soc_show_ram_led & BIT(5)) drv_IO_control(disp_map[5], false);
+	else drv_IO_control(disp_map[5], true);
+
+	/*
 	 if(++ui_scan_index >= (sizeof(disp_map)/ sizeof(disp_map[0])))
 	 {
 		 ui_scan_index = 0;
@@ -489,6 +558,7 @@ void ui_display (void)
 	 {
 		 drv_IO_control(disp_map[ui_scan_index], true);
 	 }
+	 */
 #endif
 }
 
@@ -622,10 +692,6 @@ void ui_update(void)
 			// Requirement 4: Charging, last LED blinks
 			flash_flag = 1;
 		}
-		// if(bat_charge_ntc_ot_flag)
-		// {
-		// 	flash_flag = 3;
-		// }
     }
    else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show<=5))
     {
@@ -734,6 +800,7 @@ void key_sigle_click_process(void)
 	}
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;
+	gd->flash_times = 0;        // 按键反馈：重新触发 led_fault1 的 5 次闪烁（NTC 锁仍在时也提示用户）
 }
 
 void key_double_click_process(void)
@@ -803,6 +870,7 @@ void key_long_click_process(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void key_triple_click_process(void)
 {
+
 	if (buckboost_protection_flag) return;
 
 	gd->usb_comm_activated ^= 1;
