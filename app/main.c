@@ -48,12 +48,59 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
-	// if(gd->power_on_magic = 0xaaaa)
-	// {
-	// 	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	// 	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
-	// }
+	//TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
+	if(gd->power_on_magic == 0xaaaa)
+	{
+		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+	 	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
+	 }
+	//TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+	//TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
 	
+	// TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+
+	/*
+
+	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
+
+	
+	uint32_t *TCPC_PD_OVRD_SEL = (uint32_t *)(0x40002000 + 0x0054);
+	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
+
+	*TCPC_PD_OVRD_SEL = 0x0b;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
+
+	*TCPC_PD_OVRD_SEL = 0x15;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
+	*TCPC_PD_OVRD_SEL = 0x09;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+
+	*TCPC_PD_OVRD_SEL = 0x01;
+	*TCPC_PD_OVRD_CMD = 0x30;
+
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+	
+	// GPD->PDEN.BITS.PIN2 = 1;
+
+	// GPD->ODEN.BITS.PIN2 = 1;
+	
+	while (1)
+	{
+		hal_wdt_feed();
+	}
+		*/
 	VIC_vModuleDisable();
 
 	hal_wdt_init();
@@ -89,8 +136,8 @@ int main(void)
 	hal_wdt_feed();
 	main_printk("\r\n [D5] post-wdt");
 #if(BUCKBOOST_USED_NU6805 == 1)
-	/* 等待 NU6805 稳定 500ms, 每 100ms 做一次 I2C dummy read 保持 SCL 活跃,
-	 * 防止复位 IC 因 250ms 无 I2C 活动而拉 RESET 导致冷启动 */
+	/* 绛夊緟 NU6805 绋冲畾 500ms, 姣�100ms 鍋氫竴娆�I2C dummy read 淇濇寔 SCL 娲昏穬,
+	 * 闃叉澶嶄綅 IC 鍥�250ms 鏃�I2C 娲诲姩鑰屾媺 RESET 瀵艰嚧鍐峰惎鍔�*/
 	for (uint8_t i = 0; i < 5; i++) {
 		delay_1ms(100);
 		hal_wdt_feed();
