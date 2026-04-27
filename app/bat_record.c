@@ -1363,7 +1363,7 @@ uint8_t battery_record_sleep_check(void) {
     /* 触发 NTC 通道切换 → 阻塞 1ms 等 ADC 采样 → 读真实值 */
     (void)hal_nu6805_buckboost_get_bat_temperature();
     delay_1us(300);
-    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature() / 100;  /* Ohm → Ohm/100 */
+    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();  /* Ohm → Ohm/100 */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
     br_printk("ntc:%d t:%d\n",  ntc_resistance, ntc_temp);

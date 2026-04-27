@@ -634,7 +634,7 @@ void buckboost_task_event_handler(uint32_t event)
 				hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
 			#else
 				//bb_printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
-				g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature()/100;
+				g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature();
 				buckboost_ntc_handle();
 			#endif
 			}
