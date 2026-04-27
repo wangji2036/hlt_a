@@ -53,7 +53,7 @@ void pdlib_init(void)
 	pdlib_update_source_pdo(source_pdo_default,sizeof(source_pdo_default)/4);
 	pdlib_update_sink_pdo(sink_pdo_default,sizeof(sink_pdo_default) /4);
 }
-extern bool typec_ntc_ot_dischg_flag;
+extern bool typec_ntc_dischg_ot_reduce20W_flag;
 
 #define PDO_STATE_NORMAL  0
 #define PDO_STATE_LIMIT   1   // 9V2.22A/12V1.67A 限档
@@ -71,7 +71,7 @@ void pdlib_run(void)
 		// 优先级：C 口 bat NTC 降功率(5V/2A 严格) > typec NTC OT / wpc bat 降功率(limit) > 正常
 		if (gd->bat_ntc_cport_dischg_reduce_flag)
 			state = PDO_STATE_NTC;
-		else if (typec_ntc_ot_dischg_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+		else if (typec_ntc_dischg_ot_reduce20W_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
 			state = PDO_STATE_LIMIT;
 		else
 			state = PDO_STATE_NORMAL;

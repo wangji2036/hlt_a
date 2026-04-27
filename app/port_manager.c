@@ -800,7 +800,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
 	}
 
-	if(typec_ntc_ot_chrg_flag)
+	if(typec_ntc_charge_ot_reduce20W_flag)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(20000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:20000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(20000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:20000*1000/g_buckboost.adc_vbus;
@@ -894,7 +894,7 @@ void port_enum_port_snk_setvolt(void)
 						{
 							// 充电限制输入最大 12V：
 							//   bat NTC 3-18°C(UT 5W) / 43-52°C(OT 12W)，typec NTC ≥68°C(20W)，单节电压<3.7V(20W)
-							uint32_t volt_cap = (bat_ntc_charge_ut_reduce5W_flag || bat_ntc_charge_ot_reduce12W_flag || typec_ntc_ot_chrg_flag || bat_low_volt_reduce) ? VOLTAGE_12V : VOLTAGE_20V;
+							uint32_t volt_cap = (bat_ntc_charge_ut_reduce5W_flag || bat_ntc_charge_ot_reduce12W_flag || typec_ntc_charge_ot_reduce20W_flag || bat_low_volt_reduce) ? VOLTAGE_12V : VOLTAGE_20V;
 							if(pdo_fixed_voltage(source_pdo) <= volt_cap)
 							{
 								pdlib_snk_requsrt_voltage(pdlib_snk_get_pdo_amount() - i,pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));

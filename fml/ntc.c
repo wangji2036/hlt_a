@@ -16,8 +16,8 @@ bool bat_ntc_charge_ut_reduce5W_flag = false;
 bool bat_ntc_charge_ot_reduce12W_flag = false;
 bool bat_ntc_stop_chrg_flag = false;
 uint8_t ntc_lock_flag = 0;
-bool typec_ntc_ot_dischg_flag = false;
-bool typec_ntc_ot_chrg_flag = false;
+bool typec_ntc_dischg_ot_reduce20W_flag = false;
+bool typec_ntc_charge_ot_reduce20W_flag = false;
 bool bat_ntc_dischg_lock = false;
 bool bat_ntc_dual_dischg_inhibit = false;   // C 口+无线充同时放电温度抑制：<0/≥45 锁，[5,40] 恢复 max 5V/3A
 uint8_t bat_low_volt_reduce = 0;
@@ -327,13 +327,13 @@ void buckboost_ntc_handle(void)
 			}
 
 			// 放电 OT 限 20W (最大 12V)：≥80°C 触发，<35°C 恢复 30W
-			if(!typec_ntc_ot_dischg_flag)
+			if(!typec_ntc_dischg_ot_reduce20W_flag)
 			{
 				if(gd->sys_infos.ntc_temp_typec >= 80)
 				{
 					if(typec_ntc_ot_dischg_cnt++>10)
 					{
-						typec_ntc_ot_dischg_flag = 1;
+						typec_ntc_dischg_ot_reduce20W_flag = 1;
 					}
 				}
 				else
@@ -347,7 +347,7 @@ void buckboost_ntc_handle(void)
 				{
 					if(typec_ntc_ot_dischg_cnt++>10)
 					{
-						typec_ntc_ot_dischg_flag = 0;
+						typec_ntc_dischg_ot_reduce20W_flag = 0;
 					}
 				}
 				else
@@ -392,13 +392,13 @@ void buckboost_ntc_handle(void)
 				}
 			}
 
-			if(!typec_ntc_ot_chrg_flag)
+			if(!typec_ntc_charge_ot_reduce20W_flag)
 			{
 				if(gd->sys_infos.ntc_temp_typec > 68)
 				{
 					if(typec_ntc_ot_chrg_cnt++>10)
 					{
-						typec_ntc_ot_chrg_flag = 1;
+						typec_ntc_charge_ot_reduce20W_flag = 1;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
@@ -413,7 +413,7 @@ void buckboost_ntc_handle(void)
 				{
 					if(typec_ntc_ot_chrg_cnt++>10)
 					{
-						typec_ntc_ot_chrg_flag = 0;
+						typec_ntc_charge_ot_reduce20W_flag = 0;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
