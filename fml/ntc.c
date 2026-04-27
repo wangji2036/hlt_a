@@ -18,7 +18,7 @@ bool bat_ntc_stop_chrg_flag = false;
 uint8_t ntc_lock_flag = 0;
 bool typec_ntc_ot_dischg_flag = false;
 bool typec_ntc_ot_chrg_flag = false;
-bool bat_ntc_dual_dischg_lock = false;
+bool bat_ntc_dischg_lock = false;
 bool bat_ntc_dual_dischg_inhibit = false;   // C 口+无线充同时放电温度抑制：<0/≥45 锁，[5,40] 恢复 max 5V/3A
 uint8_t bat_low_volt_reduce = 0;
 extern const uint32_t source_pdo[];
@@ -181,14 +181,14 @@ void buckboost_ntc_handle(void)
 			bat_charge_ntc_ot_flag = 0;
 
 			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
-			if(!bat_ntc_dual_dischg_lock)
+			if(!bat_ntc_dischg_lock)
 			{
 				if(bat_temp <= -15 || bat_temp >= 55)
 				{
 					if(dual_dischg_lock_cnt++>=10)
 					{
 						dual_dischg_lock_cnt = 0;
-						bat_ntc_dual_dischg_lock = 1;
+						bat_ntc_dischg_lock = 1;
 					}
 				}
 				else
@@ -203,7 +203,7 @@ void buckboost_ntc_handle(void)
 					if(dual_dischg_lock_cnt++>=10)
 					{
 						dual_dischg_lock_cnt = 0;
-						bat_ntc_dual_dischg_lock = 0;
+						bat_ntc_dischg_lock = 0;
 					}
 				}
 				else

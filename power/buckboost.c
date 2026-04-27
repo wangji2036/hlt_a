@@ -359,12 +359,12 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 1;
 	}
-	if(!gd->led_fault1&&(gd->typec_scp||gd->bat_ntc_lock_flag||gd->wirless_ntc_lock||gd->typec_ntc_lock||bat_ntc_dual_dischg_lock))
+	if(!gd->led_fault1&&(gd->typec_scp||gd->bat_ntc_lock_flag||gd->wirless_ntc_lock||gd->typec_ntc_lock||bat_ntc_dischg_lock))
 	{
 		gd->led_fault1 = 1;
 	}
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
-	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag||bat_ntc_dual_dischg_lock) status|=VBUS_FAULT_VBUS_NTC;
+	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag||bat_ntc_dischg_lock) status|=VBUS_FAULT_VBUS_NTC;
 	printk("VBUS_FAULT_VBUS_NTC\n");
 #endif
 #endif
@@ -372,7 +372,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 0;
 	}
-	if(gd->led_fault1&&!gd->bat_ntc_lock_flag&&!gd->wirless_ntc_lock&&!gd->typec_ntc_lock&&!gd->typec_scp&&!bat_ntc_dual_dischg_lock)
+	if(gd->led_fault1&&!gd->bat_ntc_lock_flag&&!gd->wirless_ntc_lock&&!gd->typec_ntc_lock&&!gd->typec_scp&&!bat_ntc_dischg_lock)
 	{
 		gd->led_fault1 = 0;
 	}
@@ -392,7 +392,7 @@ void buckboost_protection_handle(void)
 			if(status & VBUS_FAULT_VBUS_NTC)
 			{
 				bb_printk("\r\n[VBUS_NTC] VBUS_FAULT_VBUS_NTC triggered!");
-				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d, dual_dischg_lock=%d", gd->typec_ntc_lock, gd->bat_ntc_lock_flag, bat_ntc_dual_dischg_lock);
+				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d, dischg_lock=%d", gd->typec_ntc_lock, gd->bat_ntc_lock_flag, bat_ntc_dischg_lock);
 				bb_printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
 					gd->sys_infos.ntc_temp_typec, g_buckboost.batTemp, gd->sys_infos.ntc_temp_wpc);
 			}

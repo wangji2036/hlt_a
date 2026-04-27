@@ -765,7 +765,7 @@ void wpc_idle_phase_process(void)
 		}
 	}
 	/* C 口在 SOURCE 时，bat_ntc_dual_dischg_inhibit（<0 / ≥45）禁止同时放电，仅留 C 口
-	 * 极端温度锁（≤-15 / ≥55）由 bat_ntc_dual_dischg_lock 走 buckboost.c VBUS_FAULT_VBUS_NTC 硬锁路径 */
+	 * 极端温度锁（≤-15 / ≥55）由 bat_ntc_dischg_lock 走 buckboost.c VBUS_FAULT_VBUS_NTC 硬锁路径 */
 	static uint8_t wpc_dual_temp_lock = 0;
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
 	{
