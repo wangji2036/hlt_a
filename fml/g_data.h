@@ -603,7 +603,7 @@ struct gd_t
 	 uint8_t wirless_ntc_lock;
 	 uint8_t bat_ntc_lock_flag;
 	 uint8_t typec_ntc_lock;
-	 uint8_t bat_ntc_dischg_reduce_flag;
+	 uint8_t bat_ntc_wpc_dischg_reduce_flag;
 	 uint8_t bat_ntc_cport_dischg_reduce_flag;
 	 uint8_t typec_charge_ntc_lock;
 	 uint8_t flash_times;

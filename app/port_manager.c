@@ -815,7 +815,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(5000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:5000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(5000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:5000*1000/g_buckboost.adc_vbus;
 	}
-	if (gd->bat_ntc_dischg_reduce_flag || gd->bat_ntc_cport_dischg_reduce_flag)
+	if (gd->bat_ntc_wpc_dischg_reduce_flag || gd->bat_ntc_cport_dischg_reduce_flag)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;

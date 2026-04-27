@@ -258,7 +258,7 @@ void gd_data_init(void)
 		gd->wirless_ntc_lock = 0;
 		gd->force_usb_mode = 0;
 		gd->bat_ntc_lock_flag = 0;
-		gd->bat_ntc_dischg_reduce_flag = 0;
+		gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 		gd->bat_ntc_cport_dischg_reduce_flag = 0;
 		gd->typec_ntc_lock = 0;
 		gd->typec_charge_ntc_lock = 0;

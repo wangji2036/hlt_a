@@ -521,7 +521,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	if (g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE)
 	{
 		gd->bat_ntc_lock_flag = 0;
-		gd->bat_ntc_dischg_reduce_flag = 0;
+		gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 		bat_lock_cnt = 0;
 		bat_lock_rec_cnt = 0;
 		bat_reduce_cnt = 0;
@@ -568,14 +568,14 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	}
 
 	// 电池NTC降功率：tbat>=43°C或<=-3°C降7.5W，回到[0,30]区间恢复15W
-	if (!gd->bat_ntc_dischg_reduce_flag)
+	if (!gd->bat_ntc_wpc_dischg_reduce_flag)
 	{
 		if (tbat >= 43 || tbat <= -3)
 		{
 			if (++bat_reduce_cnt > 10)
 			{
 				bat_reduce_cnt = 0;
-				gd->bat_ntc_dischg_reduce_flag = 1;
+				gd->bat_ntc_wpc_dischg_reduce_flag = 1;
 				printk("\r\n[BAT_NTC] dischg reduce tbat=%d", tbat);
 			}
 		}
@@ -591,7 +591,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			if (++bat_reduce_rec_cnt > 10)
 			{
 				bat_reduce_rec_cnt = 0;
-				gd->bat_ntc_dischg_reduce_flag = 0;
+				gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 				printk("\r\n[BAT_NTC] dischg restore tbat=%d", tbat);
 			}
 		}
