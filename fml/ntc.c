@@ -12,8 +12,8 @@
 #include "ntc.h"
 #include "_fml.h"
 
-bool bat_ntc_ut_flag = false;
-bool bat_charge_ntc_ot_flag = false;
+bool bat_ntc_charge_ut_reduce5W_flag = false;
+bool bat_ntc_charge_ot_reduce12W_flag = false;
 bool bat_ntc_stop_chrg_flag = false;
 uint8_t ntc_lock_flag = 0;
 bool typec_ntc_ot_dischg_flag = false;
@@ -47,7 +47,7 @@ void buckboost_ntc_handle(void)
 		{
 			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充并闭锁；vbat 回落到 4.1V 以下不解，
 			// 必须等温度降到 ≤30°C 才解
-			if (bat_charge_ntc_ot_flag && g_buckboost.adc_vbat >= 8200) {
+			if (bat_ntc_charge_ot_reduce12W_flag && g_buckboost.adc_vbat >= 8200) {
 				ot_full_stop = true;
 			}
 			if (bat_temp <= 30) {
@@ -91,14 +91,14 @@ void buckboost_ntc_handle(void)
 				}
 			}
 			// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
-			if(!bat_ntc_ut_flag)
+			if(!bat_ntc_charge_ut_reduce5W_flag)
 			{
 				if(bat_temp < 18)
 				{
 					if(bat_ntc_ut_cnt++>10)
 					{
 						bat_ntc_ut_cnt = 0;
-						bat_ntc_ut_flag = 1;
+						bat_ntc_charge_ut_reduce5W_flag = 1;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
@@ -114,7 +114,7 @@ void buckboost_ntc_handle(void)
 					if(bat_ntc_ut_cnt++>10)
 					{
 						bat_ntc_ut_cnt = 0;
-						bat_ntc_ut_flag = 0;
+						bat_ntc_charge_ut_reduce5W_flag = 0;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
@@ -124,14 +124,14 @@ void buckboost_ntc_handle(void)
 				}
 			}
 			// 充电限 12W：≥43°C 触发，≤30°C 恢复 30W
-			if(!bat_charge_ntc_ot_flag)
+			if(!bat_ntc_charge_ot_reduce12W_flag)
 			{
 				if(bat_temp >= 43)
 				{
 					if(bat_ntc_ot_cnt++>10)
 					{
 						bat_ntc_ot_cnt = 0;
-						bat_charge_ntc_ot_flag = 1;
+						bat_ntc_charge_ot_reduce12W_flag = 1;
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
@@ -147,7 +147,7 @@ void buckboost_ntc_handle(void)
 					if(bat_ntc_ot_cnt++>10)
 					{
 						bat_ntc_ot_cnt = 0;
-						bat_charge_ntc_ot_flag = 0;
+						bat_ntc_charge_ot_reduce12W_flag = 0;
 						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
 						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
@@ -178,7 +178,7 @@ void buckboost_ntc_handle(void)
 		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
 			bat_ntc_stop_chrg_flag = 0;
-			bat_charge_ntc_ot_flag = 0;
+			bat_ntc_charge_ot_reduce12W_flag = 0;
 
 			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
 			if(!bat_ntc_dischg_lock)

@@ -104,8 +104,8 @@
 #define DISG_NTC_OT_LOCK_VALUE						32	   	// 3.2K
 #define DISG_NTC_OT_LOCK_RESTORE_VALUE				38		//3.8K
 
-extern bool bat_ntc_ut_flag;
-extern bool bat_charge_ntc_ot_flag;
+extern bool bat_ntc_charge_ut_reduce5W_flag;
+extern bool bat_ntc_charge_ot_reduce12W_flag;
 extern bool bat_ntc_stop_chrg_flag;
 extern uint8_t ntc_lock_flag;
 extern bool typec_ntc_ot_dischg_flag;
