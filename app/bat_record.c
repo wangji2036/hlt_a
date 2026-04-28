@@ -1491,6 +1491,7 @@ uint8_t battery_record_sleep_check(void) {
 
     // Disable ADC
     sleep_adc_deinit();
+    usb_bridge_sleep();
     _SET_I2CM_SDA_IN_PUT();
     _SET_I2CM_SCL_IN_PUT();
     return flash_written;
