@@ -311,7 +311,7 @@ void buckboost_ntc_handle(void)
 		{
 			if(!gd->typec_ntc_lock)
 			{
-				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<-15)
+				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<10)
 				{
 					if(typec_ntc_lock_cnt++>=10)
 					{
@@ -328,7 +328,7 @@ void buckboost_ntc_handle(void)
 			else
 			{
 				// 105°C 锁解：温度回落到 ≤80°C（OT 仍在 20W 降功率档，到 35°C 才彻底恢复）
-				if(gd->sys_infos.ntc_temp_typec <= 80 && gd->sys_infos.ntc_temp_typec >-10)
+				if(gd->sys_infos.ntc_temp_typec <= 80 && gd->sys_infos.ntc_temp_typec >15)
 				{
 					if(typec_ntc_lock_cnt++>=10)
 					{
@@ -378,7 +378,7 @@ void buckboost_ntc_handle(void)
 		{
 			if(!gd->typec_charge_ntc_lock)
 			{
-				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<-15)
+				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<10)
 				{
 					if(typec_chrg_lock_cnt++>=10)
 					{
@@ -393,7 +393,7 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				if(gd->sys_infos.ntc_temp_typec <= 68 && gd->sys_infos.ntc_temp_typec>-10)
+				if(gd->sys_infos.ntc_temp_typec <= 68 && gd->sys_infos.ntc_temp_typec>15)
 				{
 					if(typec_chrg_lock_cnt++>=10)
 					{
