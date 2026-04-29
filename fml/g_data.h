@@ -556,6 +556,7 @@ struct gd_t
 	 uint8_t renego_flag;
 	 uint8_t soc_flag;
 	 uint8_t q_standby_flag;
+	 uint8_t flash_times;
 	 uint8_t resverd_reset;
 	 uint16_t power_on_magic;
 	 uint8_t tc0_lighting_mode;
@@ -606,7 +607,6 @@ struct gd_t
 	 uint8_t bat_ntc_wpc_dischg_reduce_flag;
 	 uint8_t bat_ntc_cport_dischg_reduce_flag;
 	 uint8_t typec_charge_ntc_lock;
-	 uint8_t flash_times;
 	 uint8_t typec_scp;
 	 uint8_t vbus_ovp;
 	 uint8_t touch_to_weakup;
