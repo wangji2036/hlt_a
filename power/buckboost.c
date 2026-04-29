@@ -739,10 +739,17 @@ void buckboost_task_event_handler(uint32_t event)
 
 				if (g_vref_cal_delay > 0) {
 					g_vref_cal_delay--;
-					if (g_vref_cal_delay == 0) {
+					if (g_vref_cal_delay == 0) 
+					{
 						g_vref_mv = 3 * pd3_adc_mv / 2;
-						bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV, saving to Flash", pd3_adc_mv, g_vref_mv);
-						cycle_count_save_to_flash();
+						bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV\n", pd3_adc_mv, g_vref_mv);
+						if(g_vref_mv >=3240 && g_vref_mv <=3300)
+						{
+							cycle_count_save_to_flash();
+							printk("\r\nVref save to flash:%d",g_vref_mv);
+						}
+						else
+							g_vref_mv = VREF_DEFAULT_MV;
 					}
 				}
 

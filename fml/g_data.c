@@ -342,7 +342,7 @@ void gd_data_init(void)
 	{
 		extern uint16_t g_vref_mv;
 		uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
-		if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
+		if (flash_vref != 0xFFFFFFFF && flash_vref >= 3240 && flash_vref <= 3300) {
 			g_vref_mv = (uint16_t)flash_vref;
 			gdata_printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
 		} else {

@@ -1335,7 +1335,7 @@ uint8_t battery_record_sleep_check(void) {
      * Vref 直接从 Flash 读取，不依赖 SRAM g_vref_mv（POR 后可能未恢复）。*/
     uint16_t vref_mv;
     uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
-    if (flash_vref != 0xFFFFFFFF && flash_vref >= 2000 && flash_vref <= 4000) {
+    if (flash_vref != 0xFFFFFFFF && flash_vref >= 3240 && flash_vref <= 3300) {
         vref_mv = (uint16_t)flash_vref;
     } else {
         vref_mv = VREF_DEFAULT_MV;
