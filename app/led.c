@@ -285,7 +285,7 @@ static void ui_update_led(void)
 			   }
 			   if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
 			   {
-				   soc_show_ram_led ^= (1 << 4);// for blink-off
+				   soc_show_ram_led ^= (1 << 5);// for blink-off, wireless LED6
 			   }
 
      		 /* 2h 内保持唤醒 */
@@ -438,7 +438,7 @@ static void ui_update_led(void)
      	     }
      		 if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
-     			 soc_show_ram_led ^= (1 << 4);// for blink-off
+     			 soc_show_ram_led ^= (1 << 5);// for blink-off, wireless LED6
      		 }
      	     if(flash_flag == 1 && flash_light_on)
      	     {
@@ -483,7 +483,7 @@ static void ui_update_led(void)
      		 }
 			  if(flash_flag_wls && flash_light_on)//!flash_light_on,to sync with the battery level LED
      		 {
-     			 soc_show_ram_led ^= (1 << 4);// for blink-off
+     			 soc_show_ram_led ^= (1 << 5);// for blink-off, wireless LED6
      		 }
      	     }
 
@@ -642,6 +642,7 @@ void ui_update(void)
 		soc_show_ram_led = (comm_feedback_cnt & 1) ? 0x00 : 0x0F;
 		prev_woke_mode = g_buckboost.woke_mode;
 		ui_no_timer_scan = 0;
+		ui_display();
 		return;  // Skip normal LED update during feedback
 	}
 
@@ -660,6 +661,7 @@ void ui_update(void)
 		soc_show_ram_led = led_val;
 		prev_woke_mode = g_buckboost.woke_mode;
 		ui_no_timer_scan = 0;
+		ui_display();
 		return;
 	}
 #endif

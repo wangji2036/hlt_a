@@ -53,7 +53,7 @@ int main(void)
 	{
 		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
 	 	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
-	 }
+	}
 	//TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
 	//TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
 	
