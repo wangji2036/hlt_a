@@ -39,6 +39,7 @@ void buckboost_ntc_handle(void)
 	static uint8_t typec_chrg_lock_cnt = 0;
 	static uint8_t bat_dischg_reduce_cnt = 0;
 	static uint8_t dual_dischg_inhibit_cnt = 0;
+	static uint8_t bat_low_volt_cnt = 0;
 	static bool ot_full_stop = false;   // 4.1V 停充闭锁：在 OT 区间 vbat≥8200 触发，OT 解时清；vbat 回落不解锁
 	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
 	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
@@ -57,14 +58,13 @@ void buckboost_ntc_handle(void)
 			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 闭锁
 			if(!bat_ntc_stop_chrg_flag)
 			{
-				if(bat_temp > 52 || bat_temp < 3 || ot_full_stop)
+				if(bat_temp > 52 || bat_temp < 3 ||ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
 					if(ntc_stop_chg_cnt >= 20)
 					{
 						ntc_stop_chg_cnt = 0;
 						bat_ntc_stop_chrg_flag = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -74,15 +74,13 @@ void buckboost_ntc_handle(void)
 			}
 			else
 			{
-				if(bat_temp >= 5 && bat_temp <= 47 && !ot_full_stop)
+				if(bat_temp >= 5 && bat_temp <= 47 &&!ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
-					if(ntc_stop_chg_cnt >= 20)
+					if(ntc_stop_chg_cnt >= 10)
 					{
 						ntc_stop_chg_cnt = 0;
 						bat_ntc_stop_chrg_flag = 0;
-						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -90,87 +88,105 @@ void buckboost_ntc_handle(void)
 					ntc_stop_chg_cnt = 0;
 				}
 			}
-			// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
-			if(!bat_ntc_charge_ut_reduce5W_flag)
+			if(!bat_ntc_stop_chrg_flag)
 			{
-				if(bat_temp < 18)
+				// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
+				if(!bat_ntc_charge_ut_reduce5W_flag)
 				{
-					if(bat_ntc_ut_cnt++>10)
+					if(bat_temp < 18)
+					{
+						if(bat_ntc_ut_cnt++>20)
+						{
+							bat_ntc_ut_cnt = 0;
+							bat_ntc_charge_ut_reduce5W_flag = 1;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
 					{
 						bat_ntc_ut_cnt = 0;
-						bat_ntc_charge_ut_reduce5W_flag = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
 				{
-					bat_ntc_ut_cnt = 0;
-				}
-			}
-			else
-			{
-				if(bat_temp >= 20)
-				{
-					if(bat_ntc_ut_cnt++>10)
+					if(bat_temp >= 20)
+					{
+						if(bat_ntc_ut_cnt++>10)
+						{
+							bat_ntc_ut_cnt = 0;
+							bat_ntc_charge_ut_reduce5W_flag = 0;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
 					{
 						bat_ntc_ut_cnt = 0;
-						bat_ntc_charge_ut_reduce5W_flag = 0;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
-				else
+				// 充电限 12W：≥43°C 触发，≤30°C 恢复 30W
+				if(!bat_ntc_charge_ot_reduce12W_flag)
 				{
-					bat_ntc_ut_cnt = 0;
-				}
-			}
-			// 充电限 12W：≥43°C 触发，≤30°C 恢复 30W
-			if(!bat_ntc_charge_ot_reduce12W_flag)
-			{
-				if(bat_temp >= 43)
-				{
-					if(bat_ntc_ot_cnt++>10)
+					if(bat_temp >= 43)
+					{
+						if(bat_ntc_ot_cnt++>20)
+						{
+							bat_ntc_ot_cnt = 0;
+							bat_ntc_charge_ot_reduce12W_flag = 1;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
 					{
 						bat_ntc_ot_cnt = 0;
-						bat_ntc_charge_ot_reduce12W_flag = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
 				{
-					bat_ntc_ot_cnt = 0;
-				}
-			}
-			else
-			{
-				if(bat_temp <= 30)
-				{
-					if(bat_ntc_ot_cnt++>10)
+					if(bat_temp <= 30)
+					{
+						if(bat_ntc_ot_cnt++>10)
+						{
+							bat_ntc_ot_cnt = 0;
+							bat_ntc_charge_ot_reduce12W_flag = 0;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
 					{
 						bat_ntc_ot_cnt = 0;
-						bat_ntc_charge_ot_reduce12W_flag = 0;
-						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					}
+				}
+				if (!bat_low_volt_reduce)
+				{
+					if (g_buckboost.adc_vbat < 7400)
+					{
+						if (bat_low_volt_cnt++ > 10)
+						{
+							bat_low_volt_cnt = 0;
+							bat_low_volt_reduce = 1;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
+					{
+						bat_low_volt_cnt = 0;
 					}
 				}
 				else
 				{
-					bat_ntc_ot_cnt = 0;
-				}
-			}
-			if (!bat_low_volt_reduce)
-			{
-				if (g_buckboost.adc_vbat < 7400)
-				{
-					bat_low_volt_reduce = 1;
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-				}
-			}
-			else
-			{
-				if (g_buckboost.adc_vbat >= 7500)
-				{
-					bat_low_volt_reduce = 0;
-					port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+					if (g_buckboost.adc_vbat >= 7800)
+					{
+						if (bat_low_volt_cnt++ > 10)
+						{
+							bat_low_volt_cnt = 0;
+							bat_low_volt_reduce = 0;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
+					}
+					else
+					{
+						bat_low_volt_cnt = 0;
+					}
 				}
 			}
 		}
@@ -257,6 +273,7 @@ void buckboost_ntc_handle(void)
 						{
 							dual_dischg_inhibit_cnt = 0;
 							bat_ntc_dual_dischg_inhibit = 1;
+							printk("\r\nbat_ntc_dual_dischg_inhibit=1 trigger\n");
 						}
 					}
 					else
@@ -272,6 +289,7 @@ void buckboost_ntc_handle(void)
 						{
 							dual_dischg_inhibit_cnt = 0;
 							bat_ntc_dual_dischg_inhibit = 0;
+							printk("\r\nbat_ntc_dual_dischg_inhibit=0 trigger\n");
 						}
 					}
 					else
@@ -366,7 +384,6 @@ void buckboost_ntc_handle(void)
 					{
 						typec_chrg_lock_cnt = 0;
 						gd->typec_charge_ntc_lock = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -382,8 +399,6 @@ void buckboost_ntc_handle(void)
 					{
 						typec_chrg_lock_cnt = 0;
 						gd->typec_charge_ntc_lock = 0;
-						hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,0x10);
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -391,41 +406,48 @@ void buckboost_ntc_handle(void)
 					typec_chrg_lock_cnt = 0;
 				}
 			}
-
-			if(!typec_ntc_charge_ot_reduce20W_flag)
+			if(!gd->typec_charge_ntc_lock)
 			{
-				if(gd->sys_infos.ntc_temp_typec > 68)
+				if(!typec_ntc_charge_ot_reduce20W_flag)
 				{
-					if(typec_ntc_ot_chrg_cnt++>10)
+					if(gd->sys_infos.ntc_temp_typec > 68)
 					{
-						typec_ntc_charge_ot_reduce20W_flag = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						if(typec_ntc_ot_chrg_cnt++>10)
+						{
+							typec_ntc_charge_ot_reduce20W_flag = 1;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
 					}
-				}
+					else
+					{
+						typec_ntc_ot_chrg_cnt = 0;
+					}
+			 	}
 				else
 				{
-					typec_ntc_ot_chrg_cnt = 0;
-				}
-			}
-			else
-			{
-				if(gd->sys_infos.ntc_temp_typec < 30)
-				{
-					if(typec_ntc_ot_chrg_cnt++>10)
+					if(gd->sys_infos.ntc_temp_typec < 30)
 					{
-						typec_ntc_charge_ot_reduce20W_flag = 0;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						if(typec_ntc_ot_chrg_cnt++>10)
+						{
+							typec_ntc_charge_ot_reduce20W_flag = 0;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
 					}
-				}
-				else
-				{
-					typec_ntc_ot_chrg_cnt = 0;
+					else
+					{
+						typec_ntc_ot_chrg_cnt = 0;
+					}
 				}
 			}
 		}
 	}
 
-
+	printk("\r\n[NTC_FLAG] tbat=%d mode=%d chg[stop=%d ut5=%d ot12=%d otfull=%d lowv=%d] dischg[lock=%d cport=%d dual=%d] tc_chg[lock=%d ot20=%d] tc_disc[lock=%d ot20=%d]",
+		bat_temp, g_buckboost.woke_mode,
+		bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
+		bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
+		gd->typec_charge_ntc_lock, typec_ntc_charge_ot_reduce20W_flag,
+		gd->typec_ntc_lock, typec_ntc_dischg_ot_reduce20W_flag);
 }
 
 
@@ -601,3 +623,37 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 		}
 	}
 }
+
+/* C 口在 SOURCE 时，bat_ntc_dual_dischg_inhibit（<0 / ≥45）禁止同时放电，仅留 C 口
+	 * 极端温度锁（≤-15 / ≥55）由 bat_ntc_dischg_lock 走 buckboost.c VBUS_FAULT_VBUS_NTC 硬锁路径 */
+void wpc_typec_cowork_otputpcheck(void)
+{
+	static uint8_t wpc_dual_temp_lock = 0;
+	if (!wpc_dual_temp_lock)
+	{
+		if (bat_ntc_dual_dischg_inhibit)
+		{
+			gd->wpc_disable = 0x01;
+			tcpm_stop_wpc(WPC_DELAY);
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
+			printk("\r\n WPC disabled: dual dischg inhibit=%d\n", bat_ntc_dual_dischg_inhibit);
+			wpc_dual_temp_lock = 1;
+		}
+	}
+	else
+	{
+		if (!bat_ntc_dual_dischg_inhibit)
+		{
+			gd->wpc_disable = 0x00;
+			printk("\r\n WPC re-enabled: dual dischg unlock\n");
+			wpc_dual_temp_lock = 0;
+		}
+	}
+	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
+		{
+			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
+			printk("\r\nTCPM_WPC_WORK_FIX5V\n");
+		}  
+}
+
+	
