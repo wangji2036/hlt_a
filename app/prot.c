@@ -116,6 +116,7 @@ int16_t fml_ntc_temp_get_typec(void)
 	else
 	{
 		vntc_buf[vntc_idx++] = hal_badc_meas(_BADC_CH_PC8_ADC5);
+		printk("_BADC_CH_PC8_ADC5=%d",hal_badc_meas(_BADC_CH_PC8_ADC5));
 	}
 
 	vntc_idx &= NTC_TEMP_BUFF_SIZE_Msk;

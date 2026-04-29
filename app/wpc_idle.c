@@ -764,40 +764,7 @@ void wpc_idle_phase_process(void)
 			wpc_dualsrc_low_soc_lock = 0;
 		}
 	}
-	/* C 口在 SOURCE 时，bat_ntc_dual_dischg_inhibit（<0 / ≥45）禁止同时放电，仅留 C 口
-	 * 极端温度锁（≤-15 / ≥55）由 bat_ntc_dischg_lock 走 buckboost.c VBUS_FAULT_VBUS_NTC 硬锁路径 */
-	static uint8_t wpc_dual_temp_lock = 0;
-	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE)
-	{
-		if (!wpc_dual_temp_lock)
-		{
-			if (bat_ntc_dual_dischg_inhibit)
-			{
-				gd->wpc_disable = 0x01;
-				tcpm_stop_wpc(WPC_DELAY);
-				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-				wpc_printk("\r\n WPC disabled: dual dischg inhibit=%d", bat_ntc_dual_dischg_inhibit);
-				wpc_dual_temp_lock = 1;
-			}
-		}
-		else
-		{
-			if (!bat_ntc_dual_dischg_inhibit)
-			{
-				gd->wpc_disable = 0x00;
-				tcpm_update_wpc_work_mode(TCPM_WPC_WORK_BOOST);
-				wpc_printk("\r\n WPC re-enabled: dual dischg unlock");
-				wpc_dual_temp_lock = 0;
-			}
-		}
-	}
-	else
-	{
-		if (wpc_dual_temp_lock)
-		{
-			wpc_dual_temp_lock = 0;
-		}
-	}
+	
 	//printk("sigle click %d \r\n",gd->sigle_clicked);
 	// if(gd->vpwr >13000){
 	// 	printk("no wpc due to vbus %d \r\n",gd->vpwr);

@@ -51,7 +51,6 @@ void apl_task_event_handler(uint32_t event)
 	{
 		case APL_EVT_250ms_POLL://250ms
 			ui_update();
-			printk("wpc_ntc_power_reduce_flag = %d\n",wpc_ntc_power_reduce_flag);
 
 #if 1
 			if (gd->atl_test_tpr1c_coil_flag != 1)

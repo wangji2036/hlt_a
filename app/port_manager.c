@@ -815,10 +815,14 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(5000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:5000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(5000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:5000*1000/g_buckboost.adc_vbus;
 	}
-	if (gd->bat_ntc_wpc_dischg_reduce_flag || gd->bat_ntc_cport_dischg_reduce_flag)
+	if (gd->bat_ntc_cport_dischg_reduce_flag)
 	{
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
+	}
+	if(bat_ntc_stop_chrg_flag ||gd->typec_charge_ntc_lock)
+	{
+		g_port.ibus_limit = 0;
 	}
 
 	if(pdlib_get_deadbat()) g_port.ibus_limit =  g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
@@ -836,10 +840,7 @@ void port_enum_port_snk_setcharge(void)
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
 	pm_printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", bat_ntc_stop_chrg_flag, bat_ntc_charge_ot_reduce12W_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
-	if(bat_ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) {
-		pm_printk("\r\n [CHRG_BLOCK] ntc_stop=%d tc_lock=%d", bat_ntc_stop_chrg_flag, gd->typec_charge_ntc_lock);
-		buckboost_ops.set_work_mode(0x00);
-	}
+
 
 	if(pdlib_is_pps_sink())
 		buckboost_ops.set_ovp(20000);
@@ -1183,6 +1184,7 @@ void port_enum_port3_connect_success(void)
 
 void port_enum_port0_connect_start(void)
 {
+	// gd->flash_times = 0;
 	pm_printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n",g_port.port_state[1],g_port.port_state[2],g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;
