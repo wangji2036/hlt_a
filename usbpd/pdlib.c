@@ -71,7 +71,7 @@ void pdlib_run(void)
 		// 优先级：C 口 bat NTC 降功率(5V/2A 严格) > typec NTC OT / wpc bat 降功率(limit) > 正常
 		if (gd->bat_ntc_cport_dischg_reduce_flag)
 			state = PDO_STATE_NTC;
-		else if (typec_ntc_dischg_ot_reduce20W_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+		else if (typec_ntc_dischg_ot_reduce20W_flag)
 			state = PDO_STATE_LIMIT;
 		else
 			state = PDO_STATE_NORMAL;
