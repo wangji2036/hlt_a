@@ -5,6 +5,9 @@
 !*/
 !*.c
 !*.h
+!*.s
+!*.S
+!*.ld
 !.cproject
 !.project
 !.gitignore
