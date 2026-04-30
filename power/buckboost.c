@@ -364,8 +364,11 @@ void buckboost_protection_handle(void)
 		gd->led_fault1 = 1;
 	}
 #if(CONFIG_USE_NTC_FOR_CHAGER == 1)
-	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag||bat_ntc_dischg_lock||bat_ntc_stop_chrg_flag||gd->typec_charge_ntc_lock) status|=VBUS_FAULT_VBUS_NTC;
-	printk("VBUS_FAULT_VBUS_NTC\n");
+	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag||bat_ntc_dischg_lock||bat_ntc_stop_chrg_flag||gd->typec_charge_ntc_lock)
+	{
+		status|=VBUS_FAULT_VBUS_NTC;
+		printk("VBUS_FAULT_VBUS_NTC\n");
+	} 
 #endif
 #endif
 	if(gd->led_fault&&!(status&0x6060)&&!gd->vbus_ovp)

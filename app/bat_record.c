@@ -238,7 +238,7 @@ static void switch_active_page(void) {
     // Reset write pointer for new page
     g_record_storage.write_ptr = 0;
 
-    br_printk_debug("\r\n[PAGE SWITCH] Switched to page %d (sequence: %d, total pages: %d)",
+    br_printk("\r\n[PAGE SWITCH] Switched to page %d (sequence: %d, total pages: %d)",
               g_record_storage.active_page, g_record_storage.page_sequence, LOG_PAGE_COUNT);
 }
 
@@ -265,7 +265,7 @@ static void save_record_to_flash(BatteryExceptionRecord_t *record, uint8_t recor
 
     // Validate record index to prevent array overflow
     if (record_index >= MAX_RECORDS_PER_PAGE) {
-        br_printk_debug("\r\n[ERROR] Invalid record_index: %d (max: %d)", record_index, MAX_RECORDS_PER_PAGE - 1);
+        br_printk("\r\n[ERROR] Invalid record_index: %d (max: %d)", record_index, MAX_RECORDS_PER_PAGE - 1);
         return;
     }
 
@@ -345,11 +345,11 @@ static void load_storage_from_flash(void) {
             page_valid[i] = true;
             page_sequences[i] = g_flash_page_buffer.page_seq;  // Read sequence number
             page_record_counts[i] = g_flash_page_buffer.page_records_count;
-            br_printk_debug("\r\n[LOAD] Page %d valid: seq=%d, count=%d",
+            br_printk("\r\n[LOAD] Page %d valid: seq=%d, count=%d",
                       i, page_sequences[i], page_record_counts[i]);
         } else if (magic_ok && !count_ok) {
             // Page has correct magic but corrupted record count - repair it
-            br_printk_debug("\r\n[LOAD] Page %d corrupted (count=%d), repairing...",
+            br_printk("\r\n[LOAD] Page %d corrupted (count=%d), repairing...",
                       i, g_flash_page_buffer.page_records_count);
 
             // Reinitialize this page
@@ -368,7 +368,7 @@ static void load_storage_from_flash(void) {
             page_sequences[i] = 0;
             page_record_counts[i] = 0;
 
-            br_printk_debug("\r\n[LOAD] Page %d repaired successfully", i);
+            br_printk("\r\n[LOAD] Page %d repaired successfully", i);
         }
     }
 
@@ -402,7 +402,7 @@ static void load_storage_from_flash(void) {
         return;
     }
 
-    br_printk_debug("\r\n[LOAD] Newest page is %d (seq=%d)", newest_page_num, newest_seq);
+    br_printk("\r\n[LOAD] Newest page is %d (seq=%d)", newest_page_num, newest_seq);
 
     // Set active page
     g_record_storage.active_page = newest_page_num;
@@ -426,7 +426,7 @@ static void load_storage_from_flash(void) {
     // Update checksum
     g_record_storage.checksum = calculate_checksum(&g_record_storage);
 
-    br_printk_debug("\r\n[LOAD] Page %d loaded, %d records (total: %d)",
+    br_printk("\r\n[LOAD] Page %d loaded, %d records (total: %d)",
               g_record_storage.active_page, g_record_storage.write_ptr, total_records);
 }
 
@@ -452,7 +452,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
     // Increment write pointer
     g_record_storage.write_ptr++;
 
-    br_printk_debug("\r\n[WRITE] Done. Next write will be at page %d, index %d",
+    br_printk("\r\n[WRITE] Done. Next write will be at page %d, index %d",
               g_record_storage.active_page, g_record_storage.write_ptr);
 
     // Check if Flash exception records are full → trigger OV_FORBID
@@ -479,7 +479,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
 
 // Migrate from old format (V5/V6) to new dual-page format (V7)
 static void migrate_old_format(void) {
-    br_printk_debug("\r\n[MIGRATE] Migrating from old format...");
+    br_printk("\r\n[MIGRATE] Migrating from old format...");
 
     // Read old format from LOG1 (assume old data was stored there)
     // Old structure: magic(4) + counter(1) + write_ptr(1) + padding(2) + records[5]*20 + checksum(2)
@@ -542,7 +542,7 @@ static void migrate_old_format(void) {
         flash_write_record(page_addrs[i], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
     }
 
-    br_printk_debug("\r\n[MIGRATE] Migration complete, %d records preserved, %d pages initialized",
+    br_printk("\r\n[MIGRATE] Migration complete, %d records preserved, %d pages initialized",
               records_to_copy, LOG_PAGE_COUNT);
 }
 
@@ -579,7 +579,7 @@ void battery_record_init(void) {
         !has_new_format) {
         // Old format detected, need migration
         need_migration = true;
-        br_printk_debug("\r\n[INIT] Old format detected, migration required");
+        br_printk("\r\n[INIT] Old format detected, migration required");
     }
     // Check for new format (V7) in any page
     else if (has_new_format) {
@@ -627,7 +627,7 @@ void battery_record_init(void) {
     if (need_migration) {
         migrate_old_format();
         g_next_record_id = 1;  /* Migration: old records may have id=0, start fresh from 1 */
-        br_printk_debug("\r\n[INIT] migrated, nxt=1");
+        br_printk("\r\n[INIT] migrated, nxt=1");
     }
 
     // Initialize fresh if needed
@@ -655,7 +655,7 @@ void battery_record_init(void) {
             flash_write_record(page_addrs[i], (uint8_t*)&g_flash_page_buffer, sizeof(FlashPageLayout_t));
         }
 
-        br_printk_debug("\r\n[INIT] All %d pages initialized", LOG_PAGE_COUNT);
+        br_printk("\r\n[INIT] All %d pages initialized", LOG_PAGE_COUNT);
     }
 
     // Reset print state before printing (ensure clean start)
@@ -990,27 +990,27 @@ static uint8_t get_total_record_count(void) {
     uint8_t total = 0;
     const uint32_t page_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
 
-    br_printk_debug("\r\n[DEBUG] get_total_record_count: MAGIC_VALUE=0x%08X", MAGIC_VALUE);
+    br_printk("\r\n[DEBUG] get_total_record_count: MAGIC_VALUE=0x%08X", MAGIC_VALUE);
 
     // Read all configured pages (only headers)
     for (uint8_t i = 0; i < LOG_PAGE_COUNT; i++) {
         flash_read_record(page_addrs[i], (uint8_t*)&page_header, sizeof(page_header));
 
-        br_printk_debug("\r\n[DEBUG] Page %d: addr=0x%04X, magic=0x%08X, count=%d",
+        br_printk("\r\n[DEBUG] Page %d: addr=0x%04X, magic=0x%08X, count=%d",
                   i, page_addrs[i], page_header.magic, page_header.page_records_count);
 
         if (page_header.magic == MAGIC_VALUE) {
             uint8_t count = (page_header.page_records_count <= MAX_RECORDS_PER_PAGE) ?
                             page_header.page_records_count : MAX_RECORDS_PER_PAGE;
             total += count;
-            br_printk_debug("\r\n[DEBUG] Page %d valid, adding %d records (total now: %d)",
+            br_printk("\r\n[DEBUG] Page %d valid, adding %d records (total now: %d)",
                       i, count, total);
         } else {
-            br_printk_debug("\r\n[DEBUG] Page %d invalid (magic mismatch)", i);
+            br_printk("\r\n[DEBUG] Page %d invalid (magic mismatch)", i);
         }
     }
 
-    br_printk_debug("\r\n[DEBUG] Final total: %d (max: %d)", total, MAX_TOTAL_RECORDS);
+    br_printk("\r\n[DEBUG] Final total: %d (max: %d)", total, MAX_TOTAL_RECORDS);
     return (total > MAX_TOTAL_RECORDS) ? MAX_TOTAL_RECORDS : total;
 }
 */
@@ -1137,7 +1137,7 @@ void battery_record_print_next_log(void) {
         if (p == active) continue;  // Skip active page (already printed)
         if (page_counts[p] == 0) continue;  // Skip empty pages
 
-        br_printk_debug("\r\n--- Page %d (LOG%d at 0x%04X): %d records (OLDER) ---",
+        br_printk("\r\n--- Page %d (LOG%d at 0x%04X): %d records (OLDER) ---",
                   p, p + 1, page_addrs[p], page_counts[p]);
 
         // Print in reverse order (newest to oldest within this page)
@@ -1201,23 +1201,23 @@ void battery_record_print_next_log(void) {
     }
 
         // Print current window tracking status (unified exception_cache)
-        br_printk_debug("\r\n\r\n=== Current Window Tracking ===");
+        br_printk("\r\n\r\n=== Current Window Tracking ===");
 
         if (g_exception_cache.ov1_triggered) {
-            br_printk_debug("\r\n[WINDOW] OV Cell1: %dmV (max in current window)",
+            br_printk("\r\n[WINDOW] OV Cell1: %dmV (max in current window)",
                 g_exception_cache.ov1_max_voltage);
         }
         if (g_exception_cache.ov2_triggered) {
-            br_printk_debug("\r\n[WINDOW] OV Cell2: %dmV (max in current window)",
+            br_printk("\r\n[WINDOW] OV Cell2: %dmV (max in current window)",
                 g_exception_cache.ov2_max_voltage);
         }
         if (g_exception_cache.temp_chg_triggered) {
-            br_printk_debug("\r\n[WINDOW] TEMP CHG: %d.%d degC (max in current window)",
+            br_printk("\r\n[WINDOW] TEMP CHG: %d.%d degC (max in current window)",
                 g_exception_cache.temp_chg_max / 10,
                 abs(g_exception_cache.temp_chg_max % 10));
         }
         if (g_exception_cache.temp_dchg_triggered) {
-            br_printk_debug("\r\n[WINDOW] TEMP DCHG: %d.%d degC (max in current window)",
+            br_printk("\r\n[WINDOW] TEMP DCHG: %d.%d degC (max in current window)",
                 g_exception_cache.temp_dchg_max / 10,
                 abs(g_exception_cache.temp_dchg_max % 10));
         }
@@ -1225,7 +1225,7 @@ void battery_record_print_next_log(void) {
         // If no active window tracking
         if (!g_exception_cache.ov1_triggered && !g_exception_cache.ov2_triggered &&
             !g_exception_cache.temp_chg_triggered && !g_exception_cache.temp_dchg_triggered) {
-            br_printk_debug("\r\n  No exceptions in current window");
+            br_printk("\r\n  No exceptions in current window");
         }
 
         br_printk("\r\n=== End of Report ===\r\n");

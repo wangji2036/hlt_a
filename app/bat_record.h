@@ -7,11 +7,6 @@
 #define BAT_LOG_DEBUG 0
 #if SUPPORT_BAT_RECORD_LOG
 	#define br_printk 	printk
-	#if BAT_LOG_DEBUG
-		#define br_printk_debug 	printk
-	#else
-	#define br_printk_debug(...)
-	#endif
 #else
 	#define br_printk(...)
 #endif
