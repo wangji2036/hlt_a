@@ -321,8 +321,6 @@ uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 	ntc |= read & 0x0F;
 
 	//hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Ntc_Setting2,&read);
-
-	printk("n read = %d\n",ntc);
 	return ntc*550/20 / 100;// in Ohm, 20uA
 }
 
