@@ -83,16 +83,16 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
 
 // Debug log switches (set to 0 to reduce Flash) -- synced with NF platform
-#define SUPPORT_BUCKBOOST_LOG           1   // buckboost.c debug logs
-#define SUPPORT_BAT_RECORD_LOG          1   // bat_record.c debug logs
+#define SUPPORT_BUCKBOOST_LOG           0   // buckboost.c debug logs
+#define SUPPORT_BAT_RECORD_LOG          0   // bat_record.c debug logs
 #define SUPPORT_GDATA_LOG               1   // g_data.c debug logs
 #define SUPPORT_MAIN_LOG                1   // main.c debug logs
 #define SUPPORT_GUI_LOG                 0   // disabled to save ROM (~1.5KB)
-#define SUPPORT_TCPM_LOG                1   // tcpm.c debug logs
+#define SUPPORT_TCPM_LOG                0   // tcpm.c debug logs
 #define SUPPORT_DPDM_LOG                1   // dpdm.c debug logs
 #define SUPPORT_PORTMGR_LOG             1   // port_manager.c debug logs
-#define SUPPORT_LED_LOG                 1   // led.c debug logs
-#define SUPPORT_WPC_LOG                 0   // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
+#define SUPPORT_LED_LOG                 0   // led.c debug logs
+#define SUPPORT_WPC_LOG                 1   // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
 #define BAT_RECORD_USE_STACK_BUFFER     0   // 0=static buffer (safe), 1=local variable (saves RAM)
 #define OVER_VOLTAGE_THRESHOLD          4450    // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS         40      // OV recovery hysteresis (mV)
