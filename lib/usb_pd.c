@@ -55,7 +55,7 @@ void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo)
 	}
 	g_usb_pd_s.src_tx_pdo_n = n_pdo;
 
-	printk("update source caps:%d\n",n_pdo);
+	usbpd_printk("update source caps:%d\n",n_pdo);
 }
 
 void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
@@ -67,7 +67,7 @@ void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
 	}
 	g_usb_pd_s.snk_tx_pdo_n = n_pdo;
 
-	printk("update sink caps:%d\n",n_pdo);
+	usbpd_printk("update sink caps:%d\n",n_pdo);
 }
 
 void usb_pd_init(void)
@@ -409,7 +409,7 @@ static void PE_SNK_Ready_Entry(void)
 		need_rechager = 0;
 	}
 
-	printk("%s\n",__func__);
+	usbpd_printk("%s\n",__func__);
 
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
@@ -460,7 +460,7 @@ static void PE_SNK_Send_Soft_Reset_Entry(void)
 	usb_pd_reset_prl();
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_SOFTRESET;
 	hal_tcpc_send_ctrl_mgs(PD_CTRL_SOFT_RESET);
-	printk("softreset reason = %d\n",softreset_reason);
+	usbpd_printk("softreset reason = %d\n",softreset_reason);
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 }
 

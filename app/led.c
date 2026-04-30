@@ -56,27 +56,27 @@ void led_open_wrd(void)
 	*TCPC_PD_OVRD_SEL = 0x0b;
 	*TCPC_PD_OVRD_CMD = 0x30;
 
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
 
 
 	*TCPC_PD_OVRD_SEL = 0x15;
 	*TCPC_PD_OVRD_CMD = 0x30;
 
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
 
 	*TCPC_PD_OVRD_SEL = 0x09;
 	*TCPC_PD_OVRD_CMD = 0x30;
 
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
 
 	*TCPC_PD_OVRD_SEL = 0x01;
 	*TCPC_PD_OVRD_CMD = 0x30;
 
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
+	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
 
 }
 

@@ -334,7 +334,7 @@ uint8_t pfod_mpla(void)
 			{
 				pfo += 250;//200;
 			}
-			printk ("\r\n pfo value %d %d", gd->rx_power,pfo);
+			wpc_printk ("\r\n pfo value %d %d", gd->rx_power,pfo);
 		}
 	}
 

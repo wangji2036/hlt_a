@@ -42,12 +42,12 @@ if(lib_para.typec_b_support)
 
 #if(CONFIG_TYPECA_SUPPORT != 1)
 	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1; // disable cc block
-	printk("\n Dis_CCA_BLOCK \n");
+	usbpd_printk("\n Dis_CCA_BLOCK \n");
 #endif
 
 #if(CONFIG_TYPECB_SUPPORT != 1)
 	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // disable cc block
-	printk("\n Dis_CCB_BLOCK \n");
+	usbpd_printk("\n Dis_CCB_BLOCK \n");
 #endif
 
 
@@ -77,7 +77,7 @@ void hal_tcpc_set_phy_port(uint8_t tc_index)
 		TCPC->PHY_CTRL.BITS.PD_CC_PORT_SEL = 0x02;
 	}
 
-	printk("pd phy sel = %d\n",tc_index);
+	usbpd_printk("pd phy sel = %d\n",tc_index);
 }
 
 void hal_tcpc_set_phy_rx_vref(enum rx_vref vref)
@@ -245,7 +245,7 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
         static uint16_t cc_diag_cnt = 0;
         if (++cc_diag_cnt >= 500) {
             cc_diag_cnt = 0;
-            printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
+            usbpd_printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
                    TCPC->CCA_ROLE.WORD, cc_status, sink, *cc1, *cc2);
         }
     }

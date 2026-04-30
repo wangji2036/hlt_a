@@ -65,7 +65,7 @@ void SLP_vNormalToSleep(void)
 {
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated) {
-		printk("[SLEEP] blocked by USB_COM mode\n");
+		sleep_printk("[SLEEP] blocked by USB_COM mode\n");
 		return;
 	}
 #endif
@@ -106,7 +106,7 @@ void SLP_vNormalToSleep(void)
 		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
-			printk("mcu reset\n");
+			sleep_printk("mcu reset\n");
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -126,7 +126,7 @@ void SLP_vNormalToSleep(void)
 		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
-			printk("mcu reset\n");
+			sleep_printk("mcu reset\n");
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -139,7 +139,7 @@ void SLP_vNormalToSleep(void)
 		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
-			printk("mcu reset\n");
+			sleep_printk("mcu reset\n");
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -152,7 +152,7 @@ void SLP_vNormalToSleep(void)
 		hal_wdt_feed();
 		if(!_KEY_LEVEL)
 		{
-			printk("mcu reset\n");
+			sleep_printk("mcu reset\n");
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);

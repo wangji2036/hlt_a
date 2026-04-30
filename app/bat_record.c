@@ -467,7 +467,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
             cycle_count_save_to_flash();
 #endif
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-            printk("[BR] EXCEPTION FULL (%d/%d) -> FORBID!\n",
+            br_printk("[BR] EXCEPTION FULL (%d/%d) -> FORBID!\n",
                    flash_total, MAX_TOTAL_RECORDS);
         }
     }
@@ -571,7 +571,7 @@ void battery_record_init(void) {
 
     bool need_init = false;
     bool need_migration = false;
-    printk("[BR-INIT] magic=%d power=%x magics=[%08X,%08X]\n",
+    br_printk("[BR-INIT] magic=%d power=%x magics=[%08X,%08X]\n",
            has_new_format, gd->power_on_magic, page_magics[0], page_magics[1]);
 
     // Check for old format (V5 or V6) in LOG1
@@ -590,11 +590,11 @@ void battery_record_init(void) {
         if (!verify_storage_checksum(&g_record_storage)) {
             // Checksum error, reinitialize
             need_init = true;
-            printk("[BR-INIT] CHECKSUM FAIL! page=%d wptr=%d cnt=%d\n",
+            br_printk("[BR-INIT] CHECKSUM FAIL! page=%d wptr=%d cnt=%d\n",
                    g_record_storage.active_page, g_record_storage.write_ptr,
                    g_record_storage.exception_counter);
         } else {
-            printk("[BR-INIT] OK page=%d wptr=%d cnt=%d\n",
+            br_printk("[BR-INIT] OK page=%d wptr=%d cnt=%d\n",
                    g_record_storage.active_page, g_record_storage.write_ptr,
                    g_record_storage.exception_counter);
             /* 从 Flash 各页扫描最大 record_id，恢复单调计数器 */
@@ -620,7 +620,7 @@ void battery_record_init(void) {
     else {
         // No valid data found, initialize fresh
         need_init = true;
-        printk("[BR-INIT] NO VALID DATA! magics=[%08X,%08X]\n", page_magics[0], page_magics[1]);
+        br_printk("[BR-INIT] NO VALID DATA! magics=[%08X,%08X]\n", page_magics[0], page_magics[1]);
     }
 
     // Perform migration if needed
@@ -678,9 +678,9 @@ void battery_record_init(void) {
         g_exception_cache.temp_chg_triggered > 1 ||
         g_exception_cache.temp_dchg_triggered > 1) {
         memset((void*)&g_exception_cache, 0, sizeof(g_exception_cache));
-        printk("[BR-INIT] cache cleared (invalid data)\n");
+        br_printk("[BR-INIT] cache cleared (invalid data)\n");
     } else {
-        printk("[BR-INIT] cache preserved (window continues)\n");
+        br_printk("[BR-INIT] cache preserved (window continues)\n");
     }
 }
 
@@ -853,7 +853,7 @@ static void process_window_end(void) {
         record.data.ov_data.total_voltage = g_exception_cache.ov1_total_voltage;
         record.record_id = 0;
         write_exception_record(&record);
-        printk("[BR] WINDOW OV Cell1: %dmV -> Flash\n", g_exception_cache.ov1_max_voltage);
+        br_printk("[BR] WINDOW OV Cell1: %dmV -> Flash\n", g_exception_cache.ov1_max_voltage);
     }
 
     if (g_exception_cache.ov2_triggered) {
@@ -865,7 +865,7 @@ static void process_window_end(void) {
         record.data.ov_data.total_voltage = g_exception_cache.ov2_total_voltage;
         record.record_id = 0;
         write_exception_record(&record);
-        printk("[BR] WINDOW OV Cell2: %dmV -> Flash\n", g_exception_cache.ov2_max_voltage);
+        br_printk("[BR] WINDOW OV Cell2: %dmV -> Flash\n", g_exception_cache.ov2_max_voltage);
     }
 
     if (g_exception_cache.temp_chg_triggered) {
@@ -877,7 +877,7 @@ static void process_window_end(void) {
         record.data.temp_data.reserved = 0;
         record.record_id = 0;
         write_exception_record(&record);
-        printk("[BR] WINDOW TEMP CHG: %d -> Flash\n", g_exception_cache.temp_chg_max);
+        br_printk("[BR] WINDOW TEMP CHG: %d -> Flash\n", g_exception_cache.temp_chg_max);
     }
 
     if (g_exception_cache.temp_dchg_triggered) {
@@ -889,7 +889,7 @@ static void process_window_end(void) {
         record.data.temp_data.reserved = 0;
         record.record_id = 0;
         write_exception_record(&record);
-        printk("[BR] WINDOW TEMP DCHG: %d -> Flash\n", g_exception_cache.temp_dchg_max);
+        br_printk("[BR] WINDOW TEMP DCHG: %d -> Flash\n", g_exception_cache.temp_dchg_max);
     }
 
     // Clear all trackers for next window
@@ -948,7 +948,7 @@ void battery_record_periodic_check(void) {
         TimeStamp_t ts;
         get_current_timestamp(&ts);
         uint32_t elapsed = current_seconds - g_exception_cache.window_start_seconds;
-        printk("RTC: %04d-%02d-%02d %02d:%02d:%02d W:%u/%ds\n",
+        br_printk("RTC: %04d-%02d-%02d %02d:%02d:%02d W:%u/%ds\n",
             ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second,
             elapsed, EXCEPTION_WINDOW_SECONDS);
     }
@@ -1305,7 +1305,7 @@ static void sleep_adc_deinit(void) {
 uint8_t battery_record_sleep_check(void) {
     uint8_t flash_written = 0;
 
-    printk("[BR-SLEEP] page=%d wptr=%d cnt=%d win=%u ov1=%d\n",
+    br_printk("[BR-SLEEP] page=%d wptr=%d cnt=%d win=%u ov1=%d\n",
            g_record_storage.active_page, g_record_storage.write_ptr,
            g_record_storage.exception_counter,
            g_exception_cache.window_start_seconds,
@@ -1322,7 +1322,7 @@ uint8_t battery_record_sleep_check(void) {
     uint16_t raw_voltage = hal_nu6801_buckboost_get_bat_voltage();
     uint16_t pc7_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
     uint16_t current_voltage = (int32_t)(raw_voltage-(pc7_mv*2-3300))>0 ? raw_voltage-(pc7_mv*2-3300) : 0;
-    printk("current_voltage:%d\n",  current_voltage);
+    br_printk("current_voltage:%d\n",  current_voltage);
     uint16_t ntc_resistance = hal_nu6801_buckboost_get_bat_temperature();
 #elif(BUCKBOOST_USED_NU6805 == 1)
     
