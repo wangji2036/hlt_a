@@ -118,6 +118,15 @@ void update_scp_reg(void)
 
 }
 
+static uint8_t scp_clip_copy_len(uint8_t reg, uint8_t len, uint8_t payload_max)
+{
+	uint16_t remain = sizeof(SCP_REG) - reg;
+	if (len > payload_max) len = payload_max;
+	if (len > remain) len = (uint8_t)remain;
+	return len;
+}
+
+
 
 void fcp_single_read_handle(void)
 {
@@ -241,8 +250,8 @@ void fcp_single_write_handle(void)
 void fcp_multi_read_handle(void)
 {
 	update_scp_reg();
-	union scp_packet_t pkt;
-	uint8_t copy_len = scp_packet.bytes.msg_2 > 10? 10: scp_packet.bytes.msg_2;
+	union scp_packet_t pkt = {{0}};
+	uint8_t copy_len = scp_clip_copy_len(scp_packet.bytes.msg_1, scp_packet.bytes.msg_2, 10);
 	osal_mem_copy(&pkt.bytes.msg_1,&SCP_REG[scp_packet.bytes.msg_1],copy_len); //msg:0  1c  1: reg 2: len 3...: data
 	if(lib_para.fcp_source_support)
 	{
@@ -263,7 +272,7 @@ void fcp_multi_read_handle(void)
 			}
 			else
 			{
-				pkt.bytes.msg_len = scp_packet.bytes.msg_2 + 1;
+				pkt.bytes.msg_len = copy_len + 1;
 				pkt.bytes.msg_0 = FCP_ACK;
 				DPDM->AFC_TX_2.WORD = pkt.words[2];
 				DPDM->AFC_TX_1.WORD = pkt.words[1];
@@ -277,7 +286,7 @@ void fcp_multi_read_handle(void)
 		}
 		else
 		{
-			pkt.bytes.msg_len = scp_packet.bytes.msg_2 + 1;
+			pkt.bytes.msg_len = copy_len + 1;
 			pkt.bytes.msg_0 = FCP_ACK;
 			DPDM->AFC_TX_2.WORD = pkt.words[2];
 			DPDM->AFC_TX_1.WORD = pkt.words[1];
@@ -300,7 +309,7 @@ void fcp_multi_write_handle(void)
 	scp_tx.words[0] = ( (FCP_ACK << 8) | 0x01);
 	scp_tx.words[1] = 00;
 	scp_tx.words[2] = 00;
-	uint8_t copy_len = scp_packet.bytes.msg_2 > 10? 10: scp_packet.bytes.msg_2;
+	uint8_t copy_len = scp_clip_copy_len(scp_packet.bytes.msg_1, scp_packet.bytes.msg_2, 8);
 	osal_mem_copy(&SCP_REG[scp_packet.bytes.msg_1],&scp_packet.bytes.msg_3,copy_len);//msg 0:1b  1:reg  2:len  3...: data
 
 	switch(scp_packet.bytes.msg_1)

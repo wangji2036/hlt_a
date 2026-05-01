@@ -6,6 +6,9 @@
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
+uint8_t g_forbid_bypass_flag;
+uint8_t g_soc_sleep_backup;
+uint8_t g_soc_backup_magic;
 
 /* Save buffer for hot start (sleep wakeup) recovery */
 uint8_t saved_exception_cache[sizeof(ap->exception_cache)];
@@ -238,14 +241,14 @@ void gd_data_init(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 		gd->usb_comm_activated = 0;
 #endif
-		if (gd->soc_backup_magic == 0x5A && gd->soc_sleep_backup <= 100) {
-			gd->real_soc_show = gd->soc_sleep_backup;
+		if (g_soc_backup_magic == 0x5A && g_soc_sleep_backup <= 100) {
+			gd->real_soc_show = g_soc_sleep_backup;
 			gd->real_soc_obtained = 1;
 		} else {
 			gd->real_soc_show = 0;
 			gd->real_soc_obtained = 0;
 		}
-		gd->soc_backup_magic = 0;  // one-shot: clear after use
+		g_soc_backup_magic = 0;  // one-shot: clear after use
 		gd->bat_dead_flag = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;
@@ -270,7 +273,6 @@ void gd_data_init(void)
 		gd->Battery_charger_cnt = 0;
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;
-		gd->bat_uv_forbid_flag = 0;
 		gd->exception_sleep_counter = 0;
 		gd->eng_mode_active = 0;
 		gd->eng_virtual_cell1 = 0xFFFF;
@@ -320,7 +322,7 @@ void gd_data_init(void)
 		gd->Bat_RTC_Timer = 0;
 		gd->wpc_sleepship = 0;
 		osal_mem_set(&(gd->g_bat), 0, sizeof(struct bat_info));
-		gd->forbid_bypass_flag = 0;
+		g_forbid_bypass_flag = 0;
 		osal_mem_set((&g_bat),0,sizeof(struct bat_info));
 #if CONFIG_NEW_CCC_LOG_ENABLE
 		gd->Bat_RTC_Seconds = get_default_rtc_seconds();  // Initialize with default time

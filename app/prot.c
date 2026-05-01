@@ -843,7 +843,7 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 /*+++++++++++++++++++++++++++++++++++++++++++ BAT_OV_FORBID +++++++++++++++++++++++++++++++++++++++*/
 void fml_bat_ov_forbid_check(void) {
     static uint8_t ov_forbid_consec_cnt = 0;
-    // if (gd->forbid_bypass_flag) return;
+    // if (g_forbid_bypass_flag) return;
 	printk("gd->bat_ov_forbid_flag=%d\n",gd->bat_ov_forbid_flag);
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
@@ -903,43 +903,3 @@ void fml_bat_ov_forbid_check(void) {
     }
 }
 /*------------------------------------------- BAT_OV_FORBID --------------------------------------*/
-
-/*+++++++++++++++++++++++++++++++++++++++++++ BAT_UV_FORBID +++++++++++++++++++++++++++++++++++++++*/
-void fml_bat_uv_forbid_check(void) {
-    static uint8_t uv_forbid_consec_cnt = 0;
-    static uint8_t uv_log_cnt = 0;
-    uint8_t do_log = (++uv_log_cnt >= 100);
-    if (do_log) uv_log_cnt = 0;
-
-    if (gd->forbid_bypass_flag) return;
-
-    if (gd->bat_uv_forbid_flag) {
-        if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
-            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-        }
-        if (do_log) printk("\r\n[UV_FORBID] Active (flag=1)");
-        return;
-    }
-
-    uint16_t cell1 = g_buckboost.adc_vcell1;
-    uint16_t cell2 = g_buckboost.adc_vcell2;
-    uint16_t total = cell1 + cell2;
-    if (total == 0) return;
-    uint16_t min_cell = (cell1 < cell2) ? cell1 : cell2;
-
-    if (do_log) printk("\r\n[UV_CHK] c1=%d c2=%d t=%d min=%d", cell1, cell2, total, min_cell);
-
-    if (min_cell > 0 && min_cell <= UNDER_VOLTAGE_FORBID_THRESHOLD) {
-        uv_forbid_consec_cnt++;
-        printk("\r\n[UV_FORBID] %dmV <= %dmV, cnt=%d",
-               min_cell, UNDER_VOLTAGE_FORBID_THRESHOLD, uv_forbid_consec_cnt);
-        if (uv_forbid_consec_cnt >= UV_FORBID_CONSEC_COUNT) {
-            gd->bat_uv_forbid_flag = 1;
-            printk("\r\n[UV_FORBID] TRIGGERED! Forbidden until power cycle.");
-            buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-        }
-    } else {
-        uv_forbid_consec_cnt = 0;
-    }
-}
-/*------------------------------------------- BAT_UV_FORBID --------------------------------------*/

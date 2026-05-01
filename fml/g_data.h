@@ -578,7 +578,6 @@ struct gd_t
 	 uint8_t Bat_Rdc;
 	 int8_t Bat_SoH;
 	 uint8_t bat_ov_forbid_flag;   // OV Forbid: 1=permanent shutdown (GB31241 3C)
-	 uint8_t bat_uv_forbid_flag;   // UV Forbid: 1=permanent shutdown (GB31241), cleared by power cycle
 	 uint8_t  exception_sleep_counter;  // Sleep cycles counter for exception tracking
 	 uint8_t  eng_mode_active;     // Engineering mode flag (1=active)
 	 uint16_t eng_virtual_cell1;   // Virtual Cell1 voltage (0xFFFF=no override)
@@ -615,9 +614,6 @@ struct gd_t
 	 uint8_t fault_status;
 	 uint8_t wpc_sleepship;
 	 struct bat_info g_bat;
-	 uint8_t forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed (persistent across sleep)
-	 uint8_t soc_sleep_backup;       // SOC value saved before entering sleep (0-100)
-	 uint8_t soc_backup_magic;       // 0x5A = backup valid, any other = invalid
 
 
 };
@@ -634,6 +630,9 @@ struct lib_para_sts{
 
 extern volatile struct ap_t *ap;
 extern volatile struct gd_t *gd;
+extern uint8_t g_forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed
+extern uint8_t g_soc_sleep_backup;     // SOC value saved before entering sleep (0-100)
+extern uint8_t g_soc_backup_magic;     // 0x5A = backup valid, any other = invalid
 
 void ap_data_init(void);
 void lib_para_init(void);

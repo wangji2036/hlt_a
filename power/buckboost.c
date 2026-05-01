@@ -261,13 +261,12 @@ void buckboost_protection_handle(void)
 	
 	bb_printk("Flaut State = 0x%x\n",status);
 	bb_printk("vbus = %d\n",g_buckboost.adc_vbus);
-	bb_printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d uv_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
+	bb_printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
 		g_buckboost.woke_mode,
 		g_buckboost.set_typeca_gate_en,
 		g_buckboost.set_typecb_gate_en,
 		gd->bat_ov_forbid_flag,
-		gd->bat_uv_forbid_flag,
-		gd->forbid_bypass_flag,
+		g_forbid_bypass_flag,
 		g_buckboost.adc_ibat,
 		g_buckboost.adc_ibus,
 		g_buckboost.adc_vbat,

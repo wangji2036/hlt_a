@@ -48,6 +48,7 @@ static union usb_pd_timer_u usb_pd_timers[USBPD_TIMER_MAX];
 
 void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo)
 {
+	if (n_pdo > 7) n_pdo = 7;
 	osal_mem_clear((void*)g_usb_pd_s.src_source_pdo,28);
 	for(uint8_t i = 0; i< n_pdo;i++)
 	{
@@ -60,6 +61,7 @@ void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo)
 
 void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
 {
+	if (n_pdo > 7) n_pdo = 7;
 	osal_mem_clear((void*)g_usb_pd_s.snk_sink_pdo,28);
 	for(uint8_t i = 0; i< n_pdo;i++)
 	{
@@ -2511,7 +2513,10 @@ void __attribute__((isr)) USBPD_IRQHandler(void)
 
 		if(int_flag & (0x01<<5))
 		{
-			pd_rx_buff[rx_cnt&0x07] = TCPC->RXD_BUFF.WORD;
+			if (rx_cnt < (sizeof(pd_rx_buff) / sizeof(pd_rx_buff[0])))
+			{
+				pd_rx_buff[rx_cnt] = TCPC->RXD_BUFF.WORD;
+			}
 			rx_cnt++;
 			TCPC->INT_FLAG.BITS.PHY_RX_BUFF_UPDAT_FLAG = 0x01;
 		}

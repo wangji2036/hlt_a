@@ -165,7 +165,7 @@ void apl_task_event_handler(uint32_t event)
 		        {
 		            if (u16IsnsTmp[j] < u16IsnsTmp[j + 1])
 		            {
-		            	uint8_t temp = u16IsnsTmp[j];
+		            uint16_t temp = u16IsnsTmp[j];
 		            	u16IsnsTmp[j] = u16IsnsTmp[j + 1];
 		            	u16IsnsTmp[j + 1] = temp;
 		            }

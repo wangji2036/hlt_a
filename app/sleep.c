@@ -69,8 +69,8 @@ void SLP_vNormalToSleep(void)
 		return;
 	}
 #endif
-	gd->soc_sleep_backup = gd->real_soc_show;
-	gd->soc_backup_magic = 0x5A;
+	g_soc_sleep_backup = gd->real_soc_show;
+	g_soc_backup_magic = 0x5A;
 	VIC_vModuleDisable();
 	sleep_printk("\r\n enter sleep");
 	hal_wdt_feed();

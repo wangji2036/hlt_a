@@ -809,7 +809,7 @@ void wpc_idle_phase_process(void)
 	if(wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01||gd->wirless_ntc_lock||gd->bat_ntc_lock_flag) return;
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 		gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||
-		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag || gd->bat_ov_forbid_flag || gd->bat_uv_forbid_flag)
+		gd->prot_sts.vpwr_ovp_flag || gd->prot_sts.pout_opp_flag || gd->bat_ov_forbid_flag)
 	{
 		wpc_printk("\r\n system protection ");
 		if (gd->prot_sts.tntc_otp_flag) wpc_printk("[tntc_otp:%d]", gd->sys_infos.ntc_temp_wpc);
@@ -823,7 +823,6 @@ void wpc_idle_phase_process(void)
 		if (gd->prot_sts.vpwr_ovp_flag) wpc_printk("[vpwr_ovp:%d]", gd->vpwr);
 		if (gd->prot_sts.pout_opp_flag) wpc_printk("[pout_opp:%d %d]", gd->vpwr, gd->isns);
 		if (gd->bat_ov_forbid_flag) wpc_printk("[bat_ov_forbid]");
-		if (gd->bat_uv_forbid_flag) wpc_printk("[bat_uv_forbid]");
 		return;
 	}
 
