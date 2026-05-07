@@ -71,7 +71,7 @@
  * 		  - PIN0: input enable, output disable, output value 0, open drain enable, pull-up disable, pull-down disable, mode 00:SCL1_S
  * 		  - PIN1: input enable, output disable, output value 0, open drain enable, pull-up disable, pull-down disable, mode 00:SDA1_S, interrupt disable, trigger type 00:Falling Edge
  * 		  - PIN4: input disable, output enable, output value 0, open drain disable, pull-up disable, pull-down disable, mode 00:PA4
- * 		  - PIN5: input disable, output enable, output value 0, open drain disable, pull-up disable, pull-down disable, mode 00:PA5	, interrupt disable, trigger type 00:Falling Edge
+ * 		  - PIN5: LED6 GPIO output, output value 1, open drain disable, pull-up disable, pull-down disable, mode 00:PA5	, interrupt disable, trigger type 00:Falling Edge
  * 		  - PIN6: input disable, output enable, output value 1, open drain disable, pull-up disable, pull-down disable, mode 00:PA6
  * 		  - PIN7: input disable, output enable, output value 1, open drain disable, pull-up disable, pull-down disable, mode 00:PA7
  * 		  - PB0:  input disable, output enable, output value 0, open drain disable, pull-up disable, pull-down disable, mode 00:PB0
@@ -124,27 +124,14 @@ void hal_gpio_init(void)
 		GPA->MODE.BITS.PIN4 = 0; //00:PA4 01:SDA3_S 10:RESERVED 11:RESERVED
 	}
 
-	/* PA5 */
-	if (SYS->PID_INFO.BITS.PID == NU17111)
-	{
-		GPA->I_EN.BITS.PIN5 = 0;
-		GPA->O_EN.BITS.PIN5 = 1;
-		GPA->DOUT.BITS.PIN5 = 1;
-		GPA->ODEN.BITS.PIN5 = 0;
-		GPA->PUEN.BITS.PIN5 = 0;
-		GPA->PDEN.BITS.PIN5 = 0;
-		GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
-	}
-	else
-	{
-		GPA->I_EN.BITS.PIN5 = 1;
-		GPA->O_EN.BITS.PIN5 = 0;
-		GPA->DOUT.BITS.PIN5 = 0;
-		GPA->ODEN.BITS.PIN5 = 0;
-		GPA->PUEN.BITS.PIN5 = 0;
-		GPA->PDEN.BITS.PIN5 = 0;
-		GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
-	}
+	/* PA5 - LED6 GPIO output (active-low, HIGH = off) */
+	GPA->I_EN.BITS.PIN5 = 1;
+	GPA->O_EN.BITS.PIN5 = 0;
+	GPA->DOUT.BITS.PIN5 = 0;
+	GPA->ODEN.BITS.PIN5 = 0;
+	GPA->PUEN.BITS.PIN5 = 0;
+	GPA->PDEN.BITS.PIN5 = 0;
+	GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
 
 	/* PA6 */
 	GPA->I_EN.BITS.PIN6 = 0;
@@ -403,14 +390,14 @@ void hal_gpio_init(void)
 	GPD->ITEN.BITS.PIN1 = 0;
 	GPD->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
 
-	/* PD2 — LED6 GPIO output */
+	/* PD2 */
 	GPD->I_EN.BITS.PIN2 = 0;
-	GPD->O_EN.BITS.PIN2 = 1;
+	GPD->O_EN.BITS.PIN2 = 0;
 	GPD->DOUT.BITS.PIN2 = 0;
 	GPD->ODEN.BITS.PIN2 = 0;
 	GPD->PUEN.BITS.PIN2 = 0;
 	GPD->PDEN.BITS.PIN2 = 0;
-	GPD->MODE.BITS.PIN2 = 1; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED (LED6 GPIO)
+	GPD->MODE.BITS.PIN2 = 0; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED
 
 	/* PD3 — BADC9: VBAT- 负压采样（1M→VDD + 2M→VBAT-, V_pin = (VDD×2+VBAT-)/3） */
 	GPD->I_EN.BITS.PIN3 = 1;
@@ -476,27 +463,14 @@ void hal_gpio_init_default(void)
 		GPA->MODE.BITS.PIN4 = 0; //00:PA4 01:SDA3_S 10:RESERVED 11:RESERVED
 	}
 
-	/* PA5 */
-	if (SYS->PID_INFO.BITS.PID == NU17111)
-	{
-		GPA->I_EN.BITS.PIN5 = 0;//0;
-		GPA->O_EN.BITS.PIN5 = 0;//1;
-		GPA->DOUT.BITS.PIN5 = 0;//1;
-		GPA->ODEN.BITS.PIN5 = 0;//0;
-		GPA->PUEN.BITS.PIN5 = 0;//0;
-		GPA->PDEN.BITS.PIN5 = 0;
-		GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
-	}
-	else
-	{
-		GPA->I_EN.BITS.PIN5 = 0;//0;
-		GPA->O_EN.BITS.PIN5 = 0;//1;
-		GPA->DOUT.BITS.PIN5 = 0;
-		GPA->ODEN.BITS.PIN5 = 0;
-		GPA->PUEN.BITS.PIN5 = 0;
-		GPA->PDEN.BITS.PIN5 = 0;
-		GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
-	}
+	/* PA5 - LED6 sleep off (active-low, HIGH = off) */
+	GPA->I_EN.BITS.PIN5 = 0;
+	GPA->O_EN.BITS.PIN5 = 1;
+	GPA->DOUT.BITS.PIN5 = 1;
+	GPA->ODEN.BITS.PIN5 = 0;
+	GPA->PUEN.BITS.PIN5 = 0;
+	GPA->PDEN.BITS.PIN5 = 0;
+	GPA->MODE.BITS.PIN5 = 0; //00:PA5 01:SCL3_S 10:LS_ISNS_PGA_N 11:RESERVED
 
 	/* PA6 */
 	GPA->I_EN.BITS.PIN6 = 0;//0;
@@ -753,11 +727,11 @@ void hal_gpio_init_default(void)
 	GPD->ITEN.BITS.PIN1 = 0;
 	GPD->ITTP.BITS.PIN1 = 0; //00:Falling Edge 01:Rising Edge 1x:both edge
 
-	/* PD2 — sleep: LED6 输出 HIGH 关灯 */
+	/* PD2 */
 	GPD->I_EN.BITS.PIN2 = 0;
-	GPD->O_EN.BITS.PIN2 = 1;
-	GPD->DOUT.BITS.PIN2 = 1; // HIGH to turn off LED (active-low)
-	GPD->MODE.BITS.PIN2 = 1; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED (LED6 sleep)
+	GPD->O_EN.BITS.PIN2 = 0;
+	GPD->DOUT.BITS.PIN2 = 0;
+	GPD->MODE.BITS.PIN2 = 0; //00:CC1_L 01:PD2 10:ECAP3 11:RESERVED
 
 	/* PD3 */
 	GPD->I_EN.BITS.PIN3 = 0;//0;

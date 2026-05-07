@@ -14,7 +14,7 @@
 #define _UI_PIN3_PORT     GPC
 #define _UI_PIN4_PORT     GPC
 #define _UI_PIN5_PORT     GPB
-#define _UI_PIN6_PORT     GPD
+#define _UI_PIN6_PORT     GPA
 
 #define PORT_GPA          GPA
 #define PORT_GPB          GPB
@@ -24,7 +24,7 @@
 #define _UI_PIN3_PINx     PIN4
 #define _UI_PIN4_PINx     PIN3
 #define _UI_PIN5_PINx     PIN3
-#define _UI_PIN6_PINx     PIN2
+#define _UI_PIN6_PINx     PIN5
 
 #define _KEY_PORT    GPC
 #define _KEY_PINx    PIN6

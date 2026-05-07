@@ -48,44 +48,6 @@ static uint32_t soc_show_ram = 0;//temporary variable, where each bit is used to
 
 static uint8_t ui_no_timer_scan = 0;
 
-void led_open_wrd(void)
-{
-	uint32_t *TCPC_PD_OVRD_SEL = (uint32_t *)(0x40002000 + 0x0054);
-	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
-
-	*TCPC_PD_OVRD_SEL = 0x0b;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-
-	*TCPC_PD_OVRD_SEL = 0x15;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-	*TCPC_PD_OVRD_SEL = 0x09;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-	*TCPC_PD_OVRD_SEL = 0x01;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	led_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-}
-
-void led_close_wrd(void)
-{
-	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
-
-	*TCPC_PD_OVRD_CMD = 0x80;
-}
 static void drv_IO_control(uint8_t pinx, bool status)
 {
 	switch (pinx)
@@ -119,15 +81,9 @@ static void drv_IO_control(uint8_t pinx, bool status)
 		_UI_PIN1_PORT-> O_EN.BITS._UI_PIN1_PINx = 1;
 		break;
 	case 6:
-		/* PD2 = LED6 (wireless charging), MODE must be 1 for GPIO */
-		if(status == true)
-		{
-			led_close_wrd();
-		}
-		else
-		{
-			led_open_wrd();
-		}
+		_UI_PIN6_PORT->I_EN.BITS._UI_PIN6_PINx = 0;
+		_UI_PIN6_PORT->DOUT.BITS._UI_PIN6_PINx = status;
+		_UI_PIN6_PORT-> O_EN.BITS._UI_PIN6_PINx = 1;
 		break;
     default:
 		break;
