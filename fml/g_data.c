@@ -7,8 +7,6 @@
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
 uint8_t g_forbid_bypass_flag;
-uint8_t g_soc_sleep_backup;
-uint8_t g_soc_backup_magic;
 
 /* Save buffer for hot start (sleep wakeup) recovery */
 uint8_t saved_exception_cache[sizeof(ap->exception_cache)];
@@ -241,14 +239,8 @@ void gd_data_init(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 		gd->usb_comm_activated = 0;
 #endif
-		if (g_soc_backup_magic == 0x5A && g_soc_sleep_backup <= 100) {
-			gd->real_soc_show = g_soc_sleep_backup;
-			gd->real_soc_obtained = 1;
-		} else {
-			gd->real_soc_show = 0;
-			gd->real_soc_obtained = 0;
-		}
-		g_soc_backup_magic = 0;  // one-shot: clear after use
+		gd->real_soc_show = 0;
+		gd->real_soc_obtained = 0;
 		gd->bat_dead_flag = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;

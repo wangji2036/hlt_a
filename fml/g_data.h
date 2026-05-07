@@ -631,8 +631,6 @@ struct lib_para_sts{
 extern volatile struct ap_t *ap;
 extern volatile struct gd_t *gd;
 extern uint8_t g_forbid_bypass_flag;   // 4-click toggle: 1=OV/UV forbid bypassed
-extern uint8_t g_soc_sleep_backup;     // SOC value saved before entering sleep (0-100)
-extern uint8_t g_soc_backup_magic;     // 0x5A = backup valid, any other = invalid
 
 void ap_data_init(void);
 void lib_para_init(void);
