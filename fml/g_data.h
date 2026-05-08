@@ -614,6 +614,7 @@ struct gd_t
 	 uint8_t fault_status;
 	 uint8_t wpc_sleepship;
 	 struct bat_info g_bat;
+	 uint8_t key_sleep_exit;
 
 
 };

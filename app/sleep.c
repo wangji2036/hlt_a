@@ -105,6 +105,7 @@ void SLP_vNormalToSleep(void)
 		if(!_KEY_LEVEL)
 		{
 			sleep_printk("mcu reset\n");
+			gd->key_sleep_exit = 1;
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -125,6 +126,7 @@ void SLP_vNormalToSleep(void)
 		if(!_KEY_LEVEL)
 		{
 			sleep_printk("mcu reset\n");
+			gd->key_sleep_exit = 1;
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -138,6 +140,7 @@ void SLP_vNormalToSleep(void)
 		if(!_KEY_LEVEL)
 		{
 			sleep_printk("mcu reset\n");
+			gd->key_sleep_exit = 1;
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -151,6 +154,7 @@ void SLP_vNormalToSleep(void)
 		if(!_KEY_LEVEL)
 		{
 			sleep_printk("mcu reset\n");
+			gd->key_sleep_exit = 1;
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 		}
 		delay_1ms(10);
@@ -1223,7 +1227,8 @@ void RST_vCheck(void)
 			case RST_SRC_WARMUP_DONE:
 			default:
 				sleep_printk("\r\n wake_up");
-				gd->power_on_magic = 0x00;  /* 清除 magic，gd_data_init() 将走冷启动分支 */
+				if(!gd->key_sleep_exit) gd->power_on_magic = 0x00;  /* 清除 magic，gd_data_init() 将走冷启动分支 */
+				gd->key_sleep_exit = 0;
 				sleep_printk("sleep power on\n");
 				break;
 

@@ -348,6 +348,7 @@ void gd_data_init(void)
 
 	osal_mem_copy(&(g_bat),(const void *)&(gd->g_bat),sizeof(struct bat_info));
 	g_bat.bat_soe_in_cali = false;
+	gd->key_sleep_exit = 0;
 	gd->power_on_magic = 0xaaaa;
 
 	gdata_printk("\r\n light [%d %d]", gd->tc0_lighting_mode,gd->tc1_lighting_mode);
