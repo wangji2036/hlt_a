@@ -19,6 +19,53 @@ static uint8_t bat_level_end = 0;
 
 struct bat_info g_bat;
 
+#define BAT_CFG_WORD_COUNT 7
+#define BAT_ENERGY_TOTAL_FLASH_WORD 2
+#define BAT_ENERGY_TOTAL_CHECK_FLASH_WORD 3
+
+static void bat_energy_save_to_flash(int32_t bat_energy_total)
+{
+    uint32_t cfg[BAT_CFG_WORD_COUNT];
+
+    for (uint8_t i = 0; i < BAT_CFG_WORD_COUNT; i++)
+    {
+        cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
+    }
+
+    cfg[BAT_ENERGY_TOTAL_FLASH_WORD] = (uint32_t)bat_energy_total;
+    cfg[BAT_ENERGY_TOTAL_CHECK_FLASH_WORD] = (uint32_t)(~bat_energy_total);
+
+    hal_fmc_erase_page(AP_CFG_ROM_ADDR_BASE);
+    for (uint8_t i = 0; i < BAT_CFG_WORD_COUNT; i++)
+    {
+        hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
+    }
+}
+
+static uint8_t bat_energy_load_from_flash(int32_t *bat_energy_total)
+{
+    int32_t flash_bat_energy_total = *(int32_t *)(AP_CFG_ROM_ADDR_BASE + BAT_ENERGY_TOTAL_FLASH_OFFSET);
+    int32_t flash_bat_energy_total_check = *(int32_t *)(AP_CFG_ROM_ADDR_BASE + BAT_ENERGY_TOTAL_CHECK_FLASH_OFFSET);
+
+    if (flash_bat_energy_total == ~flash_bat_energy_total_check && flash_bat_energy_total != -1)
+    {
+        *bat_energy_total = flash_bat_energy_total;
+        return 1;
+    }
+
+    flash_bat_energy_total = *(int32_t *)(BAT_ADDR_BASE);
+    flash_bat_energy_total_check = *(int32_t *)(BAT_ADDR_BASE + 4);
+    if (flash_bat_energy_total == ~flash_bat_energy_total_check && flash_bat_energy_total != -1)
+    {
+        *bat_energy_total = flash_bat_energy_total;
+        bat_energy_save_to_flash(flash_bat_energy_total);
+        return 1;
+    }
+
+    *bat_energy_total = flash_bat_energy_total;
+    return 0;
+}
+
 void nano_battery_ocv_handle(void);
 void nano_battery_soe_handle(void);
 void nano_battery_ui_handle(void);
@@ -77,39 +124,8 @@ void nano_battery_soe_handle(void)
             g_bat.bat_soe_calied = true;
 
             int32_t flash_bat_energy_total = g_bat.bat_energy_total;
-            int32_t flash_bat_energy_total_check = ~flash_bat_energy_total;
 
-            /* Read-Modify-Write: BAT_ADDR_BASE (0x1900) shares the 0x1800 flash page
-             * with ProductInfo. Must preserve the entire page. */
-            {
-                extern uint8_t g_page_1800_buf[512];
-                uint16_t i;
-                for (i = 0; i < 512; i++) {
-                    g_page_1800_buf[i] = __read_08bits(AP_CFG_ROM_ADDR_PRO_INFO + i);
-                }
-
-                /* Modify BAT energy at offset 0x100 (0x1900 - 0x1800) within page */
-                uint16_t bat_offset = BAT_ADDR_BASE - AP_CFG_ROM_ADDR_PRO_INFO;
-                int32_t u32Tmp = switch_big_little_endian(flash_bat_energy_total);
-                g_page_1800_buf[bat_offset + 0] = (uint8_t)(u32Tmp >> 24);
-                g_page_1800_buf[bat_offset + 1] = (uint8_t)(u32Tmp >> 16);
-                g_page_1800_buf[bat_offset + 2] = (uint8_t)(u32Tmp >> 8);
-                g_page_1800_buf[bat_offset + 3] = (uint8_t)(u32Tmp);
-                u32Tmp = switch_big_little_endian(flash_bat_energy_total_check);
-                g_page_1800_buf[bat_offset + 4] = (uint8_t)(u32Tmp >> 24);
-                g_page_1800_buf[bat_offset + 5] = (uint8_t)(u32Tmp >> 16);
-                g_page_1800_buf[bat_offset + 6] = (uint8_t)(u32Tmp >> 8);
-                g_page_1800_buf[bat_offset + 7] = (uint8_t)(u32Tmp);
-
-                hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
-                for (i = 0; i < 512; i += 4) {
-                    uint32_t word = ((uint32_t)g_page_1800_buf[i] << 24) |
-                                    ((uint32_t)g_page_1800_buf[i+1] << 16) |
-                                    ((uint32_t)g_page_1800_buf[i+2] << 8) |
-                                    (uint32_t)g_page_1800_buf[i+3];
-                    hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, word);
-                }
-            }
+            bat_energy_save_to_flash(flash_bat_energy_total);
 
             printk("update bat = %d\n", flash_bat_energy_total);
         }
@@ -120,9 +136,8 @@ void nano_battery_soe_handle(void)
         else
         {
 
-            int32_t flash_bat_energy_total = *(int32_t *)(BAT_ADDR_BASE);
-            int32_t flash_bat_energy_total_check = *(int32_t *)(BAT_ADDR_BASE + 4);
-            if (flash_bat_energy_total == ~flash_bat_energy_total_check && flash_bat_energy_total != 0xFFFFFFFF)
+            int32_t flash_bat_energy_total;
+            if (bat_energy_load_from_flash(&flash_bat_energy_total))
             {
                 g_bat.bat_energy_total = flash_bat_energy_total;
                 g_bat.bat_energy_current = g_bat.bat_energy_total;

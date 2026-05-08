@@ -67,7 +67,7 @@ static uint32_t get_default_rtc_seconds(void) {
 #include "fmc.h"
 void cycle_count_save_to_flash(void)
 {
-    /* Read all 7 words from config page, update forbid + cycle count + Vref, write back */
+    /* Preserve Q/F and battery energy while updating OV forbid, cycle count, and Vref. */
     uint32_t cfg[7];
     for (uint8_t i = 0; i < 7; i++)
         cfg[i] = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + i * 4);
@@ -440,40 +440,34 @@ void product_info_read(ProductInfo_t *info) {
 	}
 }
 
-uint8_t g_page_1800_buf[512];
-
 void product_info_write(const ProductInfo_t *info) {
 	uint16_t i;
+	const uint8_t *src_data;
+	uint16_t write_size;
 
-	// 1. Read entire 512-byte page (0x1800-0x19FF) to preserve BAT_ADDR_BASE data
-	for (i = 0; i < 512; i++) {
-		g_page_1800_buf[i] = __read_08bits(AP_CFG_ROM_ADDR_PRO_INFO + i);
-	}
+	if (info == NULL) return;
 
-	// 2. Modify only the product info portion (offset 0, sizeof(ProductInfo_t) bytes)
-	const uint8_t *src_data = (const uint8_t *)info;
-	for (i = 0; i < sizeof(ProductInfo_t); i++) {
-		g_page_1800_buf[i] = src_data[i];
-	}
+	VIC_vModuleDisable();
 
-	// 3. Write version marker at offset 120 (ADDR_PRODUCT_INFO_VERSION - AP_CFG_ROM_ADDR_PRO_INFO)
-	uint16_t ver_offset = ADDR_PRODUCT_INFO_VERSION - AP_CFG_ROM_ADDR_PRO_INFO;
-	g_page_1800_buf[ver_offset + 0] = (uint8_t)(PRODUCT_INFO_VERSION >> 0);
-	g_page_1800_buf[ver_offset + 1] = (uint8_t)(PRODUCT_INFO_VERSION >> 8);
-	g_page_1800_buf[ver_offset + 2] = (uint8_t)(PRODUCT_INFO_VERSION >> 16);
-	g_page_1800_buf[ver_offset + 3] = (uint8_t)(PRODUCT_INFO_VERSION >> 24);
-
-	// 4. Erase page
 	hal_fmc_erase_page(AP_CFG_ROM_ADDR_PRO_INFO);
 
-	// 5. Write back all 512 bytes in big-endian word format
-	for (i = 0; i < 512; i += 4) {
-		uint32_t word = ((uint32_t)g_page_1800_buf[i] << 24) |
-		                ((uint32_t)g_page_1800_buf[i+1] << 16) |
-		                ((uint32_t)g_page_1800_buf[i+2] << 8) |
-		                (uint32_t)g_page_1800_buf[i+3];
+	src_data = (const uint8_t *)info;
+	write_size = (sizeof(ProductInfo_t) + 3) & ~3u;
+
+	for (i = 0; i < write_size; i += 4) {
+		uint32_t word;
+		uint8_t b0 = (i     < sizeof(ProductInfo_t)) ? src_data[i]     : 0;
+		uint8_t b1 = (i + 1 < sizeof(ProductInfo_t)) ? src_data[i + 1] : 0;
+		uint8_t b2 = (i + 2 < sizeof(ProductInfo_t)) ? src_data[i + 2] : 0;
+		uint8_t b3 = (i + 3 < sizeof(ProductInfo_t)) ? src_data[i + 3] : 0;
+		word = ((uint32_t)b0 << 24) | ((uint32_t)b1 << 16) |
+		       ((uint32_t)b2 << 8) | (uint32_t)b3;
 		hal_fmc_write_word(AP_CFG_ROM_ADDR_PRO_INFO + i, word);
 	}
+
+	hal_fmc_write_word(ADDR_PRODUCT_INFO_VERSION, PRODUCT_INFO_VERSION);
+
+	VIC_vModuleEnable();
 }
 
 void product_info_print(void) {

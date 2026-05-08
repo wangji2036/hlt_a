@@ -15,7 +15,7 @@
 	#define gdata_printk(...)
 #endif
 
-#define BAT_ADDR_BASE    		(0x00001900)
+#define BAT_ADDR_BASE            (0x00001900)  /* legacy battery energy address */
 //0~15ff  LDROM
 //1400~15ff log
 //1600~17FF Q/freq calibration value, gauge.etc.
@@ -25,6 +25,8 @@
 #define AP_CFG_ROM_ADDR_LOG1         (0x00001400)
 #define AP_CFG_ROM_ADDR_PRO_INFO    (0x00001800)
 #define AP_CFG_ROM_ADDR_BASE    (0x00001600)
+#define BAT_ENERGY_TOTAL_FLASH_OFFSET       8   /* AP_CFG_ROM_ADDR_BASE + 8 */
+#define BAT_ENERGY_TOTAL_CHECK_FLASH_OFFSET 12  /* AP_CFG_ROM_ADDR_BASE + 12 */
 #define AP_CFG_RAM_ADDR_BASE    (0x20000000)
 #define G_DATA_RAM_ADDR_BASE    (0x20000200)
 #if CONFIG_NEW_CCC_LOG_ENABLE
