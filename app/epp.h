@@ -11,13 +11,6 @@
 #include "epp_config.h"
 #include "epp_port.h"
 
-#define EPP_LOG_OUTPUT_ENABLE
-
-#ifdef EPP_LOG_OUTPUT_ENABLE
-#define EPP_Debug(fmt, args...) EPP_Debug_Print(fmt, ##args)
-#else
-#define EPP_Debug(fmt, args...)
-#endif // EPP_LOG_OUTPUT_ENABLE
 
 #define BIT_SET(bit, pos) (*(bit) |= (1 << (pos)))
 #define BIT_CLEAR(bit, pos) (*(bit) &= ~(1 << (pos)))
