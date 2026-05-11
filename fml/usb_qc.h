@@ -1,6 +1,14 @@
 #ifndef USB_QC_H_
 #define USB_QC_H_
 
+#include "config.h"
+
+#if SUPPORT_QC_LOG
+	#define qc_printk 	printk
+#else
+	#define qc_printk(...)
+#endif
+
 typedef union {
 	struct {
 		uint32_t      								: 3;

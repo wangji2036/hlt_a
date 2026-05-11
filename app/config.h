@@ -91,6 +91,7 @@
 #define SUPPORT_GUI_LOG                 0   // disabled to save ROM (~1.5KB)
 #define SUPPORT_TCPM_LOG                0   // tcpm.c debug logs
 #define SUPPORT_DPDM_LOG                1   // dpdm.c debug logs
+#define SUPPORT_QC_LOG                  1   // usb_qc.c debug logs
 #define SUPPORT_PORTMGR_LOG             1   // port_manager.c debug logs
 #define SUPPORT_LED_LOG                 0   // led.c debug logs
 #define SUPPORT_NTC_LOG                 1   // ntc.c debug logs
