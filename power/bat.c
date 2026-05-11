@@ -241,6 +241,8 @@ void nano_battery_ui_handle(void)
                     temp_bat_ui = 100;
             }
 
+            if(temp_bat_ui >=99) temp_bat_ui = 99;
+
             empty_cnt = 0;
             empty_flg = 0;
             ui_100_cnt = 0;
@@ -254,11 +256,11 @@ void nano_battery_ui_handle(void)
             int vbat_end = BAT_BATTERY_EMPTY_VOLTAGE - end_ibat * BAT_BAT_rDC / 1000;
             bat_level_end = nano_battery_ocv_level_find(vbat_end);
 
-            if (g_bat.bat_level_disg_ey_s != bat_level_end)
+            if (g_bat.bat_level_disg_ey_s > bat_level_end)
             {
-                temp_bat_ui = g_bat.bat_level_disg_ui_s * (g_bat.bat_level_soe - bat_level_end) / (g_bat.bat_level_disg_ey_s - bat_level_end);
-                if (temp_bat_ui < 0)
-                    temp_bat_ui = 100;
+                uint8_t temp = g_bat.bat_level_soe > bat_level_end? g_bat.bat_level_soe - bat_level_end:0;
+                temp_bat_ui = g_bat.bat_level_disg_ui_s * (temp) / (g_bat.bat_level_disg_ey_s - bat_level_end);
+
             }
             else
                 temp_bat_ui = 0;
