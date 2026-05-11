@@ -56,7 +56,7 @@ void updata_pdo_of_source(const uint32_t * pdo,uint8_t n_pdo)
 	}
 	g_usb_pd_s.src_tx_pdo_n = n_pdo;
 
-	usbpd_printk("update source caps:%d\n",n_pdo);
+	lib_printk("update source caps:%d\n",n_pdo);
 }
 
 void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
@@ -69,7 +69,7 @@ void updata_pdo_of_sink(const uint32_t * pdo,uint8_t n_pdo)
 	}
 	g_usb_pd_s.snk_tx_pdo_n = n_pdo;
 
-	usbpd_printk("update sink caps:%d\n",n_pdo);
+	lib_printk("update sink caps:%d\n",n_pdo);
 }
 
 void usb_pd_init(void)
@@ -96,18 +96,18 @@ void usb_pd_init(void)
 //{
 //	//struct usb_pd_source_cap_packet_t * source_pdo =  (struct usb_pd_source_cap_packet_t *) &g_usb_pd_s.snk_rx_source_cap;
 //	uint32_t source_pdo;
-//	usbpd_printk("\n");
+//	lib_printk("\n");
 //	for(uint8_t i= 0; i<g_usb_pd_s.snk_rx_pdo_n;i++)
 //	{
 //		source_pdo = (uint32_t)g_usb_pd_s.snk_rx_source_cap[i];
 //		if(pdo_type(source_pdo) == PDO_TYPE_FIXED)
 //		{
-//			printk("PDO%d FIX: %dmV %dmA \n",i+1,
+//			lib_printk("PDO%d FIX: %dmV %dmA \n",i+1,
 //					pdo_fixed_voltage(source_pdo),pdo_max_current(source_pdo));
 //		}
 //		else if(pdo_type(source_pdo) == PDO_TYPE_APDO)
 //		{
-//			printk("PDO%d PPS: %dmV-%dmV %dmA \n",i+1,pdo_pps_apdo_min_voltage(source_pdo),
+//			lib_printk("PDO%d PPS: %dmV-%dmV %dmA \n",i+1,pdo_pps_apdo_min_voltage(source_pdo),
 //							pdo_pps_apdo_max_voltage(source_pdo),pdo_pps_apdo_max_current(source_pdo));
 //		}
 //	}
@@ -319,7 +319,7 @@ static void PE_SNK_Wait_for_Capabilities_Exit(void)
 {
 	if(usb_pd_timer_is_timeout(SinkWaitCapTimer))
 	{
-		//usbpd_printk("SenderResponseTimer timeout\n");
+		//lib_printk("SenderResponseTimer timeout\n");
 		if(g_usb_pd_s.hardreset_counter <= N_HARDRESET_COUNTER)
 			usb_pd_set_state(PE_SNK_Hard_Reset,enter_state);
 		else
@@ -365,7 +365,7 @@ static void PE_SNK_Select_Capability_Entry(void)
 {
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_REQUEST;
-	//usbpd_printk("snk rdo =%x\n",g_usb_pd_s.snk_rdo);
+	//lib_printk("snk rdo =%x\n",g_usb_pd_s.snk_rdo);
 	hal_tcpc_send_request_mgs(g_usb_pd_s.snk_rdo);
 }
 
@@ -411,7 +411,7 @@ static void PE_SNK_Ready_Entry(void)
 		need_rechager = 0;
 	}
 
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
@@ -462,7 +462,7 @@ static void PE_SNK_Send_Soft_Reset_Entry(void)
 	usb_pd_reset_prl();
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_SOFTRESET;
 	hal_tcpc_send_ctrl_mgs(PD_CTRL_SOFT_RESET);
-	usbpd_printk("softreset reason = %d\n",softreset_reason);
+	lib_printk("softreset reason = %d\n",softreset_reason);
 	//usb_pd_event &= ~(usb_pd_EVT_TX_SUCCESSED | usb_pd_EVT_TX_FAIL);
 }
 
@@ -560,7 +560,7 @@ static void PE_SRC_Give_PPS_Status_Exit(void)
 #if(CONFIG_USBPD_POWER_ROLR & USBPD_POWER_ROLR_SRC)
 static void PE_SRC_Startup_Entry(void)
 {
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	g_usb_pd_s.caps_counter = 0;
 	g_usb_pd_s.explicit_contract = 0;
 	hal_tcpc_set_pwr_role(g_tcpc.tc_port_map,TYPEC_SOURCE);
@@ -593,7 +593,7 @@ static void PE_SRC_Discovery_Exit(void)
 		else
 			usb_pd_set_state(PE_SRC_Send_Capabilities,enter_state);
 
-		usbpd_printk("caps counter =%d \n",g_usb_pd_s.caps_counter);
+		lib_printk("caps counter =%d \n",g_usb_pd_s.caps_counter);
 	}
 }
 
@@ -626,8 +626,8 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
 
     index = rqt->request.FIX_BITS.object_posiotion;//ReqPos
 
-    usbpd_printk("rdo=0x%x\n",rqt->request.WORD);
-    usbpd_printk("object_posiotion=%d pdo_n=%d\n",index,g_usb_pd_s.src_tx_pdo_n);
+    lib_printk("rdo=0x%x\n",rqt->request.WORD);
+    lib_printk("object_posiotion=%d pdo_n=%d\n",index,g_usb_pd_s.src_tx_pdo_n);
 
     if (!index || index > g_usb_pd_s.src_tx_pdo_n)  return check_index_error;
 
@@ -674,22 +674,22 @@ uint32_t usb_pd_check_request(struct usb_pd_request_packet_t *rqt)
     }
     g_usb_pd_s.supply_current = current;
     g_usb_pd_s.supply_voltage = voltage;
-    usbpd_printk("V = %dmV I = %dmA\n",g_usb_pd_s.supply_voltage,g_usb_pd_s.supply_current);
+    lib_printk("V = %dmV I = %dmA\n",g_usb_pd_s.supply_voltage,g_usb_pd_s.supply_current);
     return 0;
 }
 
 static void PE_SRC_Negotiate_Capability_Entry(void)
 {
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	usb_pd_set_state(PE_SRC_Negotiate_Capability,exit_state);
 }
 
 static void PE_SRC_Negotiate_Capability_Exit(void)
 {
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	uint32_t ret = usb_pd_check_request(&g_pd_packet.msg.request);
-	usbpd_printk("request pdo =0x%x \n",g_pd_packet.msg.request.request.WORD);
-	usbpd_printk("check_ret =%d \n",ret);
+	lib_printk("request pdo =0x%x \n",g_pd_packet.msg.request.request.WORD);
+	lib_printk("check_ret =%d \n",ret);
 	if(ret == 0)//check success
 	{
 		usb_pd_set_state(PE_SRC_Transition_Supply,enter_state);
@@ -727,15 +727,15 @@ static void PE_SRC_Ready_Entry(void)
 	//osal_set_event(USB_TASK,TCPM_EVT_PD_READY);
 	osal_start_timerEx(TCPM_PSREADY_TIMER, 500, 0, USB_TASK, TCPM_EVT_PD_READY);
 	pdlib_tcpc_set_cc(g_tcpc.tc_port_map,TYPEC_CC_RP_3_0);
-	//usbpd_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
+	//lib_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
 }
 
 static void PE_SRC_Ready_Exit(void)
 {
 	if(g_usb_pd_s.is_in_pps && usb_pd_timer_is_timeout(SourcePPSCommTimer))
 	{
-		usbpd_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
-		usbpd_printk("pps timeout  \n");
+		lib_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
+		lib_printk("pps timeout  \n");
 		usb_pd_set_state(PE_SRC_Hard_Reset,enter_state);
 	}
 
@@ -756,7 +756,7 @@ static void PE_DRS_Send_Swap_Entry(void)
 	hal_tcpc_send_ctrl_mgs(PD_CTRL_DR_SWAP);
 	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_PSREADY;
 	usb_pd_set_state(PE_DRS_Send_Swap,exit_state);
-	//usbpd_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
+	//lib_printk("pps cnt =%d \n",usb_pd_timers[SourcePPSCommTimer].timer.time_cnt);
 	usb_pd_timer_start(SenderResponseTimer,tSenderResponseTime);
 }
 
@@ -801,7 +801,7 @@ static void PE_SRC_Capability_Response_Exit(void)
 
 static void PE_SRC_Hard_Reset_Entry(void)
 {
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	hal_tcpc_send_hardreset();
 	usb_pd_timer_start(PSHardResetTimer,tPSHardResetTime);
 	usb_pd_set_state(PE_SRC_Hard_Reset,exit_state);
@@ -811,14 +811,14 @@ static void PE_SRC_Hard_Reset_Exit(void)
 {
 	if(usb_pd_timer_is_timeout(PSHardResetTimer))
 	{
-		usbpd_printk("%s\n",__func__);
+		lib_printk("%s\n",__func__);
 		usb_pd_set_state(PE_SRC_Transition_to_default,enter_state);
 	}
 }
 
 static void PE_SRC_Hard_Reset_Received_Entry(void)
 {
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	usb_pd_timer_start(PSHardResetTimer,tPSHardResetTime);
 	usb_pd_set_state(PE_SRC_Hard_Reset,exit_state);
 }
@@ -827,7 +827,7 @@ static void PE_SRC_Hard_Reset_Received_Exit(void)
 {
 	if(usb_pd_timer_is_timeout(PSHardResetTimer))
 	{
-		usbpd_printk("%s\n","PSHardResetTimer Timeout");
+		lib_printk("%s\n","PSHardResetTimer Timeout");
 		usb_pd_set_state(PE_SRC_Transition_to_default,enter_state);
 	}
 }
@@ -842,7 +842,7 @@ static void PE_SRC_Transition_to_default_Entry(void)
 	hal_tcpc_set_pd_rx(g_tcpc.tc_port_map,EN_SOP | EN_HARD_RESET,false);
 	hal_tcpc_set_roles(g_tcpc.tc_port_map,TYPEC_SOURCE,TYPEC_HOST);
 	usb_pd_timer_start(SourceHardResetRecoverTimer,tSourceHardResetRecoverTime);
-	usbpd_printk("%s\n",__func__);
+	lib_printk("%s\n",__func__);
 	usb_pd_set_state(PE_SRC_Transition_to_default,exit_state);
 }
 
@@ -857,7 +857,7 @@ static void PE_SRC_Transition_to_default_Exit(void)
 		hal_tcpc_set_pd_rx(g_tcpc.tc_port_map,EN_SOP | EN_HARD_RESET,true);
 		usb_pd_timer_stop(SourceHardResetRecoverTimer);
 		usb_pd_set_state(PE_SRC_Startup,enter_state);
-		usbpd_printk("%s timeout\n",__func__);
+		lib_printk("%s timeout\n",__func__);
 	}
 }
 
@@ -989,7 +989,7 @@ static void PE_SRC_SNK_Chunk_Received_Exit(void)
 
 static void PE_BIST_Carrier_Mode_Entry(void)
 {
-    usbpd_printk("Bist Carry!\n");
+    lib_printk("Bist Carry!\n");
     usb_pd_timer_start(BISTContModeTimer,tBISTContModeTime);
     hal_tcpc_send_bistdata();
     usb_pd_set_state(PE_BIST_Carrier_Mode,exit_state);
@@ -1020,7 +1020,7 @@ static void PE_BIST_Carrier_Mode_Exit(void)
 
 static void PE_BIST_Test_Mode_Entry(void)
 {
-	usbpd_printk("Bist test data!\n");
+	lib_printk("Bist test data!\n");
     hal_tcpc_set_pd_rx(g_tcpc.tc_port_map,EN_SOP1, false);
     hal_tcpc_set_bist_data(true);
     usb_pd_set_state(PE_BIST_Test_Mode,enter_state);
@@ -1796,7 +1796,7 @@ void usb_pd_sop_ext_msg_handle(void)
 
 void usb_pd_sop_msg_handle(void)
 {
-	//usbpd_printk("%s\n",__func__);
+	//lib_printk("%s\n",__func__);
 #if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
 	if (g_tc[g_tcpc.tc_port_map].usb_tc_state == TC_SNK_Attached || g_tc[g_tcpc.tc_port_map].usb_tc_state == TC_SRC_Attached)
 #endif
@@ -1814,16 +1814,16 @@ void usb_pd_sop_msg_handle(void)
 		if (g_pd_packet.hdr.BITS.externed)
 		{
 			usb_pd_sop_ext_msg_handle();
-			//usbpd_printk("ext msg\n");
+			//lib_printk("ext msg\n");
 		}
 		else if (g_pd_packet.hdr.BITS.n_data_object)
 		{
-			//usbpd_printk("data msg\n");
+			//lib_printk("data msg\n");
 			usb_pd_sop_data_msg_handle();
 		}
 		else
 		{
-			//usbpd_printk("ctrl msg\n");
+			//lib_printk("ctrl msg\n");
 			usb_pd_sop_ctrl_msg_handle();
 		}
     }
@@ -1849,7 +1849,7 @@ void usb_pdevt_run(void)
 	if(usb_pd_event & USB_PD_EVT_SNK_ATTACHED)
 	{
 		usb_pd_set_state(PE_SNK_Startup,enter_state);
-		usbpd_printk("usb_pd_EVT_SNK_ATTACHED\n");
+		lib_printk("usb_pd_EVT_SNK_ATTACHED\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		need_rechager = 0;
 		usb_pd_event = 0;
@@ -1857,7 +1857,7 @@ void usb_pdevt_run(void)
 	if(usb_pd_event & USB_PD_EVT_SNK_UNATTACH)
 	{
 		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
-		usbpd_printk("usb_pd_EVT_SNK_UNATTACH\n");
+		lib_printk("usb_pd_EVT_SNK_UNATTACH\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
 		need_rechager = 0;
@@ -1868,7 +1868,7 @@ void usb_pdevt_run(void)
 	if(usb_pd_event & USB_PD_EVT_SRC_ATTACHED)
 	{
 		usb_pd_set_state(PE_SRC_Startup,enter_state);
-		usbpd_printk("usb_pd_EVT_SRC_ATTACHED\n");
+		lib_printk("usb_pd_EVT_SRC_ATTACHED\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
 		need_rechager = 0;
@@ -1876,7 +1876,7 @@ void usb_pdevt_run(void)
 	if(usb_pd_event & USB_PD_EVT_SRC_UNATTACH)
 	{
 		usb_pd_set_state(PE_SNK_RSC_Disable,enter_state);
-		usbpd_printk("usb_pd_EVT_SRC_UNATTACH\n");
+		lib_printk("usb_pd_EVT_SRC_UNATTACH\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event = 0;
 		need_rechager = 0;
@@ -1885,7 +1885,7 @@ void usb_pdevt_run(void)
 
 	if(usb_pd_event & USB_PD_EVT_RX_HARDRESET)
 	{
-		usbpd_printk("usb_pd_EVT_RX_HARDRESET\n");
+		lib_printk("usb_pd_EVT_RX_HARDRESET\n");
 		g_usb_pd_s.pe_prl_busy = 0;
 		usb_pd_event &= ~USB_PD_EVT_RX_HARDRESET;
 	#if(CONFIG_USBPD_POWER_ROLR == USBPD_POWER_ROLR_DRP)
@@ -1909,8 +1909,8 @@ void usb_pdevt_run(void)
 		uint16_t v_abs = abs(g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage);
 		if(g_usb_pd_s.is_in_pps && v_abs <= 500)
 		{
-			//usbpd_printk("V1=%d V2= %d\n",g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage);
-			//usbpd_printk(" v_abs = %d\n",v_abs);
+			//lib_printk("V1=%d V2= %d\n",g_usb_pd_s.supply_voltage,g_buckboost.buckboost_out_voltage);
+			//lib_printk(" v_abs = %d\n",v_abs);
 			hal_tcpc_pd_set_bus_iv(g_tcpc.tc_port_map,g_usb_pd_s.supply_voltage ,g_usb_pd_s.supply_current ,0,20);
 		}
 		else
@@ -1920,7 +1920,7 @@ void usb_pdevt_run(void)
 	{
 		usb_pd_event &= ~USB_PD_EVT_RX_SOP_PACKET;
 
-		usbpd_printk("packet cnt = %d\n",g_pd_packet_cnt);
+		lib_printk("packet cnt = %d\n",g_pd_packet_cnt);
 
 		if(packet_need_copy)
 		{
@@ -1929,18 +1929,18 @@ void usb_pdevt_run(void)
 			g_pd_packet.sop_type = g_pd_packet_1.sop_type;
 			for(uint8_t i = 0; i < 7; i++) g_pd_packet.msg.WORDS[i] = g_pd_packet_1.msg.WORDS[i];
 			packet_need_copy = false;
-			usbpd_printk("copy\n");
+			lib_printk("copy\n");
 			g_pd_packet_cnt = 0;
 		}
 
-		usbpd_printk("header= 0x%x \n", g_pd_packet.hdr.WORD);
-//		usbpd_printk("msg_type = %d \n ", g_pd_packet.hdr.BITS.message_type);
+		lib_printk("header= 0x%x \n", g_pd_packet.hdr.WORD);
+//		lib_printk("msg_type = %d \n ", g_pd_packet.hdr.BITS.message_type);
 //
 //		for(uint8_t i = 0; i < g_pd_packet.msg_len; i++)
 //		{
-//			usbpd_printk("0x%x ", pd_rx_buff[i]);
+//			lib_printk("0x%x ", pd_rx_buff[i]);
 //		}
-		usbpd_printk("\n");
+		lib_printk("\n");
 		if(g_usb_pd_s.in_bist_mode == 1 || g_usb_pd_s.pe_prl_busy)
 		{
 			packet_need_copy = false;
@@ -1948,7 +1948,7 @@ void usb_pdevt_run(void)
 			g_pd_packet_cnt = 0;
 			return;
 		}
-		//usbpd_printk("msg_len = %d \n ", g_pd_packet.msg_len);
+		//lib_printk("msg_len = %d \n ", g_pd_packet.msg_len);
 		usb_pd_sop_msg_handle();
 		if(g_pd_packet_cnt) g_pd_packet_cnt--;
 
@@ -2051,7 +2051,7 @@ void usb_pd_run(void)
 		{
 			prl_busy_cnt = 0;
 			//transmit_timeout_cb();
-			usbpd_printk("tx timeout !\n");
+			lib_printk("tx timeout !\n");
 		}
 		return;
 	}
@@ -2063,7 +2063,7 @@ void usb_pd_run(void)
 
 
 
-	//usbpd_printk("tx_discard_cnt = %d \n ", tx_discard_cnt);
+	//lib_printk("tx_discard_cnt = %d \n ", tx_discard_cnt);
 
 	if(g_usb_pd_s.pe_prl_busy) return;
 
@@ -2071,7 +2071,7 @@ void usb_pd_run(void)
 	uint8_t pd_prv_substate;
 	do
 	{
-		if(usb_pd_state_last != usb_pd_state || usb_pd_substate != usb_pd_substate_last) usbpd_printk("pe_state = %d %d\n", usb_pd_state,usb_pd_substate);
+		if(usb_pd_state_last != usb_pd_state || usb_pd_substate != usb_pd_substate_last) lib_printk("pe_state = %d %d\n", usb_pd_state,usb_pd_substate);
 		usb_pd_state_last = usb_pd_state;
 		usb_pd_substate_last = usb_pd_substate;
 

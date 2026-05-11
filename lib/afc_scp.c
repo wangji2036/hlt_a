@@ -316,9 +316,9 @@ void fcp_multi_write_handle(void)
 	{
 		case SCP_REG_VSET_H:
 			scp_vout = ((uint16_t)SCP_REG[SCP_REG_VSET_H] << 8) | SCP_REG[SCP_REG_VSET_L];
-			//printk("SCP_REG_VSET_H = %d\n",SCP_REG[SCP_REG_VSET_H]);
-			//printk("SCP_REG_VSET_L = %d\n",SCP_REG[SCP_REG_VSET_L]);
-			//printk("scp_vout = %d\n",scp_vout);
+			//lib_printk("SCP_REG_VSET_H = %d\n",SCP_REG[SCP_REG_VSET_H]);
+			//lib_printk("SCP_REG_VSET_L = %d\n",SCP_REG[SCP_REG_VSET_L]);
+			//lib_printk("scp_vout = %d\n",scp_vout);
         	if(scp_vout >= 10000) scp_vout = 10000;
 			scp_iout = 24000000 / scp_vout;
 			if(scp_iout >= 2400) scp_iout = 2400;

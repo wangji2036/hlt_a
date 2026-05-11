@@ -72,7 +72,7 @@ void ufcs_exit_handle(void)
 {
 	hal_tcpc_pd_set_bus_iv(0,5000,3000,0,10);
 	DPDM->SOURCE_CTRL.BITS.SOFT_RESET = 1;
-	printk("UFCS EXIT\n");
+	lib_printk("UFCS EXIT\n");
 }
 
 void ufcs_psread_handle(void)
@@ -219,7 +219,7 @@ void ufcs_data_handle(uint8_t msg_cmd)
         case UFCS_RESQT:  //
             supply_vlotage = ((ufcs_rx_buffer[8] << 8)  | ufcs_rx_buffer[9]) * 10;
             supply_current = ((ufcs_rx_buffer[10] << 8) | ufcs_rx_buffer[11]) * 10;
-            printk("UFSC V=%d I=%d\n",supply_vlotage,supply_current);
+            lib_printk("UFSC V=%d I=%d\n",supply_vlotage,supply_current);
             if(supply_vlotage <= CONFIG_UFCS_MAX_VOLTAGE && supply_vlotage >= CONFIG_UFCS_MIN_VOLTAGE)
             {
                 ufcs_send_ctrl_msg(UFCS_ACCEPT);
@@ -286,14 +286,14 @@ void ufcs_rx_packet_handle(void)
     uint8_t msg_type = ufcs_rx_buffer[1] & 0x7 ;
     uint8_t msg_cmd = ufcs_rx_buffer[2];
     ufcs_rx_msgid = (ufcs_rx_buffer[0] >> 1) & 0x0F;
-	printk("ufcs [%d] =",ufcs_rx_cnt);
+	lib_printk("ufcs [%d] =",ufcs_rx_cnt);
 
 	for(uint8_t i= 0; i< ufcs_rx_cnt;i++)
 	{
-		printk("0x%x ",ufcs_rx_buffer[i]);
+		lib_printk("0x%x ",ufcs_rx_buffer[i]);
 	}
 
-	printk("\n");
+	lib_printk("\n");
 
 	if(msg_type == 0)
 		ufcs_ctrl_handle(msg_cmd);

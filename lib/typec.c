@@ -29,7 +29,7 @@ void usb_tc_init(void)
 
 	g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 
-	usbpd_printk("typec vbat =%d\n",g_buckboost.adc_vbat);
+	lib_printk("typec vbat =%d\n",g_buckboost.adc_vbat);
 	extern bool tc_power_on;
 	if(g_buckboost.adc_vbat < dead_battery_voltage || tc_power_on)
 	{
@@ -98,7 +98,7 @@ void usb_tc_set_state(struct tc_s * tc,enum usb_tc_state_e tc_state,enum usb_tc_
 	tc->usb_tc_state = tc_state;
 	tc->usb_tc_substate = tc_substate;
 	tc->is_in_prswap = 0;
-	usbpd_printk("tc[%d]_state = %d,%d\n",tc->tc_index, tc_state,tc_substate);
+	lib_printk("tc[%d]_state = %d,%d\n",tc->tc_index, tc_state,tc_substate);
 }
 
 static void TC_Disable_Entry(struct tc_s * tc)
@@ -124,20 +124,20 @@ static void TC_SNK_Unattached_Entry(struct tc_s * tc)
 {
 	if(gd->tc0_lighting_mode && tc->tc_index == 0)
 	{
-		usbpd_printk("[SNK-U] p0 light=%d -> DRP!\n", gd->tc0_lighting_mode);
+		lib_printk("[SNK-U] p0 light=%d -> DRP!\n", gd->tc0_lighting_mode);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		return;
 	}
 
 	if(gd->tc1_lighting_mode && tc->tc_index == 1)
 	{
-		usbpd_printk("[SNK-U] p1 light=%d -> DRP!\n", gd->tc1_lighting_mode);
+		lib_printk("[SNK-U] p1 light=%d -> DRP!\n", gd->tc1_lighting_mode);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		return;
 	}
 
 	hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-	usbpd_printk("[SNK-U] p%d set CC=RD ok\n", tc->tc_index);
+	lib_printk("[SNK-U] p%d set CC=RD ok\n", tc->tc_index);
 
     tc->tc_timer_cnt = tc_sys_ticks;
     tc->try_snk_cnt = 0;
@@ -147,7 +147,7 @@ static void TC_SNK_Unattached_Exit(struct tc_s * tc)
 {
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
-	//usbpd_printk("cc1 = %d cc2= %d\n", cc1,cc2);
+	//lib_printk("cc1 = %d cc2= %d\n", cc1,cc2);
     if (tc_snk_is_connected(cc1,cc2))
     {
         if (cc1 != TYPEC_CC_OPEN)
@@ -213,7 +213,7 @@ static void TC_SNK_AttachWait_Exit(struct tc_s * tc)
 				   || (gd->usb_comm_activated && tc->tc_index == PORT0_INDEX))
 				{
 					usb_tc_set_state(tc,TC_SNK_Attached,enter_state);
-					usbpd_printk("try cnt= %d d=%d\n", tc->try_src_cnt,tc->is_deadbattery);
+					lib_printk("try cnt= %d d=%d\n", tc->try_src_cnt,tc->is_deadbattery);
 				}
 				else
 				{
@@ -262,7 +262,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 
 		if(tc_snk_is_disconnected(tc) || vbus_low)
 		{
-			usbpd_printk("[SNK-D] p%d cc1=%d cc2=%d pol=%d vbus=%d disc=%d\n",
+			lib_printk("[SNK-D] p%d cc1=%d cc2=%d pol=%d vbus=%d disc=%d\n",
 			       tc->tc_index, cc1, cc2, tc->polarity,
 			       g_buckboost.adc_vbus, tc_snk_is_disconnected(tc));
 			//tc->tc_timer_cnt++;
@@ -271,7 +271,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 
 				if(hal_tcpc_vbus_is_removed(tc->tc_index))
 				{
-					usbpd_printk("[SNK-DISC] p%d vbus_removed\n", tc->tc_index);
+					lib_printk("[SNK-DISC] p%d vbus_removed\n", tc->tc_index);
 					usb_pd_set_event(tc->tc_index,USB_PD_EVT_SNK_UNATTACH);
 					usb_tc_set_state(tc,TC_SNK_Unattached,enter_state);
 					hal_tcpc_port_dummyload_en(tc->tc_index,true);
@@ -281,7 +281,7 @@ static void TC_SNK_Attached_Exit(struct tc_s * tc)
 					//osal_set_event(USB_DPDM_TASK, DPDM_EVT_SNK_UNATTCHED);
 					if(tc->tc_index == 0)
 					{
-						usbpd_printk("[UC-A]\n");
+						lib_printk("[UC-A]\n");
 						port_manager_set_event(PORT0_EVENT_UNCONNECT);
 					}
 					else
@@ -315,7 +315,7 @@ static void TC_SRC_Unattached_Exit(struct tc_s * tc)
 	enum tc_cc_status cc1,cc2;
 	hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 
-	//usbpd_printk("cc1= %d cc2=%d\n", cc1,cc2);
+	//lib_printk("cc1= %d cc2=%d\n", cc1,cc2);
     if(tc_src_is_connected(cc1,cc2) || tc_acc_is_connected(cc1,cc2))
     {
         if(tc->tc_index == 0)
@@ -417,7 +417,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		hal_tcpc_set_gate_en(tc->tc_index,false);
-        usbpd_printk("[UC-B]\n");
+        lib_printk("[UC-B]\n");
         if(tc->tc_index == 0)
         	port_manager_set_event(PORT0_EVENT_UNCONNECT);
         else
@@ -430,7 +430,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 		osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_UNATTCHED);
 		usb_tc_set_state(tc,TC_DRP_TOGGLE,enter_state);
 		hal_tcpc_set_gate_en(tc->tc_index,false);
-        usbpd_printk("[UC-C]\n");
+        lib_printk("[UC-C]\n");
         if(tc->tc_index == 0)
         	port_manager_set_event(PORT0_EVENT_UNCONNECT);
         else
@@ -456,7 +456,7 @@ static void TC_SRC_Attached_Exit(struct tc_s * tc)
 			hal_tcpc_port_dummyload_en(tc->tc_index,true);
 			hal_tcpc_set_gate_en(tc->tc_index,false);
 			hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-            usbpd_printk("[UC-D]\n");
+            lib_printk("[UC-D]\n");
             if(tc->tc_index == 0)
             	port_manager_set_event(PORT0_EVENT_UNCONNECT);
             else
@@ -537,7 +537,7 @@ static uint16_t tc1_delay = 0;
 static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
 {
 	if (gd->usb_comm_activated)
-		usbpd_printk("[DRP-E] p%d comm=%d light0=%d\n", tc->tc_index, gd->usb_comm_activated, gd->tc0_lighting_mode);
+		lib_printk("[DRP-E] p%d comm=%d light0=%d\n", tc->tc_index, gd->usb_comm_activated, gd->tc0_lighting_mode);
 
 	if(gd->tc0_lighting_mode && tc->tc_index == PORT0_INDEX)
 	{
@@ -607,7 +607,7 @@ static void TC_DRP_TOGGLE_Entry(struct tc_s * tc)
     b_toggle_rd_cnt = 0;
     b_toggle_rp_cnt = 0;
 
-	if(tc0_delay > 0) usbpd_printk("[DRP-EN] d0=%d\n", tc0_delay);
+	if(tc0_delay > 0) lib_printk("[DRP-EN] d0=%d\n", tc0_delay);
 	tc0_delay = 0;
 	tc1_delay = 0;
 }
@@ -624,7 +624,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 			if(a_toggle_rd_cnt == 0)
 			{
 				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-				//printk("Set Rd\n");
+				//lib_printk("Set Rd\n");
 			}
 			else if(a_toggle_rd_cnt < 35)
 			{
@@ -632,7 +632,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if (tc_snk_is_connected(cc1,cc2))
 				{
-					//printk("SNK [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,a_delay_cnt);
+					//lib_printk("SNK [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,a_delay_cnt);
 					a_delay_cnt++;
 					a_toggle_rd_cnt--;
 					if(a_delay_cnt >= 10)
@@ -657,7 +657,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 			if(a_toggle_rp_cnt == 0)
 			{
 				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
-//				printk("Set Rp\n");
+//				lib_printk("Set Rp\n");
 			}
 			else if(a_toggle_rp_cnt < 45)
 			{
@@ -665,7 +665,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if(tc_src_is_connected(cc1,cc2) || tc_acc_is_connected(cc1,cc2))
 				{
-					//printk("SRC [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,a_delay_cnt);
+					//lib_printk("SRC [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,a_delay_cnt);
 					a_delay_cnt++;
 					a_toggle_rp_cnt--;
 					if(a_delay_cnt >= 10)
@@ -695,7 +695,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 			if(b_toggle_rd_cnt == 0)
 			{
 				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RD);
-				//printk("Set Rd\n");
+				//lib_printk("Set Rd\n");
 			}
 			else if(b_toggle_rd_cnt < 35)
 			{
@@ -703,7 +703,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if (tc_snk_is_connected(cc1,cc2))
 				{
-					//printk("SNK [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
+					//lib_printk("SNK [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
 					b_delay_cnt++;
 					b_toggle_rd_cnt--;
 					if(b_delay_cnt >= 10)
@@ -728,7 +728,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 			if(b_toggle_rp_cnt == 0)
 			{
 				hal_tcpc_set_cc(tc->tc_index,TYPEC_CC_RP_3_0);
-				//printk("Set Rp\n");
+				//lib_printk("Set Rp\n");
 			}
 			else if(b_toggle_rp_cnt < 45)
 			{
@@ -736,7 +736,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 				hal_tcpc_get_cc(tc->tc_index,&cc1,&cc2);
 				if(tc_src_is_connected(cc1,cc2) || tc_acc_is_connected(cc1,cc2))
 				{
-					//printk("SRC [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
+					//lib_printk("SRC [%x %x %x %x %x]\n",cc1,cc2,TCPC->CCA_STAT.WORD,TCPC->CCA_ROLE.WORD,delay_cnt);
 					b_delay_cnt++;
 					b_toggle_rp_cnt--;
 					if(b_delay_cnt >= 10)
@@ -768,7 +768,7 @@ static void TC_DRP_TOGGLE_Exit(struct tc_s * tc)
 		{
 			tc0_delay++;
 			if(tc0_delay <= 3 || tc0_delay == 500 || tc0_delay == 999)
-				usbpd_printk("[UC-E] d=%d ih=%d st=%d\n", tc0_delay, g_port.inhandle_port, g_port.state);
+				lib_printk("[UC-E] d=%d ih=%d st=%d\n", tc0_delay, g_port.inhandle_port, g_port.state);
 			if(tc0_delay > 1000)
 			{
 				port_manager_set_event(PORT0_EVENT_UNCONNECT);

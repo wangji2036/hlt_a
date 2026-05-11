@@ -406,31 +406,31 @@ void pkt_decode(struct ask_dm_t *dm_chan, struct decode_t *decode)
 				if (decode->pkt.pkt_src == 1)
 				{
 					GPC->DOUT.BITS.PIN5 ^= 1;
-					wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC);		
+					wpc_wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO1_DDM_SRC);		
 				}
 				else if (decode->pkt.pkt_src == 2)
 				{
 					GPB->DOUT.BITS.PIN3 ^= 1;
-					wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC);
+					wpc_wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO2_DDM_SRC);
 				}
 				else
 				{
-					wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, 0);
+					wpc_wpc_printk("\r\n #:[%d:%d]", decode->pkt.pkt_src, 0);
 				}
 
 				for (int i=0; i<decode->pkt.pkt_len; i++)
 				{
-					wpc_printk(" %02X", decode->pkt.pkt_msg[i]);
+					wpc_wpc_printk(" %02X", decode->pkt.pkt_msg[i]);
 				}	
 #endif
 				ask_decode_init(dm_chan, decode);
 				dm_chan->pkt_time_stamp = sys_ticks;
 				dm_chan->dm_bad_cnt = 0;
 
-//				printk("\r\n [dmo-%d(%d)]", dm_chan->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO2_OUT_MODE);
+//				wpc_printk("\r\n [dmo-%d(%d)]", dm_chan->pkt.pkt_src, gd->nu103x_sts_curr.BITS.DMO2_OUT_MODE);
 //				for (int i=0; i<dm_chan->pkt.pkt_len; i++)
 //				{
-//					printk(" %02X", dm_chan->pkt.pkt_msg[i]);
+//					wpc_printk(" %02X", dm_chan->pkt.pkt_msg[i]);
 //				}
 
 //				if (dm_chan->pkt.pkt_src == 2)
@@ -775,11 +775,11 @@ void tim_decode(struct ask_dm_t *dm_chan)
 		#if DDM_DEBUG_TOGGLE
 		if (dm_chan->pkt.pkt_phase > PKT_PHS_HDR && dm_chan->pkt.pkt_hdr > 0x80 && dm_chan->pkt.pkt_hdr < 0xB0)
 		{
-			wpc_printk("\r\n err-> %d %d %d %d %d %d *",dm_chan->pkt.pkt_src, dm_chan->tim.read_idx, dm_chan->tim.tim_curr, dm_chan->bit.bit_error, dm_chan->byt.byt_error, dm_chan->pkt.pkt_error);
+			wpc_wpc_printk("\r\n err-> %d %d %d %d %d %d *",dm_chan->pkt.pkt_src, dm_chan->tim.read_idx, dm_chan->tim.tim_curr, dm_chan->bit.bit_error, dm_chan->byt.byt_error, dm_chan->pkt.pkt_error);
 
 			for (int i=0; i<dm_chan->pkt.byt_idx; i++)
 			{
-				wpc_printk(" %02X", dm_chan->pkt.pkt_msg[i]);
+				wpc_wpc_printk(" %02X", dm_chan->pkt.pkt_msg[i]);
 			}
 		}
 		#endif
@@ -917,7 +917,7 @@ void fml_ask_decode_check(void)
 	if ((gd->pid_perd == _360K_EPWM_PERD && ask_dm[0].dm_bad_cnt >= 3 && ask_dm[1].dm_bad_cnt >= 3 && ask_dm[2].dm_bad_cnt >= 3) || 
 		(gd->pid_perd != _360K_EPWM_PERD && ask_dm[0].dm_bad_cnt >= 2 && ask_dm[1].dm_bad_cnt >= 2 && ask_dm[2].dm_bad_cnt >= 2))
 	{
-		wpc_printk("\r\n DM_CR %d %d %d", ask_dm[0].dm_bad_cnt, ask_dm[1].dm_bad_cnt, ask_dm[2].dm_bad_cnt);
+		wpc_wpc_printk("\r\n DM_CR %d %d %d", ask_dm[0].dm_bad_cnt, ask_dm[1].dm_bad_cnt, ask_dm[2].dm_bad_cnt);
 		ask_dm[0].dm_bad_cnt = 0;
 		ask_dm[1].dm_bad_cnt = 0;
 		ask_dm[2].dm_bad_cnt = 0;
@@ -1012,13 +1012,13 @@ void fml_test_ask_info_print(uint8_t chan)
 		s1 = "-dig_mag";
 	}
 
-//	printk("[dmo%d%s%s%s]", gd->wpc_pkt.src, s1, s2, s3);
+//	wpc_printk("[dmo%d%s%s%s]", gd->wpc_pkt.src, s1, s2, s3);
 
 	str_concat(s, s1);
 	str_concat(s, s2);
 	str_concat(s, s3);
 
-	wpc_printk("[dmo%d%s]", gd->wpc_pkt.src, s);
+	wpc_wpc_printk("[dmo%d%s]", gd->wpc_pkt.src, s);
 }
 /**
  * demodulation configuration during Ping and power transfer
@@ -1333,14 +1333,14 @@ void fml_ask_128_ping_cfg(void)
 		DDM_GAIN_MODE  0->auto     1->fix_normal  2->fix_high
 		DDM_CMP_HYST   0->12.5mV   1->30mV
 	*/
-	wpc_printk("\r\n <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
+	wpc_wpc_printk("\r\n <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
 
 	/*
 		DMO2_DDM_SRC   0->vcap     1->phase    		2->digital
 		DDM_GAIN_MODE  0->auto     1->fix_normal	2->fix_high
 		VCAP_RATIO_K
 	*/
-	wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
+	wpc_wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
 }
 
 void fml_ask_128_ping_cfg_keep(void)
@@ -1372,13 +1372,13 @@ void fml_ask_360_ping_cfg(void)
 		DDM_GAIN_MODE  0->auto     1->fix_normal  2->fix_high
 		DDM_CMP_HYST   0->12.5mV   1->30mV
 	*/
-	wpc_printk("\r\n <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
+	wpc_wpc_printk("\r\n <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
 	/*
 		DMO2_DDM_SRC   0->vcap     1->phase    		2->digital
 		DDM_GAIN_MODE  0->auto     1->fix_normal	2->fix_high
 		VCAP_RATIO_K
 	*/
-	wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
+	wpc_wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
 }
 
 void fml_ask_dmo1_xfer_cfg(void)
@@ -1401,7 +1401,7 @@ void fml_ask_dmo1_xfer_cfg(void)
 		DDM_GAIN_MODE  0->auto     1->fix_normal  2->fix_high
 		DDM_CMP_HYST   0->12.5mV   1->30mV
 	*/
-	wpc_printk(" <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
+	wpc_wpc_printk(" <1-%d%d>", curr_dmo1_cfg.src, curr_dmo1_cfg.gain);
 }
 
 void fml_ask_dmo2_xfer_cfg(void)
@@ -1455,7 +1455,7 @@ void fml_ask_dmo2_xfer_cfg(void)
 		DDM_GAIN_MODE  0->auto     1->fix_normal	2->fix_high
 		VCAP_RATIO_K
 	*/
-	wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
+	wpc_wpc_printk(" <2-%d%d-k%d>", curr_dmo2_cfg.src, curr_dmo2_cfg.gain, curr_dmo2_cfg.vcap_k);
 }
 
 void fml_ask_dig_ddm_enable(uint8_t enable)
@@ -1476,7 +1476,7 @@ void fml_ask_dig_ddm_enable(uint8_t enable)
 		hal_ecap_dig_ddm_init();
 		hal_eadc_ddm_init();
 		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_CAP);
-		// printk("\r\n ----- enable digital ddm");
+		// wpc_printk("\r\n ----- enable digital ddm");
 	}
 	else
 	{
@@ -1484,6 +1484,6 @@ void fml_ask_dig_ddm_enable(uint8_t enable)
 		hal_ecap_open(ECAP2);
 		hal_ecap_close(ECAP4);
 		fml_nu103x_config(_1030_CFG_DMO2_OUT_MODE_DDM);
-		// printk("\r\n ----- disable digital ddm");
+		// wpc_printk("\r\n ----- disable digital ddm");
 	}
 }
