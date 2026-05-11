@@ -141,7 +141,7 @@ uint32_t ploss_calc(uint8_t mode)
 	/* ploss = Pcoil+Pfm+Pmos+Psnuber */
 	temp_ploss = Pcoil + Pfm + Pmos + Psnuber;
 
-	wpc_wpc_printk("\r\n ploss:%d coil:%d fm:%d mos:%d snb:%d", temp_ploss, Pcoil, Pfm, Pmos, Psnuber);
+	wpc_printk("\r\n ploss:%d coil:%d fm:%d mos:%d snb:%d", temp_ploss, Pcoil, Pfm, Pmos, Psnuber);
 
 	return  temp_ploss;
 }
@@ -194,10 +194,10 @@ void pfod_dploss_cal(void)
 	Sum_I2_Plc += Irect2_x_Plc;
 	Sum_V4 += Vrect4;
 
-	wpc_wpc_printk("\r\n CAL_CAP %d %d %d %d %d * %d %d ",\
+	wpc_printk("\r\n CAL_CAP %d %d %d %d %d * %d %d ",\
 			gd->dploss_cal.index_cnt, gd->dploss_cal.preceived, gd->dploss_cal.prect, gd->dploss_cal.vrect, gd->dploss_cal.irect, gd->icol_rms, gd->tx_power);
 #if 0
-	wpc_wpc_printk(" * %d %d * %d %d %d %d %d %d %d * %d %d %d %d %d",
+	wpc_printk(" * %d %d * %d %d %d %d %d %d %d * %d %d %d %d %d",
 			Pcircuit, Plc, Vrect2, Vrect4, Irect2, Irect4, Vrect2_x_Plc, Irect2_x_Plc, Vrec2_x_Irect2,
 		    Sum_V2_Plc, Sum_I4, Sum_V2_I2, Sum_I2_Plc, Sum_V4);
 #endif
@@ -232,8 +232,8 @@ uint8_t pfod_dploss_cal_cmt(uint16_t *alpha, uint16_t *beta)
 	
 	*beta = u64_tmp2 / u32_tmp;//unit 1/1000
 
-	wpc_wpc_printk("\r\n\r\n alpha:%d beta:%d", *alpha, *beta);//iphone alpha=0.0016*1000000, beta=1.3*1000
-	wpc_wpc_printk(" * %d %d %d %d %d", Sum_V2_Plc, Sum_I4, Sum_V2_I2, Sum_I2_Plc, Sum_V4);
+	wpc_printk("\r\n\r\n alpha:%d beta:%d", *alpha, *beta);//iphone alpha=0.0016*1000000, beta=1.3*1000
+	wpc_printk(" * %d %d %d %d %d", Sum_V2_Plc, Sum_I4, Sum_V2_I2, Sum_I2_Plc, Sum_V4);
 	return 0;
 }
 
@@ -259,7 +259,7 @@ uint8_t pfod_dploss(void)
 //	pfo = Plc - Plc_cal;
 	pfo = Plc - Plc_cal - 300;//TODO: need tuning FOD
 
-	wpc_wpc_printk("\r\n a:%d b:%d pcircu:%d plc:%d pcal:%d",gd->tx_infos.dp_alpha, gd->tx_infos.dp_beta, Pcircuit, Plc, Plc_cal);
+	wpc_printk("\r\n a:%d b:%d pcircu:%d plc:%d pcal:%d",gd->tx_infos.dp_alpha, gd->tx_infos.dp_beta, Pcircuit, Plc, Plc_cal);
 
 	return pfod_action();
 }

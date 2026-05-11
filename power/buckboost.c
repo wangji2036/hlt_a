@@ -366,7 +366,7 @@ void buckboost_protection_handle(void)
 	if(gd->typec_ntc_lock||gd->bat_ntc_lock_flag||bat_ntc_dischg_lock||bat_ntc_stop_chrg_flag||gd->typec_charge_ntc_lock)
 	{
 		status|=VBUS_FAULT_VBUS_NTC;
-		printk("VBUS_FAULT_VBUS_NTC\n");
+		bb_printk("VBUS_FAULT_VBUS_NTC\n");
 	} 
 #endif
 #endif
@@ -748,7 +748,7 @@ void buckboost_task_event_handler(uint32_t event)
 						if(g_vref_mv >=3240 && g_vref_mv <=3300)
 						{
 							cycle_count_save_to_flash();
-							printk("\r\nVref save to flash:%d",g_vref_mv);
+							bb_printk("\r\nVref save to flash:%d",g_vref_mv);
 						}
 						else
 							g_vref_mv = VREF_DEFAULT_MV;

@@ -127,7 +127,7 @@ void nano_battery_soe_handle(void)
 
             bat_energy_save_to_flash(flash_bat_energy_total);
 
-            printk("update bat = %d\n", flash_bat_energy_total);
+            bat_printk("update bat = %d\n", flash_bat_energy_total);
         }
         else if (g_bat.bat_soe_calied)
         {
@@ -141,14 +141,14 @@ void nano_battery_soe_handle(void)
             {
                 g_bat.bat_energy_total = flash_bat_energy_total;
                 g_bat.bat_energy_current = g_bat.bat_energy_total;
-                printk("load bat = %d\n", flash_bat_energy_total);
+                bat_printk("load bat = %d\n", flash_bat_energy_total);
                 g_bat.bat_soe_calied = true;
             }
             else
             {
                 g_bat.bat_energy_total = BAT_BATTERY_DEFAULT;
                 g_bat.bat_energy_current = g_bat.bat_energy_total;
-                printk("default bat = %d\n", flash_bat_energy_total);
+                bat_printk("default bat = %d\n", flash_bat_energy_total);
                 g_bat.bat_soe_calied = true;
             }
         }
@@ -279,7 +279,7 @@ void nano_battery_ui_handle(void)
                 empty_cnt++;
                 if (empty_cnt >= 10)
                 {
-                    printk("\n bat empty!");
+                    bat_printk("\n bat empty!");
                     empty_cnt = 0;
                     empty_flg = 1;
                 }
@@ -291,7 +291,7 @@ void nano_battery_ui_handle(void)
 
             if (empty_flg == 1)
             {
-                printk("\n bat ui to 0!");
+                bat_printk("\n bat ui to 0!");
                 temp_bat_ui = 0;
             }
 
@@ -341,7 +341,7 @@ void nano_battery_ui_handle(void)
             empty_flg = 0;
         }
     }
-    printk("temp_bat_ui=%d\n",temp_bat_ui);
+    bat_printk("temp_bat_ui=%d\n",temp_bat_ui);
     if (temp_bat_ui != g_bat.bat_level_ui)
     {
         level_ui_cnt++;
@@ -353,7 +353,7 @@ void nano_battery_ui_handle(void)
                     {
                         g_bat.bat_level_ui++;
                         g_bat.bat_cycle_n++;
-                        printk("g_bat.bat_cycle_n=%d\n",g_bat.bat_cycle_n);
+                        bat_printk("g_bat.bat_cycle_n=%d\n",g_bat.bat_cycle_n);
                         if(g_bat.bat_cycle_n>=100)
                         {
                             g_bat.bat_cycle_n = 0;
@@ -404,7 +404,7 @@ void battery_task_handle(void) // 100mS
     g_bat.vbat = g_buckboost.adc_vbat;
     g_bat.rbat = BAT_BAT_rDC;
     g_bat.ibat = g_buckboost.adc_ibat;
-    printk(" g_bat.vbat =%d g_bat.ibat=%d\n",g_bat.vbat,g_bat.ibat);
+    bat_printk(" g_bat.vbat =%d g_bat.ibat=%d\n",g_bat.vbat,g_bat.ibat);
     if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
     {
         if (g_buckboost.bat_full_flag)

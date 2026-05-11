@@ -1,6 +1,14 @@
 #ifndef BAT_H_
 #define BAT_H_
 
+#include "config.h"
+
+#if SUPPORT_BAT_LOG
+	#define bat_printk 	printk
+#else
+	#define bat_printk(...)
+#endif
+
 struct bat_info
 {
     int16_t vbat;   //mV
