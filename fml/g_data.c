@@ -3,6 +3,7 @@
 #include "g_data.h"
 #include "config.h"
 #include "app.h"
+#include "bat_record.h"
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
@@ -276,7 +277,7 @@ void gd_data_init(void)
 			uint32_t flash_cycle = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + CYCLE_COUNT_FLASH_OFFSET);
 			if (flash_cycle != 0xFFFFFFFF && flash_cycle <= 65535) {
 				SET_CYCLE_COUNT(gd, (uint16_t)flash_cycle);
-				gdata_printk("\r\n[CYCLE] Restored from Flash: %d", (int)flash_cycle);
+				xgb_printk("\r\n[CYCLE] Restored from Flash: %d", (int)flash_cycle);
 			}
 		}
 #endif
@@ -293,7 +294,7 @@ void gd_data_init(void)
 				hal_fmc_write_word(AP_CFG_ROM_ADDR_BASE + i * 4, switch_big_little_endian(cfg[i]));
 		}
 		gd->bat_ov_forbid_flag = 0;
-		gdata_printk("\r\n[OV_FORBID] Force cleared");
+		xgb_printk("\r\n[OV_FORBID] Force cleared");
   #else
 		/* Normal: restore forbid flag from Flash */
 		{
@@ -302,7 +303,7 @@ void gd_data_init(void)
 				gd->bat_ov_forbid_flag = 0;  /* Flash erased = never triggered */
 			} else {
 				gd->bat_ov_forbid_flag = 1;  /* Has value = previously triggered */
-				gdata_printk("\r\n[OV_FORBID] Restored from Flash! Charge/discharge forbidden.");
+				xgb_printk("\r\n[OV_FORBID] Restored from Flash! Charge/discharge forbidden.");
 			}
 		}
   #endif
@@ -322,7 +323,7 @@ void gd_data_init(void)
 
 		gdata_printk("\r\n ------------------------------------------------------------poweron reset");
 #if (CONFIG_RTC_USE_CUSTOM_TIME == 1)
-		gdata_printk("\r\n RTC init: %lu seconds (custom: %d-%02d-%02d %02d:%02d:%02d)",
+		xgb_printk("\r\n RTC init: %lu seconds (custom: %d-%02d-%02d %02d:%02d:%02d)",
 		       gd->Bat_RTC_Seconds,
 		       CONFIG_RTC_DEFAULT_YEAR, CONFIG_RTC_DEFAULT_MONTH, CONFIG_RTC_DEFAULT_DAY,
 		       CONFIG_RTC_DEFAULT_HOUR, CONFIG_RTC_DEFAULT_MINUTE, CONFIG_RTC_DEFAULT_SECOND);
@@ -338,10 +339,10 @@ void gd_data_init(void)
 		uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
 		if (flash_vref != 0xFFFFFFFF && flash_vref >= 3240 && flash_vref <= 3300) {
 			g_vref_mv = (uint16_t)flash_vref;
-			gdata_printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
+			xgb_printk("\r\n[VREF] Restored from Flash: %dmV", g_vref_mv);
 		} else {
 			g_vref_mv = VREF_DEFAULT_MV;
-			gdata_printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
+			xgb_printk("\r\n[VREF] No Flash cal, default %dmV", VREF_DEFAULT_MV);
 		}
 	}
 #endif
@@ -487,7 +488,7 @@ void product_info_print(void) {
 		{ ADDR_BATTERY_PROD_DATE, "Battery Date" }
 	};
 
-	gdata_printk("\r\n===== Product Information =====");
+	xgb_printk("\r\n===== Product Information =====");
 
 	// (Loop to read and print each field)
 	for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
@@ -499,9 +500,9 @@ void product_info_print(void) {
 		}
 		temp_buf[PRODUCT_INFO_FIELD_SIZE] = '\0';  // (Ensure null termination)
 
-		gdata_printk("\r\n%-13s: %s", fields[i].label, temp_buf);
+		xgb_printk("\r\n%-13s: %s", fields[i].label, temp_buf);
 	}
 
-	gdata_printk("\r\n===============================");
+	xgb_printk("\r\n===============================");
 }
 #endif

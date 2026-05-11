@@ -9,6 +9,7 @@
 #include "tcpm.h"
 #include "buckboost.h"
 #include "usb_bridge.h"
+#include "bat_record.h"
 
 extern volatile uint32_t tc_sys_ticks;
 
@@ -844,12 +845,12 @@ void fml_pout_opp_check(uint16_t vpwr, uint16_t isns)
 void fml_bat_ov_forbid_check(void) {
     static uint8_t ov_forbid_consec_cnt = 0;
     // if (g_forbid_bypass_flag) return;
-	printk("gd->bat_ov_forbid_flag=%d\n",gd->bat_ov_forbid_flag);
+	xgb_printk("gd->bat_ov_forbid_flag=%d\n",gd->bat_ov_forbid_flag);
     if (gd->bat_ov_forbid_flag) {
         if (g_buckboost.woke_mode != BUCKBOOST_SHUTDOWM_MODE) {
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
         }
-        printk("\r\n[OV_FORBID] Active (flag=1)");
+        xgb_printk("\r\n[OV_FORBID] Active (flag=1)");
         return;
     }
 
@@ -858,7 +859,7 @@ void fml_bat_ov_forbid_check(void) {
     uint16_t total = cell1 + cell2;
     uint16_t max_cell = (cell1 > cell2) ? cell1 : cell2;
 
-    printk("\r\n[OV_CHK] c1=%d c2=%d t=%d max=%d", cell1, cell2, total, max_cell);
+    xgb_printk("\r\n[OV_CHK] c1=%d c2=%d t=%d max=%d", cell1, cell2, total, max_cell);
 
     /* 可疑高读数去抖：max_cell > 5200mV 时延时 5s (50 × 100ms) 后再判定，
      * 避免 ADC 瞬态毛刺直接触发 forbid。延时窗口内 return，窗口结束后放行到正常判定。*/
@@ -868,7 +869,7 @@ void fml_bat_ov_forbid_check(void) {
         if (!suspect_delay_done) {
             if (suspect_delay_left == 0) {
                 suspect_delay_left = 50;
-                printk("\r\n[OV_CHK] suspect max=%d>5200, delay 5s", max_cell);
+                xgb_printk("\r\n[OV_CHK] suspect max=%d>5200, delay 5s", max_cell);
                 return;
             }
             suspect_delay_left--;
@@ -876,7 +877,7 @@ void fml_bat_ov_forbid_check(void) {
                 return;
             }
             suspect_delay_done = 1;
-            printk("\r\n[OV_CHK] 5s elapsed, max=%d, proceed", max_cell);
+            xgb_printk("\r\n[OV_CHK] 5s elapsed, max=%d, proceed", max_cell);
         }
         /* suspect_delay_done==1 → 继续走下面的正常判定 */
     } else {
@@ -886,15 +887,15 @@ void fml_bat_ov_forbid_check(void) {
 
     if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD) {
         ov_forbid_consec_cnt++;
-        printk("\r\n[OV_FORBID] %dmV >= %dmV, cnt=%d",
+        xgb_printk("\r\n[OV_FORBID] %dmV >= %dmV, cnt=%d",
                max_cell, OVER_VOLTAGE_FORBID_THRESHOLD, ov_forbid_consec_cnt);
         if (ov_forbid_consec_cnt >= OVER_VOLTAGE_FORBID_CONSEC_COUNT) {
             gd->bat_ov_forbid_flag = 1;
 #if OV_FORBID_FLASH_PERSIST
             cycle_count_save_to_flash();
-            printk("\r\n[OV_FORBID] Persisted to Flash.");
+            xgb_printk("\r\n[OV_FORBID] Persisted to Flash.");
 #else
-            printk("\r\n[OV_FORBID] TRIGGERED! Forbidden until power cycle.");
+            xgb_printk("\r\n[OV_FORBID] TRIGGERED! Forbidden until power cycle.");
 #endif
             buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
         }
