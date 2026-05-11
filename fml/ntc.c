@@ -42,7 +42,7 @@ void buckboost_ntc_handle(void)
 	static uint8_t bat_low_volt_cnt = 0;
 	static bool ot_full_stop = false;   // 4.1V 停充闭锁：在 OT 区间 vbat≥8200 触发，OT 解时清；vbat 回落不解锁
 	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
-	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
+	// ntc_printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
@@ -273,7 +273,7 @@ void buckboost_ntc_handle(void)
 						{
 							dual_dischg_inhibit_cnt = 0;
 							bat_ntc_dual_dischg_inhibit = 1;
-							printk("\r\nbat_ntc_dual_dischg_inhibit=1 trigger\n");
+							ntc_printk("\r\nbat_ntc_dual_dischg_inhibit=1 trigger\n");
 						}
 					}
 					else
@@ -289,7 +289,7 @@ void buckboost_ntc_handle(void)
 						{
 							dual_dischg_inhibit_cnt = 0;
 							bat_ntc_dual_dischg_inhibit = 0;
-							printk("\r\nbat_ntc_dual_dischg_inhibit=0 trigger\n");
+							ntc_printk("\r\nbat_ntc_dual_dischg_inhibit=0 trigger\n");
 						}
 					}
 					else
@@ -442,7 +442,7 @@ void buckboost_ntc_handle(void)
 		}
 	}
 
-	printk("\r\n[NTC_FLAG] tbat=%d mode=%d chg[stop=%d ut5=%d ot12=%d otfull=%d lowv=%d] dischg[lock=%d cport=%d dual=%d] tc_chg[lock=%d ot20=%d] tc_disc[lock=%d ot20=%d]",
+	ntc_printk("\r\n[NTC_FLAG] tbat=%d mode=%d chg[stop=%d ut5=%d ot12=%d otfull=%d lowv=%d] dischg[lock=%d cport=%d dual=%d] tc_chg[lock=%d ot20=%d] tc_disc[lock=%d ot20=%d]",
 		bat_temp, g_buckboost.woke_mode,
 		bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
 		bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
@@ -477,7 +477,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 				gd->wirless_ntc_lock = 1;
 				gd->wpc_disable = 1;
 				tcpm_stop_wpc(10);
-				printk("\r\n[WPC_NTC] OTP lock tntc=%d", tntc);
+				ntc_printk("\r\n[WPC_NTC] OTP lock tntc=%d", tntc);
 			}
 		}
 		else
@@ -495,7 +495,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 				otp_rec_cnt = 0;
 				gd->wirless_ntc_lock = 0;
 				gd->wpc_disable = 0;
-				printk("\r\n[WPC_NTC] OTP unlock tntc=%d", tntc);
+				ntc_printk("\r\n[WPC_NTC] OTP unlock tntc=%d", tntc);
 			}
 		}
 		else
@@ -514,7 +514,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				reduce_cnt = 0;
 				wpc_ntc_power_reduce_flag = 1;
-				printk("\r\n[WPC_NTC] power reduce tntc=%d", tntc);
+				ntc_printk("\r\n[WPC_NTC] power reduce tntc=%d", tntc);
 			}
 		}
 		else
@@ -530,7 +530,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				reduce_rec_cnt = 0;
 				wpc_ntc_power_reduce_flag = 0;
-				printk("\r\n[WPC_NTC] power restore tntc=%d", tntc);
+				ntc_printk("\r\n[WPC_NTC] power restore tntc=%d", tntc);
 			}
 		}
 		else
@@ -561,7 +561,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 				bat_lock_cnt = 0;
 				gd->bat_ntc_lock_flag = 1;
 				tcpm_stop_wpc(10);
-				printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
+				ntc_printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
 			}
 		}
 		else
@@ -579,7 +579,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 				bat_lock_rec_cnt = 0;
 				gd->bat_ntc_lock_flag = 0;
 				gd->ntc_led_off = 1;
-				printk("\r\n[BAT_NTC] unlock tbat=%d", tbat);
+				ntc_printk("\r\n[BAT_NTC] unlock tbat=%d", tbat);
 			}
 		}
 		else
@@ -598,7 +598,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				bat_reduce_cnt = 0;
 				gd->bat_ntc_wpc_dischg_reduce_flag = 1;
-				printk("\r\n[BAT_NTC] dischg reduce tbat=%d", tbat);
+				ntc_printk("\r\n[BAT_NTC] dischg reduce tbat=%d", tbat);
 			}
 		}
 		else
@@ -614,7 +614,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				bat_reduce_rec_cnt = 0;
 				gd->bat_ntc_wpc_dischg_reduce_flag = 0;
-				printk("\r\n[BAT_NTC] dischg restore tbat=%d", tbat);
+				ntc_printk("\r\n[BAT_NTC] dischg restore tbat=%d", tbat);
 			}
 		}
 		else
@@ -636,7 +636,7 @@ void wpc_typec_cowork_otputpcheck(void)
 			gd->wpc_disable = 0x01;
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
-			printk("\r\n WPC disabled: dual dischg inhibit=%d\n", bat_ntc_dual_dischg_inhibit);
+			ntc_printk("\r\n WPC disabled: dual dischg inhibit=%d\n", bat_ntc_dual_dischg_inhibit);
 			wpc_dual_temp_lock = 1;
 		}
 	}
@@ -645,14 +645,14 @@ void wpc_typec_cowork_otputpcheck(void)
 		if (!bat_ntc_dual_dischg_inhibit)
 		{
 			gd->wpc_disable = 0x00;
-			printk("\r\n WPC re-enabled: dual dischg unlock\n");
+			ntc_printk("\r\n WPC re-enabled: dual dischg unlock\n");
 			wpc_dual_temp_lock = 0;
 		}
 	}
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
 		{
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
-			printk("\r\nTCPM_WPC_WORK_FIX5V\n");
+			ntc_printk("\r\nTCPM_WPC_WORK_FIX5V\n");
 		}  
 }
 

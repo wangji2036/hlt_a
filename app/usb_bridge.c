@@ -43,10 +43,10 @@ void usb_bridge_reset_product_info(void)
         (uint8_t*)info.battery_prod_date, (uint8_t*)info.serial
     };
     for (uint8_t f = 0; f < 6; f++) {
-        printk("[PB_%s] ", fnames[f]);
+        xgb_printk("[PB_%s] ", fnames[f]);
         uint8_t sz = (f == 5) ? SERIAL_FIELD_SIZE : PRODUCT_INFO_FIELD_SIZE;
-        for (uint8_t k = 0; k < sz; k++) printk("%02X ", fptrs[f][k]);
-        printk("\n");
+        for (uint8_t k = 0; k < sz; k++) xgb_printk("%02X ", fptrs[f][k]);
+        xgb_printk("\n");
     }
 
     /* Write 5 fields (each 20 bytes) + serial (10 bytes) */
@@ -86,7 +86,7 @@ void usb_bridge_init(void)
 
 void usb_bridge_sleep(void)
 {
-    printk("[sleep] eng=%d cur=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
+    xgb_printk("[sleep] eng=%d cur=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
     /* Exit engineering mode if active */
     if (gd->eng_mode_active) {
         gd->eng_mode_active = 0;
@@ -102,14 +102,14 @@ void usb_bridge_sleep(void)
         hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #endif
 
-        printk("[sleep] cycle=%d\n", GET_CYCLE_COUNT(gd));
+        xgb_printk("[sleep] cycle=%d\n", GET_CYCLE_COUNT(gd));
         /* Immediately sync restored cycle count to WB7720 before sleep */
         uint16_t cycle_wb = GET_CYCLE_COUNT(gd);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&cycle_wb, 2);
     }
 
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SLEEP_CMD, 0x01);
-    printk("usb bridge sleep\n");
+    xgb_printk("usb bridge sleep\n");
 }
 
 void usb_bridge_wakeup(void)
@@ -122,7 +122,7 @@ void usb_bridge_wakeup(void)
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_WAKEUP_CMD, 0x01);
         uint8_t readback = 0;
         hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_WAKEUP_CMD, &readback);
-        printk("[WB] wake r=%d rb=%02X\n", retry, readback);
+        xgb_printk("[WB] wake r=%d rb=%02X\n", retry, readback);
     }
 
     /* Initial ProductInfo sync on wakeup; cnt==14 handles periodic refresh */
@@ -198,7 +198,7 @@ static void usb_bridge_exit_eng_mode(void)
 {
     /* Simplified policy: use current cycle count as final value on exit.
      * This applies to both injected and non-injected sessions. */
-    printk("[eng] exit: cycle=%d (kept current)\n", GET_CYCLE_COUNT(gd));
+    xgb_printk("[eng] exit: cycle=%d (kept current)\n", GET_CYCLE_COUNT(gd));
 
     /* Update CV voltage based on final cycle count */
 #if (BUCKBOOST_USED_NU6801 == 1)
@@ -229,7 +229,7 @@ static void usb_bridge_check_eng_mode(void)
 
         /* Read virtual parameters (6B: 0x82-0x87) */
         usb_bridge_read_virtual_params();
-        printk("eng enter virtual: c1=%u c2=%u t=%d\n",
+        xgb_printk("eng enter virtual: c1=%u c2=%u t=%d\n",
                gd->eng_virtual_cell1,
                gd->eng_virtual_cell2,
                gd->eng_virtual_temp);
@@ -238,7 +238,7 @@ static void usb_bridge_check_eng_mode(void)
     else if (gd->eng_mode_active && work_mode == 0x00) {
         /* PC wrote 0x00 to REG_WORK_MODE → exit engineering mode */
         usb_bridge_exit_eng_mode();
-        printk("eng mode exit\n");
+        xgb_printk("eng mode exit\n");
     }
 }
 
@@ -272,7 +272,7 @@ static void usb_bridge_check_eng_cmd(void)
                                 ok ? ENG_STATUS_OK : ENG_STATUS_FAIL);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_ERASE_CMD, 0x00);
 
-        printk("eng erase %s\n", ok ? "ok" : "fail");
+        xgb_printk("eng erase %s\n", ok ? "ok" : "fail");
     }
     else if (cmd == ENG_CMD_REFRESH) {
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_BUSY);
@@ -298,16 +298,16 @@ static void usb_bridge_check_eng_cmd(void)
                 #if (BUCKBOOST_USED_NU6805 == 1)
                     hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
                 #endif
-                printk("eng mode cycle count refresh: cycle=%d\n", GET_CYCLE_COUNT(gd));
+                xgb_printk("eng mode cycle count refresh: cycle=%d\n", GET_CYCLE_COUNT(gd));
             } else {
-                printk("eng mode cycle count keep: cycle=%d (no change)\n", GET_CYCLE_COUNT(gd));
+                xgb_printk("eng mode cycle count keep: cycle=%d (no change)\n", GET_CYCLE_COUNT(gd));
             }
         }
 
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_OK);
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_ERASE_CMD, 0x00);
 
-        printk("eng refresh\n");
+        xgb_printk("eng refresh\n");
     }
 }
 
@@ -322,7 +322,7 @@ static void usb_bridge_check_time_sync(void)
     if (trigger == TIME_SYNC_MAGIC) {
         usb_bridge_apply_eng_datetime();
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_TIME_SYNC, 0x00);
-        printk("time sync ok\n");
+        xgb_printk("time sync ok\n");
     }
 }
 
@@ -360,7 +360,7 @@ static void usb_bridge_check_prod_mode(void)
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_OK);
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, 0x00);
 
-    printk("prod info written\n");
+    xgb_printk("prod info written\n");
 }
 
 /********************* Periodic Update (47ms) *********************/
@@ -385,7 +385,7 @@ void usb_bridge_periodic_update(void)
         /* 管理 WB7720 睡眠状态：非 force_usb_mode 时让 WB7720 回到睡眠 */
         if (!gd->force_usb_mode && is_usb_enable)
         {
-            printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
+            xgb_printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
             usb_bridge_sleep();
             is_usb_enable = false;
         }
@@ -419,7 +419,7 @@ void usb_bridge_periodic_update(void)
          * 工程/生产模式轮询。 */
         if (is_usb_enable)
         {
-            printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
+            xgb_printk("[USB] mode->sleep eng=%d cycle=%d\n", gd->eng_mode_active, GET_CYCLE_COUNT(gd));
             usb_bridge_sleep();
             is_usb_enable = false;
         }
@@ -479,7 +479,7 @@ void usb_bridge_periodic_update(void)
     else if (cnt == 5)
     {
         write_buf = GET_CYCLE_COUNT(gd);
-        printk("[cnt5] cycle=%d eng=%d\n", write_buf, gd->eng_mode_active);
+        xgb_printk("[cnt5] cycle=%d eng=%d\n", write_buf, gd->eng_mode_active);
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_CYCLE_COUNT, (uint8_t*)&write_buf, 2);
     }
     /* ---- cnt 6: Internal Resistance ---- */

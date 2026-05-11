@@ -5,11 +5,12 @@
 #include "config.h"
 
 #define BAT_LOG_DEBUG 0
-#if SUPPORT_BAT_RECORD_LOG
-	#define br_printk 	printk
+#if SUPPORT_XGB_LOG
+	#define xgb_printk 	printk
 #else
-	#define br_printk(...)
+	#define xgb_printk(...)
 #endif
+#define br_printk xgb_printk
 
 /********************* Flash Address Definitions *********************/
 // Multi-page flash addresses (support 1-3 pages)

@@ -1,6 +1,14 @@
 #ifndef NTC_H_
 #define NTC_H_
 
+#include "config.h"
+
+#if SUPPORT_NTC_LOG
+    #define ntc_printk    printk
+#else
+    #define ntc_printk(...)
+#endif
+
 #define NTC_10K_3435_REAL_RT_N20		(696)
 #define NTC_10K_3435_REAL_RT_N19		(672)
 #define NTC_10K_3435_REAL_RT_N18		(640)
