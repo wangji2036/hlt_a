@@ -709,7 +709,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			gd->dploss_cal.vrect = (mpp_ask->msg.cal_capture.vrect_msb << 8) + mpp_ask->msg.cal_capture.vrect_lsb;
 			gd->dploss_cal.irect = (mpp_ask->msg.cal_capture.irect_h << 8) + mpp_ask->msg.cal_capture.irect_l;
 
-			// printk("\r\n [CAL_CAPTURE %d,%d,%d,%d,%d]",
+			// wpc_printk("\r\n [CAL_CAPTURE %d,%d,%d,%d,%d]",
 			// 			gd->dploss_cal.index_cnt, gd->dploss_cal.preceived, gd->dploss_cal.prect, gd->dploss_cal.vrect, gd->dploss_cal.irect);
 
 			fsk_pkt.mpp_fsk.data[0] = 0x14;

@@ -6,6 +6,7 @@
 #include "delay.h"
 #include "osal.h"
 #include "algo.h"
+#include "_wpc.h"
 
 
 #define SEIC_DEV_ADDR    0x04 //8bit
@@ -78,7 +79,7 @@ void fm1210_sleep(void)
 	slen = 2;
 
 	ret = fm1210_i2c_transceive_sleep((uint8_t *)&fm_pack, slen, g_rbuf, &read_len);
-    printk("\r\n FMSC sleep %d",ret);
+    wpc_printk("\r\n FMSC sleep %d",ret);
 }
 void fm1210_init(void)
 {
@@ -86,7 +87,7 @@ void fm1210_init(void)
 	fm1210_wakeup();
 	//device selection must be completed within 30ms after fm1210 wake up
 	fm1210_device_select(g_rbuf);
-	printk("\r\n done");
+	wpc_printk("\r\n done");
 }
 
 int fm1210_i2c_send_frame(uint8_t cmd, uint8_t *sbuf, uint16_t slen)
@@ -153,7 +154,7 @@ int fm1210_i2c_recv_frame(uint8_t *rbuf, uint16_t *rlen)
 		//recv_length
 		if (hal_i2cm_byte_read(&fm_hdr.len, 0) < 0) { ret = -2; break; }
 		recv_len = fm_hdr.len;
-		if (recv_len < FM1210_I2C_READ_LEN_MIN || recv_len > FM1210_I2C_READ_LEN_MAX) { printk(" \r\n length_err ..."); *rlen = 0; ret = -3; break; }
+		if (recv_len < FM1210_I2C_READ_LEN_MIN || recv_len > FM1210_I2C_READ_LEN_MAX) { wpc_printk(" \r\n length_err ..."); *rlen = 0; ret = -3; break; }
 
 		//recv_sta & data
 		for (i=0; i<recv_len; i++) { hal_i2cm_byte_read(&rbuf[i], 0); }
@@ -169,7 +170,7 @@ int fm1210_i2c_recv_frame(uint8_t *rbuf, uint16_t *rlen)
 		if (ret < 0) break;
 
 		crc = crc_msb << 8 | crc_lsb;
-		if (crc != crc16_ccitt(rbuf, recv_len, 0xC6C6)) { printk(" \r\n crc_err ..."); *rlen = 0; ret = -4; break; }
+		if (crc != crc16_ccitt(rbuf, recv_len, 0xC6C6)) { wpc_printk(" \r\n crc_err ..."); *rlen = 0; ret = -4; break; }
 
 		fm_hdr.flag.sta = rbuf[0];
 		*rlen = recv_len - 1; //recv data length
@@ -194,12 +195,12 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 		ret = fm1210_i2c_recv_frame(rbuf, rlen);
 		if (ret)
 		{
-			printk("\r\n fm1210 %d", ret);
+			wpc_printk("\r\n fm1210 %d", ret);
 
 		}
 		else
 		{
-		//	printk("\r\n fm1210--- %d", ret);
+		//	wpc_printk("\r\n fm1210--- %d", ret);
 			break;
 		}
 	} while (1);//TODO: need timeout to avoid endless loop
@@ -221,7 +222,7 @@ int fm1210_i2c_transceive_sleep(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uin
         delay_1ms(5);
         if (0 != ret)
         {
-        	printk("\r\n readfail %d %d",ret,ii);
+        	wpc_printk("\r\n readfail %d %d",ret,ii);
         	delay_1ms(5);
         	continue;
         }
@@ -243,12 +244,12 @@ int fm1210_i2c_transceive_sleep(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uin
 		ret = fm1210_i2c_recv_frame(rbuf, rlen);
 		if (ret)
 		{
-			printk("\r\n fm1210 %d", ret);
+			wpc_printk("\r\n fm1210 %d", ret);
 			break;
 		}
 		else
 		{
-			//printk("\r\n fm1210--- %d", ret);
+			//wpc_printk("\r\n fm1210--- %d", ret);
 			break;
 		}
 	} while (1);//TODO: need timeout to avoid endless loop
@@ -272,17 +273,17 @@ int fm1210_get_qi_id(uint8_t *rbuf)
 		return ret;
 	}
 
-//	printk(" \r\n rbuf[%d]-> ", read_len);
+//	wpc_printk(" \r\n rbuf[%d]-> ", read_len);
 //	for (i=0; i<read_len; i++)
 //	{
-//		printk("%02X ", rbuf[i]);
+//		wpc_printk("%02X ", rbuf[i]);
 //	}
 //
-	printk(" \r\n qi_id-> ");
+	wpc_printk(" \r\n qi_id-> ");
 	for (i=0; i<3; i++)
 	{
 		rbuf[i] = rbuf[i + 11];
-		printk("%02X ", rbuf[i]);
+		wpc_printk("%02X ", rbuf[i]);
 	}
 
 	return 0;
@@ -305,7 +306,7 @@ int fm1210_read_cert_hash(uint8_t *rbuf)
 
     if (ret)
     {
-    	printk("\r\n read cert_hash error 0x30");
+    	wpc_printk("\r\n read cert_hash error 0x30");
         return (ret);
     }
 
@@ -314,15 +315,15 @@ int fm1210_read_cert_hash(uint8_t *rbuf)
 
     if (ret)
     {
-    	printk("\r\n read cert_hash error 0x33");
+    	wpc_printk("\r\n read cert_hash error 0x33");
         return (ret);
     }
 
 //	osal_mem_copy(certhash, rbuf, 32);
-//	printk(" \r\n certhash[%d]-> ", read_len);
+//	wpc_printk(" \r\n certhash[%d]-> ", read_len);
 //	for (i=0; i<32; i++)
 //	{
-//		printk("%02X ", certhash[i]);
+//		wpc_printk("%02X ", certhash[i]);
 //	}
 
     return (ret);
@@ -346,15 +347,15 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
 
     if (ret)
     {
-    	printk("\r\n se_cert 1st err");
+    	wpc_printk("\r\n se_cert 1st err");
         return (ret);
     }
     else
     {
-/*    	printk(" \r\n rbuf-0x3001[%d]-> ", i);
+/*    	wpc_printk(" \r\n rbuf-0x3001[%d]-> ", i);
     	for (i=0; i<read_len; i++)
     	{
-    		printk("%02X ", rbuf[i]);
+    		wpc_printk("%02X ", rbuf[i]);
     	}*/
     }
     fm_pack.apdu_data[0]++;
@@ -364,7 +365,7 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
     /*max len 400 bytes */
     if (*rlen > 400)
     {
-    	printk("\r\n se_cert len_err %d", *rlen);
+    	wpc_printk("\r\n se_cert len_err %d", *rlen);
     	return -10; //IF_ERR_LENGTH
     }
 
@@ -377,15 +378,15 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
 
         if (ret)
         {
-        	printk("\r\n se_cert %d block err", i);
+        	wpc_printk("\r\n se_cert %d block err", i);
             return (ret);
         }
         else
         {
-/*        	printk(" \r\n rbuf-0x3001[%d]-> ", i);
+/*        	wpc_printk(" \r\n rbuf-0x3001[%d]-> ", i);
         	for (uint16_t j=0; j<read_len; j++)
         	{
-        		printk("%02X ", rbuf[i * 16 + j]);
+        		wpc_printk("%02X ", rbuf[i * 16 + j]);
         	}*/
         }
 
@@ -409,15 +410,15 @@ int fm1210_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
         ret = fm1210_i2c_transceive((uint8_t *)&fm_pack, slen, rbuf + blocknumber * 16, &read_len);
         if (ret)
         {
-        	printk("\r\n se_cert last block err");
+        	wpc_printk("\r\n se_cert last block err");
             return (ret);
         }
         else
         {
-/*        	printk(" \r\n rbuf-0x3001[%d]-> ", i+1);
+/*        	wpc_printk(" \r\n rbuf-0x3001[%d]-> ", i+1);
         	for (uint16_t j=0; j<read_len; j++)
         	{
-        		printk("%02X ", rbuf[blocknumber * 16 + j]);
+        		wpc_printk("%02X ", rbuf[blocknumber * 16 + j]);
         	}*/
         }
     }
@@ -438,7 +439,7 @@ int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, ui
     ret = fm1210_read_se_cert(rbuf + 0x22 + manufacturer_cert_len, rlen );
     if (ret)
     {
-    	printk("\r\n fm1210_get_cert_chain fail");
+    	wpc_printk("\r\n fm1210_get_cert_chain fail");
         return (ret);
     }
 
@@ -446,12 +447,12 @@ int fm1210_get_cert_chain(uint8_t *wpc_cert_hash, uint8_t *manufacturer_cert, ui
     rbuf[0] = *rlen >> 8;
     rbuf[1] = *rlen & 0xFF;
 
-    printk("\r\n fm1210_get_cert_chain-> start\r\n");
+    wpc_printk("\r\n fm1210_get_cert_chain-> start\r\n");
     for (int i=0; i<*rlen; i++)
     {
-    	printk("%02X ", rbuf[i]);
+    	wpc_printk("%02X ", rbuf[i]);
     }
-    printk("\r\n fm1210_get_cert_chain-> end\r\n");
+    wpc_printk("\r\n fm1210_get_cert_chain-> end\r\n");
 
     return (ret);
 }
@@ -477,17 +478,17 @@ int data_compress_sha256(uint8_t *hashdata, uint8_t *rbuf)
 
     if (ret)
     {
-    	printk("\r\n data_compress_sha256 err");
+    	wpc_printk("\r\n data_compress_sha256 err");
         return (ret);
     }
 
 
-//    printk("\r\n compress_sha256 start %d\r\n", read_len);
+//    wpc_printk("\r\n compress_sha256 start %d\r\n", read_len);
 //    for (int i=0; i<read_len; i++)
 //    {
-//    	printk("%02X", rbuf[i]);
+//    	wpc_printk("%02X", rbuf[i]);
 //    }
-//    printk("\r\n compress_sha256 end \r\n");
+//    wpc_printk("\r\n compress_sha256 end \r\n");
 
     return (0);
 }
@@ -507,7 +508,7 @@ int ecc_private_key_cal_p256r1sha256(uint8_t* hashresult, uint8_t* rbuf)
 
     if (ret)
     {
-    	printk("\r\n ecc_private_key_cal_p256r1sha256 err");
+    	wpc_printk("\r\n ecc_private_key_cal_p256r1sha256 err");
         return (ret);
     }
 
@@ -545,44 +546,44 @@ int fm1210_get_tbs_auth(uint8_t *rbuf)
 //    tbs_auth[pos++] = certhash[31];
     tbs_auth[pos++] = array_digest[32];
 
-//    printk("\r\n orig_tba_auth start");
+//    wpc_printk("\r\n orig_tba_auth start");
 //    for (int i=0; i<54; i++)
 //    {
-//    	printk("%02X ", tbs_auth[i]);
+//    	wpc_printk("%02X ", tbs_auth[i]);
 //    }
-//    printk("\r\n orig_tba_auth end");
+//    wpc_printk("\r\n orig_tba_auth end");
 
     ret = data_compress_sha256(tbs_auth, tbs_authhash);
     if (ret)
     {
-        printk("\r\n Get TBS Auth Digest Failed %04X", ret );
+        wpc_printk("\r\n Get TBS Auth Digest Failed %04X", ret );
         return ret;
     }
 //    else
 //    {
-//        printk("\r\n Get tbs_authhash Digest success \r\n");
+//        wpc_printk("\r\n Get tbs_authhash Digest success \r\n");
 //        for (int x=0; x<0x20; x++)
 //        {
-//        	printk(" %02X", tbs_authhash[x]);
+//        	wpc_printk(" %02X", tbs_authhash[x]);
 //        }
-//        printk("\r\n");
+//        wpc_printk("\r\n");
 //    }
 
-//    printk( "\r\n ////////Step 4.2 ECC Calculation - Get Signature of the digest //////////\r\n" );
+//    wpc_printk( "\r\n ////////Step 4.2 ECC Calculation - Get Signature of the digest //////////\r\n" );
     ret = ecc_private_key_cal_p256r1sha256(tbs_authhash, rbuf);
     if (ret)
     {
-        printk("\r\n ECC Calculation Failed %04X\r\n", ret);
+        wpc_printk("\r\n ECC Calculation Failed %04X\r\n", ret);
         return ret;
     }
 //    else
 //    {
-//        printk( "\r\n ECC Calculation success\r\n" );
+//        wpc_printk( "\r\n ECC Calculation success\r\n" );
 //        for (int x=0; x<0x40; x++)
 //        {
-//        	printk(" %02X", rbuf[x]);
+//        	wpc_printk(" %02X", rbuf[x]);
 //        }
-//        printk("\r\n");
+//        wpc_printk("\r\n");
 //    }
 
     return 0;

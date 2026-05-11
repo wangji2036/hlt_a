@@ -90,7 +90,7 @@ uint8_t pfod_action(void)
     	{
 			gd->power_limit_sts.fop_flag = 1;
 			res = 1;//will throttle after rpp and do not ack cep
-//			printk("\r\n IOC#10.4.05");
+//			wpc_printk("\r\n IOC#10.4.05");
 		}
     }
 
@@ -141,7 +141,7 @@ uint8_t pfod_action(void)
 
 						if (pfo_en_reco)
 						{
-						//	printk("\r\n 8");
+						//	wpc_printk("\r\n 8");
 							gd->tx_infos.nego_cap = gd->tx_infos.tar_cap_fod;
 							gd->tx_infos.need_renego_cap = 1;
 							res = 2;//go to send ATN and increase the nego cap
@@ -266,7 +266,7 @@ uint8_t pfod_mpla(void)
 		{// || gd->rx_infos.gcoil_tx < 1
 			pfo_thd = PFO_10W_THD;
 			pfo_thd_reco = PFO_10W_RECO;
-		//	printk("\r\n pfo: %d %d", pfo_thd, pfo_thd_reco);
+		//	wpc_printk("\r\n pfo: %d %d", pfo_thd, pfo_thd_reco);
 		}
 		else
 		{

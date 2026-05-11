@@ -67,7 +67,7 @@ static void wpc_pkt_print(void)
 	len += 2;
 	if (len != gd->wpc_pkt.len)
 	{
-		//printk("\r\n error ---------------> %d %d", len, gd->wpc_pkt.len);
+		//wpc_printk("\r\n error ---------------> %d %d", len, gd->wpc_pkt.len);
 	}
 
 #if 0
@@ -189,7 +189,7 @@ void wpc_stop_power(void)
 	osal_stop_timerEx(WPC_CEP_TIMER);
 	osal_stop_timerEx(WPC_RPP_TIMER);
 
-	//printk("\r\n -------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
+	//wpc_printk("\r\n -------power removed-> %02X %d %d", gd->sys_err_code, gd->pid_volt, gd->dig_ping_volt);
 	if(cnt_ping > 7 &&gd ->sigle_clicked == 1&&g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE ){
 		if (gd->sys_err_code == 0x16)
 		{
@@ -319,13 +319,13 @@ void wpc_pkt_hdr_handler(void)
 	{
 		osal_start_timerEx(WPC_NEXT_TIMER, T_FIRST_LIMIT, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
 //		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-//		printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, T_FIRST_LIMIT, gd->wpc_pkt.src);
+//		wpc_printk("\r\n ping_xfer-> %02X %d %d", gd->wpc_pkt.hdr, T_FIRST_LIMIT, gd->wpc_pkt.src);
 	}
 	else if (gd->ptx_protocol_phase == WPC_PHASE_CNFG)
 	{
 //		osal_start_timerEx(WPC_NEXT_TIMER, T_MAX_LIMIT, 0, WPC_TASK, WPC_EVT_CNFG_NEXT_PKT_TO);
 		osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
-//printk("\r\n cnfg_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
+//wpc_printk("\r\n cnfg_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
 	}
 	else if ((gd->ptx_protocol_phase == WPC_PHASE_NEGO) || (WPC_PHASE_XFER == gd->ptx_protocol_phase))
 	{
@@ -342,7 +342,7 @@ void wpc_pkt_hdr_handler(void)
 	else if (WPC_PHASE_CLOAK == gd->ptx_protocol_phase)
 	{
 //		osal_start_timerEx(WPC_NEXT_TIMER, T_CLOAK_TIMEOUT_EX, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
-//		printk("\r\n cloak_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
+//		wpc_printk("\r\n cloak_xfer-> %02X %d %d", gd->wpc_pkt.hdr, (gd->wpc_pkt.len - 1) * 10, gd->wpc_pkt.src);
 		if (gd->wpc_pkt.hdr == 0x18 || gd->wpc_pkt.hdr == 0x28 || gd->wpc_pkt.hdr == 0x58)
 		{
 //			osal_start_timerEx(WPC_NEXT_TIMER, (gd->wpc_pkt.len - 1) * 10, 0, WPC_TASK, WPC_EVT_PIN_NO_PKT);
@@ -452,7 +452,7 @@ void wpc_task_event_handler(uint32_t event)
 			gd->isns_avg = (gd->isns_avg + hal_badc_meas(_BADC_CH_PD6_ADC3)) >> 1;
 			gd->vpwr_avg = (gd->vpwr_avg + g_buckboost.adc_vbus) >> 1;//; hal_badc_meas(_BADC_CH_PB6_ADC7)
 			gd->tx_power = gd->isns_avg * gd->vpwr_avg / 1000;
-			//printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d fo_exist:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp,gd->tx_infos.fo_exist);
+			//wpc_printk("  vpwr:%d iavg:%d irms:%d imax:%d vctx:%d fo_exist:%d", gd->vpwr_avg, gd->isns_avg, gd->icol_rms, gd->icol_max, gd->vctx_pp,gd->tx_infos.fo_exist);
 			break;
 		case WPC_EVT_FSK_RESP_DONE:
 //			if (gd->tx_infos.fsk_done_event & 1)
@@ -531,7 +531,7 @@ void wpc_task_event_handler(uint32_t event)
 		//	{
               //  gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
 			//	wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_POWER_LOSS_FOD);
-			//	printk("\r\n FOD happen");
+			//	wpc_printk("\r\n FOD happen");
 			//}
 			if (pfod_common())
 			{
@@ -565,12 +565,12 @@ void wpc_task_event_handler(uint32_t event)
 			{
 				fm1210_get_tbs_auth(array_chall);
 			}
-//			printk("\r\n tbs_hash:");
+//			wpc_printk("\r\n tbs_hash:");
 //			for (int i=0; i<64; i++)
 //			{
-//				printk(" %02X", array_chall[i]);
+//				wpc_printk(" %02X", array_chall[i]);
 //			}
-//			printk("\r\n");
+//			wpc_printk("\r\n");
 			break;
 		case WPC_EVT_FOD_REPORTED:
 			pfod_log_print();

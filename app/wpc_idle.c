@@ -67,10 +67,10 @@ uint8_t is_stable(void)
 		if (pre_f[i] > f_max) f_max = pre_f[i];
 		if (pre_f[i] < f_min) f_min = pre_f[i];
 
-//		printk("\r\n %d %d", pre_q[i], pre_q[i]);
+//		wpc_printk("\r\n %d %d", pre_q[i], pre_q[i]);
 	}
 
-//	printk("\r\n max_min %d %d %d %d", q_max, q_min, f_max, f_min);
+//	wpc_printk("\r\n max_min %d %d %d %d", q_max, q_min, f_max, f_min);
 
 	return (delta_abs(q_max, q_min) < 30) && (delta_abs(f_max, f_min) < 30);
 }
@@ -206,7 +206,7 @@ uint8_t qfod_detect(void)
 						qdt_try_ping_count += (1 + rx_may_still_be_flag * ap->pin_max_cnt);
 						gd->tx_infos.fo_exist = 0;
 					}
-					//printk("333333333");
+					//wpc_printk("333333333");
 				}
 			}
 			break;
@@ -282,7 +282,7 @@ uint8_t qfod_detect(void)
 	{
 		gd->dig_ping_continuous_cnt = 0;
 	}
-//	printk("\r\n dig_ping_continuous_cnt-> %d", gd->dig_ping_continuous_cnt);
+//	wpc_printk("\r\n dig_ping_continuous_cnt-> %d", gd->dig_ping_continuous_cnt);
 
 	return no_obj;
 }
@@ -452,7 +452,7 @@ void wpc_idle_dig_ping_init_128K(void)
 
 	if (gd->dig_ping_continuous_cnt % 5 == 0) //for IOC test, TPR#1C, 6.2.09 Test#23
 	{
-//		printk("\r\n dig_ping_continuous_cnt: %d", gd->dig_ping_continuous_cnt);
+//		wpc_printk("\r\n dig_ping_continuous_cnt: %d", gd->dig_ping_continuous_cnt);
 /*		if(gd->dig_ping_volt == ap->dig_ping_volt_11v)
 		{
 			gd->dig_ping_volt = 11000;
@@ -765,9 +765,9 @@ void wpc_idle_phase_process(void)
 		}
 	}
 	
-	//printk("sigle click %d \r\n",gd->sigle_clicked);
+	//wpc_printk("sigle click %d \r\n",gd->sigle_clicked);
 	// if(gd->vpwr >13000){
-	// 	printk("no wpc due to vbus %d \r\n",gd->vpwr);
+	// 	wpc_printk("no wpc due to vbus %d \r\n",gd->vpwr);
 	// 	return;
 	// }
 	if(gd->bat_dead_flag) return;

@@ -153,13 +153,13 @@ void wpc_epp_GRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
         {
         fsk_pkt.epp_fsk.cap.neg_power = 20; //10W
         fsk_pkt.epp_fsk.cap.pot_power = 20;
-        //printk("\r\n !!!EPP 10W \r\n");
+        //wpc_printk("\r\n !!!EPP 10W \r\n");
         }
         else
         {
         fsk_pkt.epp_fsk.cap.neg_power = EPP_CAP_NEGOTIABLE_POWER; //15W
         fsk_pkt.epp_fsk.cap.pot_power = EPP_CAP_POTENTIAL_POWER;
-        //printk("\r\n !!!EPP 15W \r\n");
+        //wpc_printk("\r\n !!!EPP 15W \r\n");
         }
 
         fsk_pkt.epp_fsk.cap.nrs = EPP_CAP_NRS;
@@ -1405,7 +1405,7 @@ void wpc_epp_DSR_ack_handler(void)
 //
 //                    fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10;
 //
-//                    printk("\r\n send end2: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
+//                    wpc_printk("\r\n send end2: %d %d %d %02x", epp_auth.send_cert_offset, epp_auth.send_cert_total_len, i, fsk_pkt.epp_fsk.ADT_pkt.hdr);
 //
 //                    break;
 //                }

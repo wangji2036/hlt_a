@@ -159,7 +159,7 @@ void pid_cep_handler(int8_t cep)
 {
 	pid_ctrl_mode_sel(cep);
 
-	//printk("\r\n ce=%d ctrl=%d\n",cep,m_pid_ctrl_mode);
+	//wpc_printk("\r\n ce=%d ctrl=%d\n",cep,m_pid_ctrl_mode);
 
 	if (cep == 0) return;
 
@@ -364,7 +364,7 @@ void pid_cep_handler(int8_t cep)
 
 //			if (gd->atl_test_ldstp_bpp_P60 == 1)
 //			{
-//				printk("\r\n xxxxxx-> %d %d", tmp_duty, gd->pid_duty);
+//				wpc_printk("\r\n xxxxxx-> %d %d", tmp_duty, gd->pid_duty);
 //				for (int i=tmp_duty; i<=gd->pid_duty; i++)
 //				{
 //					hal_epwm_pwm_update(EPWM1, gd->pid_perd, i, gd->pid_phas);

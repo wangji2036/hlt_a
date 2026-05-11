@@ -111,7 +111,7 @@ void apl_task_event_handler(uint32_t event)
 			gd->sys_infos.ntc_temp_wpc = fml_ntc_temp_get_wpc();
 
 //			gd->sys_infos.die_temp = fml_die_temp_get();
-			printk("\r\n ntc_typec=%d,ntc_wpc=%d,bat_temp=%d,bat_res=%d",gd->sys_infos.ntc_temp_typec,gd->sys_infos.ntc_temp_wpc,ntc_to_temp(g_buckboost.adc_tbat1),g_buckboost.adc_tbat1);
+			wpc_printk("\r\n ntc_typec=%d,ntc_wpc=%d,bat_temp=%d,bat_res=%d",gd->sys_infos.ntc_temp_typec,gd->sys_infos.ntc_temp_wpc,ntc_to_temp(g_buckboost.adc_tbat1),g_buckboost.adc_tbat1);
 //			fml_tntc_otp_check(gd->sys_infos.ntc_temp);
 			wpc_power_handle(gd->sys_infos.ntc_temp_wpc, ntc_to_temp(g_buckboost.adc_tbat1));
 		//	fml_tntc_utp_check(gd->sys_infos.ntc_temp);
@@ -141,7 +141,7 @@ void apl_task_event_handler(uint32_t event)
 					hal_epwm_pwm_update(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
 					gd->pid_volt = gd->pid_limit.volt_lim_lo;
 					fml_adp_volt_set(gd->pid_volt);
-					printk(" [EPP_OVP_TEST:%d,%d] ", pre_isns, gd->isns);
+					wpc_printk(" [EPP_OVP_TEST:%d,%d] ", pre_isns, gd->isns);
 				}
 			}
 			pre_isns = gd->isns;
@@ -193,7 +193,7 @@ void apl_task_event_handler(uint32_t event)
 
 //				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_CEP_TIMEOUT);
 
-				printk("\r\n------>!!!!!%d,%d",Tmp_max,gd->isns);
+				wpc_printk("\r\n------>!!!!!%d,%d",Tmp_max,gd->isns);
 			}
 			gd->vpwr = g_buckboost.adc_vbus;
 			//gd->vpwr = hal_badc_meas(_BADC_CH_PD0_ADC8);

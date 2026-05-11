@@ -5,6 +5,7 @@
 #include "printk.h"
 #include "delay.h"
 #include "i2cm.h"
+#include "_wpc.h"
 
 
 /* algorithm object string TLV: ecdsa-with-SHA256 */
@@ -64,7 +65,7 @@ void t91206_init(void)
 {
     hal_i2cm_init(100000);
     i2c_PowerUp();
-    printk("\r\n t91206_init done");
+    wpc_printk("\r\n t91206_init done");
 }
 
 int t91206_get_qi_id(uint8_t *rbuf)
@@ -76,10 +77,10 @@ int t91206_get_qi_id(uint8_t *rbuf)
     rbuf[0] = 6;
     int ret = TMC_GetQiID(rbuf, slotNumReq);
 
-	printk("\r\n t91206_qi_id: ");
+	wpc_printk("\r\n t91206_qi_id: ");
 	for (int i=0; i<6; i++)
 	{
-		printk("%c", *(rbuf + i));
+		wpc_printk("%c", *(rbuf + i));
 	}
 
     return ret;
@@ -98,11 +99,11 @@ int t91206_read_cert_hash(uint8_t *rbuf)
     unsigned int read_digest_len = 32;
     int ret = TMC_ReadDigests(&slotMaskRet, rbuf, &read_digest_len, slotMaskReq);
 
-//	printk("\r\n ReadDigests ret->%X %x %x %x\r\n", ret, slotMaskRet, slotMaskReq, read_digest_len);
-    printk("\r\n DIGEST:");
+//	wpc_printk("\r\n ReadDigests ret->%X %x %x %x\r\n", ret, slotMaskRet, slotMaskReq, read_digest_len);
+    wpc_printk("\r\n DIGEST:");
     for (int i = 0; i < read_digest_len; i++)
     {
-        printk(" %02X",rbuf[i]);
+        wpc_printk(" %02X",rbuf[i]);
     }
 
     return ret;
@@ -120,60 +121,60 @@ int t91206_read_se_cert(uint8_t *rbuf, uint32_t *rlen)
     /* Read out the whole certificate chain in one time */
     int ret = TMC_ReadCertification(rbuf, 0, (unsigned int *)rlen, slotNumReq);
 
-//    printk("\r\n ReadCertificationret->%X len: %d \r\n", ret, *rlen);
+//    wpc_printk("\r\n ReadCertificationret->%X len: %d \r\n", ret, *rlen);
 
     int i = 0;
 
-    printk("\r\n CERT_LEN:");
-    printk("\r\n");
+    wpc_printk("\r\n CERT_LEN:");
+    wpc_printk("\r\n");
     for (i=0; i<2; i++)
     {
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
-    printk("\r\n Root CA Hash");
-    printk("\r\n");
+    wpc_printk("\r\n Root CA Hash");
+    wpc_printk("\r\n");
     for (i=2; i<2+32; i++)
     {
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
-    printk("\r\n Manufacturer CA Certificate");
-    printk("\r\n");
+    wpc_printk("\r\n Manufacturer CA Certificate");
+    wpc_printk("\r\n");
     for (i=2+32; i<2+32+4; i++)
     {
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
     for (i=2+32+4; i<2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1]); i++)
     {
     	if ((i-(2+32+4)) % 32 == 0)
     	{
-    		printk("\r\n");
+    		wpc_printk("\r\n");
     	}
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
-    printk("\r\n Product Unit Certificate");
-    printk("\r\n");
+    wpc_printk("\r\n Product Unit Certificate");
+    wpc_printk("\r\n");
     for (i=2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1]); i<2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4; i++)
     {
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
     for (i=2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4; i<*rlen; i++)
     {
     	if ((i-(2+32+4+(rbuf[2+32+4-2]*256+rbuf[2+32+4-1])+4)) % 32 == 0)
     	{
-    		printk("\r\n");
+    		wpc_printk("\r\n");
     	}
-    	printk(" %02X", rbuf[i]);
+    	wpc_printk(" %02X", rbuf[i]);
     }
 
 
-//    printk("\r\n");
-//    printk("\r\n");
-//    printk("\r\n");
+//    wpc_printk("\r\n");
+//    wpc_printk("\r\n");
+//    wpc_printk("\r\n");
 
     return ret;
 }
@@ -197,15 +198,15 @@ int t91206_get_tbs_auth(uint8_t *signature , uint8_t *array_random)
 
     ret = ret;
 
-    printk("\r\n CHALL_AUTH");
+    wpc_printk("\r\n CHALL_AUTH");
 
     for (int i = 0; i < len_Resp; i++)
     {
     	if (i % 32 == 0)
     	{
-    		printk("\r\n");
+    		wpc_printk("\r\n");
     	}
-        printk(" %02X", signature[i]);
+        wpc_printk(" %02X", signature[i]);
     }
 
     return 0;
@@ -579,12 +580,12 @@ int TMC_ReadDigests(unsigned char *slotMaskRet, unsigned char *digests, unsigned
 
     if ((slotMaskRet == NULL) || (digests == NULL) || (outLen == NULL))
     {
-        printk("ERR_WRONG_PARAMETER\n");
+        wpc_printk("ERR_WRONG_PARAMETER\n");
         return ERR_WRONG_PARAMETER;
     }
     if (slotMaskReq == 0 || slotMaskReq > 0x0F)
     {
-        printk("ERR_INVALID_REQUEST\n");
+        wpc_printk("ERR_INVALID_REQUEST\n");
         return ERR_INVALID_REQUEST;
     }
     /* Get max digests length with requested slot mask */
@@ -597,7 +598,7 @@ int TMC_ReadDigests(unsigned char *slotMaskRet, unsigned char *digests, unsigned
     }
     if (*outLen < offset)
     {
-        printk("ERR_WRONG_PARAMETER\n");
+        wpc_printk("ERR_WRONG_PARAMETER\n");
         return ERR_WRONG_PARAMETER;
     }
 
@@ -1079,21 +1080,21 @@ int tmc_read_data(unsigned char *data, unsigned int data_off, unsigned int data_
         apdu.tx = apduBuf;
         apdu.rx = RecvBuf;
         apdu.rx_len = sizeof(RecvBuf);
-//        printk("\r\n apdu-> %d %d %d %d", readlen, data_len, len, apdu.rx_len);
+//        wpc_printk("\r\n apdu-> %d %d %d %d", readlen, data_len, len, apdu.rx_len);
 
         delay_1ms(200);
         rv = transmit_apdu(&apdu);
 
         while (rv != SUCCEED)
         {
-//        	printk("\r\n T91-retry");
+//        	wpc_printk("\r\n T91-retry");
             delay_1ms(200);
             rv = transmit_apdu(&apdu);
         }
 
         if (rv != SUCCEED)
         {
-//        	printk("\r\n yyy");
+//        	wpc_printk("\r\n yyy");
             rv = FAILED;
             goto end;
         }

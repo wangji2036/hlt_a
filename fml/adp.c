@@ -6,6 +6,7 @@
 #include "debug.h"
 #include "adp.h"
 #include "tcpm.h"
+#include "_wpc.h"
 #include "config.h"
 
 void fml_adp_type_set(enum adp_type_t adp_type, uint16_t volt_min, uint16_t volt_max, uint16_t pwr_high)
@@ -18,7 +19,7 @@ void fml_adp_type_set(enum adp_type_t adp_type, uint16_t volt_min, uint16_t volt
 	gd->adp.volt_min = volt_min;
 	gd->adp.volt_max = volt_max;
 	gd->adp.pwr_high = pwr_high;
-	printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
+	wpc_printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
 }
 
 void fml_adp_init(void)
@@ -61,7 +62,7 @@ void fml_adp_init(void)
 //		}
 //	}
 //
-	printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
+	wpc_printk("\r\n ADP-> %02X %d %d %d", gd->adp.adp_type, gd->adp.volt_min, gd->adp.volt_max, gd->adp.pwr_high);
 
 	//fml_adp_volt_set(9000);
 }
@@ -73,7 +74,7 @@ void fml_adp_update(void)
 
 void fml_adp_volt_set(uint16_t volt)
 {
-	printk("adp[%x] = %d \n",gd->adp.adp_type,volt);
+	wpc_printk("adp[%x] = %d \n",gd->adp.adp_type,volt);
 	switch (gd->adp.adp_type)
 	{
 		case EADP_TYPE_PD2P0_05V:
