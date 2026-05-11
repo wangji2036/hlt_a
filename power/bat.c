@@ -419,9 +419,8 @@ void battery_task_handle(void) // 100mS
     //     g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 90 / g_buckboost.adc_vbat / 100;
     // else
     //     g_bat.ibat = g_buckboost.adc_ibus * g_buckboost.adc_vbus * 100 / g_buckboost.adc_vbat / 90;
-
-    if (g_bat.ibat == 0)
-        return;
+    // if (g_bat.ibat == 0)
+    //     return;
 #define INIT_VALUE 0xff89
     if (g_bat.bat_is_inited != INIT_VALUE)
     {
