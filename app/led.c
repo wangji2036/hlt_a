@@ -286,7 +286,7 @@ static void ui_update_led(void)
 				soc_show_ram_led = 0;
 			}
 		}	
-		else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+		else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 		{
 			if (button_led_run)
 			{
