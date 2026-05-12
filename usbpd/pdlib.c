@@ -92,7 +92,6 @@ void pdlib_run(void)
 						{
 							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
 							ntc_switch_event = true;
-							printk("switch WPC\n");
 						}	
 					break;
 				case PDO_STATE_LIMIT:
@@ -103,7 +102,6 @@ void pdlib_run(void)
 						{
 							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
 							ntc_switch_event = true;
-							printk("switch WPC\n");
 						}	 
 					break;
 				default:
@@ -114,7 +112,6 @@ void pdlib_run(void)
 						{
 							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
 							ntc_switch_event = true;
-							printk("switch WPC\n");
 						}	 
 					break;
 			}
