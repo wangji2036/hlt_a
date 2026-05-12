@@ -263,8 +263,8 @@ void buckboost_ntc_handle(void)
 
 			// 同放温度抑制：仅当 C 口 + 无线充同时 SOURCE 才判定
 			// <0°C 或 ≥45°C 禁止同放（仅留 C 口），[5, 40] 恢复同放（max 5V/3A）
-			if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
-			{
+			// if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
+			// {
 				if(!bat_ntc_dual_dischg_inhibit)
 				{
 					if(bat_temp < 0 || bat_temp >= 45)
@@ -297,11 +297,11 @@ void buckboost_ntc_handle(void)
 						dual_dischg_inhibit_cnt = 0;
 					}
 				}
-			}
-			else
-			{
-				dual_dischg_inhibit_cnt = 0;
-			}
+			// }
+			// else
+			// {
+			// 	dual_dischg_inhibit_cnt = 0;
+			// }
 
 		}
 	}
@@ -627,27 +627,27 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	 * 极端温度锁（≤-15 / ≥55）由 bat_ntc_dischg_lock 走 buckboost.c VBUS_FAULT_VBUS_NTC 硬锁路径 */
 void wpc_typec_cowork_otputpcheck(void)
 {
-	static uint8_t wpc_dual_temp_lock = 0;
-	if (!wpc_dual_temp_lock)
-	{
-		if (bat_ntc_dual_dischg_inhibit)
+	// static uint8_t wpc_dual_temp_lock = 0;
+	// if (!wpc_dual_temp_lock)
+	// {
+		if (bat_ntc_dual_dischg_inhibit && (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE))
 		{
 			gd->wpc_disable = 0x01;
 			tcpm_stop_wpc(WPC_DELAY);
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_DISABLE);
 			ntc_printk("\r\n WPC disabled: dual dischg inhibit=%d\n", bat_ntc_dual_dischg_inhibit);
-			wpc_dual_temp_lock = 1;
+			// wpc_dual_temp_lock = 1;
 		}
-	}
-	else
-	{
+	// }
+	// else
+	// {
 		if (!bat_ntc_dual_dischg_inhibit)
 		{
 			gd->wpc_disable = 0x00;
 			ntc_printk("\r\n WPC re-enabled: dual dischg unlock\n");
-			wpc_dual_temp_lock = 0;
+			// wpc_dual_temp_lock = 0;
 		}
-	}
+	// }
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
 		{
 			tcpm_update_wpc_work_mode(TCPM_WPC_WORK_FIX5V);
