@@ -502,7 +502,6 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 		{
 			otp_rec_cnt = 0;
 		}
-		return;
 	}
 
 	// 43°C降7.5W，30°C恢复15W

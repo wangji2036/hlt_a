@@ -44,4 +44,5 @@ enum tc_drp_reult pdlib_get_drp_toggle_result(uint8_t tc_index);
 void pdlib_tcpc_set_cc(uint8_t tc_index,enum tc_cc_status cc);
 void pdlib_set_pd_port(uint8_t tc_index);
 void pdlib_delayms_restart_typec(uint8_t index,uint16_t delay_ms);
+extern bool ntc_switch_event;
 #endif /* TCPC_H_ */

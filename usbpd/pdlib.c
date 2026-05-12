@@ -13,8 +13,10 @@
 #include "typec.h"
 #include "pdlib.h"
 #include "pd_tc.h"
+#include "port_manager.h"
 
 extern void tcpm_update_pdo_for_normal(void);
+bool ntc_switch_event = false;
 const uint32_t source_pdo_default[] =
 {
 	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND )
@@ -83,25 +85,37 @@ void pdlib_run(void)
 			switch (state)
 			{
 				case PDO_STATE_NTC:
-					tcpm_update_pdo_for_ntc();
+					tcpm_update_pdo_for_ntc();// source_pdo_ntc 5V/2A
 					if (pdlib_is_connect())
 						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
-					else
-						buckboost_set_bus_iv(5000, 2000, 500, 0);   // source_pdo_ntc 5V/2A
+					else 
+						{
+							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
+							ntc_switch_event = true;
+							printk("switch WPC\n");
+						}	
 					break;
 				case PDO_STATE_LIMIT:
 					tcpm_update_pdo_for_limit();
 					if (pdlib_is_connect())
 						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
-					else
-						buckboost_set_bus_iv(5000, 3000, 500, 0);   // source_pdo1[0] 5V/3A
+					else 
+						{
+							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
+							ntc_switch_event = true;
+							printk("switch WPC\n");
+						}	 
 					break;
 				default:
 					tcpm_update_pdo_for_normal();
 					if (pdlib_is_connect())
 						pdlib_set_pd_event(pdlib_get_port_map(), USB_PD_EVT_SOURCE_SOFTRESET);
-					else
-						buckboost_set_bus_iv(5000, 3000, 500, 0);   // source_pdo[0] 5V/3A 还原默认
+					else 
+						{
+							if(g_port.port_state[WPC_INDEX] != PORT_STATE_SOURCE)
+							ntc_switch_event = true;
+							printk("switch WPC\n");
+						}	 
 					break;
 			}
 		}

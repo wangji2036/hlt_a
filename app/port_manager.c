@@ -1073,8 +1073,13 @@ void port_enum_port0_connect_success(void)
 			hal_tcpc_set_gate_en(PORT0_INDEX,true);
 			if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT2_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 			{
-				usb_dpdm_select(PORT0_INDEX);
-				pdlib_set_pd_port(PORT0_INDEX);
+				if(gd->bat_ntc_cport_dischg_reduce_flag || typec_ntc_dischg_ot_reduce20W_flag)
+					usb_dpdm_select(DPDM_PHY_OFF);
+				else
+					{
+						usb_dpdm_select(PORT0_INDEX);
+						pdlib_set_pd_port(PORT0_INDEX);
+					}
 				hal_tcpc_set_roles(PORT0_INDEX,TYPEC_SOURCE,TYPEC_HOST);
 				pdlib_set_pd_event(PORT0_INDEX,USB_PD_EVT_SRC_ATTACHED);
 				osal_set_event(USB_DPDM_TASK,DPDM_EVT_SRC_ATTACHED);

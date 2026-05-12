@@ -230,6 +230,7 @@ void buckboost_protection_handle(void)
 	#define NTC_PCT						BIT(10)
 	#define VBUS_SOFT_PROTECT			BIT(13)
     #define VBUS_FAULT_VBUS_UVP			BIT(14)
+	#define NTC_SWITCH					BIT(15)
 #elif(BUCKBOOST_USED_NU6801 == 1)
 	#define URB_DET						BIT(0)
 	#define BST_UV_FLAG					BIT(1)
@@ -381,10 +382,12 @@ void buckboost_protection_handle(void)
 	//bb_printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
 	//bb_printk("ssss=%d\r\n",status & 0x4060);
 	gd->fault_status = status;
+
+	if(ntc_switch_event) {status |= NTC_SWITCH; ntc_switch_event = false;}
 	if(status != 0)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)
-		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC))
+		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC |NTC_SWITCH))
 		{
 			nu6805_ocp_cnt = 0;
 			bb_printk("protect lock =0x%x\n",status);
