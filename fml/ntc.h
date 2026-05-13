@@ -114,14 +114,17 @@
 
 extern bool bat_ntc_charge_ut_reduce5W_flag;
 extern bool bat_ntc_charge_ot_reduce12W_flag;
-extern bool bat_ntc_stop_chrg_flag;
-extern uint8_t ntc_lock_flag;
 extern bool typec_ntc_dischg_ot_reduce20W_flag;
 extern bool typec_ntc_charge_ot_reduce20W_flag;
+extern bool bat_ntc_stop_chrg_flag;
+extern bool typec_ntc_lock;
+extern bool wirless_ntc_lock;
+extern bool bat_ntc_lock_flag;
+extern bool typec_charge_ntc_lock;
 extern bool bat_ntc_dischg_lock;
 extern bool bat_ntc_dual_dischg_inhibit;
 extern uint8_t bat_low_volt_reduce;
-void buckboost_ntc_handle(void);
 extern uint8_t wpc_ntc_power_reduce_flag;
+void buckboost_ntc_handle(void);
 void wpc_power_handle(int16_t tntc, int16_t tbat);
 #endif

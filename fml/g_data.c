@@ -251,13 +251,10 @@ void gd_data_init(void)
 		gd->led_fault1 = 0;
 		gd->ntc_led_off = 0;
 		gd->recharge_flag = 0;
-		gd->wirless_ntc_lock = 0;
 		gd->force_usb_mode = 0;
-		gd->bat_ntc_lock_flag = 0;
 		gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 		gd->bat_ntc_cport_dischg_reduce_flag = 0;
-		gd->typec_ntc_lock = 0;
-		gd->typec_charge_ntc_lock = 0;
+		gd->ntc_total_lock_flag =0;
 		gd->flash_times = 0;
 		gd->typec_scp = 0;
 		gd->vbus_ovp = 0;

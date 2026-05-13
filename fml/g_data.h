@@ -615,12 +615,9 @@ struct gd_t
 	 uint8_t led_fault1;
 	 uint8_t ntc_led_off;
 	 uint8_t recharge_flag;
-	 uint8_t wirless_ntc_lock;
-	 uint8_t bat_ntc_lock_flag;
-	 uint8_t typec_ntc_lock;
 	 uint8_t bat_ntc_wpc_dischg_reduce_flag;
 	 uint8_t bat_ntc_cport_dischg_reduce_flag;
-	 uint8_t typec_charge_ntc_lock;
+	 uint8_t ntc_total_lock_flag;
 	 uint8_t typec_scp;
 	 uint8_t vbus_ovp;
 	 uint8_t touch_to_weakup;

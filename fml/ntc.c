@@ -15,7 +15,10 @@
 bool bat_ntc_charge_ut_reduce5W_flag = false;
 bool bat_ntc_charge_ot_reduce12W_flag = false;
 bool bat_ntc_stop_chrg_flag = false;
-uint8_t ntc_lock_flag = 0;
+bool typec_ntc_lock =false;
+bool typec_charge_ntc_lock =false;
+bool wirless_ntc_lock = false;
+bool bat_ntc_lock_flag = false;
 bool typec_ntc_dischg_ot_reduce20W_flag = false;
 bool typec_ntc_charge_ot_reduce20W_flag = false;
 bool bat_ntc_dischg_lock = false;
@@ -309,14 +312,14 @@ void buckboost_ntc_handle(void)
 	{
 		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			if(!gd->typec_ntc_lock)
+			if(!typec_ntc_lock)
 			{
 				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<10)
 				{
 					if(typec_ntc_lock_cnt++>=10)
 					{
 						typec_ntc_lock_cnt = 0;
-						gd->typec_ntc_lock = 1;
+						typec_ntc_lock = 1;
 						gd->recharge_flag = 1;
 					}
 				}
@@ -334,7 +337,7 @@ void buckboost_ntc_handle(void)
 					{
 						typec_ntc_lock_cnt = 0;
 						gd->ntc_led_off = 1;
-						gd->typec_ntc_lock = 0;
+						typec_ntc_lock = 0;
 						gd->recharge_flag = 0;
 					}
 				}
@@ -376,14 +379,14 @@ void buckboost_ntc_handle(void)
 		}
 		if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 		{
-			if(!gd->typec_charge_ntc_lock)
+			if(!typec_charge_ntc_lock)
 			{
 				if(gd->sys_infos.ntc_temp_typec >105 || gd->sys_infos.ntc_temp_typec<10)
 				{
 					if(typec_chrg_lock_cnt++>=10)
 					{
 						typec_chrg_lock_cnt = 0;
-						gd->typec_charge_ntc_lock = 1;
+						typec_charge_ntc_lock = 1;
 					}
 				}
 				else
@@ -398,7 +401,7 @@ void buckboost_ntc_handle(void)
 					if(typec_chrg_lock_cnt++>=10)
 					{
 						typec_chrg_lock_cnt = 0;
-						gd->typec_charge_ntc_lock = 0;
+						typec_charge_ntc_lock = 0;
 					}
 				}
 				else
@@ -406,7 +409,7 @@ void buckboost_ntc_handle(void)
 					typec_chrg_lock_cnt = 0;
 				}
 			}
-			if(!gd->typec_charge_ntc_lock)
+			if(!typec_charge_ntc_lock)
 			{
 				if(!typec_ntc_charge_ot_reduce20W_flag)
 				{
@@ -446,8 +449,8 @@ void buckboost_ntc_handle(void)
 		bat_temp, g_buckboost.woke_mode,
 		bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
 		bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
-		gd->typec_charge_ntc_lock, typec_ntc_charge_ot_reduce20W_flag,
-		gd->typec_ntc_lock, typec_ntc_dischg_ot_reduce20W_flag);
+		typec_charge_ntc_lock, typec_ntc_charge_ot_reduce20W_flag,
+		typec_ntc_lock, typec_ntc_dischg_ot_reduce20W_flag);
 }
 
 
@@ -467,14 +470,14 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	static uint8_t bat_reduce_rec_cnt = 0;
 
 	// 75°C OTP + NTC开路(<=2)保护
-	if (!gd->wirless_ntc_lock)
+	if (!wirless_ntc_lock)
 	{
 		if (tntc >= 75 || tntc <= -10 )
 		{
 			if (++otp_cnt >= 5)
 			{
 				otp_cnt = 0;
-				gd->wirless_ntc_lock = 1;
+				wirless_ntc_lock = 1;
 				gd->wpc_disable = 1;
 				tcpm_stop_wpc(10);
 				ntc_printk("\r\n[WPC_NTC] OTP lock tntc=%d", tntc);
@@ -493,7 +496,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			if (++otp_rec_cnt >= 5)
 			{
 				otp_rec_cnt = 0;
-				gd->wirless_ntc_lock = 0;
+				wirless_ntc_lock = 0;
 				gd->wpc_disable = 0;
 				ntc_printk("\r\n[WPC_NTC] OTP unlock tntc=%d", tntc);
 			}
@@ -541,7 +544,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	// 仅放电模式才处理电池NTC
 	if (g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE)
 	{
-		gd->bat_ntc_lock_flag = 0;
+		bat_ntc_lock_flag = 0;
 		gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 		bat_lock_cnt = 0;
 		bat_lock_rec_cnt = 0;
@@ -551,14 +554,14 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	}
 
 	// 电池NTC保护：tbat<=-15°C或>=55°C锁，回到(-10,50)区间解锁
-	if (!gd->bat_ntc_lock_flag)
+	if (!bat_ntc_lock_flag)
 	{
 		if (tbat <= -15 || tbat >= 55)
 		{
 			if (++bat_lock_cnt >= 5)
 			{
 				bat_lock_cnt = 0;
-				gd->bat_ntc_lock_flag = 1;
+				bat_ntc_lock_flag = 1;
 				tcpm_stop_wpc(10);
 				ntc_printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
 			}
@@ -576,7 +579,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			if (++bat_lock_rec_cnt >= 5)
 			{
 				bat_lock_rec_cnt = 0;
-				gd->bat_ntc_lock_flag = 0;
+				bat_ntc_lock_flag = 0;
 				gd->ntc_led_off = 1;
 				ntc_printk("\r\n[BAT_NTC] unlock tbat=%d", tbat);
 			}
