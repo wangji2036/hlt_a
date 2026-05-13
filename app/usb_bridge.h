@@ -56,12 +56,14 @@
 /* ===== Production Mode Registers ===== */
 #define PROD_MODE_FLAG          0x90    // u8: 0xB5=enter production mode
 #define PROD_WRITE_STATUS       0x91    // u8: 0x01=busy, 0x02=ok, 0xFF=fail
-#define PROD_MANUFACTURER       0x92    // 20 bytes
-#define PROD_MODEL              0xA6    // 20 bytes
-#define PROD_BATTERY_MFR        0xBA    // 20 bytes
-#define PROD_BATTERY_MODEL      0xCE    // 20 bytes
-#define PROD_PROD_DATE          0xE2    // 20 bytes
-#define PROD_SERIAL             0x18    // 20 bytes (serial number)
+#define PROD_WINDOW_OFFSET      0x92    // u8: ProductInfo_t byte offset
+#define PROD_WINDOW_LENGTH      0x93    // u8: bytes in PROD_WINDOW_DATA
+#define PROD_WINDOW_DATA        0x94    // 40-byte window payload
+#define PROD_WINDOW_DATA_SIZE   40
+#define PROD_WINDOW_CMD         0xBC    // write 0xA5=window->cache, 0x5A=cache->window
+#define PROD_WINDOW_STATUS      0xBD    // u8: 0x02=ok, 0xFF=fail
+#define PROD_WINDOW_CMD_WRITE   0xA5
+#define PROD_WINDOW_CMD_READ    0x5A
 
 /* ===== Engineering Mode Magic Numbers ===== */
 #define ENG_MODE_MAGIC          0xA5

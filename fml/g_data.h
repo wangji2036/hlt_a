@@ -30,27 +30,40 @@
 #define AP_CFG_RAM_ADDR_BASE    (0x20000000)
 #define G_DATA_RAM_ADDR_BASE    (0x20000200)
 #if CONFIG_NEW_CCC_LOG_ENABLE
-// (Product information Flash address definitions)
-#define PRODUCT_INFO_FIELD_SIZE 20      // 20 bytes per field
-#define SERIAL_FIELD_SIZE       20      // 20 bytes for serial number
-#define PRODUCT_INFO_VERSION    0x0004  // version magic (aligned with Nanfu)
-#define ADDR_MANUFACTURER_NAME    (AP_CFG_ROM_ADDR_PRO_INFO + 0)
-#define ADDR_MODEL_NAME           (AP_CFG_ROM_ADDR_PRO_INFO + 20)
-#define ADDR_BATTERY_MFR          (AP_CFG_ROM_ADDR_PRO_INFO + 40)
-#define ADDR_BATTERY_MODEL        (AP_CFG_ROM_ADDR_PRO_INFO + 60)
-#define ADDR_BATTERY_PROD_DATE    (AP_CFG_ROM_ADDR_PRO_INFO + 80)
-#define ADDR_BATTERY_SERIAL       (AP_CFG_ROM_ADDR_PRO_INFO + 100)
-#define ADDR_PRODUCT_INFO_VERSION (AP_CFG_ROM_ADDR_PRO_INFO + 120)
+// Product information Flash address definitions
+#define PRODUCT_INFO_FIELD_SIZE       20
+#define SERIAL_FIELD_SIZE             20
+#define PRODUCT_SERIAL_FIELD_SIZE     32
+#define PRODUCT_CHECKSUM_FIELD_SIZE   4
+#define PRODUCT_INFO_TOTAL_SIZE       200
+#define PRODUCT_INFO_VERSION          0x0005
+#define ADDR_MANUFACTURER_NAME1       (AP_CFG_ROM_ADDR_PRO_INFO + 0)
+#define ADDR_MANUFACTURER_NAME2       (AP_CFG_ROM_ADDR_PRO_INFO + 20)
+#define ADDR_MODEL_NAME               (AP_CFG_ROM_ADDR_PRO_INFO + 40)
+#define ADDR_PRODUCT_SERIAL           (AP_CFG_ROM_ADDR_PRO_INFO + 60)
+#define ADDR_BATTERY_MFR              (AP_CFG_ROM_ADDR_PRO_INFO + 92)
+#define ADDR_BATTERY_MODEL            (AP_CFG_ROM_ADDR_PRO_INFO + 112)
+#define ADDR_BATTERY_PROD_DATE        (AP_CFG_ROM_ADDR_PRO_INFO + 132)
+#define ADDR_BATTERY_SERIAL1          (AP_CFG_ROM_ADDR_PRO_INFO + 152)
+#define ADDR_BATTERY_SERIAL2          (AP_CFG_ROM_ADDR_PRO_INFO + 172)
+#define ADDR_NU171X_CHECKSUM          (AP_CFG_ROM_ADDR_PRO_INFO + 192)
+#define ADDR_WB7720_CHECKSUM          (AP_CFG_ROM_ADDR_PRO_INFO + 196)
+#define ADDR_PRODUCT_INFO_VERSION     (AP_CFG_ROM_ADDR_PRO_INFO + PRODUCT_INFO_TOTAL_SIZE)
 
-// Product information structure (aligned with Nanfu: 6 fields, 120 bytes)
+// Product information structure: 200 bytes, stored in Flash as raw struct bytes.
 typedef struct {
-	char manufacturer_name[PRODUCT_INFO_FIELD_SIZE];
+	char manufacturer_name1[PRODUCT_INFO_FIELD_SIZE];
+	char manufacturer_name2[PRODUCT_INFO_FIELD_SIZE];
 	char model_name[PRODUCT_INFO_FIELD_SIZE];
+	char product_serial[PRODUCT_SERIAL_FIELD_SIZE];
 	char battery_mfr[PRODUCT_INFO_FIELD_SIZE];
 	char battery_model[PRODUCT_INFO_FIELD_SIZE];
 	char battery_prod_date[PRODUCT_INFO_FIELD_SIZE];
-	char serial[SERIAL_FIELD_SIZE];
-} ProductInfo_t;  // Total: 20 * 6 = 120 bytes
+	char serial1[SERIAL_FIELD_SIZE];
+	char serial2[SERIAL_FIELD_SIZE];
+	char NU171X_checksum[PRODUCT_CHECKSUM_FIELD_SIZE];
+	char WB7720_checksum[PRODUCT_CHECKSUM_FIELD_SIZE];
+} ProductInfo_t;
 
 /********************* Battery Record Structures *********************/
 // ========== CONFIGURABLE: Change this to use 1, 2, or 3 pages ==========

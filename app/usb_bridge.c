@@ -30,40 +30,67 @@ static uint8_t exc_page_counts[LOG_PAGE_COUNT];
 
 /********************* ProductInfo Sync *********************/
 
+static void usb_bridge_prod_window_write(uint8_t offset, const uint8_t *data, uint8_t len)
+{
+    uint8_t window_buf[2 + PROD_WINDOW_DATA_SIZE];
+
+    if (len > PROD_WINDOW_DATA_SIZE) len = PROD_WINDOW_DATA_SIZE;
+    window_buf[0] = offset;
+    window_buf[1] = len;
+    memset(&window_buf[2], 0, PROD_WINDOW_DATA_SIZE);
+    memcpy(&window_buf[2], data, len);
+
+    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_WINDOW_OFFSET,
+                               window_buf, (uint8_t)(len + 2));
+    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WINDOW_CMD, PROD_WINDOW_CMD_WRITE);
+}
+
+static void usb_bridge_prod_window_read(uint8_t offset, uint8_t *data, uint8_t len)
+{
+    uint8_t window_ctrl[2];
+
+    if (len > PROD_WINDOW_DATA_SIZE) len = PROD_WINDOW_DATA_SIZE;
+    window_ctrl[0] = offset;
+    window_ctrl[1] = len;
+
+    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_WINDOW_OFFSET,
+                               window_ctrl, sizeof(window_ctrl));
+    hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WINDOW_CMD, PROD_WINDOW_CMD_READ);
+    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_WINDOW_DATA, data, len);
+}
+
+static void usb_bridge_write_product_info_to_wb(const ProductInfo_t *info)
+{
+    uint16_t offset = 0;
+    const uint8_t *src = (const uint8_t *)info;
+
+    while (offset < sizeof(ProductInfo_t)) {
+        uint8_t len = (uint8_t)(sizeof(ProductInfo_t) - offset);
+        if (len > PROD_WINDOW_DATA_SIZE) len = PROD_WINDOW_DATA_SIZE;
+        usb_bridge_prod_window_write((uint8_t)offset, &src[offset], len);
+        offset += len;
+    }
+}
+
+static void usb_bridge_read_product_info_from_wb(ProductInfo_t *info)
+{
+    uint16_t offset = 0;
+    uint8_t *dst = (uint8_t *)info;
+
+    while (offset < sizeof(ProductInfo_t)) {
+        uint8_t len = (uint8_t)(sizeof(ProductInfo_t) - offset);
+        if (len > PROD_WINDOW_DATA_SIZE) len = PROD_WINDOW_DATA_SIZE;
+        usb_bridge_prod_window_read((uint8_t)offset, &dst[offset], len);
+        offset += len;
+    }
+}
+
 void usb_bridge_reset_product_info(void)
 {
     ProductInfo_t info;
     product_info_read(&info);
-
-    /* Diagnostic: dump all 6 Flash-read fields BEFORE I2C writes */
-    static const char *fnames[] = {"MFR","MDL","BMFR","BMDL","DATE","SN"};
-    const uint8_t *fptrs[] = {
-        (uint8_t*)info.manufacturer_name, (uint8_t*)info.model_name,
-        (uint8_t*)info.battery_mfr, (uint8_t*)info.battery_model,
-        (uint8_t*)info.battery_prod_date, (uint8_t*)info.serial
-    };
-    for (uint8_t f = 0; f < 6; f++) {
-        xgb_printk("[PB_%s] ", fnames[f]);
-        uint8_t sz = (f == 5) ? SERIAL_FIELD_SIZE : PRODUCT_INFO_FIELD_SIZE;
-        for (uint8_t k = 0; k < sz; k++) xgb_printk("%02X ", fptrs[f][k]);
-        xgb_printk("\n");
-    }
-
-    /* Write 5 fields (each 20 bytes) + serial (10 bytes) */
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_MANUFACTURER,
-                               (uint8_t*)info.manufacturer_name, 20);
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_MODEL,
-                               (uint8_t*)info.model_name, 20);
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_BATTERY_MFR,
-                               (uint8_t*)info.battery_mfr, 20);
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_BATTERY_MODEL,
-                               (uint8_t*)info.battery_model, 20);
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_PROD_DATE,
-                               (uint8_t*)info.battery_prod_date, 20);
-    hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, PROD_SERIAL,
-                               (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
+    usb_bridge_write_product_info_to_wb(&info);
 }
-
 /********************* Init *********************/
 
 void usb_bridge_init(void)
@@ -335,34 +362,18 @@ static void usb_bridge_check_prod_mode(void)
 
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_BUSY);
 
-    /* Read 110B ProductInfo from WB7720 */
     ProductInfo_t info;
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_MANUFACTURER,
-                              (uint8_t*)info.manufacturer_name, 20);
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_MODEL,
-                              (uint8_t*)info.model_name, 20);
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_BATTERY_MFR,
-                              (uint8_t*)info.battery_mfr, 20);
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_BATTERY_MODEL,
-                              (uint8_t*)info.battery_model, 20);
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_PROD_DATE,
-                              (uint8_t*)info.battery_prod_date, 20);
-    hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, PROD_SERIAL,
-                              (uint8_t*)info.serial, SERIAL_FIELD_SIZE);
+    usb_bridge_read_product_info_from_wb(&info);
 
-    /* Write to Flash */
     product_info_write(&info);
 
-    /* Refresh i2c_buff so WB7720 Type 0x03 reflects new data */
     usb_bridge_reset_product_info();
 
-    /* Mark done after WB7720 cache is refreshed to avoid OK-before-refresh window */
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_OK);
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, 0x00);
 
     xgb_printk("prod info written\n");
 }
-
 /********************* Periodic Update (47ms) *********************/
 
 void usb_bridge_periodic_update(void)
@@ -399,11 +410,11 @@ void usb_bridge_periodic_update(void)
         static uint8_t prodinfo_refresh_cnt = 0;
         if (++prodinfo_refresh_cnt >= 42) {  /* 42 × 15×47ms ≈ 30s */
             prodinfo_refresh_cnt = 0;
-            /* 生产模式写入进行中则跳过，避免覆盖 host 新写的数据 */
             uint8_t prod_flag = 0;
+            uint8_t prod_status = 0;
             hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &prod_flag);
-            if (prod_flag != PROD_MODE_MAGIC) {
-                /* 每 30s 仅执行 Flash -> WB7720 同步，不回读 WB 缓存 */
+            hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, &prod_status);
+            if (prod_flag != PROD_MODE_MAGIC && prod_status != ENG_STATUS_BUSY) {
                 usb_bridge_reset_product_info();
             }
         }

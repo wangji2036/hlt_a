@@ -406,38 +406,14 @@ void lib_para_init(void)
  * @param info Receive buffer
  */
 void product_info_read(ProductInfo_t *info) {
+	uint16_t i;
+	uint8_t *dst_data;
+
 	if (info == NULL) return;
 
-	uint8_t i;
-
-	// (Read manufacturer name)
-	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
-		info->manufacturer_name[i] = __read_08bits(ADDR_MANUFACTURER_NAME + i);
-	}
-
-	// (Read model name)
-	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
-		info->model_name[i] = __read_08bits(ADDR_MODEL_NAME + i);
-	}
-
-	//(Read battery manufacturer)
-	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
-		info->battery_mfr[i] = __read_08bits(ADDR_BATTERY_MFR + i);
-	}
-
-	// (Read battery model)
-	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
-		info->battery_model[i] = __read_08bits(ADDR_BATTERY_MODEL + i);
-	}
-
-	//  (Read battery production date)
-	for (i = 0; i < PRODUCT_INFO_FIELD_SIZE; i++) {
-		info->battery_prod_date[i] = __read_08bits(ADDR_BATTERY_PROD_DATE + i);
-	}
-
-	// Read serial number
-	for (i = 0; i < SERIAL_FIELD_SIZE; i++) {
-		info->serial[i] = __read_08bits(ADDR_BATTERY_SERIAL + i);
+	dst_data = (uint8_t *)info;
+	for (i = 0; i < sizeof(ProductInfo_t); i++) {
+		dst_data[i] = __read_08bits(AP_CFG_ROM_ADDR_PRO_INFO + i);
 	}
 }
 
@@ -472,34 +448,38 @@ void product_info_write(const ProductInfo_t *info) {
 }
 
 void product_info_print(void) {
-	char temp_buf[PRODUCT_INFO_FIELD_SIZE + 1];  // (21 bytes temp buffer)
-	uint16_t i;
-	uint32_t addr;
+	ProductInfo_t info;
+	char temp_buf[PRODUCT_SERIAL_FIELD_SIZE + 1];
+	uint8_t i;
 
-	// (Field addresses and labels)
 	static const struct {
-		uint32_t addr;
+		uint16_t offset;
+		uint8_t len;
 		const char *label;
 	} fields[] = {
-		{ ADDR_MANUFACTURER_NAME, "Manufacturer" },
-		{ ADDR_MODEL_NAME,        "Model" },
-		{ ADDR_BATTERY_MFR,       "Battery MFR" },
-		{ ADDR_BATTERY_MODEL,     "Battery Model" },
-		{ ADDR_BATTERY_PROD_DATE, "Battery Date" }
+		{ 0,   PRODUCT_INFO_FIELD_SIZE,     "Manufacturer1" },
+		{ 20,  PRODUCT_INFO_FIELD_SIZE,     "Manufacturer2" },
+		{ 40,  PRODUCT_INFO_FIELD_SIZE,     "Model" },
+		{ 60,  PRODUCT_SERIAL_FIELD_SIZE,   "Product SN" },
+		{ 92,  PRODUCT_INFO_FIELD_SIZE,     "Battery MFR" },
+		{ 112, PRODUCT_INFO_FIELD_SIZE,     "Battery Model" },
+		{ 132, PRODUCT_INFO_FIELD_SIZE,     "Battery Date" },
+		{ 152, SERIAL_FIELD_SIZE,           "Cell SN1" },
+		{ 172, SERIAL_FIELD_SIZE,           "Cell SN2" },
+		{ 192, PRODUCT_CHECKSUM_FIELD_SIZE, "NU171X CRC" },
+		{ 196, PRODUCT_CHECKSUM_FIELD_SIZE, "WB7720 CRC" }
 	};
 
+	product_info_read(&info);
 	xgb_printk("\r\n===== Product Information =====");
 
-	// (Loop to read and print each field)
 	for (i = 0; i < sizeof(fields) / sizeof(fields[0]); i++) {
-		addr = fields[i].addr;
-
-		// (Read field from Flash to temp buffer)
-		for (uint8_t j = 0; j < PRODUCT_INFO_FIELD_SIZE; j++) {
-			temp_buf[j] = __read_08bits(addr + j);
+		uint8_t j;
+		const uint8_t *data = ((const uint8_t *)&info) + fields[i].offset;
+		for (j = 0; j < fields[i].len; j++) {
+			temp_buf[j] = data[j];
 		}
-		temp_buf[PRODUCT_INFO_FIELD_SIZE] = '\0';  // (Ensure null termination)
-
+		temp_buf[fields[i].len] = '\0';
 		xgb_printk("\r\n%-13s: %s", fields[i].label, temp_buf);
 	}
 
