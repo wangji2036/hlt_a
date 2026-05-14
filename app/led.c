@@ -267,24 +267,16 @@ static void ui_update_led(void)
 		}
 		else if(gd->led_fault1)
 		{
-			if(gd->flash_times<=5)
+			if(gd->flash_times < 10)  // 10 ticks × 250ms: 5 on + 5 off = 5次闪烁
 			{
-				if(flash_light%2)
-				{
-					soc_show_ram_led =0x0F;
-				}
-				else
-				{
-					gd->flash_times++;
-					soc_show_ram_led = 0;
-					flash_flag = 0;
-				}
-				flash_light++;
+				soc_show_ram_led = (gd->flash_times % 2 == 0) ? 0x0F : 0x00;
+				gd->flash_times++;
 			}
 			else
 			{
 				soc_show_ram_led = 0;
 			}
+			flash_light++;
 		}	
 		else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 		{
@@ -359,7 +351,7 @@ static void ui_update_led(void)
 		}	 
 	else
      	 {
-			gd->flash_times = 0;
+			
      		cnt_time = 0;
      		horse_index = 0;
      		cycle_count = 0;  // 退出小电流模式时重置循环计数器
