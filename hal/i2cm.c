@@ -615,6 +615,29 @@ void hal_i2cm_init(uint32_t u32BusClock)
 	return;
 }
 
+#define _I2CM_CLK_STRETCH_TIMEOUT  1000  /* max 1ms wait */
+
+static int I2CM_iWaitSCLHigh(void)
+{
+	int timeout = 0;
+	VIC_vModuleDisable();
+	_SET_I2CM_SCL_IN_PUT();
+	VIC_vModuleEnable();
+	delay_1us(1);
+	while (_I2CM_SCL_D_IN == _PIN_LEVEL_LO)
+	{
+		delay_1us(1);
+		if (++timeout >= _I2CM_CLK_STRETCH_TIMEOUT)
+		{
+			return -1;
+		}
+	}
+	VIC_vModuleDisable();
+	_SET_I2CM_SCL_OUTPUT();
+	VIC_vModuleEnable();
+	return 0;
+}
+
 //static void hal_i2cm_start(void)
 void hal_i2cm_start(void)
 {
@@ -624,6 +647,7 @@ void hal_i2cm_start(void)
 	_I2CM_SDA_DOUT = _PIN_LEVEL_HI;
 	_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 	VIC_vModuleEnable();
+	I2CM_iWaitSCLHigh(); /* wait for any slave clock stretching to complete */
 	delay_1us(5);
 	VIC_vModuleDisable();
 	_I2CM_SDA_DOUT = _PIN_LEVEL_LO; //START: when CLK is high, DATA change form high to low
@@ -647,6 +671,7 @@ void hal_i2cm_stop(void)
 	VIC_vModuleDisable();
 	_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 	VIC_vModuleEnable();
+	I2CM_iWaitSCLHigh(); /* wait for any slave clock stretching to complete */
 	delay_1us(5);
 	VIC_vModuleDisable();
 	_I2CM_SDA_DOUT = _PIN_LEVEL_HI;
@@ -671,6 +696,7 @@ int hal_i2cm_byte_send(uint8_t byte)
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 		VIC_vModuleEnable();
+		if (I2CM_iWaitSCLHigh() < 0) { return -3; } /* clock stretch timeout */
 		delay_1us(5);
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_LO;
@@ -693,6 +719,7 @@ int hal_i2cm_byte_send(uint8_t byte)
 
 	_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 	VIC_vModuleEnable();
+	I2CM_iWaitSCLHigh(); /* clock stretching during ACK phase */
 	delay_1us(3);
 	VIC_vModuleDisable();
 	if (_I2CM_SDA_D_IN == _PIN_LEVEL_HI)
@@ -725,6 +752,7 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ)
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 		VIC_vModuleEnable();
+		if (I2CM_iWaitSCLHigh() < 0) { return -2; } /* clock stretch timeout */
 		delay_1us(3);
 		*byte <<= 1;
 		VIC_vModuleDisable();
@@ -744,6 +772,7 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ)
 	VIC_vModuleDisable();
 	_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 	VIC_vModuleEnable();
+	I2CM_iWaitSCLHigh(); /* clock stretching during ACK/NAK phase */
 	delay_1us(5);
 	VIC_vModuleDisable();
 	_I2CM_SCL_DOUT = _PIN_LEVEL_LO;
