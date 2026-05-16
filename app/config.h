@@ -83,7 +83,7 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
 
 // Debug log switches (set to 0 to reduce Flash) -- synced with NF platform
-#define SUPPORT_BUCKBOOST_LOG           0   // buckboost.c debug logs
+#define SUPPORT_BUCKBOOST_LOG           1   // buckboost.c debug logs
 #define SUPPORT_BAT_LOG                 1   // bat.c debug logs
 #define SUPPORT_XGB_LOG                 0   // XGB/bat_record/usb_bridge debug logs
 #define SUPPORT_BAT_RECORD_LOG          SUPPORT_XGB_LOG   // legacy alias

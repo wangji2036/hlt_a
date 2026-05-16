@@ -23,6 +23,7 @@ bool typec_ntc_dischg_ot_reduce20W_flag = false;
 bool typec_ntc_charge_ot_reduce20W_flag = false;
 bool bat_ntc_dischg_lock = false;
 bool bat_ntc_dual_dischg_inhibit = false;   // C 口+无线充同时放电温度抑制：<0/≥45 锁，[5,40] 恢复 max 5V/3A
+bool bat_ntc_prot_reverse = false; 
 uint8_t bat_low_volt_reduce = 0;
 extern const uint32_t source_pdo[];
 extern const uint32_t source_pdo_ntc[];
@@ -532,6 +533,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				reduce_rec_cnt = 0;
 				wpc_ntc_power_reduce_flag = 0;
+				bat_ntc_prot_reverse = 1;
 				ntc_printk("\r\n[WPC_NTC] power restore tntc=%d", tntc);
 			}
 		}
@@ -616,6 +618,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				bat_reduce_rec_cnt = 0;
 				gd->bat_ntc_wpc_dischg_reduce_flag = 0;
+				bat_ntc_prot_reverse = 1;
 				ntc_printk("\r\n[BAT_NTC] dischg restore tbat=%d", tbat);
 			}
 		}

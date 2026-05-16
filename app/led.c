@@ -24,6 +24,7 @@ void key_long_click_process(void);
 void key_triple_click_process(void);
 void key_quad_click_process(void);
 void key_quint_click_process(void);
+void key_ship_process(void);
 #endif
 volatile uint8_t key_flag = 0;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
@@ -579,6 +580,11 @@ void ui_update(void)
 		key_quint_click_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
+	else if (key_flag == 7)
+	{
+		key_ship_process();
+		gd->idle_to_sleep_cnt = 0;
+	}
 #endif
 
 	key_flag = 0;
@@ -814,9 +820,14 @@ void key_long_click_process(void)
 }
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-void key_triple_click_process(void)
+void key_triple_click_process(void)//3
 {
 
+
+}
+
+void key_quint_click_process(void)//4
+{
 	if (buckboost_protection_flag) return;
 
 	gd->usb_comm_activated ^= 1;
@@ -835,27 +846,30 @@ void key_triple_click_process(void)
 	key_ui_cnt = 0;
 }
 
-void key_quint_click_process(void)
+void key_quad_click_process(void)//5
+{
+	g_forbid_bypass_flag ^= 1;
+	if (g_forbid_bypass_flag)
+	{
+		if (gd->bat_ov_forbid_flag)
+		{
+			gd->bat_ov_forbid_flag = 0;
+			led_printk("\r\n[FORBID] OV cleared by quad-click");
+		}
+		led_printk("\r\n[FORBID] Bypass ENABLED by quad-click");
+	}
+	else
+	{
+		led_printk("\r\n[FORBID] Bypass DISABLED by quad-click");
+	}
+	key_ui_cnt = 0;
+}
+void key_ship_process(void)//6 开机状态短按按键一次+长按8s进:
 {
 	extern uint8_t g_vref_cal_delay;
 	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
 	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
 	led_printk("\r\n[KEY] quint click: Vref cal scheduled");
-}
-
-void key_quad_click_process(void)
-{
-		g_forbid_bypass_flag ^= 1;
-		if (g_forbid_bypass_flag) {
-		if (gd->bat_ov_forbid_flag) {
-			gd->bat_ov_forbid_flag = 0;
-			led_printk("\r\n[FORBID] OV cleared by quad-click");
-		}
-		led_printk("\r\n[FORBID] Bypass ENABLED by quad-click");
-	} else {
-		led_printk("\r\n[FORBID] Bypass DISABLED by quad-click");
-	}
-	key_ui_cnt = 0;
 }
 #endif
 

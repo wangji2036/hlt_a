@@ -123,8 +123,10 @@ extern bool bat_ntc_lock_flag;
 extern bool typec_charge_ntc_lock;
 extern bool bat_ntc_dischg_lock;
 extern bool bat_ntc_dual_dischg_inhibit;
+extern bool bat_ntc_prot_reverse;
 extern uint8_t bat_low_volt_reduce;
 extern uint8_t wpc_ntc_power_reduce_flag;
+
 void buckboost_ntc_handle(void);
 void wpc_power_handle(int16_t tntc, int16_t tbat);
 #endif

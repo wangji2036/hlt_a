@@ -10,6 +10,7 @@
 #include "epp.h"
 #include "pfod.h"
 #include "debug.h"
+#include "ntc.h"
 
 struct power_transfer_contract_t ptx_power_contract, prx_power_contract;
 
@@ -281,6 +282,12 @@ void mpp_get_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 				gd->tx_infos.tar_cap_cali = 250;
 				gd->tx_infos.nego_cap = 250;
 				gd->tx_infos.power_limit_reason = 0;
+			}
+			else if (wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+			{
+				gd->tx_infos.tar_cap_cali = 75;
+				gd->tx_infos.nego_cap = 75;
+				gd->tx_infos.power_limit_reason = 4;
 			}
 			else
 			{

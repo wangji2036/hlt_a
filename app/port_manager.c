@@ -723,8 +723,9 @@ void port_enum_port_enum_done(void)
 
 	if(g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && g_port.port_state[WPC_INDEX] == PORT_STATE_SOURCE)
 	{
-		g_buckboost.buckboost_out_current = 3000;
-		g_buckboost.buckboost_out_current_actual = 3000;
+		pdlib_tcpc_set_cc(0,TYPEC_CC_RP_1_5);
+		g_buckboost.buckboost_out_current = 3500;
+		g_buckboost.buckboost_out_current_actual = 3500;
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current);
 	}
 #if(CONFIG_TYPECA_SUPPORT == 1)
@@ -747,8 +748,8 @@ void port_enum_port_snk_setcharge(void)
 	{
 		if(g_buckboost.adc_vbus<5500)// 5v
 		{
-			g_port.ibat_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
-			g_port.ibus_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
+			g_port.ibat_limit = (g_port.adpater_power > 10000)? (g_port.adpater_power - 10000)/5:500;
+			g_port.ibus_limit = (g_port.adpater_power > 10000)? (g_port.adpater_power - 10000)/5:500;
 		}
 		else if (g_buckboost.adc_vbus<9500)// 9v
 		{
@@ -820,7 +821,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
 	}
-	if(bat_ntc_stop_chrg_flag ||gd->typec_charge_ntc_lock)
+	if(bat_ntc_stop_chrg_flag ||typec_charge_ntc_lock)
 	{
 		g_port.ibus_limit = 0;
 	}
@@ -839,8 +840,6 @@ void port_enum_port_snk_setcharge(void)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_ENUM_DONE);
 	else if(g_port.inhandle_port == PORT1_INDEX)
 		osal_start_timerEx(PORT_CONNECT_TIMER, 100, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_ENUM_DONE);
-	pm_printk("PROT ntc_stop=%d bat_ntc_ot=%d tc_ntc_lock=%d deadbat=%d soc=%d ov_forbid=%d\n", bat_ntc_stop_chrg_flag, bat_ntc_charge_ot_reduce12W_flag, gd->typec_charge_ntc_lock, pdlib_get_deadbat(), gd->real_soc_show, gd->bat_ov_forbid_flag);
-
 
 	if(pdlib_is_pps_sink())
 		buckboost_ops.set_ovp(20000);

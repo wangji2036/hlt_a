@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "qfod.h"
 #include "epp.h"
+#include "ntc.h"
 #include "wpc_5_xfer_4_dstrm.h"
 #include "wpc_6_test_1_ioc.h"
 
@@ -385,6 +386,19 @@ void mpp_dsr_poll_handler(void)
 		{
 			renego_flag = 0;
 		}
+		if (wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+		{
+			gd->tx_infos.max_cap = 75;
+			gd->tx_infos.nego_cap = 75;
+			gd->tx_infos.power_limit_reason = 4;
+		}
+		else
+		{
+			gd->tx_infos.max_cap = 150;
+			gd->tx_infos.nego_cap = 150;
+			gd->tx_infos.power_limit_reason = 0;
+		
+		}
 		//gd->power_limit_sts.fop_flag = 0;
 
 		fsk_pkt.mpp_fsk.ecap.hdr_8F = MPP_PTx_PKT_TYP_ECAP_8F;
@@ -509,20 +523,22 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 		case MPP_PRx_PKT_TYP_XCE_19:
 			if (gd->rx_infos.rx_type == ERX_TYPE_YBZ_MPP_FIXTURE)
 			{
-				if(wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+				if(wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag || bat_ntc_prot_reverse)
 				{
-					if (gd->tx_power > 8500)
-					{
-						gd->rx_infos.cep_val = -4;
-					}
-					else if(gd->tx_power > 7500)
-					{
-						gd->rx_infos.cep_val = 0;
-					}
-					else
-					{
-						gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
-					}
+					// if (gd->tx_power > 8500)
+					// {
+					// 	gd->rx_infos.cep_val = -4;
+					// }
+					// else if(gd->tx_power > 7500)
+					// {
+					// 	gd->rx_infos.cep_val = 0;
+					// }
+					// else
+					// {
+					// 	gd->rx_infos.cep_val = mpp_ask->msg.xce.xce_value;
+					// }
+					gd->tx_infos.need_renego_cap = 1;
+					bat_ntc_prot_reverse = 0;
 				}
 				else
 				{
@@ -555,7 +571,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 			}
 			osal_start_timerEx(WPC_CEP_TIMER, T_MPP_CE_TO, 0, WPC_TASK, WPC_EVT_CEP_TO);
 
-			if ((need_atn_cnt != 0) || (TRUE == gd->tx_infos.flg_cloak_tx_enter) /*|| (gd->tx_infos.need_renego_cap == 1)*/ || \
+			if ((need_atn_cnt != 0) || (TRUE == gd->tx_infos.flg_cloak_tx_enter) || (gd->tx_infos.need_renego_cap == 1) || \
 				(gd->tx_infos.power_mode_trans_atn == 1) || (gd->tx_infos.power_mode_trans_cloak == 1))
 			{
 				if (need_atn_cnt > 0) need_atn_cnt--;
