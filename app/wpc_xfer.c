@@ -15,6 +15,7 @@
 #include "ntc.h"
 #include "wpc_5_xfer_4_dstrm.h"
 #include "wpc_6_test_1_ioc.h"
+#include "port_manager.h"
 
 uint8_t samsungNeedFSK_Flag = 0, samsungPrivateFastChargeFlag = 0;
 static uint8_t samsung_ackmsg[2] = {0x02, 0x01};
@@ -180,7 +181,13 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					wpc_printk("\r\n LDSTP_BPP +60");
 					gd->atl_test_ldstp_bpp_P60 = 1;
 				}
-			}	
+			}		
+			if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+			{
+				if (gd->tx_power > 5500) gd->rx_infos.cep_val = -2;
+				else if (gd->tx_power > 5200) gd->rx_infos.cep_val = 0;
+				else gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
+			}
 
 			if (wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
 			{
