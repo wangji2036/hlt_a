@@ -204,7 +204,6 @@ void ap_data_init(void)
 	ap->fs_stable_value = 30;
 
 	ap->t_next_ping = 100;
-
 	gdata_printk("\r\n base_q [%d]", ap->q_factor_base_value);
 	gdata_printk("\r\n base_fre [%d]", ap->fs_base_value);
 
@@ -245,6 +244,7 @@ void gd_data_init(void)
 		gd->bat_dead_flag = 0;
 		gd->SOC_RawSOC_mpct = 0;
 		gd->SOC_SleepTime_s = 2000;
+		gd->ship_sleep_start_seconds = 0;
 		tc_power_on = true;
 		gd ->ship_mode_cnt = 0;
 		gd->led_fault = 0;
@@ -307,10 +307,12 @@ void gd_data_init(void)
 #else
 		gd->bat_ov_forbid_flag = 0;
 #endif
+		gd-> enter_sleep_flag = (uint32_t *)(AP_CFG_ROM_ADDR_BASE + 32);
 		gd->Bat_Rdc = 0;
 		gd->Bat_SoH = 0;
 		gd->Bat_RTC_Timer = 0;
 		gd->wpc_sleepship = 0;
+		gd->enter_sleep_flag = 0;
 		osal_mem_set(&(gd->g_bat), 0, sizeof(struct bat_info));
 		g_forbid_bypass_flag = 0;
 		osal_mem_set((&g_bat),0,sizeof(struct bat_info));

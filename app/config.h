@@ -77,7 +77,11 @@
 //*** For those touch IC wake-up projects can also refer to this ****/
 #define CONFIG_SHIP_MODE_ENABLE_DEBUG       0   // ship mode enable
 
-#define SHIP_MODE_CNT  30                       // ship mode 30 times Q wake-up and no RX,
+#define SHIP_MODE_CNT  30                       // 船运模式锁存标志值
+#define SHIP_MODE_SLEEP_SECONDS (7UL * 24UL * 60UL * 60UL) // 连续休眠 7 天进入船运
+#define SHIP_MODE_KEY_HOLD_10MS_TICKS 800      // 短按一次后再长按 8s 进入船运
+#define SHIP_MODE_LED_BLINK_TICKS 10           // 双色灯 on/off * 5 次，ui_update 周期 250ms
+#define SHIP_MODE_LED_MASK 0x30                // LED5 + LED6 作为双色灯显示
 
 /*----------- New CCC Log Feature (新国标 GB31241) -----------*/
 #define CONFIG_NEW_CCC_LOG_ENABLE       1

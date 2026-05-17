@@ -779,6 +779,7 @@ void wpc_idle_phase_process(void)
 		if(gd->idle_to_sleep_cnt >300)
 		{
 			gd->idle_to_sleep_cnt = 0;
+			// printk("chip version %d\n", SYS->PID_INFO.BITS.VER);
 			if(SYS->PID_INFO.BITS.VER != CHIP_VER_A0)SLP_vNormalToSleep();
 		}
 		else
