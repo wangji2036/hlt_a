@@ -748,21 +748,21 @@ void port_enum_port_snk_setcharge(void)
 	{
 		if(g_buckboost.adc_vbus<5500)// 5v
 		{
-			g_port.ibat_limit = (g_port.adpater_power > 10000)? (g_port.adpater_power - 10000)/5:500;
-			g_port.ibus_limit = (g_port.adpater_power > 10000)? (g_port.adpater_power - 10000)/5:500;
+			g_port.ibat_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
+			g_port.ibus_limit = (g_port.adpater_power > 8000)? (g_port.adpater_power - 8000)/5:500;
 		}
 		else if (g_buckboost.adc_vbus<9500)// 9v
 		{
-			g_port.ibat_limit = (g_port.adpater_power > 11000)? (g_port.adpater_power - 11000)/9:500;
-			g_port.ibus_limit = (g_port.adpater_power > 11000)? (g_port.adpater_power - 11000)/9:500;
+			g_port.ibat_limit = (g_port.adpater_power > 5000)? (g_port.adpater_power - 5000)/9:500;
+			g_port.ibus_limit = (g_port.adpater_power > 5000)? (g_port.adpater_power - 5000)/9:500;
 		}
 		else//12v, reserved for future 12 use.
 		{
 			g_port.ibat_limit = (g_port.adpater_power > 12000)? (g_port.adpater_power - 12000)/12:500;
 			g_port.ibus_limit = (g_port.adpater_power > 12000)? (g_port.adpater_power - 12000)/12:500;
 		}
-		//g_port.ibat_limit = g_port.ibat_limit < 500 ? g_port.ibat_limit : 500;
-		g_port.ibus_limit = g_port.ibus_limit* 95 / 100;
+		// g_port.ibat_limit = g_port.ibat_limit < 500 ? g_port.ibat_limit : 500;
+		g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
 		g_port.ibat_limit = g_port.ibat_limit < 2000 ? g_port.ibat_limit : 2000;
 
 		g_port.ibus_limit = g_port.ibus_limit < 2000 ? g_port.ibus_limit : 2000;
@@ -821,7 +821,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
 	}
-	if(bat_ntc_stop_chrg_flag ||typec_charge_ntc_lock)
+	if(bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
 	{
 		g_port.ibus_limit = 0;
 	}
@@ -1328,6 +1328,14 @@ void port_enum_port3_connect_start(void)
 	osal_start_timerEx(PORT_CONNECT_TIMER, 500, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS);
 }
 
+void usb_bridge_unconnect(void)
+{
+	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)
+	{
+		gd->force_usb_mode = 0;
+		gd->wpc_disable = 0;
+	}
+}
 
 void port_enum_scan_handle(void)
 {
@@ -1544,6 +1552,9 @@ void port_manager_event_handle(uint32_t event)
 			break;
 		case PORT_ENUM_EVT_PORT3_ENUM_DONE:
 			port_enum_port_enum_done();
+			break;
+		case PORT_ENUM_EVT_USB_BRIDGE_CLOSED:
+			usb_bridge_unconnect();
 			break;
 		default:
 			break;
