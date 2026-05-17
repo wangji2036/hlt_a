@@ -48,58 +48,6 @@ extern void tcpm_init(void);
 #include "wpc_5_xfer_4_dstrm.h"
 int main(void)
 {
-	// if(gd->power_on_magic == 0xaaaa)
-	// {
-	// 	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	//  	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
-	// }
-	//TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-	//TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // enable cc block
-	
-	// TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-
-	/*
-
-	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // enable cc block
-
-	
-	uint32_t *TCPC_PD_OVRD_SEL = (uint32_t *)(0x40002000 + 0x0054);
-	uint32_t *TCPC_PD_OVRD_CMD = (uint32_t *)(0x40002000 + 0x0058);
-
-	*TCPC_PD_OVRD_SEL = 0x0b;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-
-	*TCPC_PD_OVRD_SEL = 0x15;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-	*TCPC_PD_OVRD_SEL = 0x09;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-
-	*TCPC_PD_OVRD_SEL = 0x01;
-	*TCPC_PD_OVRD_CMD = 0x30;
-
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_SEL,*TCPC_PD_OVRD_SEL);
-	main_printk("\r\n [0x%x] = 0x%x\n",(uint32_t)TCPC_PD_OVRD_CMD,*TCPC_PD_OVRD_CMD);
-	
-	// GPD->PDEN.BITS.PIN2 = 1;
-
-	// GPD->ODEN.BITS.PIN2 = 1;
-	
-	while (1)
-	{
-		hal_wdt_feed();
-	}
-		*/
 	VIC_vModuleDisable();
 
 	hal_wdt_init();
@@ -110,30 +58,12 @@ int main(void)
 	gd_data_init();
 	lib_para_init();// do not delete.
 	fml_bsp_init();
-	main_printk("\r\n [D1-] post-bsp");
 	apl_gui_init();
-	main_printk("\r\n [D2] post-gui");
 
 	gd->adp.adp_type = EADP_TYPE_IDUNKNOWN;
-	main_printk("\r\n [D3] pre-nu103x");
-//	uint32_t timeout = 0;
-//	USBPD_vInit();
-//	while (1)
-//	{
-//		USBPD_vStateMachine();
-//		delay_1ms(1);
-//		if (++timeout > 1000)
-//		{
-//			break;
-//		}
-//	}
-//
-//	fml_usbqc_init();
 
 	fml_nu103x_por_init();
-	main_printk("\r\n [D4] post-nu103x");
 	hal_wdt_feed();
-	main_printk("\r\n [D5] post-wdt");
 #if(BUCKBOOST_USED_NU6805 == 1)
 	/* 绛夊緟 NU6805 绋冲畾 500ms, 姣�100ms 鍋氫竴娆�I2C dummy read 淇濇寔 SCL 娲昏穬,
 	 * 闃叉澶嶄綅 IC 鍥�250ms 鏃�I2C 娲诲姩鑰屾媺 RESET 瀵艰嚧鍐峰惎鍔�*/
