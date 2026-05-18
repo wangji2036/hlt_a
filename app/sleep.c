@@ -1199,14 +1199,14 @@ void RST_vCheck(void)
 				/* 插入充电器/Type-C 设备时退出船运并恢复正常启动流程。 */
 				SLP_vExitShipMode();
 				sleep_printk("\r\n sleep check- protocol");
-				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
+				SYS->PWR_CTRL.WORD &= ~SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				gd->sigle_clicked = 0;
 				break;
 
 			/*------ GPIO 唤醒：按键(PC6) 或触摸(PB4) ------*/
 			case RST_SRC_GPIO:
 
-				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
+				SYS->PWR_CTRL.WORD &= ~SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 
 				/* 验证是否有真实的按键/触摸输入（防止 GPIO 毛刺误触发） */
 				if(SLP_u8IsShipMode() && !PC6_KEY_PRESSED)
