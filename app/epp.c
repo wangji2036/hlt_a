@@ -1339,7 +1339,7 @@ void wpc_epp_DSR_ack_handler(void)
 
 	fsk_pkt.epp_fsk.ADT_pkt.hdr = FSK_ADT_HDR;
 
-	const uint16_t send_digest_size = DIGEST_LENGTH + 2;
+	const uint16_t send_digest_payload_size = DIGEST_LENGTH + 1;
 	static uint16_t send_digest_index = 0;
 
 	epp_auth.send_challenge_data_len = 64;
@@ -1349,7 +1349,7 @@ void wpc_epp_DSR_ack_handler(void)
 	case EPP_Auth_GET_DIGEST:
 
 		wpc_printk("\r\n DIGEST:");
-		wpc_printk(" Persent: [%d %%] \r\n", (send_digest_index * 100) / send_digest_size);
+		wpc_printk(" Persent: [%d %%] \r\n", (send_digest_index * 100) / send_digest_payload_size);
 
 		if (epp_auth.send_digest_slot & 0x01)
 		{
@@ -1367,7 +1367,7 @@ void wpc_epp_DSR_ack_handler(void)
 					send_digest_index++;
 				}
 
-				if (send_digest_index >= send_digest_size) // over size
+				if (send_digest_index >= send_digest_payload_size) // over size
 				{
 					send_digest_index = 0;
 					epp_auth.EPP_auth_status = EPP_Auth_IDLE; // The entire Certificate has been sent.
@@ -1481,11 +1481,24 @@ void wpc_epp_DSR_ack_handler(void)
 			}
 			else
 			{
+				if (epp_auth.send_challenge_data_index >= epp_auth.send_challenge_data_len)
+				{
+					epp_auth.send_challenge_data_index = 0; //Initialize for next transmission
+
+					epp_auth.EPP_auth_status = EPP_Auth_IDLE; //The entire Certificate has been sent.
+					epp_auth.EPP_DataStream_Tx_mode = TX_DataStream_CLOSE;
+
+					fsk_pkt.epp_fsk.ADT_pkt.hdr -= (7 - i) * 0x10U; //The remaining quantity is the head minus the total number   1, and the remaining part is published using the small head.
+
+					fml_fsk_data_send(EPWM1, T_RESPONSE, &fsk_pkt.epp_fsk.data[0], wpc_msg_size_get(fsk_pkt.epp_fsk.data[0]) + 1);
+					return;
+				}
+
 				fsk_pkt.epp_fsk.ADT_pkt.data[i] = array_chall[epp_auth.send_challenge_data_index];
 				epp_auth.send_challenge_data_index++;
 			}
 
-			if (epp_auth.send_challenge_data_index > epp_auth.send_challenge_data_len) //It's over the total size. we need to send other head.
+			if (epp_auth.send_challenge_data_index >= epp_auth.send_challenge_data_len) //It's over the total size. we need to send other head.
 			{
 				epp_auth.send_challenge_data_index = 0; //Initialize for next transmission
 
