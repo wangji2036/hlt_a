@@ -162,7 +162,7 @@ static bool is_new_hour(uint32_t last_seconds, uint32_t current_seconds) {
 #define BR_CHRG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_50   // 50°C charging record restore (hysteresis 10°C)
 #define BR_DISG_OT_VALUE          NTC_10K_3435_REAL_RT_65   // 65°C discharging record threshold
 #define BR_DISG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_55   // 55°C discharging record restore (hysteresis 10°C)
-#define BR_OVER_VOLTAGE_THRESHOLD 4400                         // 4.51V record threshold (mV)
+#define BR_OVER_VOLTAGE_THRESHOLD 4530//4400                         // 4.51V record threshold (mV)
 
 #if 0  /* Removed: unified window model no longer uses recovery-based tracking */
 static bool is_temperature_recovered(uint16_t ntc_resistance, uint8_t mode) {
@@ -777,8 +777,8 @@ void battery_record_update_overvoltage(void) {
  *   BR_CHRG_OT = 60°C → 600 (0.1°C)
  *   BR_DISG_OT = 65°C → 650 (0.1°C)
  * Note: All temperature storage uses 0.1°C units for PC compatibility. */
-#define ENG_CHRG_OT_TEMP_DEGC   600   /* 60.0°C charging record threshold (0.1°C) */
-#define ENG_DISG_OT_TEMP_DEGC   650   /* 65.0°C discharging record threshold (0.1°C) */
+#define ENG_CHRG_OT_TEMP_DEGC   550//600   /* 60.0°C charging record threshold (0.1°C) */
+#define ENG_DISG_OT_TEMP_DEGC   600//650   /* 65.0°C discharging record threshold (0.1°C) */
 
 // Temperature abnormal detection and record function - New GB standard: fixed 1h window
 void battery_record_update_temperature(void) {

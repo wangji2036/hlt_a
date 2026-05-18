@@ -50,7 +50,7 @@ void hal_nu6805_buckboost_init(void)
 
 		//return;
 	}
-	printk("nu6805 revision =0x%x\n",revision);
+	// printk("nu6805 revision =0x%x\n",revision);
 }
 
 void hal_nu6805_buckboost_disable_62368(void)

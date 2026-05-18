@@ -411,19 +411,19 @@ void pid_cep_handler(int8_t cep)
 #endif
 }
 
-void PID_vDDMEventHandler(void)
+void PID_vDDMEventHandler(void)// l 147kk ; h 112k
 {
-	if (gd->pid_perd >= PID_PERD_LIM_L + 20)
+	if (gd->pid_perd >= PID_PERD_LIM_L + 20)// > 979+20
 	{
 		gd->pid_perd -= 20;
 		gd->pid_duty += 10;
 	}
-	else if (gd->pid_perd > PID_PERD_LIM_L)
+	else if (gd->pid_perd > PID_PERD_LIM_L) // > 979
 	{
 		gd->pid_perd = PID_PERD_LIM_L;
 		gd->pid_duty -= 30;
 	}
-	else if (gd->pid_perd < PID_PERD_LIM_H)
+	else if (gd->pid_perd < PID_PERD_LIM_H) // < 1300
 	{
 		gd->pid_perd += 20;
 		gd->pid_duty -= 20;
@@ -432,12 +432,12 @@ void PID_vDDMEventHandler(void)
 	{
 		if (gd->pid_duty > 250)
 		{
-			gd->pid_perd = PID_PERD_LIM_L;
+			gd->pid_perd = PID_PERD_LIM_H - 100;//PID_PERD_LIM_L;
 			gd->pid_duty -= 50;
 		}
 		else
 		{
-			gd->pid_perd = PID_PERD_LIM_L;
+			gd->pid_perd = PID_PERD_LIM_H - 100;//PID_PERD_LIM_L;
 			gd->pid_duty += 40;
 		}
 	}
