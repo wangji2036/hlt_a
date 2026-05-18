@@ -16,6 +16,18 @@ union scp_packet_t scp_packet;
 uint16_t scp_vout = 5000;
 uint16_t scp_iout = 2400;
 
+static void scp_update_iout(uint8_t fcp_5v_current)
+{
+	if (scp_vout == 0)
+	{
+		scp_vout = 5000;
+	}
+
+	scp_iout = 24000000 / scp_vout;
+	if(scp_iout >= 2400) scp_iout = 2400;
+	if(fcp_5v_current && scp_vout == 5000) scp_iout = 3300;
+}
+
 uint8_t SCP_REG[256] =
 {
 	[FCP_REG_DEVICE_TYPE] 					= SCP_ADP_TYPE1,
@@ -182,9 +194,7 @@ void fcp_single_write_handle(void)
 				scp_vout = (uint16_t)SCP_REG[FCP_REG_VOUT_CONFIG]* 100;
 				//if(scp_vout >= 10000) scp_vout = 10000;
 				if(scp_vout > 9000) scp_vout = 9000;
-				scp_iout = 24000000 / scp_vout;
-				if(scp_iout >= 2400) scp_iout = 2400;
-				if(scp_vout == 5000) scp_iout = 3300;
+				scp_update_iout(1);
 
 				
 				//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
@@ -196,9 +206,7 @@ void fcp_single_write_handle(void)
 		case FCP_REG_VOUT_CONFIG:
         	scp_vout = (uint16_t)SCP_REG[FCP_REG_VOUT_CONFIG]* 100;
         	//if(scp_vout >= 10000) scp_vout = 10000;
-			scp_iout = 24000000 / scp_vout;
-			if(scp_iout >= 2400) scp_iout = 2400;
-			if(scp_vout == 5000) scp_iout = 3300;
+			scp_update_iout(1);
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
         	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
@@ -209,8 +217,7 @@ void fcp_single_write_handle(void)
         case SCP_REG_VSET_L:
         	scp_vout = ((uint16_t)SCP_REG[SCP_REG_VSET_H] << 8) | SCP_REG[SCP_REG_VSET_L];
         	if(scp_vout >= 10000) scp_vout = 10000;
-			scp_iout = 24000000 / scp_vout;
-			if(scp_iout >= 2400) scp_iout = 2400;
+			scp_update_iout(0);
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
         	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
@@ -223,8 +230,7 @@ void fcp_single_write_handle(void)
         	pdlib_disable_usbpd();
             scp_vout = ((uint16_t)SCP_REG[SCP_REG_VSET_H] << 8) | SCP_REG[SCP_REG_VSET_L];
             if(scp_vout >= 10000) scp_vout = 10000;
-			scp_iout = 24000000 / scp_vout;
-			if(scp_iout >= 2400) scp_iout = 2400;
+			scp_update_iout(0);
         	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
         	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
             break;
@@ -237,8 +243,7 @@ void fcp_single_write_handle(void)
             	SCP_REG[SCP_REG_VSET_L] = (uint8_t)5000;
             	scp_vout = SCP_REG[SCP_REG_VSET_H] << 8 | SCP_REG[SCP_REG_VSET_L];
             	if(scp_vout >= 10000) scp_vout = 10000;
-				scp_iout = 24000000 / scp_vout;
-				if(scp_iout >= 2400) scp_iout = 2400;
+				scp_update_iout(0);
             	//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
             	osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
             	DPDM->SOURCE_CTRL.BITS.SOFT_RESET = 1;
@@ -320,8 +325,7 @@ void fcp_multi_write_handle(void)
 			//lib_printk("SCP_REG_VSET_L = %d\n",SCP_REG[SCP_REG_VSET_L]);
 			//lib_printk("scp_vout = %d\n",scp_vout);
         	if(scp_vout >= 10000) scp_vout = 10000;
-			scp_iout = 24000000 / scp_vout;
-			if(scp_iout >= 2400) scp_iout = 2400;
+			scp_update_iout(0);
 			//hal_tcpc_pd_set_bus_iv(0,scp_vout,3000,20,0);
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_AFC_SCP_OUT);
         	//usb_pd_set_state(PE_SRC_Disabled,enter_state);
