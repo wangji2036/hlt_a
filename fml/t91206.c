@@ -1089,7 +1089,7 @@ int tmc_read_data(unsigned char *data, unsigned int data_off, unsigned int data_
         delay_1ms(200);
         rv = transmit_apdu(&apdu);
 
-        while (rv != SUCCEED)
+        for (int retry = 0; rv != SUCCEED && retry < RETRY_COUNT; retry++)
         {
 //        	wpc_printk("\r\n T91-retry");
             delay_1ms(200);
