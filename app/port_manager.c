@@ -625,7 +625,11 @@ void port_enum_port_enum_done(void)
 		hal_tcpc_set_gate_en(PORT0_INDEX,true);
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage,g_buckboost.buckboost_out_current_actual);
 	}
-
+	if(g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && (gd->bat_ntc_stop_chrg_flag == 2 || gd->bat_ntc_dischg_lock == 2))
+	{
+		gd->bat_ntc_stop_chrg_flag = 3;
+		gd->bat_ntc_dischg_lock = 3;
+	}
 	if(g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
 		//if(g_tcpc.tc_port_map != PORT1_INDEX || dpdm_map != PORT1_INDEX) tcpm_set_port_sdp(PORT1_INDEX);  // 500mA锟脚碉拷
@@ -821,7 +825,7 @@ void port_enum_port_snk_setcharge(void)
 		g_port.ibat_limit = g_port.ibat_limit<(10000*1000/g_buckboost.adc_vbat)?g_port.ibat_limit:10000*1000/g_buckboost.adc_vbat;
 		g_port.ibus_limit = g_port.ibus_limit<(10000*1000/g_buckboost.adc_vbus)?g_port.ibus_limit:10000*1000/g_buckboost.adc_vbus;
 	}
-	if(bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
+	if(gd->bat_ntc_stop_chrg_flag || typec_charge_ntc_lock )
 	{
 		g_port.ibus_limit = 0;
 	}

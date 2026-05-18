@@ -630,6 +630,8 @@ struct gd_t
 	 struct bat_info g_bat;
 	 uint8_t key_sleep_exit;
 	 uint8_t enter_sleep_flag;
+	 uint8_t bat_ntc_stop_chrg_flag;
+	 uint8_t bat_ntc_dischg_lock;
 
 
 };

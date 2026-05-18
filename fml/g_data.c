@@ -259,7 +259,7 @@ void gd_data_init(void)
 		gd->typec_scp = 0;
 		gd->vbus_ovp = 0;
 		gd->touch_to_weakup = 0;
-			power_on_cnt = 40;
+		power_on_cnt = 40;
 		gd->Battery_charger_cnt = 0;
 		gd->Battery_cycle_count = 0;
 		gd->Battery_cycle_count_hi = 0;

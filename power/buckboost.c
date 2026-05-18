@@ -353,7 +353,7 @@ void buckboost_protection_handle(void)
 #endif
 	if(status&0x2006) gd->typec_scp = 1;
 	if(status & VBUS_FUALT_VBUS_OVP) gd->vbus_ovp = 1;
-	if (gd->typec_scp||bat_ntc_lock_flag||wirless_ntc_lock||typec_ntc_lock||bat_ntc_dischg_lock||bat_ntc_stop_chrg_flag||typec_charge_ntc_lock)
+	if (gd->typec_scp || bat_ntc_lock_flag || wirless_ntc_lock || typec_ntc_lock || gd->bat_ntc_dischg_lock || gd->bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
 	{
 		gd->ntc_total_lock_flag = 1;
 	}
@@ -378,6 +378,7 @@ void buckboost_protection_handle(void)
 	    status &= ~VBUS_FAULT_VBUS_NTC;
 #endif
 #endif
+	if(gd->bat_ntc_stop_chrg_flag == 1 || gd->bat_ntc_dischg_lock == 1) status |= NTC_PCT;
 	if(gd->led_fault&&!(status&0x6060)&&!gd->vbus_ovp)
 	{
 		gd->led_fault = 0;
@@ -392,28 +393,35 @@ void buckboost_protection_handle(void)
 	gd->fault_status = status;
 
 	if(ntc_switch_event) {status |= NTC_SWITCH; ntc_switch_event = false;}
-	if(status != 0)
+	if(status != 0 || gd->bat_ntc_stop_chrg_flag == 3 || gd->bat_ntc_dischg_lock == 3)
 	{
 #if(BUCKBOOST_USED_NU6805 == 1)
-		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC |NTC_SWITCH))
+		if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT |VBUS_FAULT_VBUS_NTC |NTC_SWITCH) || gd->bat_ntc_stop_chrg_flag == 3 || gd->bat_ntc_dischg_lock == 3)
 		{
 			nu6805_ocp_cnt = 0;
-			bb_printk("protect lock =0x%x\n",status);
+			bb_printk("protect lock =0x%x %d %d\n",status, gd->bat_ntc_stop_chrg_flag, gd->bat_ntc_dischg_lock);
 
 			if(status & VBUS_FAULT_VBUS_NTC)
 			{
 				bb_printk("\r\n[VBUS_NTC] VBUS_FAULT_VBUS_NTC triggered!");
-				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d, dischg_lock=%d", typec_ntc_lock,bat_ntc_lock_flag, bat_ntc_dischg_lock);
+				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d, dischg_lock=%d", typec_ntc_lock,bat_ntc_lock_flag, gd->bat_ntc_dischg_lock);
 				bb_printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
 					gd->sys_infos.ntc_temp_typec, g_buckboost.batTemp, gd->sys_infos.ntc_temp_wpc);
-				if (gd->idle_to_sleep_cnt < 100) gd->idle_to_sleep_cnt += 250;
+				// if (gd->idle_to_sleep_cnt < 100) gd->idle_to_sleep_cnt += 250;
 			}
 
-			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT ))
+			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT) || gd->bat_ntc_stop_chrg_flag == 3 || gd->bat_ntc_dischg_lock == 3)
 			{
 				//lock
 				if(g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE) pdlib_disable_typec(PORT0_INDEX);
 				if(g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE) pdlib_disable_typec(PORT1_INDEX);
+				if(gd->bat_ntc_stop_chrg_flag == 3 || gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT))
+				{
+					gd->bat_ntc_dischg_lock = 2;
+					gd->bat_ntc_stop_chrg_flag = 2;
+					gd->tc0_lighting_mode = 1;
+					gd->wpc_disable = 1;
+				}
 			}
 			else  //ntc
 			{
