@@ -241,20 +241,12 @@ int fm1210_i2c_transceive_sleep(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uin
 	*rlen = 0;
 	if (fm1210_i2c_send_frame(I2C_CMD_IBLOCK, sbuf, slen) < 0) return -1;
 
-	do {
-		delay_1ms(2);
-		ret = fm1210_i2c_recv_frame(rbuf, rlen);
-		if (ret)
-		{
-			wpc_printk("\r\n fm1210 %d", ret);
-			break;
-		}
-		else
-		{
-			//wpc_printk("\r\n fm1210--- %d", ret);
-			break;
-		}
-	} while (1);//TODO: need timeout to avoid endless loop
+	delay_1ms(2);
+	ret = fm1210_i2c_recv_frame(rbuf, rlen);
+	if (ret)
+	{
+		wpc_printk("\r\n fm1210 %d", ret);
+	}
 
 	return ret;
 }
