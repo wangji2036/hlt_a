@@ -44,7 +44,7 @@
 
   @endverbatim
   ******************************************************************************
-  */ 
+  */
 #include "regdef.h"
 #include "timer.h"
 #include "g_data.h"
@@ -65,26 +65,27 @@ void hal_timer_init(TS_TMR *timer)
 {
 	if (timer == TMR0)
 	{
-		timer->LOAD_CNT.WORD = 4000 - 1; //250ms
-		timer->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
+		timer->LOAD_CNT.WORD = 4000 - 1;                                                                                                                                  //250ms
+		timer->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk;                                                                //LIRC: 64K
 		timer->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 	}
 
 	if (timer == TMR1)
 	{
-		timer->LOAD_CNT.WORD = 9000 - 1; //1ms
+		timer->LOAD_CNT.WORD = 9000 - 1;                                                                                                                                  //1ms
 		timer->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_PERIODIC << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk; //9MHz
 	}
 
 	if (timer == TMR2)
 	{
 		timer->LOAD_CNT.WORD = 1125 * 850 - 1; //850ms
-		timer->GEN_CTRL.WORD = (5 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_PERIODIC << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk;; //1.125MHz
+		timer->GEN_CTRL.WORD = (5 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_PERIODIC << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk;
+		; //1.125MHz
 	}
 
 	if (timer == TMR3)
 	{
-		timer->LOAD_CNT.WORD = 9000 - 1; //1ms
+		timer->LOAD_CNT.WORD = 9000 - 1;                                                                                                                                  //1ms
 		timer->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_PERIODIC << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_INT_EN_Msk | TMR_GEN_CTRL_CNT_EN_Msk; //9MHz
 	}
 }
@@ -121,8 +122,6 @@ void __attribute__((isr)) TMR0_IRQHandler(void)
 		ECAP1->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
 	}
 
-
-
 	if (ECAP2->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
 	{
 		if (ecap_callback != NULL)
@@ -136,8 +135,6 @@ void __attribute__((isr)) TMR0_IRQHandler(void)
 	{
 		ECAP2->STS_FLAG.WORD = ECAP_STS_FLAG_OVERFLOW_FLAG_Msk;
 	}
-
-
 
 	if (ECAP4->STS_FLAG.WORD & ECAP_STS_FLAG_EDGE_DET_FLAG_Msk)
 	{
@@ -154,10 +151,9 @@ void __attribute__((isr)) TMR0_IRQHandler(void)
 	}
 }
 
-
 volatile uint8_t g_u8Tmr0IntHaved_USBPD;
 volatile uint16_t g_u16Tmr0IntCnt_USBPD;
-volatile uint8_t  g_u8Tmr0IntHaved;
+volatile uint8_t g_u8Tmr0IntHaved;
 volatile uint16_t g_u16Tmr0IntCnt;
 
 volatile uint16_t sys_ticks;
@@ -188,7 +184,7 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 	else
 	{
 		g_u8Tmr0IntHaved = 1;
-		g_u16Tmr0IntCnt  = 1;
+		g_u16Tmr0IntCnt = 1;
 	}
 
 	if (g_u8Tmr0IntHaved_USBPD)
@@ -198,26 +194,25 @@ void __attribute__((isr)) TMR1_IRQHandler(void) //1ms
 	else
 	{
 		g_u8Tmr0IntHaved_USBPD = 1;
-		g_u16Tmr0IntCnt_USBPD  = 1;
+		g_u16Tmr0IntCnt_USBPD = 1;
 	}
 	//GPC->DOUT.BITS.PIN8 ^= 1;//1ms
-//	GPA->DOUT.BITS.PIN4 ^= 1;
-//	GPA->DOUT.BITS.PIN5 ^= 1;
+	//	GPA->DOUT.BITS.PIN4 ^= 1;
+	//	GPA->DOUT.BITS.PIN5 ^= 1;
 	usb_pdlib_timer_update();
-
-	
 
 	ms_10_cnt++;
 
-	if(ms_10_cnt >= 10)
+	if (ms_10_cnt >= 10)
 	{
-		ms_10_cnt  = 0;
+		ms_10_cnt = 0;
 		extern void key_handle_10ms(void);
 		key_handle_10ms();
 	}
-	gd->Bat_RTC_Timer ++;
+	gd->Bat_RTC_Timer++;
 #if CONFIG_NEW_CCC_LOG_ENABLE
-	if (++gd->Bat_RTC_Milliseconds >= 1000) {
+	if (++gd->Bat_RTC_Milliseconds >= 1000)
+	{
 		gd->Bat_RTC_Milliseconds = 0;
 		gd->Bat_RTC_Seconds++;
 	}
@@ -238,7 +233,6 @@ void soft_wdt_reset()
 	SYS->RST_CTRL.BITS.MCU_RST = 1;
 }
 
-
 volatile uint8_t tmr2_250ms_int_flag;
 void __attribute__((isr)) TMR2_IRQHandler(void) //250ms
 {
@@ -256,7 +250,7 @@ void __attribute__((isr)) TMR2_IRQHandler(void) //250ms
  */
 void __attribute__((isr)) TMR3_IRQHandler(void)
 {
-	if (gd->sys_infos.tim3_evnt & 1)//duty ramp up
+	if (gd->sys_infos.tim3_evnt & 1) //duty ramp up
 	{
 		if (gd->pid_duty < gd->dig_ping_duty)
 		{
@@ -270,7 +264,7 @@ void __attribute__((isr)) TMR3_IRQHandler(void)
 		}
 	}
 
-	if (gd->sys_infos.tim3_evnt & 4)//fsk response
+	if (gd->sys_infos.tim3_evnt & 4) //fsk response
 	{
 		if (gd->fsk_silence)
 		{
@@ -278,7 +272,7 @@ void __attribute__((isr)) TMR3_IRQHandler(void)
 			{
 				EPWM1->FSK_CTRL.WORD |= EPWM_FSK_CTRL_FSK_EN_Msk;
 				gd->sys_infos.tim3_evnt &= ~4;
-//				GPA->DOUT.BITS.PIN4 ^= 1;
+				//				GPA->DOUT.BITS.PIN4 ^= 1;
 			}
 		}
 	}
@@ -288,5 +282,3 @@ void __attribute__((isr)) TMR3_IRQHandler(void)
 		hal_timer_stop(TMR3);
 	}
 }
-
-

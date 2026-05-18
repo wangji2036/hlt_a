@@ -4,9 +4,9 @@
 #include "printk.h"
 #include "config.h"
 #include "g_data.h"
-#if(BUCKBOOST_USED_NU6805 == 1)
+#if (BUCKBOOST_USED_NU6805 == 1)
 
-#define BAT_CELL_EMPTY_VOLT   2900            /*切记会影响到欠压后PD能否充电*/
+#define BAT_CELL_EMPTY_VOLT 2900 /*切记会影响到欠压后PD能否充电*/
 
 uint8_t bat_cell_num = 2;
 #define BAT_CELL_NUM bat_cell_num
@@ -18,14 +18,14 @@ void hal_nu6805_buckboost_init(void)
 	uint8_t revision = hal_nu6805_buckboost_get_verision();
 	{
 		hal_nu6805_buckboost_dis_indetb();
-#if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+#if (CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
 		hal_nu6805_update_cv_by_cycle(GET_CYCLE_COUNT(gd));
 #else
-		hal_nu6805_buckboost_charge_target_volt(BATTERY_CV_VALUE*BAT_CELL_NUM);
+		hal_nu6805_buckboost_charge_target_volt(BATTERY_CV_VALUE * BAT_CELL_NUM);
 #endif
-		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT*BAT_CELL_NUM);
+		hal_nu6805_buckboost_discharge_set_bat_uv_volt(BAT_CELL_EMPTY_VOLT * BAT_CELL_NUM);
 
-		hal_nu6805_buckboost_set_busiv(5000,3000);  //5v3a
+		hal_nu6805_buckboost_set_busiv(5000, 3000); //5v3a
 		hal_nu6805_buckboost_set_ovp(5000);
 		hal_nu6805_buckboost_disable_62368();
 		hal_nu6805_buckboost_write_reset_check();
@@ -41,8 +41,8 @@ void hal_nu6805_buckboost_init(void)
 		hal_nu6805_buckboost_set_cv();
 		// Disable NTC
 		uint8_t read;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,read|0x04);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting1, &read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting1, read | 0x04);
 		//200ma
 		hal_nu6805_REG_Charger_Setting1();
 
@@ -56,69 +56,70 @@ void hal_nu6805_buckboost_init(void)
 void hal_nu6805_buckboost_disable_62368(void)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting1,read | 0x04);
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,read | 0xC0);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting1, &read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting1, read | 0x04);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting3, &read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting3, read | 0xC0);
 }
 
-void hal_nu6805_REG_Charger_Setting1(void){
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting1,0x05);
+void hal_nu6805_REG_Charger_Setting1(void)
+{
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting1, 0x05);
 }
 void hal_nu6805_buckboost_set_cv(void)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_RESEVERD,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_RESEVERD,0x08 | read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_RESEVERD, &read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_RESEVERD, 0x08 | read);
 }
 
 void hal_nu6805_buckboost_typeca_dischg(bool en)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read | 0x02);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read | 0x02);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x02));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read & (~0x02));
 }
 void hal_nu6805_buckboost_typecb_dischg(bool en)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read | 0x04);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read | 0x04);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x04));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read & (~0x04));
 }
 void hal_nu6805_buckboost_usb_a_dischg(bool en)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read | 0x01);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read | 0x01);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x01));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read & (~0x01));
 }
 
 void hal_nu6805_buckboost_vbus_dischg(bool en)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read | 0x08);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read | 0x08);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,read & (~0x08));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_discharge_Control, read & (~0x08));
 }
 
 uint8_t hal_nu6805_buckboost_get_protect(void)
 {
 	uint8_t read;
 
-//	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,&read);
-//	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,read);
+	//	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,&read);
+	//	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,read);
 
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event2,read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event2, &read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event2, read);
 	return read;
 }
 
@@ -126,20 +127,20 @@ bool hal_nu6805_buckboost_a2_detect_enable(bool en)
 {
 	//hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_discharge_Control,0x00);
 	//hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0x02);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x00);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,0x01);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Indt_Control, 0x00);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Indt_Control, 0x01);
 	return en;
 }
 
 bool hal_nu6805_buckboost_get_a2_state(void)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, &read);
 	//printk("REG_IRQ_Event1 =0x%x\n",read);
-	if(read & 0x02)
+	if (read & 0x02)
 	{
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IRQ_Event1,0x02);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, 0x02);
 		return true;
 	}
 	return false;
@@ -149,25 +150,27 @@ void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 {
 	//g_buckboost.woke_mode = woke_mode;//---10_28��δ��� ������¶ȱ�����״̬�˲���
 	uint8_t write_data = 0;
-	if(woke_mode == BUCKBOOST_DISCHG_MODE)
+	if (woke_mode == BUCKBOOST_DISCHG_MODE)
 		write_data = 0x01;
-	else if(woke_mode == BUCKBOOST_CHAGER_MODE)
+	else if (woke_mode == BUCKBOOST_CHAGER_MODE)
 		write_data = 0x10;
 
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Mode_Control,write_data);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, write_data);
 }
 
-void hal_nu6805_buckboost_set_busiv(uint16_t vbus,uint16_t ibus)
+void hal_nu6805_buckboost_set_busiv(uint16_t vbus, uint16_t ibus)
 {
 	//printk("%s= %d\n",__func__,vbus);
-	if(vbus < 3000 || vbus > 22000) return;
-	vbus = (vbus -3000) / 10;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Vbus_Vol_High,vbus >> 3);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Vbus_Vol_Low,vbus & 0x7);
+	if (vbus < 3000 || vbus > 22000)
+		return;
+	vbus = (vbus - 3000) / 10;
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Vbus_Vol_High, vbus >> 3);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Vbus_Vol_Low, vbus & 0x7);
 
-	if(ibus < 500) ibus = 500;
+	if (ibus < 500)
+		ibus = 500;
 	ibus = (ibus - 500) / 50;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Ibus_Limit,ibus);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Ibus_Limit, ibus);
 
 	//hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Ibus_Limit,ibus);
 }
@@ -176,11 +179,11 @@ void hal_nu6805_buckboost_typeca_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x02);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read | 0x02);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x02));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read & (~0x02));
 }
 
 void hal_nu6805_buckboost_usb_a_gate_en(bool en)
@@ -188,11 +191,11 @@ void hal_nu6805_buckboost_usb_a_gate_en(bool en)
 {
 	//printk("%s :%d\n",__func__,en);
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x01);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read | 0x01);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read & (~0x01));
 }
 
 void hal_nu6805_buckboost_typecb_gate_en(bool en)
@@ -201,34 +204,36 @@ void hal_nu6805_buckboost_typecb_gate_en(bool en)
 	//printk("%s :%d\n",__func__,en);
 #ifdef POWERBANK_BUCK_EVK_V02
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x01);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read | 0x01);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x01));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read & (~0x01));
 #else
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,&read);
-	if(en)
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read | 0x04);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, &read);
+	if (en)
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read | 0x04);
 	else
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Powerpath_Control,read & (~0x04));
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Powerpath_Control, read & (~0x04));
 
 #endif
 }
 
 void hal_nu6805_buckboost_charge_ibus_limit(uint16_t ibus_limit)
 {
-	if(ibus_limit < 500) ibus_limit = 500;
+	if (ibus_limit < 500)
+		ibus_limit = 500;
 	ibus_limit = (ibus_limit - 500) / 50;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Ibus_Limit,ibus_limit);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Ibus_Limit, ibus_limit);
 }
 
 void hal_nu6805_buckboost_charge_ibat_limit(uint16_t ibat_limit)
 {
-	if(ibat_limit < 100) ibat_limit = 100;
+	if (ibat_limit < 100)
+		ibat_limit = 100;
 	ibat_limit = (ibat_limit - 100) / 100;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Ibat_Limit,ibat_limit);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Ibat_Limit, ibat_limit);
 }
 
 int16_t hal_nu6805_buckboost_get_bus_current(void)
@@ -236,24 +241,23 @@ int16_t hal_nu6805_buckboost_get_bus_current(void)
 	uint16_t ibus = 0;
 	uint8_t read = 0;
 
-
-	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,5);
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 5);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 		ibus = read << 4;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 		ibus |= read & 0x0F;
-		return ibus *5;
+		return ibus * 5;
 	}
 	else
 	{
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,7);
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 7);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 		ibus = read << 4;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 		ibus |= read & 0x0F;
-		return -ibus *5;
+		return -ibus * 5;
 	}
 }
 
@@ -261,23 +265,23 @@ int16_t hal_nu6805_buckboost_get_bat_current(void)
 {
 	uint16_t ibus = 0;
 	uint8_t read = 0;
-	if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 	{
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,4);
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 4);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 		ibus = read << 4;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 		ibus |= read & 0x0F;
-		return ibus *5;
+		return ibus * 5;
 	}
 	else
 	{
-		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,6);
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 6);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 		ibus = read << 4;
-		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 		ibus |= read & 0x0F;
-		return -ibus *5;
+		return -ibus * 5;
 	}
 }
 
@@ -285,101 +289,102 @@ uint16_t hal_nu6805_buckboost_get_bat_voltage(void)
 {
 	uint16_t vbat = 0;
 	uint8_t read = 0;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,0);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 0);
 
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 
 	vbat = read << 4;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 	vbat |= read & 0x0F;
-	return vbat *75 / 10;
+	return vbat * 75 / 10;
 }
 uint16_t hal_nu6805_buckboost_get_bus_voltage(void)
 {
 	uint16_t vbus = 0;
 	uint8_t read = 0;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,1);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 1);
 
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 
 	vbus = read << 4;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 	vbus |= read & 0x0F;
-	return vbus *75 / 10;
+	return vbus * 75 / 10;
 }
 
 uint16_t hal_nu6805_buckboost_get_bat_temperature(void)
 {
 	uint32_t ntc = 0;
 	uint8_t read = 0;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Type,9);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Type, 9);
 	//	delay_1us(50);
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_High,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_High, &read);
 
 	ntc = read << 4;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_ADC_Data_Low,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_ADC_Data_Low, &read);
 	ntc |= read & 0x0F;
 
 	//hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Ntc_Setting2,&read);
-	return ntc*550/20 / 100;// in Ohm, 20uA
+	return ntc * 550 / 20 / 100; // in Ohm, 20uA
 }
-
-
 
 uint8_t hal_nu6805_buckboost_get_verision(void)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Version_info,&read);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Version_info, &read);
 	return read;
 }
 
 void hal_nu6805_buckboost_write_reset_check(void)
 {
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_IC_Reset_Check,0x01);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IC_Reset_Check, 0x01);
 }
 
 void hal_nu6805_buckboost_dis_indetb(void)
 {
 	uint8_t read;
-	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting3,&read);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Discharge_Setting3,read | 0x02);
+	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting3, &read);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Discharge_Setting3, read | 0x02);
 }
 
 void hal_nu6805_buckboost_charge_vbus_uv(uint16_t vbus_uv)
 {
-	if(vbus_uv < 4000) vbus_uv = 4000;
+	if (vbus_uv < 4000)
+		vbus_uv = 4000;
 	vbus_uv = (vbus_uv - 4000) / 100;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_HoldVol,vbus_uv);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_HoldVol, vbus_uv);
 }
 
 void hal_nu6805_buckboost_charge_target_volt(uint16_t volt)
 {
-	if(volt < 3000 || volt > 19200) return;
-	volt = (volt -3000) / 10;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_VbatVol_High,volt >> 3);
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_VbatVol_Low,volt & 0x7);
+	if (volt < 3000 || volt > 19200)
+		return;
+	volt = (volt - 3000) / 10;
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_High, volt >> 3);
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_Low, volt & 0x7);
 }
 
 void hal_nu6805_buckboost_charge_set_trickle_volt(uint16_t volt)
 {
-	if(volt < 2500) volt = 2500;
-	volt = (volt -2500) / 100;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Trickle_Vol,volt);
+	if (volt < 2500)
+		volt = 2500;
+	volt = (volt - 2500) / 100;
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Trickle_Vol, volt);
 }
 
 void hal_nu6805_buckboost_discharge_set_bat_uv_volt(uint16_t volt)
 {
-	if(volt < 2700) volt = 2700;
-	volt = (volt -2700) /100;
-	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Vin_Uvlo,volt);
-
+	if (volt < 2700)
+		volt = 2700;
+	volt = (volt - 2700) / 100;
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Vin_Uvlo, volt);
 
 	//hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Charger_Setting3,0xC0);
 }
 
 void hal_nu6805_buckboost_set_ovp(uint16_t set_volt)
 {
-	g_buckboost.ovp_value =  set_volt * 120 /100;
+	g_buckboost.ovp_value = set_volt * 120 / 100;
 }
 
 uint8_t hal_nu6805_buckboost_is_ibus_loop(void)
@@ -391,21 +396,25 @@ bool hal_nu6805_buckboost_is_charge_full(void)
 {
 	uint8_t read = 0;
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, &read);
-	printk("bat_full_flag=%d",read & 0x10);
-	if (read & 0x10) {
+	printk("bat_full_flag=%d", read & 0x10);
+	if (read & 0x10)
+	{
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, 0x10);
 		return true;
 	}
 	return false;
 }
 
-#if(CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
+#if (CONFIG_CYCLE_CV_REDUCTION_ENABLE == 1)
 void hal_nu6805_update_cv_by_cycle(uint16_t cycle_count)
 {
 	uint16_t cv_offset_mv = 0;
-	if (cycle_count >= CYCLE_CV_TIER2_COUNT) {
+	if (cycle_count >= CYCLE_CV_TIER2_COUNT)
+	{
 		cv_offset_mv = CYCLE_CV_TIER2_OFFSET;
-	} else if (cycle_count >= CYCLE_CV_TIER1_COUNT) {
+	}
+	else if (cycle_count >= CYCLE_CV_TIER1_COUNT)
+	{
 		cv_offset_mv = CYCLE_CV_TIER1_OFFSET;
 	}
 	uint16_t adjusted_cv_pack = (BATTERY_CV_VALUE - cv_offset_mv) * BAT_CELL_NUM;
@@ -414,7 +423,3 @@ void hal_nu6805_update_cv_by_cycle(uint16_t cycle_count)
 #endif
 
 #endif
-
-
-
-

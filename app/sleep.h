@@ -8,10 +8,9 @@ void SLP_vExitShipMode(void);
 uint8_t SLP_u8IsShipMode(void);
 
 #if SUPPORT_SLEEP_LOG
-	#define sleep_printk 	printk
+#define sleep_printk printk
 #else
-	#define sleep_printk(...)
+#define sleep_printk(...)
 #endif
-
 
 #endif /* SLP_H_ */

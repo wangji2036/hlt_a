@@ -1,7 +1,8 @@
 #ifndef OSAL_H_
 #define OSAL_H_
 
-enum {
+enum
+{
 	APP_010ms_TIMER = 0,
 	APP_100ms_TIMER = 1,
 	APP_250ms_TIMER = 2,
@@ -11,10 +12,11 @@ enum {
 	WPC_PING_TIMER = 4,
 	WPC_NEXT_TIMER = 5,
 	WPC_RESP_TIMER = 6,
-	WPC_NEGO_TIMER = 7, WPC_AUTH_TIMER = 7,
-	WPC_CEP_TIMER  = 8,
-	WPC_RPP_TIMER  = 9,
-	WPC_DDM_TIMER  =10,
+	WPC_NEGO_TIMER = 7,
+	WPC_AUTH_TIMER = 7,
+	WPC_CEP_TIMER = 8,
+	WPC_RPP_TIMER = 9,
+	WPC_DDM_TIMER = 10,
 
 	USB_TC_PD_TIMER = 11,
 	USB_BC12_TIMER = 12,
@@ -29,7 +31,7 @@ enum {
 	TCPM_CHG_TIMER = 19,
 	TCPM_USB_A_TIMER = 20,
 	TCPM_PSREADY_TIMER = 21,
-	GAUGE_TIMER   = 22,
+	GAUGE_TIMER = 22,
 
 	BUCKBOOST_VBUS_TIMER = 23,
 
@@ -45,7 +47,8 @@ enum {
 	MAX_TIMER,
 };
 
-enum {
+enum
+{
 	HAL_TASK = 0,
 	FML_TASK = 1,
 	USB_TASK = 2,
@@ -60,35 +63,35 @@ enum {
 	MAX_TASK,
 };
 
-#define osal_event_declare(nr)    (1 << nr)
+#define osal_event_declare(nr) (1 << nr)
 
-#define WPC_EVT_DIG_PING          osal_event_declare(0)
-#define WPC_EVT_PIN_NO_PKT        osal_event_declare(1)
-#define WPC_EVT_HDR_START         osal_event_declare(2)
-#define WPC_EVT_HDR_RECVD         osal_event_declare(3)
-#define WPC_EVT_PKT_RECVD         osal_event_declare(4)
-#define WPC_EVT_PING_1st_PKT_TO   osal_event_declare(5)
-#define WPC_EVT_STOP_POWER        osal_event_declare(6)
-#define WPC_EVT_CNFG_NEXT_1ST_TO  osal_event_declare(7)
-#define WPC_EVT_CNFG_NEXT_PKT_TO  osal_event_declare(8)
-#define WPC_EVT_CEP_TO            osal_event_declare(9)
-#define WPC_EVT_RPP_TO            osal_event_declare(10)
-#define WPC_EVT_PCH_TO            osal_event_declare(11)
-#define WPC_EVT_1ST_WND           osal_event_declare(12)
-#define WPC_EVT_2ND_WND           osal_event_declare(13)
-#define WPC_EVT_3RD_WND           osal_event_declare(14)
-#define WPC_EVT_4TH_WND           osal_event_declare(15)
-#define WPC_EVT_PFOD              osal_event_declare(16)
+#define WPC_EVT_DIG_PING osal_event_declare(0)
+#define WPC_EVT_PIN_NO_PKT osal_event_declare(1)
+#define WPC_EVT_HDR_START osal_event_declare(2)
+#define WPC_EVT_HDR_RECVD osal_event_declare(3)
+#define WPC_EVT_PKT_RECVD osal_event_declare(4)
+#define WPC_EVT_PING_1st_PKT_TO osal_event_declare(5)
+#define WPC_EVT_STOP_POWER osal_event_declare(6)
+#define WPC_EVT_CNFG_NEXT_1ST_TO osal_event_declare(7)
+#define WPC_EVT_CNFG_NEXT_PKT_TO osal_event_declare(8)
+#define WPC_EVT_CEP_TO osal_event_declare(9)
+#define WPC_EVT_RPP_TO osal_event_declare(10)
+#define WPC_EVT_PCH_TO osal_event_declare(11)
+#define WPC_EVT_1ST_WND osal_event_declare(12)
+#define WPC_EVT_2ND_WND osal_event_declare(13)
+#define WPC_EVT_3RD_WND osal_event_declare(14)
+#define WPC_EVT_4TH_WND osal_event_declare(15)
+#define WPC_EVT_PFOD osal_event_declare(16)
 //#define WPC_EVT_RSP               osal_event_declare(17)
-#define WPC_EVT_NEGO_NEXT_PKT_TO  osal_event_declare(18)
-#define WPC_EVT_FSK_RESP_DONE     osal_event_declare(19)
-#define WPC_EVT_SE_IC_TBS_AUTH    osal_event_declare(20)
-#define WPC_EVT_CLOAK_PING        osal_event_declare(21)
-#define WPC_EVT_STOP_AFTER_FSK    osal_event_declare(22)
-#define WPC_EVT_FOD_REPORTED	  osal_event_declare(23)
-#define WPC_EVT_RENEGO_TO         osal_event_declare(24)
-#define WPC_EVT_DDM               osal_event_declare(25)
-#define WPC_EVT_DM_CRITICAL		  osal_event_declare(26)
+#define WPC_EVT_NEGO_NEXT_PKT_TO osal_event_declare(18)
+#define WPC_EVT_FSK_RESP_DONE osal_event_declare(19)
+#define WPC_EVT_SE_IC_TBS_AUTH osal_event_declare(20)
+#define WPC_EVT_CLOAK_PING osal_event_declare(21)
+#define WPC_EVT_STOP_AFTER_FSK osal_event_declare(22)
+#define WPC_EVT_FOD_REPORTED osal_event_declare(23)
+#define WPC_EVT_RENEGO_TO osal_event_declare(24)
+#define WPC_EVT_DDM osal_event_declare(25)
+#define WPC_EVT_DM_CRITICAL osal_event_declare(26)
 void osal_init(void);
 void osal_start_system(void);
 void osal_set_event(uint8_t task_id, uint32_t event);
