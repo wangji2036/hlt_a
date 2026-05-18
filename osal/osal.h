@@ -63,7 +63,7 @@ enum
 	MAX_TASK,
 };
 
-#define osal_event_declare(nr) (1 << nr)
+#define osal_event_declare(nr) ((uint32_t)1u << (nr))
 
 #define WPC_EVT_DIG_PING osal_event_declare(0)
 #define WPC_EVT_PIN_NO_PKT osal_event_declare(1)

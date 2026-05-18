@@ -123,19 +123,19 @@ static void osal_event_handle(void)
 		{
             if (event & 0x000000FF)
             {
-            	evt_msk = (1 << ( 0 + bit_map[((event & 0x000000FF) >>  0)]));
+                evt_msk = ((uint32_t)1u << ( 0 + bit_map[((event & 0x000000FF) >>  0)]));
             }
             else if (event & 0x0000FF00)
             {
-            	evt_msk = (1 << ( 8 + bit_map[((event & 0x0000FF00) >>  8)]));
+                evt_msk = ((uint32_t)1u << ( 8 + bit_map[((event & 0x0000FF00) >>  8)]));
             }
             else if (event & 0x00FF0000)
             {
-            	evt_msk = (1 << (16 + bit_map[((event & 0x00FF0000) >> 16)]));
+                evt_msk = ((uint32_t)1u << (16 + bit_map[((event & 0x00FF0000) >> 16)]));
             }
             else
             {
-            	evt_msk = (1 << (24 + bit_map[((event & 0xFF000000) >> 24)]));
+                evt_msk = ((uint32_t)1u << (24 + bit_map[((event & 0xFF000000) >> 24)]));
             }
 
 			osal_tasks_tbl[id].task_cb(evt_msk);
