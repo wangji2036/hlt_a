@@ -921,13 +921,17 @@ int transmit_apdu(TRANSMIT_DATA *pAPDU)
         /* check expected receive length,skip receiving if rx_len = 0 */
         if (pAPDU->rx_len != 0x00)
         {
-            memset(pAPDU->rx, 0x00, TMC_RECE_MAX);
+            if (pAPDU->rx_len <= 1)
+            {
+                continue;
+            }
+            memset(pAPDU->rx, 0x00, pAPDU->rx_len);
 
             /* Execution delay, try receiving SE response after that */
             delay_1us(pAPDU->execution_time);
             delay_1us(8000);
             /* Receive incoming data with package format: AA + 2 bytes length + (data + CRC), length = data length + CRC length */
-            ret = I2C_Read(pAPDU->rx + 1, &len, pAPDU->max_wait_time);
+            ret = I2C_Read(pAPDU->rx + 1, &len, pAPDU->rx_len - 1, pAPDU->max_wait_time);
 
             /* Verify package format, check execution status word befor return response data */
             if ((ret == SUCCEED) && (pAPDU->rx[1] == FRAME_TAG) && (len == ((pAPDU->rx[2] << 8) | (pAPDU->rx[3]))))
@@ -1281,12 +1285,19 @@ int I2C_Write(unsigned char *TxBuf, int len)
  *               ????????
  *@return 0:???-1:??
  */
-int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned long Timeout)
+int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned short rx_capacity, unsigned long Timeout)
 {
     // ?????I2C???????
     //	???3???AA+LEN1+LEN2
     //	??LEN1*256+LEN2??????????
     uint8_t byte;
+    (void)Timeout;
+
+    if (rx_capacity < 3)
+    {
+        return -1;
+    }
+
     hal_i2cm_start();
 
     // ??????
@@ -1311,6 +1322,12 @@ int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned long T
     uint8_t LEN1 = RxBuf[1];
     uint8_t LEN2 = RxBuf[2];
     *len = (LEN1 << 8) | LEN2;
+
+    if ((uint32_t)(*len) + 4U > rx_capacity)
+    {
+        hal_i2cm_stop();
+        return -1;
+    }
 
     // ????????
     for (int i = 3; i < *len + 3 + 1; i++)
