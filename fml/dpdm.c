@@ -124,6 +124,8 @@ void usb_dpdm_select(uint8_t tc_index)
 
 void usb_dpdm_autodcp_en(void)
 {
+	/* Source 模式一次打开 DCP/HVDCP/QC/AFC/SCP/UFCS 检测，
+	 * 中断只负责投递事件，具体改压和协议处理留给 USB_DPDM_TASK。 */
 	//
 	DPDM->SOURCE_CTRL.BITS.EN_SRC_PROTOCOL = 1;
 	DPDM->SOURCE_CTRL.BITS.EN_HVDCP_DET = 1;
@@ -164,6 +166,8 @@ uint16_t adc_input = 0;
 #endif
 void usb_dpdm_task_event_handler(uint32_t event)
 {
+	/* DPDM 任务按 source/sink 事件串行处理：进入 DCP/HVDCP 先回 5V，
+	 * QC fixed/pulse 再调整 VBUS，AFC/SCP 收包由对应协议处理函数继续解析。 */
 	switch (event)
 	{
 	case DPDM_EVT_SRC_ATTACHED:
@@ -421,6 +425,7 @@ void usb_dpdm_task_event_handler(uint32_t event)
 
 void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 {
+	/* ISR 只清硬件 flag 并投递 OSAL 事件，避免在中断上下文直接改母线电压。 */
 	uint32_t int_flag = (DPDM->HVDCP_FLAG.WORD) & 0b00001100;
 	do
 	{
@@ -443,6 +448,7 @@ void __attribute__((isr)) DCP_HVDCP_IRQHandler(void)
 
 void __attribute__((isr)) QC_SRC_IRQHandler(void)
 {
+	/* QC 中断会同步更新请求电压影子值，但实际设置仍由任务事件执行。 */
 
 	uint32_t int_flag = (DPDM->QC_SRC_FLAG.WORD) & 0x3F80;
 
@@ -504,6 +510,7 @@ void __attribute__((isr)) QC_SRC_IRQHandler(void)
 
 void __attribute__((isr)) AFC_SCP_SRC_IRQHandler(void)
 {
+	/* AFC/SCP 收包中断需要立即清 flag，并唤醒协议解析，避免 FIFO 数据被下一帧覆盖。 */
 	uint32_t int_flag = (DPDM->AFC_INT_FLAG.WORD) & 0x0060;
 
 	do

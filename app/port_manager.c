@@ -38,6 +38,8 @@ void port_manager_set_state(enum port_state_e state)
 
 void port_manager_task_init(void)
 {
+	/* 端口管理启动时先建立 5V 放电基线，再让 WPC 进入 boost 工作模式。
+	 * 后续 Type-C/USB-A/无线端口的接入都会通过扫描任务重新仲裁。 */
 	osal_mem_clear(&g_port, sizeof(struct port_infos));
 	osal_task_handler_reg(PORT_MANAGER_TASK, port_manager_event_handle);
 	osal_start_timerEx(PORT_ENUM_TIMER, PORT_ENUM_PERIOD, PORT_ENUM_PERIOD, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT_SCAN);
@@ -731,6 +733,8 @@ void port_enum_port_enum_done(void)
 
 void port_enum_port_snk_setcharge(void)
 {
+	/* 作为 sink 充电时，若无线端仍在 source，需要先给无线功率留余量；
+	 * 这里按当前 VBUS 档位换算输入/电池限流，避免边充边放把适配器功率吃满。 */
 	pm_printk("%s vbus=%d!\n", __func__, g_buckboost.adc_vbus);
 
 	gd->bat_dead_flag = 0;
@@ -844,6 +848,8 @@ void port_enum_port_snk_setcharge(void)
 
 void port_enum_port_snk_setvolt(void)
 {
+	/* 取压优先走已协商能力：PD/PPS 依据 PDO，QC 依据 BC1.2 结果。
+	 * 无线同时工作时会降低目标功率，给 WPC 侧保留稳定余量。 */
 
 	uint32_t source_pdo;
 	//hal_tcpc_set_gate_en(g_port.incharge_port,false);
@@ -1181,6 +1187,8 @@ void port_enum_port3_connect_success(void)
 
 void port_enum_port0_connect_start(void)
 {
+	/* Type-C0 开始接入时先冻结无线 ping 和 USB-A 检测，再关闭互斥端口。
+	 * 这样可以避免多个 source/sink 路径同时拉动 buckboost 母线。 */
 	// gd->flash_times = 0;
 	pm_printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n", g_port.port_state[1], g_port.port_state[2], g_port.port_state[3]);
 
@@ -1347,6 +1355,8 @@ void port_enum_port3_connect_start(void)
 
 void usb_bridge_unconnect(void)
 {
+	/* 三击 USB 通信模式依赖 Type-C0 的 CC 维持连接；CC 丢失后必须释放强制 USB 模式，
+	 * 否则无线禁用和端口锁会一直保持。 */
 	enum tc_cc_status cc1 = TYPEC_CC_OPEN;
 	enum tc_cc_status cc2 = TYPEC_CC_OPEN;
 	bool cc_present = false;
@@ -1371,6 +1381,8 @@ void usb_bridge_unconnect(void)
 
 void port_enum_scan_handle(void)
 {
+	/* 扫描任务是端口仲裁入口：断开事件优先于接入事件，INHANDLING 期间只处理非当前端口的断开。
+	 * 这样保证一次只改一个电源路径，并用 5s watchdog 避免异常状态卡死。 */
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated)
 		return;

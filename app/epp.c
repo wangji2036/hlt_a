@@ -188,6 +188,8 @@ void wpc_epp_GRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
  */
 void wpc_epp_SRQ_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 {
+	/* SRQ 会推进 EPP negotiation 的关键请求：结束协商、设置功率合同、重 ping 或重校准。
+	 * 合同 mask 在这里核对，避免 RX 宣称的合同数量和 TX 侧状态不一致。 */
 	uint8_t i, cnt = 0, data = 0; // Verify contract quantity
 
 	if (epp_ask == NULL) // if epp_ask is NULL, return directly
@@ -535,6 +537,8 @@ void epp_setup_adc_packet(uint8_t hdr, uint8_t request, uint8_t param_msb, uint8
 //	          ID		 ACK	   ACK		  ACK		  CAP		ACK		  ACK	    ACK
 void wpc_epp_nego_phase_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* negotiation 阶段只接受 GRQ/SRQ/FOD 等协商包。
+	 * CE/RPP 若提前出现，说明 RX 已越过协商边界，需要按当前 nego_flag 决定是否失败退出。 */
 	if (com_ask == NULL) // if com_ask is NULL, return directly
 	{
 		return;
@@ -799,6 +803,8 @@ void wpc_epp_RPP_24bit_pkt_process(struct com_prx_ask_pkt_t *epp_ask)
 /// @note
 void wpc_epp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* EPP XFER 阶段同时路由功率控制包和认证数据流。
+	 * wait_update 会在第一次进入时刷新 FSK 参数，之后保持合同功率作为主功率上限。 */
 	if (com_ask == NULL) // if com_ask is NULL, return directly
 	{
 		return;
@@ -940,6 +946,8 @@ Tx Data stream request process
 
 void wpc_epp_ADC_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* ADC 控制 EPP 认证数据流的开闭。
+	 * 结束请求会把已接收 challenge 送入安全芯片签名，失败时直接回错误状态。 */
 	if (com_ask == NULL) // if com_ask is NULL, return directly
 	{
 		return;
@@ -1282,6 +1290,8 @@ void wpc_epp_DSR_pkt_handler(struct com_prx_ask_pkt_t *com_ask)
 /// @param
 void wpc_epp_DSR_ack_handler(void)
 {
+	/* RX 对 DSR 回 ACK 后，TX 才发送下一段 ADT。
+	 * 奇偶 ADT 头在这里翻转，确保认证数据流按协议窗口连续发送。 */
 	struct epp_ptx_fsk_pkt_t fsk_pkt = {};
 
 	wpc_printk("\r\n ---> EPP DSR status: %d", epp_auth.EPP_auth_status);

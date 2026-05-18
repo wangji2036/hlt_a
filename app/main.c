@@ -65,8 +65,8 @@ int main(void)
 	fml_nu103x_por_init();
 	hal_wdt_feed();
 #if (BUCKBOOST_USED_NU6805 == 1)
-	/* 绛夊緟 NU6805 绋冲畾 500ms, 姣�100ms 鍋氫竴娆�I2C dummy read 淇濇寔 SCL 娲昏穬,
-	 * 闃叉澶嶄綅 IC 鍥�250ms 鏃�I2C 娲诲姩鑰屾媺 RESET 瀵艰嚧鍐峰惎鍔�*/
+	/* 等待 NU6805 稳定 500ms；每 100ms 做一次 I2C dummy read 保持 SCL 活跃。
+	 * 这样可以避免复位 IC 因 250ms 内无 I2C 活动而拉 RESET，导致冷启动。 */
 	for (uint8_t i = 0; i < 5; i++)
 	{
 		delay_1ms(100);
