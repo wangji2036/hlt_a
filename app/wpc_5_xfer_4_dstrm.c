@@ -419,7 +419,7 @@ void ds_mpp_prx_sadc_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			break;
 		case SADC_CLOSE_AND_CMPLT:
 			ds_incoming_status[mpp_ask->msg.sadc.stream_num] = DS_STS_STANDBY;
-			if (adt_need_recv_len == 0 || adt_buff_recv_crc != (mpp_ask->msg.sadc.param_msb << 8 | mpp_ask->msg.sadc.param_lsb))
+			if (adt_need_recv_len == 0 || adt_have_recv_len != adt_need_recv_len || adt_buff_recv_crc != (mpp_ask->msg.sadc.param_msb << 8 | mpp_ask->msg.sadc.param_lsb))
 			{
 				fsk_pkt.mpp_fsk.sdsr.type = SDSR_ERR_CRC;
 			}
@@ -441,10 +441,18 @@ void ds_mpp_prx_sadc_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 			}
 			break;
 		case SADC_OPEN_DATA_TRANS:
+			adt_need_recv_len = mpp_ask->msg.sadc.param_msb << 8 | mpp_ask->msg.sadc.param_lsb;
+			if (adt_need_recv_len == 0 || adt_need_recv_len > sizeof(adt_data_recv_buf))
+			{
+				ds_incoming_status[mpp_ask->msg.sadc.stream_num] = DS_STS_STANDBY;
+				adt_need_recv_len = 0;
+				adt_have_recv_len = 0;
+				fsk_pkt.mpp_fsk.sdsr.type = SDSR_UNEXPECTED;
+				break;
+			}
 			ds_incoming_status[mpp_ask->msg.sadc.stream_num] = DS_STS_OPENING;
 			ds_incoming_parity[mpp_ask->msg.sadc.stream_num] = DS_EVEN;
 			adt_have_recv_len = 0;
-			adt_need_recv_len = mpp_ask->msg.sadc.param_msb << 8 | mpp_ask->msg.sadc.param_lsb;
 			adt_buff_recv_crc = 0;
 			auth_request_type = 0;
 			break;
@@ -458,6 +466,8 @@ void ds_mpp_prx_sadc_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 
 void ds_mpp_prx_sadt_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 {
+	uint8_t sadt_data_len = mpp_ask->hdr >> 4;
+
 	if (mpp_ask->msg.sadt.stream_num != 1)
 	{
 		fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
@@ -470,18 +480,27 @@ void ds_mpp_prx_sadt_pkt_process(struct mpp_prx_ask_pkt_t *mpp_ask)
 		return;
 	}
 
+	if (sadt_data_len == 0)
+	{
+		fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
+		return;
+	}
+	sadt_data_len--;
+
 	if ((mpp_ask->hdr & 0x01) == ds_incoming_parity[mpp_ask->msg.sadt.stream_num])
 	{
-		adt_buff_recv_crc = crc16_ccitt(&mpp_ask->msg.sadt.data[0], (mpp_ask->hdr >> 4) - 1, adt_have_recv_len == 0 ? CRC_INITIAL_VALUE : adt_buff_recv_crc);
-		ds_incoming_parity[mpp_ask->msg.sadt.stream_num] ^= 1;
-		for (int i=0; i<(mpp_ask->hdr >> 4)-1; i++)
+		if (adt_need_recv_len == 0 || adt_have_recv_len + sadt_data_len > adt_need_recv_len || adt_have_recv_len + sadt_data_len > sizeof(adt_data_recv_buf))
 		{
-			if (adt_have_recv_len + i < sizeof(adt_data_recv_buf))
-			{
-				adt_data_recv_buf[adt_have_recv_len+i] = mpp_ask->msg.sadt.data[i];
-			}
+			fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_N_D);
+			return;
 		}
-		adt_have_recv_len += (mpp_ask->hdr >> 4) - 1;
+		adt_buff_recv_crc = crc16_ccitt(&mpp_ask->msg.sadt.data[0], sadt_data_len, adt_have_recv_len == 0 ? CRC_INITIAL_VALUE : adt_buff_recv_crc);
+		ds_incoming_parity[mpp_ask->msg.sadt.stream_num] ^= 1;
+		for (int i=0; i<sadt_data_len; i++)
+		{
+			adt_data_recv_buf[adt_have_recv_len+i] = mpp_ask->msg.sadt.data[i];
+		}
+		adt_have_recv_len += sadt_data_len;
 	}
 
 	fml_fsk_patt_send(EPWM1, T_RESPONSE, _FSK_ACK);
