@@ -30,6 +30,7 @@ static struct fm_pack_t fm_pack;
 #define FM1210_I2C_WKUP_DELAY    1000 //us
 #define FM1210_I2C_READ_LEN_MIN     1
 #define FM1210_I2C_READ_LEN_MAX  (252)
+#define FM1210_I2C_TRANSCEIVE_RETRY 32
 
 void fm1210_wakeup(void)
 {
@@ -185,12 +186,13 @@ int fm1210_i2c_recv_frame(uint8_t *rbuf, uint16_t *rlen)
 
 int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t *rlen)
 {
-	int ret;
+	int ret = -1;
 
 	*rlen = 0;
 	if (fm1210_i2c_send_frame(I2C_CMD_IBLOCK, sbuf, slen) < 0) return -1;
 
-	do {
+	for (uint8_t retry = 0; retry < FM1210_I2C_TRANSCEIVE_RETRY; retry++)
+	{
 		delay_1ms(2);
 		ret = fm1210_i2c_recv_frame(rbuf, rlen);
 		if (ret)
@@ -203,7 +205,7 @@ int fm1210_i2c_transceive(uint8_t *sbuf, uint16_t slen, uint8_t *rbuf, uint16_t 
 		//	wpc_printk("\r\n fm1210--- %d", ret);
 			break;
 		}
-	} while (1);//TODO: need timeout to avoid endless loop
+	}
 
 	return ret;
 }
@@ -588,4 +590,3 @@ int fm1210_get_tbs_auth(uint8_t *rbuf)
 
     return 0;
 }
-
