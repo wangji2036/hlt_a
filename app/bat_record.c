@@ -777,8 +777,8 @@ void battery_record_update_overvoltage(void) {
  *   BR_CHRG_OT = 60°C → 600 (0.1°C)
  *   BR_DISG_OT = 65°C → 650 (0.1°C)
  * Note: All temperature storage uses 0.1°C units for PC compatibility. */
-#define ENG_CHRG_OT_TEMP_DEGC   600   /* 60.0°C charging record threshold (0.1°C) */
-#define ENG_DISG_OT_TEMP_DEGC   650   /* 65.0°C discharging record threshold (0.1°C) */
+#define ENG_CHRG_OT_TEMP_DEGC   550   /* 60.0°C charging record threshold (0.1°C) */
+#define ENG_DISG_OT_TEMP_DEGC   600   /* 65.0°C discharging record threshold (0.1°C) */
 
 // Temperature abnormal detection and record function - New GB standard: fixed 1h window
 void battery_record_update_temperature(void) {
