@@ -199,14 +199,14 @@ void cycle_count_save_to_flash(void);
 
 struct ap_t
 {
-	uint8_t app_info_0; //0-0x2000
-	uint8_t app_info_1; //1-0x2001
-	uint8_t app_info_2;
-	uint8_t app_info_3;
-	uint8_t app_info_4;
-	uint8_t app_info_5;
-	uint8_t app_info_6;
-	uint8_t app_info_7;
+	// uint8_t app_info_0; //0-0x2000
+	// uint8_t app_info_1; //1-0x2001
+	// uint8_t app_info_2;
+	// uint8_t app_info_3;
+	// uint8_t app_info_4;
+	// uint8_t app_info_5;
+	// uint8_t app_info_6;
+	// uint8_t app_info_7;
 
 	struct
 	{
@@ -324,13 +324,13 @@ struct ap_t
 
 struct gd_t
 {
-	struct
-	{
-		uint8_t plat_info_0;
-		uint8_t plat_info_1;
-		uint8_t plat_info_2;
-		uint8_t plat_info_3;
-	} plt_infos;
+	// struct
+	// {
+	// 	uint8_t plat_info_0;
+	// 	uint8_t plat_info_1;
+	// 	uint8_t plat_info_2;
+	// 	uint8_t plat_info_3;
+	// } plt_infos;
 
 	struct
 	{
@@ -653,8 +653,8 @@ struct gd_t
 	struct bat_info g_bat;
 	uint8_t key_sleep_exit;
 	uint8_t enter_sleep_flag;
-	uint8_t bat_ntc_stop_chrg_flag;
 	uint8_t bat_ntc_dischg_lock;
+	uint8_t protect_ntc1;
 };
 uint16_t dead_battery_voltage;
 struct lib_para_sts

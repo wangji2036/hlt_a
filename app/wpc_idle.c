@@ -828,7 +828,7 @@ void wpc_idle_phase_process(void)
 		tcpm_qi_work_delay--;
 		return;
 	}
-	if (wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01 || wirless_ntc_lock || bat_ntc_lock_flag)
+	if (wpc_mode == TCPM_WPC_WORK_DISABLE || gd->wpc_disable == 0x01 || wirless_ntc_lock || gd->bat_ntc_dischg_lock)
 		return;
 	if (gd->prot_sts.tdie_otp_flag || gd->prot_sts.tdie_utp_flag || gd->prot_sts.tntc_otp_flag || gd->prot_sts.tntc_utp_flag ||
 	    gd->prot_sts.isns_ocp_flag || gd->prot_sts.vbus_ovp_flag || gd->prot_sts.vbus_uvp_flag || gd->prot_sts.vbus_dpl_flag ||

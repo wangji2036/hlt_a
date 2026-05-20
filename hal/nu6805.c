@@ -157,6 +157,14 @@ void hal_nu6805_buckboost_set_mode(enum buckboost_mode woke_mode)
 
 	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, write_data);
 }
+void hal_nu6805_disbubo(void)
+{
+	uint8_t write_data = 0;
+
+	write_data = 0x00;
+	
+	hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Mode_Control, write_data);
+}
 
 void hal_nu6805_buckboost_set_busiv(uint16_t vbus, uint16_t ibus)
 {
