@@ -217,7 +217,7 @@ static bool verify_storage_checksum(volatile BatteryRecordStorage_t *storage) {
     return (calculated == storage->checksum);
 }
 
-/********************* Dual-Page Management Functions *********************/
+/********************* Multi-Page Management Functions *********************/
 
 // Page switching function - switches to next page (supports 1-3 pages)
 static void switch_active_page(void) {
@@ -477,7 +477,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
 
 /********************* Migration Functions *********************/
 
-// Migrate from old format (V5/V6) to new dual-page format (V7)
+// Migrate from old format (V5/V6) to new multi-page format (V7)
 static void migrate_old_format(void) {
     xgb_printk("\r\n[MIGRATE] Migrating from old format...");
 
@@ -571,8 +571,8 @@ void battery_record_init(void) {
 
     bool need_init = false;
     bool need_migration = false;
-    xgb_printk("[BR-INIT] magic=%d power=%x magics=[%08X,%08X]\n",
-           has_new_format, gd->power_on_magic, page_magics[0], page_magics[1]);
+    xgb_printk("[BR-INIT] magic=%d power=%x magics=[%08X,%08X,%08X]\n",
+           has_new_format, gd->power_on_magic, page_magics[0], page_magics[1], page_magics[2]);
 
     // Check for old format (V5 or V6) in LOG1
     if ((page_magics[0] == MAGIC_VALUE_V5 || page_magics[0] == MAGIC_VALUE_V6) &&
@@ -620,7 +620,7 @@ void battery_record_init(void) {
     else {
         // No valid data found, initialize fresh
         need_init = true;
-        xgb_printk("[BR-INIT] NO VALID DATA! magics=[%08X,%08X]\n", page_magics[0], page_magics[1]);
+        xgb_printk("[BR-INIT] NO VALID DATA! magics=[%08X,%08X,%08X]\n", page_magics[0], page_magics[1], page_magics[2]);
     }
 
     // Perform migration if needed
@@ -1034,7 +1034,7 @@ uint8_t battery_record_get_page_count(uint8_t page) {
 /********************* Log Print Functions *********************/
 
 // Print all logs from all pages (NEWEST to OLDEST)
-// Optimized version: Only read headers (12 bytes �� 2 = 24 bytes) instead of full pages (496 bytes �� 2 = 992 bytes)
+// Optimized version: only read page headers instead of full 496-byte pages.
 void battery_record_print_next_log(void) {
     const uint32_t page_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
 
@@ -1046,7 +1046,7 @@ void battery_record_print_next_log(void) {
         uint8_t  overflow_ptr;
         uint8_t  reserved;
         uint32_t page_timestamp;
-    } page_headers[LOG_PAGE_COUNT];  // Only 12 �� 2 = 24 bytes!
+    } page_headers[LOG_PAGE_COUNT];  // 12 bytes per configured page
 
     uint8_t page_counts[LOG_PAGE_COUNT] = {0};
     uint8_t total_count = 0;

@@ -374,6 +374,34 @@ static void usb_bridge_check_prod_mode(void)
 
     xgb_printk("prod info written\n");
 }
+
+static void usb_bridge_check_ship_mode_cmd(void)
+{
+    static uint8_t last_req = 0xFF;
+    uint8_t req = 0;
+
+    hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_SHIP_MODE_REQ, &req);
+
+    if (req == SHIP_MODE_MAGIC) {
+        if (last_req != req) {
+            xgb_printk("ship mode request reserved\n");
+        }
+        last_req = req;
+        hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SHIP_MODE_STATUS, SHIP_MODE_STATUS_SEEN);
+    } else if (req == 0x00) {
+        if (last_req != req && last_req != 0xFF) {
+            xgb_printk("ship mode request cleared\n");
+        }
+        last_req = req;
+        hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SHIP_MODE_STATUS, SHIP_MODE_STATUS_IDLE);
+    } else {
+        if (last_req != req) {
+            xgb_printk("ship mode bad request: 0x%02X\n", req);
+        }
+        last_req = req;
+        hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SHIP_MODE_STATUS, SHIP_MODE_STATUS_BAD);
+    }
+}
 /********************* Periodic Update (47ms) *********************/
 
 void usb_bridge_periodic_update(void)
@@ -393,6 +421,7 @@ void usb_bridge_periodic_update(void)
         usb_bridge_check_time_sync();
         usb_bridge_check_eng_cmd();
         usb_bridge_check_prod_mode();
+        usb_bridge_check_ship_mode_cmd();
         /* 管理 WB7720 睡眠状态：非 force_usb_mode 时让 WB7720 回到睡眠 */
         if (!gd->force_usb_mode && is_usb_enable)
         {
@@ -578,10 +607,10 @@ void usb_bridge_periodic_update(void)
             && rec.record_id != 0) {
             /* NU17112 主导握手: 先清 READY → 写记录 → 设 READY */
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0x00);
-            hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_CURRENT_IDX, exc_records_sent);
+            hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_CURRENT_IDX, (uint8_t)(exc_records_sent % MAX_TOTAL_RECORDS));
             hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_EXC_RECORD, (uint8_t*)&rec, 20);
             hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, 0xA5);
-            exc_records_sent++;
+            exc_records_sent = (uint8_t)((exc_records_sent + 1) % MAX_TOTAL_RECORDS);
 
             exc_cursor_idx++;
             if (exc_cursor_idx >= exc_page_counts[exc_cursor_page]) {

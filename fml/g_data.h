@@ -67,7 +67,7 @@ typedef struct {
 
 /********************* Battery Record Structures *********************/
 // ========== CONFIGURABLE: Change this to use 1, 2, or 3 pages ==========
-#define LOG_PAGE_COUNT          2           // Number of log pages (1, 2, or 3)
+#define LOG_PAGE_COUNT          3           // Number of log pages (1, 2, or 3)
 // ========================================================================
 
 // Validation
@@ -161,7 +161,7 @@ typedef struct {
     uint32_t magic;                 // Magic value
     uint8_t  exception_counter;     // Exception record total count 0-255
     uint8_t  write_ptr;             // Write pointer in active page (0-23)
-    uint8_t  active_page;           // Current active page index (0 or 1)
+    uint8_t  active_page;           // Current active page index (0..LOG_PAGE_COUNT-1)
     uint8_t  page_sequence;         // Page sequence for wear leveling
     uint16_t checksum;              // Simple additive checksum
     uint16_t padding;               // Alignment

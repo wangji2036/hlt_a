@@ -28,8 +28,8 @@
 #define REG_PCB_TEMP_DC         0x35    // s16 LE, 0.1 deg C
 
 /* ===== Exception Log Rolling Write Region (NU17112 -> WB7720) ===== */
-#define REG_EXC_TOTAL_COUNT     0x37    // u8: 0~5
-#define REG_EXC_CURRENT_IDX     0x38    // u8: 0~4
+#define REG_EXC_TOTAL_COUNT     0x37    // u8: 0~72
+#define REG_EXC_CURRENT_IDX     0x38    // u8: 0~71
 #define REG_EXC_READY           0x39    // u8: 0xA5=数据有效可读, 0x00=写入中
 #define REG_EXC_RECORD          0x3A    // 20 bytes: BatteryExceptionRecord_t
 
@@ -86,6 +86,16 @@
 #define REG_AUX_NTC_ADC_RAW     0x5A
 #define REG_AUX_NTC_ADC_STATUS  0x5C
 #define REG_AUX_NTC_ADC_SEQ     0x5D
+
+/* Ship-mode production request: PC -> WB7720 -> NU17112, reserved only */
+#define REG_SHIP_MODE_REQ      0x5E  // u8: 0xA5=request ship mode, 0x00=clear
+#define REG_SHIP_MODE_STATUS   0x5F  // u8: 0x00=idle, 0x01=pending, 0xA5=seen, 0xFF=bad command
+#define SHIP_MODE_MAGIC        0xA5
+#define SHIP_MODE_STATUS_IDLE  0x00
+#define SHIP_MODE_STATUS_PENDING 0x01
+#define SHIP_MODE_STATUS_SEEN  0xA5
+#define SHIP_MODE_STATUS_BAD   0xFF
+
 #define COIL_NTC_STATUS_INVALID 0x00
 #define COIL_NTC_STATUS_VALID   0xA5
 #define COIL_NTC_STATUS_ERR     0xFF
