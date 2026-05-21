@@ -828,7 +828,7 @@ void port_enum_port_snk_setcharge(void)
 	{
 		port_manager_apply_power_derating(10000);
 	}
-	if (bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
+	if (gd->bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
 	{
 		g_port.ibus_limit = 0;
 	}
@@ -839,7 +839,7 @@ void port_enum_port_snk_setcharge(void)
 	pm_printk("charg set %d %d\n", g_port.ibus_limit, g_port.ibat_limit);
 
 	//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
-	if(bat_ntc_stop_chrg_flag) 
+	if(gd->bat_ntc_stop_chrg_flag) 
 	{
 		hal_nu6805_disbubo();
 	}
@@ -912,6 +912,7 @@ void port_enum_port_snk_setvolt(void)
 						{
 							// 充电限制输入最大 12V：
 							//   bat NTC 3-18°C(UT 5W) / 43-52°C(OT 12W)，typec NTC ≥68°C(20W)，单节电压<3.7V(20W)
+							printk("%d %d %d %d\n", bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, typec_ntc_charge_ot_reduce20W_flag, bat_low_volt_reduce);
 							uint32_t volt_cap = (bat_ntc_charge_ut_reduce5W_flag || bat_ntc_charge_ot_reduce12W_flag || typec_ntc_charge_ot_reduce20W_flag || bat_low_volt_reduce) ? VOLTAGE_12V : VOLTAGE_20V;
 							if (pdo_fixed_voltage(source_pdo) <= volt_cap)
 							{
@@ -1212,7 +1213,7 @@ void port_enum_port0_connect_start(void)
 {
 	/* Type-C0 开始接入时先冻结无线 ping 和 USB-A 检测，再关闭互斥端口。
 	 * 这样可以避免多个 source/sink 路径同时拉动 buckboost 母线。 */
-	// gd->flash_times = 0;
+	gd->flash_times = 0;
 	pm_printk("PORT0 START! PORT1=[%d] PORT2=[%d] PORT3=[%d]\n", g_port.port_state[1], g_port.port_state[2], g_port.port_state[3]);
 
 	uint32_t source_pdo = 0;

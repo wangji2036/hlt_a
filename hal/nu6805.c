@@ -404,7 +404,7 @@ bool hal_nu6805_buckboost_is_charge_full(void)
 {
 	uint8_t read = 0;
 	hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, &read);
-	printk("bat_full_flag=%d", read & 0x10);
+	printk("bat_full_flag=%d\n", read & 0x10);
 	if (read & 0x10)
 	{
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_IRQ_Event1, 0x10);

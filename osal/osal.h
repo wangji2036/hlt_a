@@ -43,6 +43,7 @@ enum
 	BUCKBOOST_VBUS_DISG_TIMER = 28,
 
 	USB_WB7720_TIMER = 29,
+	APP_1000ms_TIMER = 30,
 	/////////////
 	MAX_TIMER,
 };

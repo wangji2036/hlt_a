@@ -7,6 +7,7 @@
 #define APL_EVT_010ms_POLL    osal_event_declare(0)
 #define APL_EVT_100ms_POLL    osal_event_declare(1)
 #define APL_EVT_250ms_POLL    osal_event_declare(2)
+#define APL_EVT_1000ms_POLL    osal_event_declare(3)
 
 void apl_task_init(void);
 void apl_task_event_handler(uint32_t event);

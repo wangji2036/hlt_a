@@ -161,7 +161,7 @@ uint8_t qfod_detect(void)
 	//		rx_may_still_be_flag = 0;
 	//	}
 
-	wpc_printk("\r\n idle: [%d] [q:%d,%d,%d,%d] [f:%d,%d,%d,%d] [t:%d,%d] [fo:%d,%d]",
+	wpc_printk(" idle: [%d] [q:%d,%d,%d,%d] [f:%d,%d,%d,%d] [t:%d,%d] [fo:%d,%d]\n",
 	           gd->ptx_idle_phase_status,
 	           gd->tx_infos.q_fact, ap->q_factor_base_value, gd->tx_infos.q_fact - ap->q_factor_base_value, delta_q_pre,
 	           gd->tx_infos.f_self, ap->fs_base_value, gd->tx_infos.f_self - ap->fs_base_value, delta_f_pre,
