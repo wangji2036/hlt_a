@@ -20,7 +20,7 @@
 #if(BUCKBOOST_USED_NU6805 == 1)
 const uint32_t source_pdo[] =
 {
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 3000, 0),                        // 9 V 3 A
 	[2] = PDO_FIXED(12000, 2500, 0),                       // 12 V 2.5 A
@@ -31,7 +31,7 @@ const uint32_t source_pdo[] =
 
 const uint32_t source_pdo1[] =
 {
-	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM | PDO_FIXED_DATA_SWAP)
+	#define SOURCE_PDO_FIXED_FLAGS     			(PDO_FIXED_UNCONSTRAINED_POWER)
 	[0] = PDO_FIXED(5000, 3000, SOURCE_PDO_FIXED_FLAGS),   // 5 V 3 A
 	[1] = PDO_FIXED(9000, 2220, 0),                        // 9 V 2.22 A
 	[2] = PDO_FIXED(12000, 1670, 0),                       // 12 V 1.67 A
