@@ -464,7 +464,7 @@ static void ui_update_led(void)
 				soc_show_ram_led ^= (1 << 5); // for blink-off, wireless LED6
 			}
 		}
-		else if (flash_flag == 3 || flash_flag == 0)
+		else if (flash_flag == 3)
 		{
 			soc_show_ram_led = 0;
 		}
