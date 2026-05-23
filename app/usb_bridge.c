@@ -210,36 +210,73 @@ static void usb_bridge_read_virtual_params(void)
 	                          (uint8_t *)&gd->eng_virtual_temp, 2);
 }
 
+static bool usb_bridge_is_leap_year(uint16_t year)
+{
+	return ((year % 4U == 0U) && (year % 100U != 0U)) || (year % 400U == 0U);
+}
+
+static uint32_t usb_bridge_leap_days_before_year(uint16_t year)
+{
+	uint16_t prev_year = year - 1U;
+
+	return (uint32_t)(prev_year / 4U) - (uint32_t)(prev_year / 100U) + (uint32_t)(prev_year / 400U);
+}
+
 static uint32_t datetime_to_seconds_inline(uint8_t *dt)
 {
 	static const uint8_t days_in_month[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 	uint16_t year = dt[0] | ((uint16_t)dt[1] << 8);
-	if (year == 0)
-		return 0; /* sentinel */
+	uint8_t month = dt[2];
 
 	uint16_t y = year - 2026U;
-	uint32_t total_days = (uint32_t)y * 365UL + ((uint32_t)(y + 1) / 4);
-	for (uint8_t m = 1; m < dt[2]; m++)
+	uint32_t total_days = (uint32_t)y * 365UL + usb_bridge_leap_days_before_year(year) - usb_bridge_leap_days_before_year(2026U);
+	for (uint8_t m = 1; m < month; m++)
 		total_days += days_in_month[m];
-	if (dt[2] > 2 && (year % 4 == 0))
+	if (month > 2 && usb_bridge_is_leap_year(year))
 		total_days++;
 	total_days += (uint32_t)(dt[3] - 1);
 
 	return total_days * 86400UL + (uint32_t)dt[4] * 3600UL + (uint32_t)dt[5] * 60UL + (uint32_t)dt[6];
 }
 
+static bool usb_bridge_datetime_is_valid(uint8_t *dt)
+{
+	static const uint8_t days_in_month[13] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	uint16_t year = dt[0] | ((uint16_t)dt[1] << 8);
+	uint8_t month = dt[2];
+	uint8_t day = dt[3];
+	uint8_t days;
+
+	if (year < 2026U || year > 2161U)
+		return false;
+	if (month < 1U || month > 12U)
+		return false;
+	if (dt[4] > 23U || dt[5] > 59U || dt[6] > 59U)
+		return false;
+
+	days = days_in_month[month];
+	if (month == 2U && usb_bridge_is_leap_year(year))
+		days++;
+
+	return day >= 1U && day <= days;
+}
+
 static void usb_bridge_apply_eng_datetime(void)
 {
 	uint8_t dt[7];
 	hal_i2cm_read_multi_bytes(USBD_WB7720_ADDR, REG_ENG_CURRENT_DATE, dt, 7);
-	uint32_t secs = datetime_to_seconds_inline(dt);
-	if (secs > 0)
+	if (!usb_bridge_datetime_is_valid(dt))
 	{
-		VIC_vModuleDisable();
-		gd->Bat_RTC_Seconds = secs;
-		gd->Bat_RTC_Milliseconds = 0;
-		VIC_vModuleEnable();
+		xgb_printk("time sync invalid: %d-%d-%d %d:%d:%d\n",
+		           dt[0] | ((uint16_t)dt[1] << 8), dt[2], dt[3], dt[4], dt[5], dt[6]);
+		return;
 	}
+
+	uint32_t secs = datetime_to_seconds_inline(dt);
+	VIC_vModuleDisable();
+	gd->Bat_RTC_Seconds = secs;
+	gd->Bat_RTC_Milliseconds = 0;
+	VIC_vModuleEnable();
 }
 
 static void usb_bridge_exit_eng_mode(void)
