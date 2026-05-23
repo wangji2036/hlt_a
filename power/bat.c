@@ -13,7 +13,8 @@
 #define BAT_BATTERY_EMPTY_VOLTAGE 6300
 #define BAT_ENERGY_FULL_LEVEL 100
 #define BAT_BAT_rDC 100
-#define BAT_DISG_RATE 100 / 94
+#define BAT_DISG_RATE_NUM 100
+#define BAT_DISG_RATE_DEN 94
 uint8_t temp_bat_ui;
 static uint8_t bat_level_end = 0;
 
@@ -155,7 +156,7 @@ void nano_battery_soe_handle(void)
 	}
 
 	if (g_bat.sbat == BAT_STS_DISG)
-		g_bat.bat_energy_current += bat_soe_uint * BAT_DISG_RATE;
+		g_bat.bat_energy_current += bat_soe_uint * BAT_DISG_RATE_NUM / BAT_DISG_RATE_DEN;
 	else
 		g_bat.bat_energy_current += bat_soe_uint;
 
