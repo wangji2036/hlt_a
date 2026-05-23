@@ -276,7 +276,7 @@ unsigned char char2hex(unsigned char ascii)
 	{
 		hex = ascii - 0x30;
 	}
-	else if (ascii >= 41 && ascii <= 0x46)
+	else if (ascii >= 0x41 && ascii <= 0x46)
 	{
 		hex = ascii - 0x37;
 	}
