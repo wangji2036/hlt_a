@@ -404,7 +404,7 @@ void battery_task_handle(void) // 100mS
     g_bat.vbat = g_buckboost.adc_vbat;
     g_bat.rbat = BAT_BAT_rDC;
     g_bat.ibat = g_buckboost.adc_ibat;
-    bat_printk(" g_bat.vbat =%d g_bat.ibat=%d\n",g_bat.vbat,g_bat.ibat);
+    // bat_printk(" g_bat.vbat =%d g_bat.ibat=%d\n",g_bat.vbat,g_bat.ibat);
     if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
     {
         if (g_buckboost.bat_full_flag)
