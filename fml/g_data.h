@@ -653,6 +653,7 @@ struct gd_t
 	uint8_t key_sleep_exit;
 	uint8_t enter_sleep_flag;
 	uint8_t bat_ntc_dischg_lock;
+	uint8_t bat_ntc_stop_chrg_flag;
 	uint8_t protect_ntc1;
 };
 uint16_t dead_battery_voltage;

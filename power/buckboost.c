@@ -335,6 +335,11 @@ void buckboost_protection_handle(void)
 		//if(g_tc[0].usb_tc_state == TC_SNK_Attached) status &= ~VBUS_FUALT_VBAT_UVP;
 	}
 
+	if(!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE ||g_port.port_state[1] == PORT_STATE_SOURCE)))
+	{
+		status &= ~VBUS_FAULT_VBUS_UVP;
+	}
+
 	//---1014      //
 	if (adc_protect_flag)
 	{
@@ -372,7 +377,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 1;
 	}
-	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || bat_ntc_stop_chrg_flag))
+	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag))
 	{
 		gd->led_fault1 = 1;
 	}
@@ -392,14 +397,14 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 0;
 	}
-	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !bat_ntc_stop_chrg_flag)
+	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !gd->bat_ntc_stop_chrg_flag)
 	{
 		gd->led_fault1 = 0;
 	}
-	printk("gd->led_fault1 = %d, gd->ntc_total_lock_flag = %d, status = 0x%x  dischg_lock %d bat_ntc_stop_chrg_flag %d mode%d led_fault1 %d\n", 
-		gd->led_fault1, gd->ntc_total_lock_flag, status, gd->bat_ntc_dischg_lock, bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1);
-	//bb_printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
-	//bb_printk("ssss=%d\r\n",status & 0x4060);
+	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault1 %d\n", 
+	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1);
+
+
 	gd->fault_status = status;
 
 	if (ntc_switch_event)

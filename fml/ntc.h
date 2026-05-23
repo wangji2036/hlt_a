@@ -116,7 +116,7 @@ extern bool bat_ntc_charge_ut_reduce5W_flag;
 extern bool bat_ntc_charge_ot_reduce12W_flag;
 extern bool typec_ntc_dischg_ot_reduce20W_flag;
 extern bool typec_ntc_charge_ot_reduce20W_flag;
-extern bool bat_ntc_stop_chrg_flag;
+// extern bool bat_ntc_stop_chrg_flag;
 extern bool typec_ntc_lock;
 extern bool wirless_ntc_lock;
 // extern bool bat_ntc_lock_flag;

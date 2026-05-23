@@ -51,7 +51,8 @@ static uint32_t soc_show_ram = 0; //temporary variable, where each bit is used t
 #define WAIT_IN_250MS 20
 
 static uint8_t ui_no_timer_scan = 0;
-
+static int8_t cnt_led = 0;
+static int8_t cnt_led_1 = 0;
 static void drv_IO_control(uint8_t pinx, bool status)
 {
 	switch (pinx)
@@ -180,7 +181,7 @@ static void ui_update_led(void)
 	static uint8_t horse_index = 0;
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
-
+	printk("flash_flag %d\r\n", flash_flag);
 	//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
 	if (gd->bat_ov_forbid_flag)
 	{
@@ -193,21 +194,21 @@ static void ui_update_led(void)
 	}
 	else if (gd->protect_ntc1 == 1)
 	{
-			if (cnt2 == 0)
-			{
-				soc_show_ram_led = 0;
-			}
-			if (cnt2++ <= 8)
-			{
-				soc_show_ram_led ^= LED_FLOW_4;
-			}
-			else
-			{
-				if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
-				soc_show_ram_led = 0;
-				cnt2 = 0;
-			}
-				
+		printk("NTC1 protect, LED flashing\n");
+		if (cnt2 == 0)
+		{
+			soc_show_ram_led = 0;
+		}
+		if (cnt2++ <= 8)
+		{
+			soc_show_ram_led ^= LED_FLOW_4;
+		}
+		else
+		{
+			if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
+			soc_show_ram_led = 0;
+			cnt2 = 0;
+		}
 	}
 	else if (g_port.is_mini_current_mode)
 	{
@@ -301,6 +302,7 @@ static void ui_update_led(void)
 	}
 	else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 	{
+		printk("testg\n");
 		if (button_led_run)
 		{
 			button_led_run = 0;
@@ -334,9 +336,12 @@ static void ui_update_led(void)
 	}
 	else if (button_led_run)
 	{
+		printk("testgg \n");
 		if (gd->real_soc_show > 5)
 		{
+
 			soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
+
 			// 5S后或端口有变化退出
 			if ((gd->idle_to_sleep_cnt > 50) || (g_port.port_state[0] != PORT_STATE_NONE) || (g_port.port_state[3] != PORT_STATE_NONE))
 			{
@@ -372,11 +377,13 @@ static void ui_update_led(void)
 	}
 	else
 	{
-
+		printk("testggg flash_flag=%d\n", flash_flag);
 		cnt_time = 0;
 		horse_index = 0;
 		cycle_count = 0; // 退出小电流模式时重置循环计数器
-		soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
+
+		soc_show_ram_led = batt_level_table[drv_ui_coulomb()];;
+		
 		if (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR)
 		{
 			flash_flag_wls = 1;
@@ -453,8 +460,7 @@ static void ui_update_led(void)
 				soc_show_ram_led ^= (1 << 5); // for blink-off, wireless LED6
 			}
 		}
-
-		else if (flash_flag == 3)
+		else if (flash_flag == 3 || flash_flag == 0)
 		{
 			soc_show_ram_led = 0;
 		}
@@ -579,7 +585,7 @@ void ui_update(void)
 	{
 		key_sigle_click_process();
 		gd->idle_to_sleep_cnt = 0;
-		//	led_printk("\r\n ----------222------------------//-------key single click");
+		printk("\r\n ----------222------------------//-------key single click");
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if (key_flag == 2)
@@ -712,7 +718,23 @@ void ui_update(void)
 	else if ((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show <= 5) && !gd->led_fault1)
 	{
 		charge_led_finish = 0;
-		flash_flag = 4; // low SOC state, all leds flash
+		// flash_flag = 4; // low SOC state, all leds flash
+		if(g_port.port_state[PORT0_INDEX] != PORT_STATE_SOURCE)
+    	{
+			if(key_ui_cnt)
+			{
+				flash_flag = 1;
+				key_ui_cnt--;
+			}
+			else
+			{
+				flash_flag = 4;
+			}
+    	}
+		else
+		{
+			flash_flag = 1;
+		}
 		if (gd->real_soc_show <= 0)
 		{
 			if (zero_soc_cnt < 250)
@@ -779,6 +801,7 @@ void key_sigle_click_process(void)
 		led_printk("\r\n[OV_FORBID] Cleared by key press.");
 	}
 #endif
+	// key_ui_cnt = 4;
 	gd->typec_scp = 0;
 	gd->vbus_ovp = 0;
 
@@ -812,6 +835,7 @@ void key_sigle_click_process(void)
 	{
 		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 	}
+	printk("led port state %d %d\n", g_port.port_state[PORT0_INDEX], g_port.port_state[PORT3_INDEX]);
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 	{
 		flash_flag = 3;
