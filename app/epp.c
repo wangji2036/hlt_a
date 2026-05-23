@@ -39,6 +39,9 @@ extern uint8_t array_digest[];
 
 uint8_t rec_challenge_data[100];
 
+#define EPP_CHALLENGE_DATA_LEN ((uint8_t)18U)
+#define EPP_REC_CHALLENGE_BUF_SIZE ((uint8_t)sizeof(rec_challenge_data))
+
 /// @brief
 /// @param hdr ASK包头
 /// @note
@@ -964,6 +967,16 @@ void wpc_epp_ADC_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 		{
 			if (epp_auth.EPP_auth_status == EPP_Auth_GET_CHALLENGE)
 			{
+				if (epp_auth.rec_challenge_data_len != EPP_CHALLENGE_DATA_LEN ||
+				    epp_auth.rec_challenge_data_offset != epp_auth.rec_challenge_data_len)
+				{
+					wpc_printk("\r\nChallenge length err: %d/%d", epp_auth.rec_challenge_data_offset, epp_auth.rec_challenge_data_len);
+					epp_auth.EPP_auth_status = EPP_Auth_ERROR;
+					epp_auth.EPP_DataStream_Rx_mode = RX_DataStream_IDLE;
+					EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
+					break;
+				}
+
 				wpc_printk("\r\nChallenge Data: ");
 				for (int j = 0; j < epp_auth.rec_challenge_data_len; j++)
 				{
@@ -1123,6 +1136,17 @@ void wpc_epp_ADT_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 			break;
 		case msg_get_challenge:
 			wpc_printk("\r\n ---> get_challenge");
+			if (epp_auth.EPP_Datastream_RX_len != EPP_CHALLENGE_DATA_LEN ||
+			    epp_auth.EPP_Datastream_RX_len > EPP_REC_CHALLENGE_BUF_SIZE ||
+			    ADT_data_len > epp_auth.EPP_Datastream_RX_len)
+			{
+				wpc_printk("\r\n challenge len invalid:%d pkt:%d", epp_auth.EPP_Datastream_RX_len, ADT_data_len);
+				epp_auth.EPP_auth_status = EPP_Auth_ERROR;
+				epp_auth.EPP_DataStream_Rx_mode = RX_DataStream_IDLE;
+				EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
+				break;
+			}
+
 			epp_auth.EPP_auth_status = EPP_Auth_GET_CHALLENGE;
 			epp_auth.EPP_DataStream_Rx_mode = RX_DataStream_DATA;
 
@@ -1153,6 +1177,18 @@ void wpc_epp_ADT_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 		// Rec Rx ADT Data
 		wpc_printk("rec data");
 		wpc_printk("\r\n len:%d", epp_auth.rec_challenge_data_len);
+
+		if (epp_auth.rec_challenge_data_offset >= epp_auth.rec_challenge_data_len ||
+		    ADT_data_len > (epp_auth.rec_challenge_data_len - epp_auth.rec_challenge_data_offset) ||
+		    ADT_data_len > (EPP_REC_CHALLENGE_BUF_SIZE - epp_auth.rec_challenge_data_offset))
+		{
+			wpc_printk("\r\n challenge data overflow:%d + %d/%d", epp_auth.rec_challenge_data_offset, ADT_data_len, epp_auth.rec_challenge_data_len);
+			epp_auth.EPP_auth_status = EPP_Auth_ERROR;
+			epp_auth.EPP_DataStream_Rx_mode = RX_DataStream_IDLE;
+			EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_N_D);
+			return;
+		}
+
 		EPP_FSK_Transmit(EPWM1, T_RESPONSE, _FSK_ACK);
 
 		for (int i = 0; i < ADT_data_len; i++)
