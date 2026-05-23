@@ -180,15 +180,15 @@ static void ui_update_led(void)
 	 static uint16_t cycle_count = 0;  // 循环计数器，最多 3600 次 (2 h)
 
 //	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
-     if(gd->bat_ov_forbid_flag)
-		{
+    if(gd->bat_ov_forbid_flag)
+	{
 			/* OV/UV Forbid: all LEDs blink fast — highest priority */
 			if(flash_light % 4 < 2) soc_show_ram_led = 0x1F;
 			else soc_show_ram_led = 0x00;
 			flash_light++;
-		}
-      else if(g_port.is_mini_current_mode)
-     	{
+	}
+    else if(g_port.is_mini_current_mode)
+    {
      		 cnt_time++;
      		 if(cnt_time >= 2) // 2 * 250ms = 500ms
      		 {
@@ -255,9 +255,9 @@ static void ui_update_led(void)
      		 }
 
 
-      	 }
-      else if(gd->led_fault)
-		{
+    }
+    else if(gd->led_fault)
+	{
 			if(flash_light%2)
 			{
 				soc_show_ram_led =0x0F;
@@ -268,9 +268,9 @@ static void ui_update_led(void)
 				flash_flag = 0;
 			}
 			flash_light++;
-		}
-		else if(gd->led_fault1)
-		{
+	}
+	else if(gd->led_fault1)
+	{
 			if(gd->flash_times < 10)  // 10 ticks × 250ms: 5 on + 5 off = 5次闪烁
 			{
 				soc_show_ram_led = (gd->flash_times % 2 == 0) ? 0x0F : 0x00;
@@ -281,9 +281,9 @@ static void ui_update_led(void)
 				soc_show_ram_led = 0;
 			}
 			flash_light++;
-		}	
-		else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
-		{
+	}	
+	else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+	{
 			if (button_led_run)
 			{
 				button_led_run = 0;
@@ -314,9 +314,9 @@ static void ui_update_led(void)
 					charge_cnt = 0;
 				}
 			}
-		}
-		else if (button_led_run)
-		{
+	}
+	else if (button_led_run)
+	{
 			if (gd->real_soc_show > 5)
 			{
 				soc_show_ram_led = batt_level_table[drv_ui_coulomb()];
@@ -352,9 +352,9 @@ static void ui_update_led(void)
 					button_cnt = 0;
 				}
 			}
-		}	 
+	}	 
 	else
-     	 {
+    {
 			
      		cnt_time = 0;
      		horse_index = 0;
@@ -444,7 +444,7 @@ static void ui_update_led(void)
      	    	 soc_show_ram_led = 0;
      	     }
 			 
-     	}
+    }
 
  	//if (!gd->touch_to_weakup || g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE)
  	{
@@ -668,7 +668,7 @@ void ui_update(void)
 		cnt = 0;
 		flash_light_on ^= 1;  //qu fan
 	}
-	 if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE) //g_buckboost.charging_stat
+	 if(g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1) //g_buckboost.charging_stat
     {
         zero_soc_cnt = 0;
 		if (gd->real_soc_show >= 100)
@@ -680,7 +680,7 @@ void ui_update(void)
 			flash_flag = 1;
 		}
     }
-   else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show<=5))
+   else if((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show<=5) && !gd->led_fault1)
     {
 		charge_led_finish = 0;
     	flash_flag = 4;// low SOC state, all leds flash
@@ -918,7 +918,8 @@ void key_ship_process(void)// 开机状态短按一次后长按 8s，进入船�
 	charge_led_finish = 0;
 	key_ui_cnt = 0;
 	flash_flag = 3;
-	printk("\r\n[SHIP] key sequence detected");
+	// printk("\r\n[SHIP] key sequence detected, feedback=%d mask=0x%x ship_cnt=%d",
+	// 	SHIP_MODE_LED_BLINK_TICKS, SHIP_MODE_LED_MASK, gd->ship_mode_cnt);
 }
 
 #if 0
@@ -949,7 +950,19 @@ static uint16_t key_delay_ms = 0;
 static uint8_t key_click_cnt = 0;
 /* 船运组合键状态：短按松手后布防，第二次长按到 8s 只触发一次。 */
 static uint8_t ship_key_armed = 0;
+static uint16_t ship_key_arm_ticks = 0;
 static uint8_t ship_key_triggered = 0;
+
+static void key_ship_disarm(const char *reason)
+{
+	if(ship_key_armed || ship_key_arm_ticks)
+	{
+		// printk("\r\n[SHIPKEY] disarm:%s key_cnt=%d click=%d delay=%d arm_left=%d",
+		// 	reason, key_cnt, key_click_cnt, key_delay_ms, ship_key_arm_ticks);
+	}
+	ship_key_armed = 0;
+	ship_key_arm_ticks = 0;
+}
 
 void key_handle_10ms()
 {
@@ -958,21 +971,37 @@ void key_handle_10ms()
 	{
 		/* 短按一次后，再按住 8s 触发船运模式。 */
 		if(!ship_key_triggered && key_cnt < 1800) key_cnt++;
+		if(key_cnt == 1)
+		{
+			// printk("\r\n[SHIPKEY] down armed=%d arm_left=%d click=%d delay=%d",
+			// 	ship_key_armed, ship_key_arm_ticks, key_click_cnt, key_delay_ms);
+		}
+		if(ship_key_armed &&
+			(key_cnt == 100 || key_cnt == 300 || key_cnt == 600 ||
+			 key_cnt == (SHIP_MODE_KEY_HOLD_10MS_TICKS - 1)))
+		{
+			// printk("\r\n[SHIPKEY] holding armed key_cnt=%d/%d arm_left=%d",
+			// 	key_cnt, SHIP_MODE_KEY_HOLD_10MS_TICKS, ship_key_arm_ticks);
+		}
 		if(ship_key_armed && key_cnt == SHIP_MODE_KEY_HOLD_10MS_TICKS)
 		{
+			// printk("\r\n[SHIPKEY] trigger ship key_cnt=%d click=%d delay=%d",
+			// 	key_cnt, key_click_cnt, key_delay_ms);
 			key_flag = 7;
 			key_click_cnt = 0;
 			key_delay_ms = 0;
-			ship_key_armed = 0;
+			key_ship_disarm("trigger");
 			ship_key_triggered = 1;
 		}
 		else if(key_cnt == 300 && !ship_key_armed)   // [NEW-VICTOR] 增加长按关机时间 150->300
 		{
+			// printk("\r\n[SHIPKEY] normal long key_cnt=%d, not armed", key_cnt);
 			key_flag = 3; //long press
 			key_click_cnt = 0;
 		}
 		if(key_cnt == 1200 && !ship_key_triggered)
 		{
+			// printk("\r\n[SHIPKEY] reset by 12s hold, armed=%d", ship_key_armed);
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 			gd->power_on_magic = 0x00;
 		}
@@ -987,13 +1016,24 @@ void key_handle_10ms()
 			key_click_cnt++;
 			key_delay_ms = 50;
 			/* 只有第一下短按会布防船运组合键，双击/多击不触发船运。 */
-			ship_key_armed = (key_click_cnt == 1) ? 1 : 0;
+			if(key_click_cnt == 1)
+			{
+				ship_key_armed = 1;
+				ship_key_arm_ticks = SHIP_MODE_KEY_ARM_10MS_TICKS;
+				// printk("\r\n[SHIPKEY] short release arm key_cnt=%d arm_window=%d",
+				// 	key_cnt, SHIP_MODE_KEY_ARM_10MS_TICKS);
+			}
+			else
+			{
+				// printk("\r\n[SHIPKEY] multi click release click=%d", key_click_cnt);
+				key_ship_disarm("multi-click");
+			}
 			if(key_click_cnt >= 5)
 			{
 				key_flag = 6;  // quint click
 				key_click_cnt = 0;
 				key_delay_ms = 0;
-				ship_key_armed = 0;
+				key_ship_disarm("quint-click");
 			}
 #else
 			if(key_click_cnt == 0)
@@ -1001,24 +1041,39 @@ void key_handle_10ms()
 				key_delay_ms = 50;
 				key_click_cnt = 1;
 				ship_key_armed = 1;
+				ship_key_arm_ticks = SHIP_MODE_KEY_ARM_10MS_TICKS;
+				printk("\r\n[SHIPKEY] short release arm key_cnt=%d arm_window=%d",
+					key_cnt, SHIP_MODE_KEY_ARM_10MS_TICKS);
 			}
 			else
 			{
 				key_click_cnt = 0;
 				key_delay_ms = 0;
 				key_flag = 2;
-				ship_key_armed = 0;
+				printk("\r\n[SHIPKEY] double click release");
+				key_ship_disarm("double-click");
 			}
 #endif
 		}
 		else if(key_cnt > 50)
 		{
+			printk("\r\n[SHIPKEY] release long key_cnt=%d armed=%d triggered=%d",
+				key_cnt, ship_key_armed, ship_key_triggered);
 			key_click_cnt = 0;
 			key_delay_ms = 0;
-			ship_key_armed = 0;
+			key_ship_disarm("long-release");
 		}
 		key_cnt = 0;
 		ship_key_triggered = 0;
+
+		if(ship_key_armed && ship_key_arm_ticks > 0)
+		{
+			ship_key_arm_ticks--;
+			if(ship_key_arm_ticks == 0)
+			{
+				key_ship_disarm("arm-timeout");
+			}
+		}
 	}
 
 	if(key_delay_ms && _KEY_LEVEL)
@@ -1042,8 +1097,9 @@ void key_handle_10ms()
 #else
 				key_flag = 1;
 #endif
+				printk("\r\n[SHIPKEY] click timeout flag=%d keep_arm=%d arm_left=%d",
+					key_flag, ship_key_armed, ship_key_arm_ticks);
 				key_click_cnt = 0;
-				ship_key_armed = 0;
 			}
 		}
 	}

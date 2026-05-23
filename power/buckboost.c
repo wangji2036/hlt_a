@@ -360,7 +360,7 @@ void buckboost_protection_handle(void)
 	else
 		gd->ntc_total_lock_flag =0;
 	
-	if(!gd->led_fault&&((status & 0x4060)||gd->vbus_ovp))
+	if(!gd->led_fault&&((status & VBUS_FUALT_VBUS_OVP)||gd->vbus_ovp))
 	{
 		gd->led_fault = 1;
 	}
@@ -386,6 +386,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault1 = 0;
 	}
+	printk("gd->led_fault = %d, gd->led_fault1 = %d, gd->ntc_total_lock_flag = %d, status = 0x%x\n", gd->led_fault, gd->led_fault1, gd->ntc_total_lock_flag, status);
 	//bb_printk("\r\ngd->led_fault=%d\r\n",gd->led_fault);
 	//bb_printk("ssss=%d\r\n",status & 0x4060);
 	gd->fault_status = status;
@@ -405,6 +406,7 @@ void buckboost_protection_handle(void)
 				bb_printk("\r\n[VBUS_NTC] typec_ntc_lock=%d, bat_ntc_lock_flag=%d, dischg_lock=%d", typec_ntc_lock,bat_ntc_lock_flag, bat_ntc_dischg_lock);
 				bb_printk("\r\n[VBUS_NTC] typec_ntc_temp=%d, bat_temp=%d, wpc_ntc_temp=%d", 
 					gd->sys_infos.ntc_temp_typec, g_buckboost.batTemp, gd->sys_infos.ntc_temp_wpc);
+				if (gd->idle_to_sleep_cnt < 100) gd->idle_to_sleep_cnt += 250;
 			}
 
 			if(status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT ))

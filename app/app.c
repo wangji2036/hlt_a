@@ -192,8 +192,8 @@ void apl_task_event_handler(uint32_t event)
 //				fml_adp_volt_set(gd->pid_volt);
 
 //				wpc_stop_to_idle(ESYS_ERR_CODE_XFER_PHASE_CEP_TIMEOUT);
-				gd->dig_ping_perd = 144000000 / 120000;
-				hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
+				// gd->dig_ping_perd = 144000000 / 120000;
+				// hal_epwm_pwm_start(EPWM1, gd->pid_perd, gd->pid_duty, gd->pid_phas);
 				wpc_printk("\r\n------>!!!!!%d,%d",Tmp_max,gd->isns);
 			}
 			gd->vpwr = g_buckboost.adc_vbus;

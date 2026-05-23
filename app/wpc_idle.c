@@ -439,7 +439,7 @@ void wpc_idle_dig_ping_init_128K(void)
 		wpc_mode_pre = wpc_mode;
 	}
 
-	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY )
+	if(gd->adp.adp_type == EADP_TYPE_POWERBANK_WIRELESS_ONLY)
 	{
 		gd->pid_volt = gd->dig_ping_volt;
 		fml_adp_volt_set(gd->pid_volt);

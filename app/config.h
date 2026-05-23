@@ -80,6 +80,7 @@
 #define SHIP_MODE_CNT  30                       // 船运模式锁存标志值
 #define SHIP_MODE_SLEEP_SECONDS (7UL * 24UL * 60UL * 60UL) // 连续休眠 7 天进入船运
 #define SHIP_MODE_KEY_HOLD_10MS_TICKS 800      // 短按一次后再长按 8s 进入船运
+#define SHIP_MODE_KEY_ARM_10MS_TICKS 300       // 短按后 3s 内开始第二次长按
 #define SHIP_MODE_LED_BLINK_TICKS 10           // 双色灯 on/off * 5 次，ui_update 周期 250ms
 #define SHIP_MODE_LED_MASK 0x30                // LED5 + LED6 作为双色灯显示
 
@@ -87,7 +88,7 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE       1
 
 // Debug log switches (set to 0 to reduce Flash) -- synced with NF platform
-#define SUPPORT_BUCKBOOST_LOG           1   // buckboost.c debug logs
+#define SUPPORT_BUCKBOOST_LOG           0   // buckboost.c debug logs
 #define SUPPORT_BAT_LOG                 1   // bat.c debug logs
 #define SUPPORT_XGB_LOG                 0   // XGB/bat_record/usb_bridge debug logs
 #define SUPPORT_BAT_RECORD_LOG          SUPPORT_XGB_LOG   // legacy alias
@@ -117,7 +118,7 @@
 #define CYCLE_COUNT_FLASH_OFFSET        20      // AP_CFG_ROM_ADDR_BASE + 20
 #define VREF_FLASH_OFFSET               24      // AP_CFG_ROM_ADDR_BASE + 24
 #define VREF_DEFAULT_MV                 3270    // Default Vref before calibration
-#define EXCEPTION_WINDOW_SECONDS        1200     // Exception record window (seconds): 120=2min, 3600=1h
+#define EXCEPTION_WINDOW_SECONDS        3600//180     // Exception record window (seconds): 120=2min, 3600=1h
 #define Cali_Vref                       1
 #define CONFIG_RTC_USE_CUSTOM_TIME      1
 #define CONFIG_RTC_DEFAULT_YEAR         2026
