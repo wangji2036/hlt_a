@@ -363,7 +363,8 @@ void gd_data_init(void)
 	g_bat.bat_soe_in_cali = false;
 	gd->key_sleep_exit = 0;
 	gd->power_on_magic = 0xaaaa;
-
+	gd->bat_ntc_dischg_lock = 0;
+	gd->bat_ntc_stop_chrg_flag = 0;
 	gdata_printk("\r\n light [%d %d]", gd->tc0_lighting_mode, gd->tc1_lighting_mode);
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;

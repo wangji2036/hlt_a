@@ -181,7 +181,7 @@ static void ui_update_led(void)
 	static uint8_t horse_index = 0;
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
-	printk("flash_flag %d\r\n", flash_flag);
+	printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
 	//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
 	if (gd->bat_ov_forbid_flag)
 	{
@@ -192,9 +192,9 @@ static void ui_update_led(void)
 			soc_show_ram_led = 0x00;
 		flash_light++;
 	}
-	else if (gd->protect_ntc1 == 1)
+	else if (gd->protect_ntc1 == 1 /*&& gd->air_protect_ntc1 != 2*/)
 	{
-		printk("NTC1 protect, LED flashing\n");
+		printk("NTC1 protect_ntc1, LED flashing %d \n", gd->protect_ntc1);
 		if (cnt2 == 0)
 		{
 			soc_show_ram_led = 0;
@@ -206,6 +206,7 @@ static void ui_update_led(void)
 		else
 		{
 			if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
+
 			soc_show_ram_led = 0;
 			cnt2 = 0;
 		}
@@ -287,8 +288,9 @@ static void ui_update_led(void)
 		}
 		flash_light++;
 	}
-	else if (gd->led_fault1)
+	else if (gd->led_fault1 || gd->led_fault2)
 	{
+		printk("test oo\n");
 		if (gd->flash_times < 10) // 10 ticks × 250ms: 5 on + 5 off = 5次闪烁
 		{
 			soc_show_ram_led = (gd->flash_times % 2 == 0) ? 0x0F : 0x00;
@@ -296,11 +298,12 @@ static void ui_update_led(void)
 		}
 		else
 		{
+			gd->led_fault2 = 0;
 			soc_show_ram_led = 0;
 		}
 		flash_light++;
 	}
-	else if (charge_led_run && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE/*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
 	{
 		printk("testg\n");
 		if (button_led_run)
@@ -377,7 +380,7 @@ static void ui_update_led(void)
 	}
 	else
 	{
-		printk("testggg flash_flag=%d\n", flash_flag);
+		
 		cnt_time = 0;
 		horse_index = 0;
 		cycle_count = 0; // 退出小电流模式时重置循环计数器
@@ -401,6 +404,7 @@ static void ui_update_led(void)
 		{
 			soc_show_ram_led |= 0x10; // fast LED5 is on
 		}
+		printk("testggg %d %d %d %d\n", flash_flag, flash_light_on, flash_flag_wls, soc_show_ram_led);
 		uint8_t _index = 3; // to get the highest bit to blink.
 		for (; _index > 0; _index--)
 		{
@@ -701,6 +705,7 @@ void ui_update(void)
 		cnt = 0;
 		flash_light_on ^= 1; //qu fan
 	}
+	// int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
 	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1) //g_buckboost.charging_stat
 	{
 		zero_soc_cnt = 0;
@@ -822,6 +827,8 @@ void key_sigle_click_process(void)
 
 	g_port.is_mini_current_mode = 0;
 	g_port.light0_cnt = 0;
+	gd->air_protect_ntc1 = 0;
+	gd->protect_ntc1 = 0;
 	// if(gd->sigle_clicked)
 	// {
 	// 	gd->sigle_clicked =0;
@@ -833,13 +840,22 @@ void key_sigle_click_process(void)
 	}
 	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && (gd->vpwr > 13000) && gd->sigle_clicked)
 	{
+		printk("testqqqq\n");
 		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 	}
 	printk("led port state %d %d\n", g_port.port_state[PORT0_INDEX], g_port.port_state[PORT3_INDEX]);
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 	{
 		flash_flag = 3;
-		button_led_run = 1;
+		if (gd->bat_ntc_dischg_lock == 0 && gd->bat_ntc_stop_chrg_flag == 0)
+		{
+			button_led_run = 1;
+		}
+		
+	}
+	if(gd->bat_ntc_stop_chrg_flag == 1 || gd->bat_ntc_dischg_lock != 0 || gd->key_led_fault2 == 1)
+	{
+		gd->led_fault2 = 1;
 	}
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;

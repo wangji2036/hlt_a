@@ -655,6 +655,9 @@ struct gd_t
 	uint8_t bat_ntc_dischg_lock;
 	uint8_t bat_ntc_stop_chrg_flag;
 	uint8_t protect_ntc1;
+	uint8_t air_protect_ntc1;
+	uint8_t led_fault2;
+	uint8_t key_led_fault2;
 };
 uint16_t dead_battery_voltage;
 struct lib_para_sts

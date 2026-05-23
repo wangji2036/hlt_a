@@ -45,33 +45,40 @@ void buckboost_ntc_handle(void)
 	static uint8_t bat_low_volt_cnt = 0;
 	static bool ot_full_stop = false; // 4.1V 停充闭锁：在 OT 区间 vbat≥8200 触发，OT 解时清；vbat 回落不解锁
 	int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
-	// ntc_printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
+	// printk("bat_temp = %d , ntc_temp_typec = %d",bat_temp,gd->sys_infos.ntc_temp_typec);
 	{
-		if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-		{
+		// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+		// {
 			// 43-52°C 区间 vbat≥8.2V(4.1V/cell) 触发停充并闭锁；vbat 回落到 4.1V 以下不解，
 			// 必须等温度降到 ≤30°C 才解
-			if (bat_ntc_charge_ot_reduce12W_flag && g_buckboost.adc_vbat >= 8200)
+			if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 			{
-				ot_full_stop = true;
+				gd->bat_ntc_dischg_lock = 0;
+				if (bat_ntc_charge_ot_reduce12W_flag && g_buckboost.adc_vbat >= 8200)
+				{
+					ot_full_stop = true;
+				}
+				if (bat_temp <= 30)
+				{
+					ot_full_stop = false;
+				}
 			}
-			if (bat_temp <= 30)
-			{
-				ot_full_stop = false;
-			}
-
 			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 闭锁
 			if (gd->bat_ntc_stop_chrg_flag == 0)
 			{
-				gd->bat_ntc_dischg_lock = 0;
 				if (bat_temp > 52 || bat_temp < 3 || ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
 					if (ntc_stop_chg_cnt >= 5)
 					{
 						ntc_stop_chg_cnt = 0;
-						gd->bat_ntc_stop_chrg_flag = 1;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+						{
+							ntc_stop_chg_cnt = 0;
+							gd->bat_ntc_stop_chrg_flag = 1;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
 					}
 				}
 				else
@@ -87,9 +94,13 @@ void buckboost_ntc_handle(void)
 					if (ntc_stop_chg_cnt >= 5)
 					{
 						ntc_stop_chg_cnt = 0;
-						gd->bat_ntc_stop_chrg_flag = 0;
-						gd->flash_times = 0;
-						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+						{
+							gd->bat_ntc_stop_chrg_flag = 0;
+							gd->flash_times = 0;
+							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+						}
 					}
 				}
 				else
@@ -97,6 +108,7 @@ void buckboost_ntc_handle(void)
 					ntc_stop_chg_cnt = 0;
 				}
 			}
+
 			if (gd->bat_ntc_stop_chrg_flag == 0)
 			{
 				// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
@@ -107,8 +119,12 @@ void buckboost_ntc_handle(void)
 						if (bat_ntc_ut_cnt++ > 5)
 						{
 							bat_ntc_ut_cnt = 0;
-							bat_ntc_charge_ut_reduce5W_flag = 1;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_ntc_charge_ut_reduce5W_flag = 1;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -123,8 +139,12 @@ void buckboost_ntc_handle(void)
 						if (bat_ntc_ut_cnt++ > 5)
 						{
 							bat_ntc_ut_cnt = 0;
-							bat_ntc_charge_ut_reduce5W_flag = 0;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_ntc_charge_ut_reduce5W_flag = 0;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -132,6 +152,7 @@ void buckboost_ntc_handle(void)
 						bat_ntc_ut_cnt = 0;
 					}
 				}
+
 				// 充电限 12W：≥43°C 触发，≤30°C 恢复 30W
 				if (!bat_ntc_charge_ot_reduce12W_flag)
 				{
@@ -140,8 +161,12 @@ void buckboost_ntc_handle(void)
 						if (bat_ntc_ot_cnt++ > 5)
 						{
 							bat_ntc_ot_cnt = 0;
-							bat_ntc_charge_ot_reduce12W_flag = 1;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_ntc_charge_ot_reduce12W_flag = 1;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -156,8 +181,12 @@ void buckboost_ntc_handle(void)
 						if (bat_ntc_ot_cnt++ > 5)
 						{
 							bat_ntc_ot_cnt = 0;
-							bat_ntc_charge_ot_reduce12W_flag = 0;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_ntc_charge_ot_reduce12W_flag = 0;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -172,8 +201,12 @@ void buckboost_ntc_handle(void)
 						if (bat_low_volt_cnt++ > 5)
 						{
 							bat_low_volt_cnt = 0;
-							bat_low_volt_reduce = 1;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_low_volt_reduce = 1;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -188,8 +221,12 @@ void buckboost_ntc_handle(void)
 						if (bat_low_volt_cnt++ > 5)
 						{
 							bat_low_volt_cnt = 0;
-							bat_low_volt_reduce = 0;
-							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
+							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							{
+								bat_low_volt_reduce = 0;
+								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+							}
 						}
 					}
 					else
@@ -198,8 +235,8 @@ void buckboost_ntc_handle(void)
 					}
 				}
 			}
-		}
-
+		// }
+		//end
 		if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
 			gd->bat_ntc_stop_chrg_flag = 0;
@@ -214,7 +251,14 @@ void buckboost_ntc_handle(void)
 					{
 						dual_dischg_lock_cnt = 0;
 						if (g_port.port_state[g_port.inhandle_port] != PORT_STATE_NONE)
+						{
 							gd->bat_ntc_dischg_lock = 1;
+						}
+						else
+						{
+							gd->key_led_fault2 = 1;
+						}
+						
 					}
 				}
 				else
@@ -230,6 +274,8 @@ void buckboost_ntc_handle(void)
 					{
 						dual_dischg_lock_cnt = 0;
 						gd->bat_ntc_dischg_lock = 0;
+						gd->air_protect_ntc1 = 0;
+						gd->key_led_fault2 = 0;
 					}
 				}
 				else
