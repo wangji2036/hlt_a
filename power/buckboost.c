@@ -260,7 +260,7 @@ void buckboost_protection_handle(void)
 	bb_printk("gd->ntc_total_lock_flag=%d\n",gd->ntc_total_lock_flag);
 	bb_printk("Flaut State = 0x%x\n",status);
 	bb_printk("vbus = %d\n",g_buckboost.adc_vbus);
-	bb_printk("\r\n[BB] mode=%d gate[a=%d b=%d] ov_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d",
+	bb_printk("[BB] mode=%d gate[a=%d b=%d] ov_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d\n",
 		g_buckboost.woke_mode,
 		g_buckboost.set_typeca_gate_en,
 		g_buckboost.set_typecb_gate_en,
