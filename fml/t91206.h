@@ -130,7 +130,7 @@ int tmc_read_data(unsigned char *data, unsigned int data_off, unsigned int data_
 int tmc_ecc_signature(unsigned char *data, unsigned int data_len, unsigned char *sign_data, unsigned int *sign_data_len, unsigned short eccID);
 
 int I2C_Write(unsigned char *TxBuf, int len);
-int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned long Timeout);
+int I2C_Read(unsigned char *RxBuf, unsigned short *restrict len, unsigned short rx_capacity, unsigned long Timeout);
 unsigned char tmc_i2c_crc(unsigned char byAccum, unsigned char * pbyBuf, unsigned short wLen);
 
 
