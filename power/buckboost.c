@@ -365,14 +365,21 @@ void buckboost_protection_handle(void)
 	if (status & 0x2006)
 		gd->typec_scp = 1;
 	if (status & VBUS_FUALT_VBUS_OVP)
+	{
 		gd->vbus_ovp = 1;
+	}
+	if ((status & VBUS_FUALT_VBUS_OVP) == 0)
+	{
+		gd->vbus_ovp = 0;
+	}
 	if (gd->typec_scp /*|| gd->bat_ntc_lock_flag */|| wirless_ntc_lock || typec_ntc_lock /*|| gd->bat_ntc_dischg_lock*/ || typec_charge_ntc_lock)
 	{
 		gd->ntc_total_lock_flag = 1;
 	}
 	else
+	{
 		gd->ntc_total_lock_flag = 0;
-
+	}
 	if (!gd->led_fault && ((status & VBUS_FUALT_VBUS_OVP) || gd->vbus_ovp))
 	{
 		gd->led_fault = 1;
@@ -393,6 +400,12 @@ void buckboost_protection_handle(void)
 #endif
 	if (gd->bat_ntc_dischg_lock == 1)
 		status |= NTC_PCT;
+		
+	// if (gd->bat_ntc_dischg_lock == 2 && g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && gd->air_protect_ntc1 == 0)
+	// {
+	// 	gd->air_protect_ntc1 = 1;
+	// }
+
 	if (gd->led_fault && !(status & 0x6060) && !gd->vbus_ovp)
 	{
 		gd->led_fault = 0;
@@ -401,8 +414,8 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault1 = 0;
 	}
-	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault1 %d\n", 
-	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1);
+	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d  led_fault1 %d gd->led_fault %d gd->vbus_ovp%d\n", 
+	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1, gd->led_fault, gd->vbus_ovp);
 
 
 	gd->fault_status = status;
@@ -436,7 +449,7 @@ void buckboost_protection_handle(void)
 					pdlib_disable_typec(PORT0_INDEX);
 				if (g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
 					pdlib_disable_typec(PORT1_INDEX);
-				if ( gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT))
+				if (gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT) && !(status &VBUS_FAULT_VBUS_NTC))
 				{
 					gd->bat_ntc_dischg_lock = 2;
 					gd->tc0_lighting_mode = 1;

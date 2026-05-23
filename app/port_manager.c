@@ -863,7 +863,7 @@ void port_enum_port_snk_setcharge(void)
 	else
 		buckboost_ops.set_ovp(g_port.snk_set_volt);
 
-
+	if(gd->bat_ntc_stop_chrg_flag) hal_nu6805_disbubo();
 
 	pm_printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA V[bat] = %d  V[set] = %d !\n", g_port.inhandle_port, g_port.adpater_power, g_port.ibat_limit,
 	          g_port.ibus_limit, g_buckboost.adc_vbat, g_port.snk_set_volt);
@@ -1417,7 +1417,7 @@ void port_enum_scan_handle(void)
 		uint8_t st = g_port.port_state[PORT0_INDEX];
 		if (tc != last_tc || st != last_st)
 		{
-			pm_printk("[P0] tc=%d->%d st=%d->%d\n", last_tc, tc, last_st, st);
+			// pm_printk("[P0] tc=%d->%d st=%d->%d\n", last_tc, tc, last_st, st);
 			last_tc = tc;
 			last_st = st;
 		}

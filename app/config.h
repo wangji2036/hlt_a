@@ -95,7 +95,7 @@
 #define SUPPORT_TCPM_LOG 1                     // tcpm.c debug logs
 #define SUPPORT_DPDM_LOG 1                     // dpdm.c debug logs
 #define SUPPORT_QC_LOG 1                       // usb_qc.c debug logs
-#define SUPPORT_LIB_LOG 1                      // non-WPC lib debug logs
+#define SUPPORT_LIB_LOG 0                      // non-WPC lib debug logs
 #define SUPPORT_PORTMGR_LOG 1                  // port_manager.c debug logs
 #define SUPPORT_LED_LOG 0                      // led.c debug logs
 #define SUPPORT_NTC_LOG 0                      // ntc.c debug logs
