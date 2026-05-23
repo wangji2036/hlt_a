@@ -625,7 +625,7 @@ void port_enum_port3_connect_closed(void)
 
 void port_enum_port_enum_done(void)
 {
-	pm_printk("%s!\n", __func__);
+	pm_printk("%s %d!\n", __func__, gd->bat_ntc_dischg_lock);
 
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
 	{
@@ -636,9 +636,9 @@ void port_enum_port_enum_done(void)
 		hal_tcpc_set_gate_en(PORT0_INDEX, true);
 		buckboost_ops.set_out(g_buckboost.buckboost_out_voltage, g_buckboost.buckboost_out_current_actual);
 	}
-	if (g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && (gd->bat_ntc_stop_chrg_flag == 2 || gd->bat_ntc_dischg_lock == 2))
+	if (g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && (gd->bat_ntc_dischg_lock == 2))
 	{
-		gd->bat_ntc_stop_chrg_flag = 3;
+		gd->protect_ntc1 = 1;
 		gd->bat_ntc_dischg_lock = 3;
 	}
 	if (g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)
@@ -828,17 +828,26 @@ void port_enum_port_snk_setcharge(void)
 	{
 		port_manager_apply_power_derating(10000);
 	}
-	if (gd->bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
+	if (bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
 	{
 		g_port.ibus_limit = 0;
 	}
 
+
 	if (pdlib_get_deadbat())
 		g_port.ibus_limit = g_port.ibus_limit < 500 ? g_port.ibus_limit : 500;
-	pm_printk("charg set %d %d", g_port.ibus_limit, g_port.ibat_limit);
+	pm_printk("charg set %d %d\n", g_port.ibus_limit, g_port.ibat_limit);
 
 	//if(g_buckboost.woke_mode != BUCKBOOST_CHAGER_MODE) hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
-	hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+	if(bat_ntc_stop_chrg_flag) 
+	{
+		hal_nu6805_disbubo();
+	}
+	else
+	{
+		hal_tcpc_set_source_mode(BUCKBOOST_CHAGER_MODE);
+	}
+	
 	pm_printk("chager mode=%d vbus=%d ovp=%d\n", g_buckboost.woke_mode, g_buckboost.adc_vbus, g_buckboost.ovp_value);
 	g_port.ibus_limit = g_port.ibus_limit * 95 / 100;
 
@@ -853,6 +862,8 @@ void port_enum_port_snk_setcharge(void)
 		buckboost_ops.set_ovp(20000);
 	else
 		buckboost_ops.set_ovp(g_port.snk_set_volt);
+
+
 
 	pm_printk("[%d]Power=%dmW I[bat]=%dmA I[bus]=%dmA V[bat] = %d  V[set] = %d !\n", g_port.inhandle_port, g_port.adpater_power, g_port.ibat_limit,
 	          g_port.ibus_limit, g_buckboost.adc_vbat, g_port.snk_set_volt);
@@ -1524,6 +1535,7 @@ void port_enum_scan_handle(void)
 			{
 				if (g_port.incharge_port == PORT0_INDEX)
 				{
+					buckboost_set_work_mode(BUCKBOOST_CHAGER_MODE);
 					osal_set_event(PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
 				}
 				else

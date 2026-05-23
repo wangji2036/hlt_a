@@ -171,6 +171,8 @@ static uint8_t disp_map[6] = {1, 2, 3, 4, 5, 6};
 
 static void ui_update_led(void)
 {
+	static uint8_t cnt1 = 0;
+	static uint8_t cnt2 = 0;
 	static uint8_t charge_cnt = 0;
 	static uint8_t charge_index = 0;
 	static uint8_t button_cnt = 0;
@@ -188,6 +190,24 @@ static void ui_update_led(void)
 		else
 			soc_show_ram_led = 0x00;
 		flash_light++;
+	}
+	else if (gd->protect_ntc1 == 1)
+	{
+			if (cnt2 == 0)
+			{
+				soc_show_ram_led = 0;
+			}
+			if (cnt2++ <= 8)
+			{
+				soc_show_ram_led ^= LED_FLOW_4;
+			}
+			else
+			{
+				if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
+				soc_show_ram_led = 0;
+				cnt2 = 0;
+			}
+				
 	}
 	else if (g_port.is_mini_current_mode)
 	{

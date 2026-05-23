@@ -14,11 +14,11 @@
 
 bool bat_ntc_charge_ut_reduce5W_flag = false;
 bool bat_ntc_charge_ot_reduce12W_flag = false;
-// bool bat_ntc_stop_chrg_flag = false;
+bool bat_ntc_stop_chrg_flag = false;
 bool typec_ntc_lock = false;
 bool typec_charge_ntc_lock = false;
 bool wirless_ntc_lock = false;
-bool bat_ntc_lock_flag = false;
+// bool bat_ntc_lock_flag = false;
 bool typec_ntc_dischg_ot_reduce20W_flag = false;
 bool typec_ntc_charge_ot_reduce20W_flag = false;
 // bool bat_ntc_dischg_lock = false;
@@ -61,15 +61,17 @@ void buckboost_ntc_handle(void)
 			}
 
 			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 闭锁
-			if (gd->bat_ntc_stop_chrg_flag == 0)
+			if (bat_ntc_stop_chrg_flag == 0)
 			{
+				gd->bat_ntc_dischg_lock = 0;
 				if (bat_temp > 52 || bat_temp < 3 || ot_full_stop)
 				{
 					ntc_stop_chg_cnt++;
 					if (ntc_stop_chg_cnt >= 20)
 					{
 						ntc_stop_chg_cnt = 0;
-						gd->bat_ntc_stop_chrg_flag = 1;
+						bat_ntc_stop_chrg_flag = 1;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -85,7 +87,8 @@ void buckboost_ntc_handle(void)
 					if (ntc_stop_chg_cnt >= 10)
 					{
 						ntc_stop_chg_cnt = 0;
-						gd->bat_ntc_stop_chrg_flag = 0;
+						bat_ntc_stop_chrg_flag = 0;
+						port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 					}
 				}
 				else
@@ -93,7 +96,7 @@ void buckboost_ntc_handle(void)
 					ntc_stop_chg_cnt = 0;
 				}
 			}
-			if (gd->bat_ntc_stop_chrg_flag == 0)
+			if (bat_ntc_stop_chrg_flag == 0)
 			{
 				// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
 				if (!bat_ntc_charge_ut_reduce5W_flag)
@@ -198,7 +201,7 @@ void buckboost_ntc_handle(void)
 
 		if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			gd->bat_ntc_stop_chrg_flag = 0;
+			bat_ntc_stop_chrg_flag = 0;
 			bat_ntc_charge_ot_reduce12W_flag = 0;
 
 			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
@@ -447,7 +450,7 @@ void buckboost_ntc_handle(void)
 
 	ntc_printk("\r\n[NTC_FLAG] tbat=%d mode=%d chg[stop=%d ut5=%d ot12=%d otfull=%d lowv=%d] dischg[lock=%d cport=%d dual=%d] tc_chg[lock=%d ot20=%d] tc_disc[lock=%d ot20=%d]",
 	           bat_temp, g_buckboost.woke_mode,
-	           gd->bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
+	           bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
 	           gd->bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
 	           typec_charge_ntc_lock, typec_ntc_charge_ot_reduce20W_flag,
 	           typec_ntc_lock, typec_ntc_dischg_ot_reduce20W_flag);
@@ -544,7 +547,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 	// 仅放电模式才处理电池NTC
 	if (g_buckboost.woke_mode != BUCKBOOST_DISCHG_MODE)
 	{
-		bat_ntc_lock_flag = 0;
+		// bat_ntc_lock_flag = 0;
 		gd->bat_ntc_wpc_dischg_reduce_flag = 0;
 		bat_lock_cnt = 0;
 		bat_lock_rec_cnt = 0;
@@ -552,45 +555,45 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 		bat_reduce_rec_cnt = 0;
 		return;
 	}
-
-	// 电池NTC保护：tbat<=-15°C或>=55°C锁，回到(-10,50)区间解锁
-	if (!bat_ntc_lock_flag)
-	{
-		if (tbat <= -15 || tbat >= 55)
-		{
-			if (++bat_lock_cnt >= 5)
-			{
-				bat_lock_cnt = 0;
-				bat_ntc_lock_flag = 1;
-				tcpm_stop_wpc(WPC_DELAY);
-				ntc_printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
-			}
-		}
-		else
-		{
-			bat_lock_cnt = 0;
-		}
-	}
-	else
-	{
-		// -10°C/50°C解锁，解锁后tbat仍在降功率区间→自然落到7.5W
-		if (tbat > -10 && tbat < 50)
-		{
-			if (++bat_lock_rec_cnt >= 5)
-			{
-				bat_lock_rec_cnt = 0;
-				bat_ntc_lock_flag = 0;
-				gd->ntc_led_off = 1;
-				ntc_printk("\r\n[BAT_NTC] unlock tbat=%d", tbat);
-			}
-		}
-		else
-		{
-			bat_lock_rec_cnt = 0;
-		}
-		return;
-	}
-
+#if 0
+	// // 电池NTC保护：tbat<=-15°C或>=55°C锁，回到(-10,50)区间解锁
+	// if (!gd->bat_ntc_lock_flag)
+	// {
+	// 	if (tbat <= -15 || tbat >= 55)
+	// 	{
+	// 		if (++bat_lock_cnt >= 5)
+	// 		{
+	// 			bat_lock_cnt = 0;
+	// 			gd->bat_ntc_lock_flag = 1;
+	// 			tcpm_stop_wpc(WPC_DELAY);
+	// 			ntc_printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		bat_lock_cnt = 0;
+	// 	}
+	// }
+	// else
+	// {
+	// 	// -10°C/50°C解锁，解锁后tbat仍在降功率区间→自然落到7.5W
+	// 	if (tbat > -10 && tbat < 50)
+	// 	{
+	// 		if (++bat_lock_rec_cnt >= 5)
+	// 		{
+	// 			bat_lock_rec_cnt = 0;
+	// 			gd->bat_ntc_lock_flag = 0;
+	// 			gd->ntc_led_off = 1;
+	// 			ntc_printk("\r\n[BAT_NTC] unlock tbat=%d", tbat);
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		bat_lock_rec_cnt = 0;
+	// 	}
+	// 	return;
+	// }
+#endif
 	// 电池NTC降功率：tbat>=43°C或<=-3°C降7.5W，回到[0,30]区间恢复15W
 	if (!gd->bat_ntc_wpc_dischg_reduce_flag)
 	{

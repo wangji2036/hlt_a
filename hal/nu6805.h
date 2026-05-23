@@ -82,4 +82,5 @@ bool hal_nu6805_buckboost_is_charge_full(void);
 void hal_nu6805_buckboost_set_ovp(uint16_t set_volt);
 void hal_nu6805_buckboost_disable_62368(void);
 void hal_nu6805_REG_Charger_Setting1(void);
+void hal_nu6805_disbubo(void);
 #endif /* NU6805_H_ */
