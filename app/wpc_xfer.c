@@ -162,6 +162,8 @@ static uint8_t is_cloak_phase_illegal_pkt(uint8_t hdr)
 
 void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* BPP XFER 主要维护 CE/RP/PCH 的超时窗口。
+	 * 任何不属于当前阶段的包都会尽快回 idle，避免继续带功率等待。 */
 	osal_start_timerEx(WPC_DDM_TIMER, T_COM_DDM_TO, 0, WPC_TASK, WPC_EVT_DDM);
 	switch (com_ask->hdr)
 	{
@@ -447,6 +449,7 @@ void mpp_dsr_poll_handler(void)
 
 void mpp_dsr_pkt_handler(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* DSR 是 MPP 数据流的节拍包：poll 推进待发数据，ack/nak/nd 都需要在 FSK 窗口内回复。 */
 	enum
 	{
 		DSR_nak = 0x00,
@@ -486,6 +489,8 @@ static uint8_t is_mpp_xfer_illegal_pkt(uint8_t hdr)
 
 void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* MPP XFER 在同一阶段内同时处理 CE/RP/CHS/XCE、重新协商、cloak 和校准包。
+	 * 因为这些包都会改变功率或数据流，入口处集中维护状态和 FSK 回复。 */
 	struct mpp_prx_ask_pkt_t *mpp_ask = (struct mpp_prx_ask_pkt_t *)com_ask;
 	struct mpp_ptx_fsk_pkt_t fsk_pkt = {};
 	uint8_t operation; //temp value
@@ -778,6 +783,7 @@ void wpc_mpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 
 void wpc_xfer_phase_process(struct com_prx_ask_pkt_t *com_pkt)
 {
+	/* XFER 阶段按 RX power profile 分发，BPP/EPP/MPP 的包集和超时策略不同。 */
 	switch (gd->rx_infos.power_profile_mode)
 	{
 	case BPP:
@@ -798,6 +804,8 @@ void wpc_xfer_phase_process(struct com_prx_ask_pkt_t *com_pkt)
 
 void wpc_mpp_cloak_phase_protocol_process(struct com_prx_ask_pkt_t *com_pkt)
 {
+	/* cloak 阶段收到合法 cloak 包时延长窗口并回 ACK；
+	 * 退出条件满足后再返回普通 XFER，避免 RX 遮蔽期间被误判为丢包。 */
 	struct mpp_prx_ask_pkt_t *mpp = (struct mpp_prx_ask_pkt_t *)com_pkt;
 
 	osal_stop_timerEx(WPC_PING_TIMER);

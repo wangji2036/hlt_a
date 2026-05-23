@@ -81,6 +81,8 @@ uint8_t is_stable(void)
 
 void idle_qfod_init(void)
 {
+	/* 重新进入 idle 检测前清空 Q/FOD 累计状态。
+	 * reping_cnt 默认给 2 次，避免一次误判就长期停留在 EPT/异物状态。 */
 	// for (int i=0; i<4; i++)
 	// {
 	// 	pre_q[i] = ap->q_factor_base_value;
@@ -108,6 +110,7 @@ uint8_t idle_qdt_back_to_normal(void)
 
 static void idle_obj_remove_detect(void)
 {
+	/* Q/F 回到空气基线附近并连续确认后，认为异物或 RX 已移除，可以重新允许 ping。 */
 	if (idle_qdt_back_to_normal())
 	{
 		if (++qdt_obj_remove_count > 3)
@@ -126,6 +129,8 @@ extern void mpp_mate_q_detect(void);
 
 uint8_t qfod_detect(void)
 {
+	/* idle 阶段用 Q/F 偏移和连续计数判断是否有可疑物体。
+	 * 这里宁可多等几轮，也不要因为单次采样抖动直接进入发射。 */
 	uint8_t no_obj = 1;
 
 	static uint8_t rx_may_still_be_remove_cnt = 0;
@@ -291,6 +296,8 @@ uint8_t qfod_detect(void)
 
 void wpc_idle_dping_select(void)
 {
+	/* ping 参数跟随适配器类型和当前母线能力选择；
+	 * 移动电源无线-only 场景会保守选择，避免拉高前级负载。 */
 	switch (gd->adp.adp_type)
 	{
 	case EADP_TYPE_QC3P0_12V:
@@ -421,6 +428,8 @@ void wpc_idle_dping_select(void)
 
 void wpc_idle_dig_ping_init_128K(void)
 {
+	/* 128K 数字 ping 用于常规发现 RX：先更新适配器电压，再复位 NU103x/切换通道，
+	 * 最后启动 PWM 和 DDM，保证模拟前端在发 ping 前稳定。 */
 	/*
 	//wpc_idle_dping_select();
 	gd->dig_ping_volt = 11000;
@@ -521,6 +530,8 @@ void wpc_idle_dig_ping_init_128K(void)
 
 void wpc_idle_dig_ping_init_360K(void)
 {
+	/* 360K ping 用在 MPP/cloak 等高阶流程，频率、电压和相位固定得更激进；
+	 * cloak 测试场景单独收小相位，减少 RX 在遮蔽窗口内的误判。 */
 	//	wpc_idle_dping_select();
 	gd->dig_ping_volt = 11000;
 	gd->dig_ping_perd = 144000000 / 360000;
@@ -607,6 +618,8 @@ uint16_t cnt_cloak_dig_ping = 0;
 uint16_t cnt_cloak_det_ping = 0;
 void wpc_idle_cloak_phase_process(void)
 {
+	/* cloak 模式在 det ping 和 dig ping 之间交替：
+	 * det ping 只更新 Q/F 判断，dig ping 才重新打开 ASK/功率协议窗口。 */
 	if (TRUE == gd->tx_infos.flg_mode_cloak)
 	{
 		wpc_printk("\r\n cloak_2: %d %d %d %d", cnt_cloak_det_ping, cnt_cloak_dig_ping, gd->tx_infos.cloak_dig_ping_delay, gd->tx_infos.cloak_det_ping_delay);
@@ -720,6 +733,8 @@ extern bool bat_ntc_dual_dischg_inhibit;
 
 void wpc_idle_phase_process(void)
 {
+	/* idle 主流程先处理通信锁、低电量休眠和 SOC 禁用，再做 Q/FOD 检测。
+	 * 只有保护条件都允许时才会真正启动下一次数字 ping。 */
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated)
 		return;

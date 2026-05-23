@@ -94,6 +94,8 @@ uint8_t cnt_ping;
 
 void wpc_stop_power(void)
 {
+	/* 停止无线功率时按“回 128K -> 停 PWM/ASK -> 复位 NU103x -> 清定时器”的顺序收敛。
+	 * cloak 模式会回到 CLOAK 阶段，其它场景回 IDLE，避免残留 ping 计数影响下一轮。 */
 	if (gd->ptx_protocol_phase == WPC_PHASE_IDLE)
 	{
 		return;
@@ -206,6 +208,8 @@ void wpc_stop_power(void)
 
 static void wpc_ept_pkt_process(struct com_prx_ask_pkt_t *com_ask)
 {
+	/* EPT code 会决定下一次 idle 的重试策略：完成/过温等进入结束态，
+	 * NoResponse/NegotiationFailure 保留有限重试，RestartPowerTransfer 立即准备重新 ping。 */
 	gd->ptx_idle_phase_status = WPC_IDLE_STAT_STANDBY;
 	gd->tx_infos.flg_mode_cloak = FALSE;
 
@@ -278,6 +282,7 @@ static void wpc_ptx_end_nego_check(struct com_prx_ask_pkt_t *ask_pkt)
 
 void wpc_protocol_sm(void)
 {
+	/* WPC 协议状态机只按当前 phase 分发收包；EPT 是跨阶段终止包，优先处理。 */
 	struct com_prx_ask_pkt_t *ask_pkt = (struct com_prx_ask_pkt_t *)&gd->wpc_pkt.data;
 
 	if (ask_pkt->hdr == WPC_PRx_PKT_TYP_EPT_02)
@@ -314,6 +319,8 @@ void wpc_protocol_sm(void)
 
 void wpc_pkt_hdr_handler(void)
 {
+	/* 收到包头后启动对应阶段的下一包/首包/CEP/RPP 超时窗口。
+	 * 这里不解析业务内容，只维护协议时序。 */
 	if (gd->ptx_protocol_phase == WPC_PHASE_PING)
 	{
 		osal_start_timerEx(WPC_NEXT_TIMER, T_FIRST_LIMIT, 0, WPC_TASK, WPC_EVT_PING_1st_PKT_TO);
@@ -363,6 +370,8 @@ void wpc_task_init(void)
 
 void wpc_task_event_handler(uint32_t event)
 {
+	/* WPC 任务由 OSAL 定时器驱动：idle 定期发 ping，收包阶段靠超时事件回退，
+	 * DDM/FSK/CEP/RPP 事件则维持正在进行的功率传输。 */
 	switch (event)
 	{
 	case WPC_EVT_DDM:

@@ -101,6 +101,8 @@ int16_t ibus_to_ibat(int16_t ibus, int16_t vbus, int16_t vbat)
 }
 void buckboost_set_bus_iv(uint16_t voltage, uint16_t current, uint16_t wait, uint16_t delay)
 {
+	/* 改变母线电压前先打开 dummy load 放电，并临时抬高 OVP。
+	 * wait/delay 交给 BUCKBOOST 任务分阶段执行，避免电压跳变和保护阈值同时动作。 */
 
 	bb_printk("OUT = %d %d\n", voltage, current);
 
@@ -206,6 +208,8 @@ void buckboost_task_init(void)
 
 void buckboost_protection_handle(void)
 {
+	/* 保护状态由芯片故障位、NTC 限制和软保护共同组成。
+	 * 三击通信模式下跳过保护处理，避免调试链路被端口恢复流程打断。 */
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if (gd->usb_comm_activated)
 		return;
@@ -529,6 +533,8 @@ void buckboost_protection_handle(void)
 
 void buckboost_fault_restore(void)
 {
+	/* 故障恢复需要同时重启 Type-C、USB-A 和 WPC，再回到 5V 放电初态；
+	 * 这里集中做恢复，避免各端口在半恢复状态下重新竞争母线。 */
 	buckboost_protection_flag = 0;
 	pdlib_restart_typec(PORT0_INDEX);
 	pdlib_restart_typec(PORT1_INDEX);
@@ -544,6 +550,8 @@ void buckboost_fault_restore(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void usb_comm_lock(void)
 {
+	/* 三击 USB 通信模式会清空所有端口状态并关闭充放电路径，
+	 * 让 Type-C0 专用于通信，避免无线或其它端口抢占 DPDM/CC 状态。 */
 	g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 	g_port.port_state[PORT1_INDEX] = PORT_STATE_NONE;
 	g_port.port_state[PORT2_INDEX] = PORT_STATE_NONE;
@@ -593,6 +601,8 @@ void usb_comm_lock(void)
 
 void usb_comm_unlock(void)
 {
+	/* 退出通信模式后恢复 DPDM、Type-C 枚举和 WPC boost，
+	 * 与普通故障恢复一样回到 5V 放电基线。 */
 	buckboost_protection_flag = 0;
 
 	usb_dpdm_port0_switch(true); // Restore DPDM mode
@@ -615,6 +625,7 @@ void usb_comm_unlock(void)
 
 void buckboost_ir_drop_handle(void)
 {
+	/* 仅在放电且非 PPS source 场景补偿线损；20mV 量化和 5 次防抖用于避免输出电压抖动。 */
 
 	uint16_t ir_drop = 0;
 	static uint8_t cnt_delay = 0;
