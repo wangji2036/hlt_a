@@ -480,7 +480,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 				otp_cnt = 0;
 				wirless_ntc_lock = 1;
 				gd->wpc_disable = 1;
-				tcpm_stop_wpc(10);
+				tcpm_stop_wpc(WPC_DELAY);
 				ntc_printk("\r\n[WPC_NTC] OTP lock tntc=%d", tntc);
 			}
 		}
@@ -564,7 +564,7 @@ void wpc_power_handle(int16_t tntc, int16_t tbat)
 			{
 				bat_lock_cnt = 0;
 				bat_ntc_lock_flag = 1;
-				tcpm_stop_wpc(10);
+				tcpm_stop_wpc(WPC_DELAY);
 				ntc_printk("\r\n[BAT_NTC] lock tbat=%d", tbat);
 			}
 		}
