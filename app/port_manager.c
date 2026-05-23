@@ -1330,10 +1330,25 @@ void port_enum_port3_connect_start(void)
 
 void usb_bridge_unconnect(void)
 {
-	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)
+	enum tc_cc_status cc1 = TYPEC_CC_OPEN;
+	enum tc_cc_status cc2 = TYPEC_CC_OPEN;
+	bool cc_present = false;
+
+	hal_tcpc_get_cc(PORT0_INDEX, &cc1, &cc2);
+#if (CONFIG_USB_COM_FORCE_SINK == 1)
+	if (cc1 >= TYPEC_CC_RP_DEF || cc2 >= TYPEC_CC_RP_DEF)
+		cc_present = true;
+#else
+	if (cc1 == TYPEC_CC_RD || cc2 == TYPEC_CC_RD)
+		cc_present = true;
+#endif
+
+	if (gd->usb_comm_activated && !cc_present)
 	{
+		gd->usb_comm_activated = 0;
 		gd->force_usb_mode = 0;
 		gd->wpc_disable = 0;
+		usb_comm_unlock();
 	}
 }
 

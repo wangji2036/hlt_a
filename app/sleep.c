@@ -48,7 +48,6 @@
 #define PC6_KEY_PRESSED    (!PC6_KEY_LEVEL)    // 锟斤拷锟斤拷锟斤拷锟斤拷时为锟酵碉拷平
 // ==== 锟斤拷锟斤拷 Victor 2024-06-22 end ====
 
-#define SHIP_MODE_CNT  30
 #if ONLY7_5W_ENALBE
 static uint16_t sleep_q_68nf_thd = 0;
 static uint16_t sleep_f_68nf_thd = 0;
@@ -61,6 +60,36 @@ static uint16_t sleep_q_68nf_thd = 166;
 static uint16_t sleep_f_68nf_thd = 1317;// sleep F -normal F,
 #endif
 #endif
+
+uint8_t SLP_u8IsShipMode(void)
+{
+	/* ship_mode_cnt 位于保持 RAM，sleep 唤醒复位后仍能识别船运状态。 */
+	return (gd->ship_mode_cnt >= SHIP_MODE_CNT);
+}
+
+void SLP_vEnterShipMode(void)
+{
+	/* 复用原 ship_mode_cnt 字段作为船运模式锁存标志。 */
+	gd->ship_mode_cnt = SHIP_MODE_CNT;
+}
+
+void SLP_vExitShipMode(void)
+{
+	/* 插入充电器或按键唤醒时，清除船运标志和 7 天休眠计时。 */
+	gd->ship_mode_cnt = 0;
+	gd->ship_sleep_start_seconds = 0;
+}
+
+static void SLP_vConfigTouchWake(uint8_t enable)
+{
+	/* 船运模式屏蔽触摸唤醒，只保留按键或充电器/协议唤醒退出。 */
+	GPB->I_EN.BITS.PIN4 = enable ? 1 : 0;
+	GPB->O_EN.BITS.PIN4 = 0;
+	GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
+	GPB->ITEN.BITS.PIN4 = enable ? 1 : 0;
+	GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
+}
+
 void SLP_vNormalToSleep(void)
 {
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
@@ -71,6 +100,7 @@ void SLP_vNormalToSleep(void)
 #endif
 	VIC_vModuleDisable();
 	sleep_printk("\r\n enter sleep");
+	gd->enter_sleep_flag = 1;
 	hal_wdt_feed();
 	fm1210_sleep();
 	SYS->PWR_CTRL.WORD = 0;
@@ -80,6 +110,10 @@ void SLP_vNormalToSleep(void)
 	gd->light0_cnt = 0;
 	gd->light1_cnt = 0;
 	gd->SOC_SleepTime_s = 0;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	/* 记录普通休眠起点；后续定时唤醒用 RTC 判断是否已连续休眠 7 天。 */
+	gd->ship_sleep_start_seconds = gd->Bat_RTC_Seconds;
+#endif
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	gd->sleep_q_times = 0;
 #if(CONFIG_TYPECA_SUPPORT == 1)
@@ -294,19 +328,18 @@ void SLP_vNormalToSleep(void)
 	TMR0->GEN_CTRL.WORD = 0;
 	TMR0->LOAD_CNT.WORD = 16 * 100 * 1 - 1; //first Q,100ms start.
 
-	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+	if(SLP_u8IsShipMode())
+	{
+		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
+		hal_wdt_stop();
+	}
+	else if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
 	{
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
 		hal_wdt_stop();
 	}
 	else
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
-#if(CONFIG_SHIP_MODE_ENABLE_DEBUG ==1)
-	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
-	{
-	    TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K
-	}
-#endif
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 	UART1->GEN_CTRL.WORD = 0;
 	UART1->BRG_CTRL.WORD = 0;
@@ -322,24 +355,7 @@ void SLP_vNormalToSleep(void)
 	GPC->MODE.BITS.PIN6 = 0; //00:PC6 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
 	GPC->ITTP.BITS.PIN6 = 0;
-	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
-	{
-		// touch wake up start
-		GPB->I_EN.BITS.PIN4 = 1;
-		GPB->O_EN.BITS.PIN4 = 0;
-		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 1;
-		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
-	}
-	else
-	{
-		// touch wake up
-		GPB->I_EN.BITS.PIN4 = 1;
-		GPB->O_EN.BITS.PIN4 = 0;
-		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 1;
-		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
-	}
+	SLP_vConfigTouchWake(!SLP_u8IsShipMode());
 
 #if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
@@ -363,6 +379,12 @@ void SLP_vSleepToSleep(void)
 {
 
 	if(gd->SOC_SleepTime_s < 10000) gd->SOC_SleepTime_s++;
+#if CONFIG_NEW_CCC_LOG_ENABLE
+	if(!SLP_u8IsShipMode() && gd->ship_sleep_start_seconds == 0)
+	{
+		gd->ship_sleep_start_seconds = gd->Bat_RTC_Seconds;
+	}
+#endif
 	gd->reset_magicode = 0;// magic code,important for sleep Q wake-up.
 	//gd->tc0_lighting_mode = 0;
 	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1))
@@ -392,7 +414,12 @@ void SLP_vSleepToSleep(void)
 		else
 			TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
 	}
-	if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+	if(SLP_u8IsShipMode())
+	{
+		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
+		hal_wdt_stop();
+	}
+	else if(!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
 	{
 			TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) ; //LIRC: 64K'
 			hal_wdt_stop();
@@ -446,25 +473,7 @@ void SLP_vSleepToSleep(void)
 	GPC->MODE.BITS.PIN6 = 0; //00:PC6 01:JTAG_DAT 10:BPWM8 11:RESERVED
 	GPC->ITEN.BITS.PIN6 = 1;
 	GPC->ITTP.BITS.PIN6 = 0;
-	if(gd->ship_mode_cnt == SHIP_MODE_CNT)
-	{
-		// touch wake up start
-		GPB->I_EN.BITS.PIN4 = 1;
-		GPB->O_EN.BITS.PIN4 = 0;
-		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 1;
-		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
-	}
-	else
-	{
-		// touch wake up
-		GPB->I_EN.BITS.PIN4 = 1;
-		GPB->O_EN.BITS.PIN4 = 0;
-		GPB->MODE.BITS.PIN4 = 0; //00:PB4 01:JTAG_DAT 10:BPWM8 11:RESERVED
-		GPB->ITEN.BITS.PIN4 = 1;
-		GPB->ITTP.BITS.PIN4 = 0; //00:Falling Edge
-
-	}
+	SLP_vConfigTouchWake(!SLP_u8IsShipMode());
 
 #if(BUCKBOOST_USED_NU6801 == 1)
     // charger irq wake up start
@@ -988,6 +997,17 @@ void RST_vCheck(void)
 					VIC_vModuleEnable();
 				}
 #endif
+#if CONFIG_NEW_CCC_LOG_ENABLE
+				if(!SLP_u8IsShipMode() && gd->ship_sleep_start_seconds != 0 &&
+					((uint32_t)(gd->Bat_RTC_Seconds - gd->ship_sleep_start_seconds) >= SHIP_MODE_SLEEP_SECONDS))
+				{
+					/* 连续休眠满 7 天，自动从普通休眠切到船运模式。 */
+					SLP_vEnterShipMode();
+					sleep_printk("\r\n ship mode by 7d sleep");
+					SLP_vSleepToSleep();
+					break;
+				}
+#endif
 				// Exception tracking during sleep
 				if (++gd->exception_sleep_counter >= SLEEP_EXCEPTION_CHECK_CYCLES) {
 					gd->exception_sleep_counter = 0;
@@ -1176,7 +1196,8 @@ void RST_vCheck(void)
 				break;
 			/*------ TypeC 协议唤醒：CC 线检测到 SRC/SNK 接入，退出 sleep ------*/
 			case RST_SRC_PROTOCOL:
-				gd ->ship_mode_cnt = 0;
+				/* 插入充电器/Type-C 设备时退出船运并恢复正常启动流程。 */
+				SLP_vExitShipMode();
 				sleep_printk("\r\n sleep check- protocol");
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 				gd->sigle_clicked = 0;
@@ -1185,15 +1206,22 @@ void RST_vCheck(void)
 			/*------ GPIO 唤醒：按键(PC6) 或触摸(PB4) ------*/
 			case RST_SRC_GPIO:
 
-				if(++gd->ship_mode_cnt > SHIP_MODE_CNT) gd->ship_mode_cnt=0;
-
 				SYS->PWR_CTRL.WORD &= !SYS_PWR_CTRL_SLEEP_MODE_EN_Msk;
 
 				/* 验证是否有真实的按键/触摸输入（防止 GPIO 毛刺误触发） */
+				if(SLP_u8IsShipMode() && !PC6_KEY_PRESSED)
+				{
+					/* 船运模式下忽略触摸或 GPIO 毛刺，继续保持休眠。 */
+					sleep_printk("\r\n ship GPIO false wake-up, continue sleep");
+					SLP_vSleepToSleep();
+					break;
+				}
 				if(PC6_KEY_PRESSED || PB4_TOUCH_PRESSED)
 				{
 				/* 有效唤醒：记录唤醒来源（触摸 or 按键） */
 				 sleep_printk("\r\n GPIO wake-up: PC6=%d PB4=%d", PC6_KEY_PRESSED, PB4_TOUCH_PRESSED);
+				 /* 真实按键唤醒对应“单击按键开机退出船运”。 */
+				 if(PC6_KEY_PRESSED) SLP_vExitShipMode();
 				 if(PB4_TOUCH_PRESSED&&!PC6_KEY_PRESSED){
 					gd->touch_to_weakup = 1;
 				 }else{

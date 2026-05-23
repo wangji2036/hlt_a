@@ -20,16 +20,19 @@ extern uint8_t g_wb7720_awake;
 void key_sigle_click_process(void);
 void key_double_click_process(void);
 void key_long_click_process(void);
+void key_ship_process(void);
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 void key_triple_click_process(void);
 void key_quad_click_process(void);
 void key_quint_click_process(void);
-void key_ship_process(void);
 #endif
 volatile uint8_t key_flag = 0;
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 static uint8_t comm_feedback_cnt = 0;
 #endif
+/* 船运模式先完成灯显反馈，闪灯结束后再真正进入低功耗。 */
+static uint8_t ship_feedback_cnt = 0;
+static uint8_t ship_enter_pending = 0;
 volatile uint8_t charge_read = 0;
 volatile uint8_t charge_flag = 0;
 // following variable will be update to be GB data.
@@ -537,6 +540,8 @@ void ui_update(void)
 	if (gd->usb_comm_activated && key_flag == 4)
 	{
 		gd->usb_comm_activated = 0;
+		gd->force_usb_mode = 0;
+		osal_stop_timerEx(PORT_CONNECT_TIMER);
 		usb_comm_unlock();
 		comm_feedback_cnt = 2;  // 1 flash feedback
 		led_printk("USB comm exit by triple-click\n");
@@ -580,14 +585,40 @@ void ui_update(void)
 		key_quint_click_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
+#endif
 	else if (key_flag == 7)
 	{
 		key_ship_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
-#endif
 
 	key_flag = 0;
+
+	if(ship_feedback_cnt > 0)
+	{
+		/* 船运灯显：双色灯闪 5 次，结束后进入船运休眠。 */
+		soc_show_ram_led = (ship_feedback_cnt & 1) ? 0x00 : SHIP_MODE_LED_MASK;
+		ship_feedback_cnt--;
+		prev_woke_mode = g_buckboost.woke_mode;
+		ui_no_timer_scan = 0;
+		ui_display();
+		if(ship_feedback_cnt == 0 && ship_enter_pending)
+		{
+			ship_enter_pending = 0;
+#if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
+			if(gd->usb_comm_activated)
+			{
+				gd->usb_comm_activated = 0;
+				gd->force_usb_mode = 0;
+				osal_stop_timerEx(PORT_CONNECT_TIMER);
+				usb_comm_unlock();
+			}
+#endif
+			SLP_vEnterShipMode();
+			SLP_vNormalToSleep();
+		}
+		return;
+	}
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	if(comm_feedback_cnt > 0)
@@ -757,6 +788,7 @@ void key_sigle_click_process(void)
 
 void key_double_click_process(void)
 {
+	usb_bridge_reset();
 	if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
 #if(CONFIG_TYPECA_SUPPORT == 1)
@@ -803,7 +835,8 @@ void key_long_click_process(void)
         SLP_vNormalToSleep();
         return;
     }
-    // ==== 修改 Victor 2024-12-19 end ====
+#if 0
+// ==== 修改 Victor 2024-12-19 end ====
 //
 //    if(g_port.port_state[0] == PORT_STATE_SOURCE)
 //    {
@@ -817,36 +850,45 @@ void key_long_click_process(void)
 //
 //        g_port.light0_cnt = 0;
 //    }
+#endif
 }
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-void key_triple_click_process(void)//3
+void key_triple_click_process(void)//3 参考电压校准
 {
-
-
+	extern uint8_t g_vref_cal_delay;
+	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
+	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
+	printk("\r\n[KEY] quint click: Vref cal scheduled");
 }
 
-void key_quint_click_process(void)//4
+void key_quad_click_process(void)//4 通讯模式
 {
 	if (buckboost_protection_flag) return;
 
 	gd->usb_comm_activated ^= 1;
 	if(gd->usb_comm_activated)
 	{
+		// enter
+		gd->force_usb_mode = 0;
 		usb_comm_lock();
 		comm_feedback_cnt = 6;  // 3 flashes (on-off-on-off-on-off @ 250ms)
-		led_printk("USB comm activated by triple-click\n");
+		printk("USB comm activated by quint-click\n");
+		osal_start_timerEx(PORT_CONNECT_TIMER, 60000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_USB_BRIDGE_CLOSED);
 	}
 	else
 	{
+		// exit
+		gd->force_usb_mode = 0;
+		osal_stop_timerEx(PORT_CONNECT_TIMER);
 		usb_comm_unlock();
 		comm_feedback_cnt = 2;  // 1 flash (on-off @ 250ms)
-		led_printk("USB comm deactivated by triple-click\n");
+		printk("USB comm deactivated by quint-click\n");
 	}
 	key_ui_cnt = 0;
 }
 
-void key_quad_click_process(void)//5
+void key_quint_click_process(void)//5 过压禁用解除
 {
 	g_forbid_bypass_flag ^= 1;
 	if (g_forbid_bypass_flag)
@@ -856,23 +898,30 @@ void key_quad_click_process(void)//5
 			gd->bat_ov_forbid_flag = 0;
 			led_printk("\r\n[FORBID] OV cleared by quad-click");
 		}
-		led_printk("\r\n[FORBID] Bypass ENABLED by quad-click");
+		printk("\r\n[FORBID] Bypass ENABLED by quad-click");
 	}
 	else
 	{
-		led_printk("\r\n[FORBID] Bypass DISABLED by quad-click");
+		printk("\r\n[FORBID] Bypass DISABLED by quad-click");
 	}
 	key_ui_cnt = 0;
 }
-void key_ship_process(void)//6 开机状态短按按键一次+长按8s进:
-{
-	extern uint8_t g_vref_cal_delay;
-	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
-	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
-	led_printk("\r\n[KEY] quint click: Vref cal scheduled");
-}
 #endif
 
+void key_ship_process(void)// 开机状态短按一次后长按 8s，进入船运模式
+{
+	/* 不立即休眠，先启动船运灯显，避免用户看不到进入提示。 */
+	ship_enter_pending = 1;
+	ship_feedback_cnt = SHIP_MODE_LED_BLINK_TICKS;
+	button_led_run = 0;
+	charge_led_run = 0;
+	charge_led_finish = 0;
+	key_ui_cnt = 0;
+	flash_flag = 3;
+	printk("\r\n[SHIP] key sequence detected");
+}
+
+#if 0
 //// structure for key information
 //typedef struct KeyInfo {
 //    uint8_t press_status;  // 0 means release,1 means press down
@@ -891,24 +940,38 @@ void key_ship_process(void)//6 开机状态短按按键一次+长按8s进:
 //    key.last_release_time = 0;
 //    key.is_single_click = 0;
 //}
+#endif
 
 uint16_t key_ui_cnt = 0;
 // double click, needs detect single click first.
 static uint16_t key_cnt = 0;
 static uint16_t key_delay_ms = 0;
 static uint8_t key_click_cnt = 0;
+/* 船运组合键状态：短按松手后布防，第二次长按到 8s 只触发一次。 */
+static uint8_t ship_key_armed = 0;
+static uint8_t ship_key_triggered = 0;
 
 void key_handle_10ms()
 {
+	if (gd->enter_sleep_flag) return;
 	if(!_KEY_LEVEL)
 	{
-		key_cnt++;
-		if(key_cnt == 300)   // [NEW-VICTOR] 增加长按关机时间 150->300
+		/* 短按一次后，再按住 8s 触发船运模式。 */
+		if(!ship_key_triggered && key_cnt < 1800) key_cnt++;
+		if(ship_key_armed && key_cnt == SHIP_MODE_KEY_HOLD_10MS_TICKS)
+		{
+			key_flag = 7;
+			key_click_cnt = 0;
+			key_delay_ms = 0;
+			ship_key_armed = 0;
+			ship_key_triggered = 1;
+		}
+		else if(key_cnt == 300 && !ship_key_armed)   // [NEW-VICTOR] 增加长按关机时间 150->300
 		{
 			key_flag = 3; //long press
 			key_click_cnt = 0;
 		}
-		if(key_cnt == 1200)
+		if(key_cnt == 1200 && !ship_key_triggered)
 		{
 			SYS->RST_CTRL.BITS.MCU_RST = 1;
 			gd->power_on_magic = 0x00;
@@ -923,30 +986,42 @@ void key_handle_10ms()
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 			key_click_cnt++;
 			key_delay_ms = 50;
+			/* 只有第一下短按会布防船运组合键，双击/多击不触发船运。 */
+			ship_key_armed = (key_click_cnt == 1) ? 1 : 0;
 			if(key_click_cnt >= 5)
 			{
 				key_flag = 6;  // quint click
 				key_click_cnt = 0;
 				key_delay_ms = 0;
+				ship_key_armed = 0;
 			}
 #else
 			if(key_click_cnt == 0)
 			{
 				key_delay_ms = 50;
 				key_click_cnt = 1;
+				ship_key_armed = 1;
 			}
 			else
 			{
 				key_click_cnt = 0;
 				key_delay_ms = 0;
 				key_flag = 2;
+				ship_key_armed = 0;
 			}
 #endif
 		}
+		else if(key_cnt > 50)
+		{
+			key_click_cnt = 0;
+			key_delay_ms = 0;
+			ship_key_armed = 0;
+		}
 		key_cnt = 0;
+		ship_key_triggered = 0;
 	}
 
-	if(key_delay_ms)
+	if(key_delay_ms && _KEY_LEVEL)
 	{
 		key_delay_ms--;
 		if(key_delay_ms == 0)
@@ -962,10 +1037,13 @@ void key_handle_10ms()
 					key_flag = 4;  // triple click
 				else if(key_click_cnt == 4)
 					key_flag = 5;  // quad click
+				else if(key_click_cnt == 5)
+					key_flag = 6;  // quint click
 #else
 				key_flag = 1;
 #endif
 				key_click_cnt = 0;
+				ship_key_armed = 0;
 			}
 		}
 	}

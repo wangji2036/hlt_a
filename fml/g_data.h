@@ -607,6 +607,8 @@ struct gd_t
 
 	 int32_t SOC_RawSOC_mpct;
 	 uint32_t SOC_SleepTime_s;
+	 /* 普通休眠起始 RTC 秒数，用于连续 7 天休眠后自动进入船运模式。 */
+	 uint32_t ship_sleep_start_seconds;
 
 	 uint8_t ship_mode_cnt;
 	 uint8_t sigle_clicked;
@@ -627,6 +629,7 @@ struct gd_t
 	 uint8_t wpc_sleepship;
 	 struct bat_info g_bat;
 	 uint8_t key_sleep_exit;
+	 uint8_t enter_sleep_flag;
 
 
 };
