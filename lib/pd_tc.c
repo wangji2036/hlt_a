@@ -245,8 +245,8 @@ void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status 
         static uint16_t cc_diag_cnt = 0;
         if (++cc_diag_cnt >= 500) {
             cc_diag_cnt = 0;
-            lib_printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
-                   TCPC->CCA_ROLE.WORD, cc_status, sink, *cc1, *cc2);
+            // lib_printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
+            //        TCPC->CCA_ROLE.WORD, cc_status, sink, *cc1, *cc2);
         }
     }
 

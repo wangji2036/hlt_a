@@ -28,6 +28,7 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ); //0-ack 1-nak
 
 #define _I2CM_SDA_D_IN    (_I2CM_SDA_PORT->D_IN.BITS._I2CM_SDA_PINx)
 #define _I2CM_SDA_DOUT    (_I2CM_SDA_PORT->DOUT.BITS._I2CM_SDA_PINx)
+#define _I2CM_SCL_D_IN    (_I2CM_SCL_PORT->D_IN.BITS._I2CM_SCL_PINx)
 #define _I2CM_SCL_DOUT    (_I2CM_SCL_PORT->DOUT.BITS._I2CM_SCL_PINx)
 
 #define _SET_I2CM_SDA_IN_PUT()    do {VIC_vModuleDisable(); _I2CM_SDA_PORT->O_EN.BITS._I2CM_SDA_PINx = 0; _I2CM_SDA_PORT->I_EN.BITS._I2CM_SDA_PINx = 1; VIC_vModuleEnable();} while (0)

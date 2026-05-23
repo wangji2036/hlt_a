@@ -253,9 +253,6 @@ void buckboost_protection_handle(void)
 	#define NU6805_VBUS_OVP_TH					21500
 	#define NU6801_VBUS_OVP_TH					20000
 
-
-
-
 	uint16_t status = 0;
 
 	status = buckboost_ops.get_protect_status();

@@ -34,6 +34,7 @@
 #define PORT_ENUM_EVT_PORT3_CONNECT_SUCCESS						osal_event_declare(19)
 #define PORT_ENUM_EVT_PORT3_CONNECT_CLOSED						osal_event_declare(20)
 #define PORT_ENUM_EVT_PORT3_ENUM_DONE							osal_event_declare(23)
+#define PORT_ENUM_EVT_USB_BRIDGE_CLOSED 						osal_event_declare(24)
 
 #define PORT_ENUM_EVT_PORT_SCAN									osal_event_declare(31)
 

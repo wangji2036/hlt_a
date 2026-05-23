@@ -55,6 +55,7 @@ enum {
 	USB_DPDM_TASK = 6,
 
 	PORT_MANAGER_TASK = 7,
+	USB_BRIDGE_TASK = 8,
 	/////////////
 	MAX_TASK,
 };
