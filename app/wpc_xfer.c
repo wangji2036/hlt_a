@@ -180,6 +180,13 @@ void wpc_bpp_xfer_phase_protocol_process(struct com_prx_ask_pkt_t *com_ask)
 					wpc_printk("\r\n LDSTP_BPP +60");
 					gd->atl_test_ldstp_bpp_P60 = 1;
 				}
+			}	
+
+			if (wpc_ntc_power_reduce_flag || gd->bat_ntc_wpc_dischg_reduce_flag)
+			{
+				if (gd->tx_power > 8500) gd->rx_infos.cep_val = -5;
+				else if (gd->tx_power > 7500) gd->rx_infos.cep_val = 0;
+				else gd->rx_infos.cep_val = com_ask->msg.cep.ce_value;
 			}
 
 			if (samsungPrivateFastChargeFlag == 0)
