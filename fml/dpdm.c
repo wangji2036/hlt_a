@@ -469,11 +469,11 @@ void __attribute__((isr)) QC_SRC_IRQHandler(void)
 			osal_set_event(USB_DPDM_TASK,DPDM_EVT_QC_FIXED_12V);
 		}
 
-		if(int_flag & (0x01<<10))
-		{
-			DPDM->QC_SRC_FLAG.BITS.FIXED_20V_REQ_INT = 1;
-			osal_set_event(USB_DPDM_TASK,DPDM_EVT_QC_FIXED_20V);
-		}
+		// if(int_flag & (0x01<<10))
+		// {
+		// 	DPDM->QC_SRC_FLAG.BITS.FIXED_20V_REQ_INT = 1;
+		// 	osal_set_event(USB_DPDM_TASK,DPDM_EVT_QC_FIXED_20V);
+		// }
 
 		if(int_flag & (0x01<<11))
 		{
