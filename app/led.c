@@ -1028,8 +1028,6 @@ static void key_ship_disarm(const char *reason)
 
 void key_handle_10ms()
 {
-	if (gd->enter_sleep_flag)
-		return;
 	if (!_KEY_LEVEL)
 	{
 		/* 短按一次后，再按住 8s 触发船运模式。 */
@@ -1122,8 +1120,8 @@ void key_handle_10ms()
 		}
 		else if (key_cnt > 50)
 		{
-			printk("\r\n[SHIPKEY] release long key_cnt=%d armed=%d triggered=%d",
-			       key_cnt, ship_key_armed, ship_key_triggered);
+			// printk("\r\n[SHIPKEY] release long key_cnt=%d armed=%d triggered=%d",
+			//        key_cnt, ship_key_armed, ship_key_triggered);
 			key_click_cnt = 0;
 			key_delay_ms = 0;
 			key_ship_disarm("long-release");
@@ -1162,8 +1160,8 @@ void key_handle_10ms()
 #else
 				key_flag = 1;
 #endif
-				printk("\r\n[SHIPKEY] click timeout flag=%d keep_arm=%d arm_left=%d",
-				       key_flag, ship_key_armed, ship_key_arm_ticks);
+				// printk("\r\n[SHIPKEY] click timeout flag=%d keep_arm=%d arm_left=%d",
+				//        key_flag, ship_key_armed, ship_key_arm_ticks);
 				key_click_cnt = 0;
 			}
 		}
