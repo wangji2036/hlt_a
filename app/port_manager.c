@@ -27,6 +27,23 @@ void port_manager_set_event(uint32_t event)
 extern uint8_t charge_led_finish;
 extern uint8_t charge_led_run;
 
+static uint32_t port_manager_calc_power_current(uint32_t power_mw, uint32_t voltage_mv)
+{
+	if (voltage_mv == 0)
+		return 0;
+
+	return power_mw * 1000 / voltage_mv;
+}
+
+static void port_manager_apply_power_derating(uint32_t power_mw)
+{
+	uint32_t ibat_limit = port_manager_calc_power_current(power_mw, g_buckboost.adc_vbat);
+	uint32_t ibus_limit = port_manager_calc_power_current(power_mw, g_buckboost.adc_vbus);
+
+	g_port.ibat_limit = g_port.ibat_limit < ibat_limit ? g_port.ibat_limit : ibat_limit;
+	g_port.ibus_limit = g_port.ibus_limit < ibus_limit ? g_port.ibus_limit : ibus_limit;
+}
+
 void port_manager_set_state(enum port_state_e state)
 {
 	if (state == PORT_INHANDLING)
@@ -792,29 +809,24 @@ void port_enum_port_snk_setcharge(void)
 	/* Battery voltage derating: 2S <7400mV → 20W (flag updated in buckboost_ntc_handle) */
 	if (bat_low_volt_reduce)
 	{
-		g_port.ibat_limit = g_port.ibat_limit < (20000 * 1000 / g_buckboost.adc_vbat) ? g_port.ibat_limit : 20000 * 1000 / g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit < (20000 * 1000 / g_buckboost.adc_vbus) ? g_port.ibus_limit : 20000 * 1000 / g_buckboost.adc_vbus;
+		port_manager_apply_power_derating(20000);
 	}
 
 	if (typec_ntc_charge_ot_reduce20W_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit < (20000 * 1000 / g_buckboost.adc_vbat) ? g_port.ibat_limit : 20000 * 1000 / g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit < (20000 * 1000 / g_buckboost.adc_vbus) ? g_port.ibus_limit : 20000 * 1000 / g_buckboost.adc_vbus;
+		port_manager_apply_power_derating(20000);
 	}
 	if (bat_ntc_charge_ot_reduce12W_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit < (12000 * 1000 / g_buckboost.adc_vbat) ? g_port.ibat_limit : 12000 * 1000 / g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit < (12000 * 1000 / g_buckboost.adc_vbus) ? g_port.ibus_limit : 12000 * 1000 / g_buckboost.adc_vbus;
+		port_manager_apply_power_derating(12000);
 	}
 	if (bat_ntc_charge_ut_reduce5W_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit < (5000 * 1000 / g_buckboost.adc_vbat) ? g_port.ibat_limit : 5000 * 1000 / g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit < (5000 * 1000 / g_buckboost.adc_vbus) ? g_port.ibus_limit : 5000 * 1000 / g_buckboost.adc_vbus;
+		port_manager_apply_power_derating(5000);
 	}
 	if (gd->bat_ntc_cport_dischg_reduce_flag)
 	{
-		g_port.ibat_limit = g_port.ibat_limit < (10000 * 1000 / g_buckboost.adc_vbat) ? g_port.ibat_limit : 10000 * 1000 / g_buckboost.adc_vbat;
-		g_port.ibus_limit = g_port.ibus_limit < (10000 * 1000 / g_buckboost.adc_vbus) ? g_port.ibus_limit : 10000 * 1000 / g_buckboost.adc_vbus;
+		port_manager_apply_power_derating(10000);
 	}
 	if (gd->bat_ntc_stop_chrg_flag || typec_charge_ntc_lock)
 	{
