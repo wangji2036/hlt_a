@@ -25,16 +25,16 @@
 #include "port_manager.h"
 #include "usb_qc.h"
 #include "buckboost.h"
-#include"sleep.h"
-#include"bsp.h"
+#include "sleep.h"
+#include "bsp.h"
 #include "bat.h"
 #include "bat_record.h"
 #include "config.h"
 
 #if SUPPORT_MAIN_LOG
-	#define main_printk 	printk
+#define main_printk printk
 #else
-	#define main_printk(...)
+#define main_printk(...)
 #endif
 
 uint32_t rrlen;
@@ -56,7 +56,7 @@ int main(void)
 
 	ap_data_init();
 	gd_data_init();
-	lib_para_init();// do not delete.
+	lib_para_init(); // do not delete.
 	fml_bsp_init();
 	apl_gui_init();
 
@@ -64,24 +64,25 @@ int main(void)
 
 	fml_nu103x_por_init();
 	hal_wdt_feed();
-#if(BUCKBOOST_USED_NU6805 == 1)
+#if (BUCKBOOST_USED_NU6805 == 1)
 	/* 绛夊緟 NU6805 绋冲畾 500ms, 姣�100ms 鍋氫竴娆�I2C dummy read 淇濇寔 SCL 娲昏穬,
 	 * 闃叉澶嶄綅 IC 鍥�250ms 鏃�I2C 娲诲姩鑰屾媺 RESET 瀵艰嚧鍐峰惎鍔�*/
-	for (uint8_t i = 0; i < 5; i++) {
+	for (uint8_t i = 0; i < 5; i++)
+	{
 		delay_1ms(100);
 		hal_wdt_feed();
 		uint8_t dummy;
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, 0x00, &dummy);
 	}
 #endif
-//	WPC_vInit();
+	//	WPC_vInit();
 
 	main_printk("\r\n ap_t size-> %d", sizeof(struct ap_t));
 	main_printk("\r\n base_q [%d]", ap->q_factor_base_value);
 	main_printk("\r\n base_fre [%d]", ap->fs_base_value);
 	main_printk("\r\n gd_t size-> %d %08x", sizeof(struct gd_t), &gd->pid_perd);
 	main_printk("\r\n -->NU%d-%02d", SYS->PID_INFO.BITS.PID, SYS->PID_INFO.BITS.VER);
-    main_printk("system state---> %x",SYS->OPR_STAT.WORD);
+	main_printk("system state---> %x", SYS->OPR_STAT.WORD);
 	//SLP_vNormalToSleep();
 
 	if (ap->auth_seic_type == 1)
@@ -89,7 +90,7 @@ int main(void)
 		t91206_init();
 		delay_1ms(100);
 		hal_wdt_feed();
-//		t91206_get_qi_id(adt_data_recv_buf);
+		//		t91206_get_qi_id(adt_data_recv_buf);
 		t91206_read_cert_hash(array_digest + 1);
 		t91206_read_se_cert(cert_chain, &rrlen);
 		t91206_get_qi_id(adt_data_recv_buf);
@@ -101,7 +102,7 @@ int main(void)
 		hal_wdt_feed();
 		fm1210_get_qi_id(adt_data_recv_buf);
 		fm1210_read_cert_hash(array_digest + 1);
-		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen);//TODO: mfr cert len 329 need outside config, using sizeof arr
+		fm1210_read_se_cert(cert_chain + 2 + 32 + 328, &rrlen); //TODO: mfr cert len 329 need outside config, using sizeof arr
 	}
 	hal_wdt_feed();
 	fml_adp_init();
@@ -116,13 +117,11 @@ int main(void)
 	tcpm_task_init();
 	usb_dpdm_task_init();
 
-
 	fml_task_init();
-#if(CONFIG_WPC_SUPPORT == 1)
+#if (CONFIG_WPC_SUPPORT == 1)
 	wpc_task_init();
 #endif
 	port_manager_task_init();
-
 
 	osal_start_system();
 

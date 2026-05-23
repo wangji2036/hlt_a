@@ -1,0 +1,10 @@
+BasedOnStyle: LLVM
+Language: Cpp
+UseTab: ForIndentation
+IndentWidth: 4
+TabWidth: 4
+BreakBeforeBraces: Allman
+SpaceBeforeParens: ControlStatements
+ColumnLimit: 0
+SortIncludes: Never
+ReflowComments: false

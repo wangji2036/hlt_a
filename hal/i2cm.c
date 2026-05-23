@@ -6,11 +6,10 @@
 #include "nu6805.h"
 //#define HW_I2CM_
 
-
-#define _I2C_WRIT_BIT    0
-#define _I2C_READ_BIT    1
-#define _I2C_RESP_ACK    0
-#define _I2C_RESP_NAK    1
+#define _I2C_WRIT_BIT 0
+#define _I2C_READ_BIT 1
+#define _I2C_RESP_ACK 0
+#define _I2C_RESP_NAK 1
 
 #ifdef HW_I2CM_
 
@@ -109,12 +108,12 @@ static int I2CM_iSendStartBitAndDevAddr(uint8_t devAddr, uint8_t rw_bit)
 	I2CM->GEN_CTRL.BITS.PROTOCOL_CMD = I2CM_PROTOCOL_CMD_STAR | I2CM_PROTOCOL_CMD_SEND;
 	if (I2CM_iWaitProcessDone() < 0)
 	{
-//		printk("!");
+		//		printk("!");
 		return -1;
 	}
 	if (I2CM_iWaitACK() < 0)
 	{
-//		printk("~");
+		//		printk("~");
 		return -2;
 	}
 	I2CM->GEN_CTRL.BITS.PROTOCOL_CMD = I2CM_PROTOCOL_CMD_NULL;
@@ -153,7 +152,6 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ)
 
 	return 0;
 }
-
 
 int hal_i2cm_read_one_byte(uint8_t devAddr, uint8_t regAddr, uint8_t *data)
 {
@@ -608,14 +606,12 @@ int hal_i2cm_write_multi_byte_16bit(uint8_t devAddr, uint16_t regAddr, uint8_t *
 //#define _SET_I2CM_SDA_IN_PUT()    do { GPA->O_EN.BITS.PIN7 = 0; GPA->I_EN.BITS.PIN7 = 1; } while (0)
 //#define _SET_I2CM_SDA_OUTPUT()    do { GPA->I_EN.BITS.PIN7 = 0; GPA->O_EN.BITS.PIN7 = 1; } while (0)
 
-
-
 void hal_i2cm_init(uint32_t u32BusClock)
 {
 	return;
 }
 
-#define _I2CM_CLK_STRETCH_TIMEOUT  1000  /* max 1ms wait */
+#define _I2CM_CLK_STRETCH_TIMEOUT 1000 /* max 1ms wait */
 
 static int I2CM_iWaitSCLHigh(void)
 {
@@ -685,7 +681,7 @@ int hal_i2cm_byte_send(uint8_t byte)
 	int rst = 0;
 	int timeout = 0;
 
-	for (int i=0; i<8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		delay_1us(1);
 		VIC_vModuleDisable();
@@ -696,7 +692,10 @@ int hal_i2cm_byte_send(uint8_t byte)
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 		VIC_vModuleEnable();
-		if (I2CM_iWaitSCLHigh() < 0) { return -3; } /* clock stretch timeout */
+		if (I2CM_iWaitSCLHigh() < 0)
+		{
+			return -3;
+		} /* clock stretch timeout */
 		delay_1us(5);
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_LO;
@@ -704,7 +703,7 @@ int hal_i2cm_byte_send(uint8_t byte)
 		delay_1us(2);
 	}
 
-//	_I2CM_SDA_DOUT = _PIN_LEVEL_LO;
+	//	_I2CM_SDA_DOUT = _PIN_LEVEL_LO;
 	_SET_I2CM_SDA_IN_PUT();
 	delay_1us(5);
 	VIC_vModuleDisable();
@@ -743,7 +742,7 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ)
 	_SET_I2CM_SDA_IN_PUT();
 	delay_1us(2);
 
-	for (int i=0; i<8; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_LO;
@@ -752,11 +751,15 @@ int hal_i2cm_byte_read(uint8_t *byte, uint8_t resp_typ)
 		VIC_vModuleDisable();
 		_I2CM_SCL_DOUT = _PIN_LEVEL_HI;
 		VIC_vModuleEnable();
-		if (I2CM_iWaitSCLHigh() < 0) { return -2; } /* clock stretch timeout */
+		if (I2CM_iWaitSCLHigh() < 0)
+		{
+			return -2;
+		} /* clock stretch timeout */
 		delay_1us(3);
 		*byte <<= 1;
 		VIC_vModuleDisable();
-		if (_I2CM_SDA_D_IN == _PIN_LEVEL_HI) *byte += 1;
+		if (_I2CM_SDA_D_IN == _PIN_LEVEL_HI)
+			*byte += 1;
 		VIC_vModuleEnable();
 		delay_1us(2);
 	}
