@@ -88,8 +88,8 @@ void wpc_stop_to_idle(uint8_t err_code)
 	osal_set_event(WPC_TASK, WPC_EVT_STOP_POWER);
 }
 
-extern uint8_t cnt_cloak_dig_ping;
-extern uint8_t cnt_cloak_det_ping;
+extern uint16_t cnt_cloak_dig_ping;
+extern uint16_t cnt_cloak_det_ping;
 uint8_t cnt_ping;
 
 void wpc_stop_power(void)
