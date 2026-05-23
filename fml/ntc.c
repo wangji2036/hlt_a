@@ -14,14 +14,14 @@
 
 bool bat_ntc_charge_ut_reduce5W_flag = false;
 bool bat_ntc_charge_ot_reduce12W_flag = false;
-bool bat_ntc_stop_chrg_flag = false;
+// bool bat_ntc_stop_chrg_flag = false;
 bool typec_ntc_lock =false;
 bool typec_charge_ntc_lock =false;
 bool wirless_ntc_lock = false;
 bool bat_ntc_lock_flag = false;
 bool typec_ntc_dischg_ot_reduce20W_flag = false;
 bool typec_ntc_charge_ot_reduce20W_flag = false;
-bool bat_ntc_dischg_lock = false;
+// bool bat_ntc_dischg_lock = false;
 bool bat_ntc_dual_dischg_inhibit = false;   // C 口+无线充同时放电温度抑制：<0/≥45 锁，[5,40] 恢复 max 5V/3A
 bool bat_ntc_prot_reverse = false; 
 uint8_t bat_low_volt_reduce = 0;
@@ -60,7 +60,7 @@ void buckboost_ntc_handle(void)
 			}
 
 			// 充电禁充：<3°C 锁 / ≥5°C 解；>52°C 锁 / ≤47°C 解；43-52°C 段满 4.1V 闭锁
-			if(!bat_ntc_stop_chrg_flag)
+			if(gd->bat_ntc_stop_chrg_flag == 0)
 			{
 				if(bat_temp > 52 || bat_temp < 3 ||ot_full_stop)
 				{
@@ -68,7 +68,7 @@ void buckboost_ntc_handle(void)
 					if(ntc_stop_chg_cnt >= 20)
 					{
 						ntc_stop_chg_cnt = 0;
-						bat_ntc_stop_chrg_flag = 1;
+						gd->bat_ntc_stop_chrg_flag = 1;
 					}
 				}
 				else
@@ -84,7 +84,7 @@ void buckboost_ntc_handle(void)
 					if(ntc_stop_chg_cnt >= 10)
 					{
 						ntc_stop_chg_cnt = 0;
-						bat_ntc_stop_chrg_flag = 0;
+						gd->bat_ntc_stop_chrg_flag = 0;
 					}
 				}
 				else
@@ -92,7 +92,7 @@ void buckboost_ntc_handle(void)
 					ntc_stop_chg_cnt = 0;
 				}
 			}
-			if(!bat_ntc_stop_chrg_flag)
+			if(gd->bat_ntc_stop_chrg_flag == 0)
 			{
 				// 充电限 5W：<18°C 触发，≥20°C 恢复 30W
 				if(!bat_ntc_charge_ut_reduce5W_flag)
@@ -197,18 +197,18 @@ void buckboost_ntc_handle(void)
 
 		if(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 		{
-			bat_ntc_stop_chrg_flag = 0;
+			gd->bat_ntc_stop_chrg_flag = 0;
 			bat_ntc_charge_ot_reduce12W_flag = 0;
 
 			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
-			if(!bat_ntc_dischg_lock)
+			if(gd->bat_ntc_dischg_lock == 0)
 			{
 				if(bat_temp <= -15 || bat_temp >= 55)
 				{
 					if(dual_dischg_lock_cnt++>=10)
 					{
 						dual_dischg_lock_cnt = 0;
-						bat_ntc_dischg_lock = 1;
+						gd->bat_ntc_dischg_lock = 1;
 					}
 				}
 				else
@@ -223,7 +223,7 @@ void buckboost_ntc_handle(void)
 					if(dual_dischg_lock_cnt++>=10)
 					{
 						dual_dischg_lock_cnt = 0;
-						bat_ntc_dischg_lock = 0;
+						gd->bat_ntc_dischg_lock = 0;
 					}
 				}
 				else
@@ -448,8 +448,8 @@ void buckboost_ntc_handle(void)
 
 	ntc_printk("\r\n[NTC_FLAG] tbat=%d mode=%d chg[stop=%d ut5=%d ot12=%d otfull=%d lowv=%d] dischg[lock=%d cport=%d dual=%d] tc_chg[lock=%d ot20=%d] tc_disc[lock=%d ot20=%d]",
 		bat_temp, g_buckboost.woke_mode,
-		bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
-		bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
+		gd->bat_ntc_stop_chrg_flag, bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, ot_full_stop, bat_low_volt_reduce,
+		gd->bat_ntc_dischg_lock, gd->bat_ntc_cport_dischg_reduce_flag, bat_ntc_dual_dischg_inhibit,
 		typec_charge_ntc_lock, typec_ntc_charge_ot_reduce20W_flag,
 		typec_ntc_lock, typec_ntc_dischg_ot_reduce20W_flag);
 }
