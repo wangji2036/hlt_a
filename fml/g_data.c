@@ -4,10 +4,41 @@
 #include "config.h"
 #include "app.h"
 #include "bat_record.h"
+#include <stddef.h>
 
 volatile struct ap_t *ap = (struct ap_t *)(AP_CFG_RAM_ADDR_BASE);
 volatile struct gd_t *gd = (struct gd_t *)(G_DATA_RAM_ADDR_BASE);
 uint8_t g_forbid_bypass_flag;
+
+/* --- Compile-time guards: gd_t layout constraints -----------------------------
+ * Physical RAM layout:
+ *   0x20000200 .. 0x200003FF  --> gd_t CFG region (512B = 0x200)
+ *   0x20000400 ..             --> .data section (gui.c app_reg_buff[] et al.)
+ *
+ * Any gd_t field at offset >= 0x200 physically overlaps app_reg_buff. The
+ * original protect_ntc1/led_fault2/etc lived at 0x400-0x403 and were silently
+ * clobbered by iic_read_info_sync() every 10ms. We moved them inside the CFG
+ * region (offset ~0x228). These asserts prevent regression.
+ *
+ * Two-tier check:
+ *   1) led_fault2 (the field that actually caused the bug) must sit < 0x200.
+ *   2) sizeof(gd_t) is allowed to slightly exceed 0x200 because the final
+ *      padding bytes at 0x400-0x403 are intentional dead space — but it must
+ *      not grow further. 0x204 = original size, locked.
+ * ----------------------------------------------------------------------------- */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+_Static_assert(offsetof(struct gd_t, led_fault2) < 0x200,
+               "led_fault2 must stay inside CFG region (offset < 0x200) to avoid "
+               "RAM overlap with gui.c app_reg_buff at 0x20000400+");
+_Static_assert(sizeof(struct gd_t) <= 0x204,
+               "sizeof(gd_t) must remain 0x204 (516B); growth bleeds into .data");
+#else
+/* C89/C99 fallback: negative array size triggers compile error on violation */
+typedef char _gd_t_led_fault2_offset_check[
+    (offsetof(struct gd_t, led_fault2) < 0x200) ? 1 : -1];
+typedef char _gd_t_size_check[
+    (sizeof(struct gd_t) <= 0x204) ? 1 : -1];
+#endif
 
 /* Save buffer for hot start (sleep wakeup) recovery */
 uint8_t saved_exception_cache[sizeof(ap->exception_cache)];

@@ -621,7 +621,13 @@ struct gd_t
 	uint16_t eng_virtual_cell1;      // Virtual Cell1 voltage (0xFFFF=no override)
 	uint16_t eng_virtual_cell2;      // Virtual Cell2 voltage (0xFFFF=no override)
 	int16_t eng_virtual_temp;        // Virtual temperature (0x7FFF=no override)
-	uint64_t Bat_RTC_Timer;
+	uint32_t Bat_RTC_Timer;     // Shrunk uint64->uint32 to free 4B for relocated fields below.
+	                            // Compatible: only used as 10ms tick counter (~497 days uint32 range).
+	// --- Relocated from offset 0x400-0x403 to avoid RAM overlap with gui.c app_reg_buff[0..3] ---
+	uint8_t protect_ntc1;       // Moved here (within CFG region < 0x200) to escape .data overlap
+	uint8_t air_protect_ntc1;   // Moved here
+	uint8_t led_fault2;         // Moved here (was silently zeroed by iic_read_info_sync every 10ms)
+	uint8_t key_led_fault2;     // Moved here
 #if CONFIG_NEW_CCC_LOG_ENABLE
 	// System runtime (seconds + milliseconds) - 136 years range
 	uint32_t Bat_RTC_Seconds;      // Running seconds: 0 ~ 4,294,967,295 (~136 years)
@@ -655,10 +661,15 @@ struct gd_t
 	uint8_t enter_sleep_flag;
 	uint8_t bat_ntc_dischg_lock;
 	uint8_t bat_ntc_stop_chrg_flag;
-	uint8_t protect_ntc1;
-	uint8_t air_protect_ntc1;
-	uint8_t led_fault2;
-	uint8_t key_led_fault2;
+	// --- Original 0x400-0x403 slots kept as padding to preserve sizeof(gd_t)=516B ---
+	// These 4 bytes fall on 0x20000400-0x20000403 which physically overlaps gui.c app_reg_buff[0..3]
+	// (tx_fw_version/tx_chip_id/tx_status/reserved). iic_read_info_sync() writes 0 to tx_status
+	// every 10ms, silently clobbering whatever lives at 0x402. Do NOT use these for state.
+	// Real fields moved up to ~offset 0x228 (Bat_RTC_Timer region).
+	uint8_t _conflict_pad_400;  // formerly protect_ntc1
+	uint8_t _conflict_pad_401;  // formerly air_protect_ntc1
+	uint8_t _conflict_pad_402;  // formerly led_fault2
+	uint8_t _conflict_pad_403;  // formerly key_led_fault2
 };
 uint16_t dead_battery_voltage;
 struct lib_para_sts
