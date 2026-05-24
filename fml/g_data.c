@@ -396,6 +396,25 @@ void gd_data_init(void)
 	gd->power_on_magic = 0xaaaa;
 	gd->bat_ntc_dischg_lock = 0;
 	gd->bat_ntc_stop_chrg_flag = 0;
+	/* Warm boot fix: derived LED-fault states must be cleared whenever their
+	 * source state (dischg_lock / stop_chrg_flag / vbus_ovp) is cleared above.
+	 * These fields live AFTER resverd_reset (offset > 0x200) so the bulk-zero
+	 * loop at gd_data_init top does NOT touch them, and the cold-boot block
+	 * (if magic != 0xaaaa) only clears them on cold boot.
+	 * On warm boot they would retain stale values from before sleep, causing
+	 * ui_update_led to flash 5-times for one tick before buckboost.c recomputes
+	 * them at next 100ms cycle. Clear unconditionally to keep derived state in
+	 * sync with the (already-cleared) source state.
+	 *   - led_fault1: derived from dischg_lock / stop_chrg_flag / ntc_total_lock_flag
+	 *   - led_fault : derived from VBUS_OVP status / vbus_ovp
+	 *   - led_fault2: transient flash-counter latch set by led.c key handler
+	 *   - vbus_ovp  : OVP latch; buckboost will re-set if condition persists
+	 * Do NOT clear key_led_fault2 here — it is the NTC-lock latch maintained
+	 * by ntc.c with its own lock/unlock state machine. */
+	gd->led_fault1 = 0;
+	gd->led_fault = 0;
+	gd->led_fault2 = 0;
+	gd->vbus_ovp = 0;
 	gdata_printk("\r\n light [%d %d]", gd->tc0_lighting_mode, gd->tc1_lighting_mode);
 
 	gd->tx_infos.t_next_ping = ap->t_next_ping;

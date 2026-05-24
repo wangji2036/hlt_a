@@ -181,6 +181,7 @@ static void ui_update_led(void)
 	static uint8_t horse_index = 0;
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
+
 	printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
 	printk("LED2 f1=%d f2=%d ft=%d blr=%d klf2=%d\r\n",
 	       gd->led_fault1, gd->led_fault2, gd->flash_times,

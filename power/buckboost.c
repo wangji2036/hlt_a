@@ -384,7 +384,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 1;
 	}
-	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag))
+	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag || gd->bat_ntc_dischg_lock))
 	{
 		gd->led_fault1 = 1;
 	}
@@ -410,7 +410,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 0;
 	}
-	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !gd->bat_ntc_stop_chrg_flag)
+	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !gd->bat_ntc_stop_chrg_flag && !gd->bat_ntc_dischg_lock)
 	{
 		gd->led_fault1 = 0;
 	}
