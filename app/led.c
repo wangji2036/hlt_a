@@ -301,11 +301,23 @@ static void ui_update_led(void)
 		}
 		else
 		{
-			printk("KILL2 ft=%d f2=%d\r\n", gd->flash_times, gd->led_fault2);
+			printk("KILL2 ft=%d f2=%d blr=%d\r\n", gd->flash_times, gd->led_fault2, button_led_run);
 			gd->led_fault2 = 0;
 			soc_show_ram_led = 0;
+			button_led_run = 0;  /* DEBUG fix: 5 次闪结束后，避免 testgg 分支 (L344) 显示 SOC */
 		}
 		flash_light++;
+	}
+	else if (gd->key_led_fault2)
+	{
+		/* DEBUG fix (方案 A): 保护态下 5 次闪结束后保持灭灯
+		 * led_fault2 被 KILL2 清零, button_led_run 也清了, 但默认 else (L385+) 仍显示 SOC
+		 * key_led_fault2 是保护态 latch (ntc.c 解锁时清零), 用作顶层拦截
+		 * 不动 flash_light/flash_flag: 周边 LED-off 分支 (L289, L306, L474) 均只写 soc_show_ram_led
+		 */
+		printk("KLF2_HOLD f1=%d f2=%d ft=%d blr=%d\r\n",
+		       gd->led_fault1, gd->led_fault2, gd->flash_times, button_led_run);
+		soc_show_ram_led = 0;
 	}
 	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE/*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
 	{
