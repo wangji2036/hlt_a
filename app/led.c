@@ -855,7 +855,7 @@ void key_sigle_click_process(void)
 	}
 	if(gd->bat_ntc_stop_chrg_flag == 1 || gd->bat_ntc_dischg_lock != 0 || gd->key_led_fault2 == 1)
 	{
-		gd->led_fault2 = 1;
+		gd->led_fault2 = 0xAA;
 	}
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;
