@@ -137,4 +137,11 @@
 #define CONFIG_USB_COMM_LED4_WB_STATE 1 // LED4: WB7720 wakeup=solid, sleep=blink
 #define CONFIG_USB_COM_FORCE_SINK 1     // Force SINK role in USB_COM for VBUS from phone
 
+/*----------- DEBUG: NTC High-Temperature Injection -----------*/
+/* 临时调试: ntc_to_temp() 出口恒定返回高温, 用于在 NTC 物理坏板上验证过温保护路径
+ * (bat_ntc_stop_chrg_flag / reduce20W / bat_dead_flag 等). 默认 0=关闭, 不影响行为.
+ * 注意: 仅覆盖 ntc_to_temp() 出口的°C分支; ntc.c 中 wirless/typec_ntc_lock 走电阻表,
+ * 不受此宏影响, 如需覆盖需另行处理. */
+#define CONFIG_NTC_INJECT_HIGH_TEMP 1
+
 #endif /* CONFIG_H_ */

@@ -85,7 +85,15 @@ int binary_search(uint16_t arr[], uint16_t size, uint16_t target)
 
 int16_t ntc_to_temp(uint16_t ntc)
 {
+#if CONFIG_NTC_INJECT_HIGH_TEMP
+	/* 调试注入: 无视输入恒返回 70°C, 高于 CHRG_NTC_OT_TEMP_VALUE(60°C) 和
+	 * DISG_NTC_OT_TEMP_VALUE(65°C) 5~10°C, 稳定触发过温保护且不抖动.
+	 * 仅影响 ntc_to_temp() 所有调用方(bat/typec/wpc 温度°C路径). */
+	(void)ntc;
+	return 70;
+#else
 	return (int16_t)binary_search((uint16_t *)ntc_3435_tbl, sizeof(ntc_3435_tbl) / sizeof(ntc_3435_tbl[0]), ntc) - 29;
+#endif
 }
 
 void fml_task_event_handler(uint32_t event)

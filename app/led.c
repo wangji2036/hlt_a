@@ -182,6 +182,9 @@ static void ui_update_led(void)
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
 	printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
+	printk("LED2 f1=%d f2=%d ft=%d blr=%d klf2=%d\r\n",
+	       gd->led_fault1, gd->led_fault2, gd->flash_times,
+	       button_led_run, gd->key_led_fault2);
 	//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
 	if (gd->bat_ov_forbid_flag)
 	{
@@ -298,6 +301,7 @@ static void ui_update_led(void)
 		}
 		else
 		{
+			printk("KILL2 ft=%d f2=%d\r\n", gd->flash_times, gd->led_fault2);
 			gd->led_fault2 = 0;
 			soc_show_ram_led = 0;
 		}
@@ -474,6 +478,7 @@ static void ui_update_led(void)
 	{
 		ui_display();
 	}
+	printk("ENDLED2 f2=%d ft=%d\r\n", gd->led_fault2, gd->flash_times);
 }
 #endif
 

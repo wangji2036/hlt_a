@@ -243,9 +243,22 @@ void buckboost_ntc_handle(void)
 			bat_ntc_charge_ot_reduce12W_flag = 0;
 
 			// 放电锁：≤-15°C 或 ≥55°C 锁，[-10, 50] 解锁
+			{
+				static uint8_t ntc_dbg_cnt = 0;
+				if (++ntc_dbg_cnt >= 30) {
+					ntc_dbg_cnt = 0;
+					printk("[NTC] bat_t=%d dlock=%d cnt=%d ihport=%d pst=%d klf2=%d\n",
+					       (int)bat_temp,
+					       gd->bat_ntc_dischg_lock,
+					       dual_dischg_lock_cnt,
+					       g_port.inhandle_port,
+					       g_port.port_state[g_port.inhandle_port],
+					       gd->key_led_fault2);
+				}
+			}
 			if (gd->bat_ntc_dischg_lock == 0)
 			{
-				if (bat_temp <= -15 || bat_temp >= 55)
+                if (bat_temp <= -15 || bat_temp >= 55)
 				{
 					if (dual_dischg_lock_cnt++ >= 5)
 					{
@@ -275,6 +288,7 @@ void buckboost_ntc_handle(void)
 						dual_dischg_lock_cnt = 0;
 						gd->bat_ntc_dischg_lock = 0;
 						gd->air_protect_ntc1 = 0;
+						printk("NTC_CLR klf2 was %d cnt=%d bat_t=%d\r\n", gd->key_led_fault2, dual_dischg_lock_cnt, (int)bat_temp);
 						gd->key_led_fault2 = 0;
 					}
 				}
