@@ -170,7 +170,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exeWithoutOs" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exeWithoutOs" cleanCommand="rm -rf" description="" id="cds.managedbuild.config.ckcoregcc.abiv2.exeWithoutOs.debug.2104786702.1270549107" name="out" parent="cds.managedbuild.config.ckcoregcc.abiv2.exeWithoutOs.debug">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exeWithoutOs" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exeWithoutOs" cleanCommand="rm -rf" description="" id="cds.managedbuild.config.ckcoregcc.abiv2.exeWithoutOs.debug.2104786702.1270549107" name="out" parent="cds.managedbuild.config.ckcoregcc.abiv2.exeWithoutOs.debug" postannouncebuildStep="" postbuildStep="">
 					<folderInfo id="cds.managedbuild.config.ckcoregcc.abiv2.exeWithoutOs.debug.2104786702.1270549107." name="/" resourcePath="">
 						<toolChain id="cds.managedbuild.toolchain.ckcoregcc.abiv2.exeWithoutOs.debug.889596673" name="CSky abiv2 Elf Toolchain" superClass="cds.managedbuild.toolchain.ckcoregcc.abiv2.exeWithoutOs.debug">
 							<targetPlatform id="cds.managedbuild.target.ckcoregcc.platform.abiv2.exeWithoutOs.debug.1515332147" name="Debug Platform" superClass="cds.managedbuild.target.ckcoregcc.platform.abiv2.exeWithoutOs.debug"/>
@@ -223,10 +223,10 @@
 								<option id="ckcoregcc.linker.option.elf.abiv2.cputype.435117672" name="CPUType" superClass="ckcoregcc.linker.option.elf.abiv2.cputype" value="ck802" valueType="enumerated"/>
 								<option id="ckcoregcc.link.option.linkfile.679380203" name="Link file (-T)" superClass="ckcoregcc.link.option.linkfile" value="&quot;${workspace_loc:/${ProjName}/startup/ckcpu.ld}&quot;" valueType="string"/>
 								<option id="ckcoregcc.link.option.libs.410290156" name="Libraries (-l)" superClass="ckcoregcc.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="m"/>
+									<listOptionValue builtIn="false" value="powerbank"/>
 								</option>
 								<option id="ckcoregcc.link.option.paths.1511145921" name="Library search path (-L)" superClass="ckcoregcc.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/util}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/lib}&quot;"/>
 								</option>
 								<inputType id="cds.managedbuild.tool.ckcoregcc.c.linker.input.321773688" superClass="cds.managedbuild.tool.ckcoregcc.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -236,7 +236,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding=".git|.metadata|Debug|out|release|USB参考|sys.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="lib/usb_pd.c|lib/ufcs.c|lib/typec.c|lib/pfod.c|lib/pd_tc.c|lib/ask.c|lib/afc_scp.c|.git|.metadata|Debug|out|release|USB参考|sys.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -267,7 +267,7 @@
 			<resource resourceType="PROJECT" workspacePath="/PowerBankEvk_relsease"/>
 		</configuration>
 		<configuration configurationName="out">
-			<resource resourceType="PROJECT" workspacePath="/NU17113A1_APROM_IP162GB_C_CC-beta1_XXXX_YYY_20260122"/>
+			<resource resourceType="PROJECT" workspacePath="/NU17113A1_APROM_IP162_GB_NewPcb_init_lib"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
