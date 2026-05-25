@@ -181,7 +181,11 @@ static void ui_update_led(void)
 	static uint8_t horse_index = 0;
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
+
 	printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
+	printk("LED2 f1=%d f2=%d ft=%d blr=%d klf2=%d\r\n",
+	       gd->led_fault1, gd->led_fault2, gd->flash_times,
+	       button_led_run, gd->key_led_fault2);
 	//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
 	if (gd->bat_ov_forbid_flag)
 	{
@@ -298,10 +302,23 @@ static void ui_update_led(void)
 		}
 		else
 		{
+			printk("KILL2 ft=%d f2=%d blr=%d\r\n", gd->flash_times, gd->led_fault2, button_led_run);
 			gd->led_fault2 = 0;
 			soc_show_ram_led = 0;
+			button_led_run = 0;  /* DEBUG fix: 5 次闪结束后，避免 testgg 分支 (L344) 显示 SOC */
 		}
 		flash_light++;
+	}
+	else if (gd->key_led_fault2)
+	{
+		/* DEBUG fix (方案 A): 保护态下 5 次闪结束后保持灭灯
+		 * led_fault2 被 KILL2 清零, button_led_run 也清了, 但默认 else (L385+) 仍显示 SOC
+		 * key_led_fault2 是保护态 latch (ntc.c 解锁时清零), 用作顶层拦截
+		 * 不动 flash_light/flash_flag: 周边 LED-off 分支 (L289, L306, L474) 均只写 soc_show_ram_led
+		 */
+		printk("KLF2_HOLD f1=%d f2=%d ft=%d blr=%d\r\n",
+		       gd->led_fault1, gd->led_fault2, gd->flash_times, button_led_run);
+		soc_show_ram_led = 0;
 	}
 	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE/*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
 	{
@@ -464,7 +481,7 @@ static void ui_update_led(void)
 				soc_show_ram_led ^= (1 << 5); // for blink-off, wireless LED6
 			}
 		}
-		else if (flash_flag == 3 || flash_flag == 0)
+		else if (flash_flag == 3)
 		{
 			soc_show_ram_led = 0;
 		}
@@ -474,6 +491,7 @@ static void ui_update_led(void)
 	{
 		ui_display();
 	}
+	printk("ENDLED2 f2=%d ft=%d\r\n", gd->led_fault2, gd->flash_times);
 }
 #endif
 
@@ -855,7 +873,7 @@ void key_sigle_click_process(void)
 	}
 	if(gd->bat_ntc_stop_chrg_flag == 1 || gd->bat_ntc_dischg_lock != 0 || gd->key_led_fault2 == 1)
 	{
-		gd->led_fault2 = 1;
+		gd->led_fault2 = 0xAA;
 	}
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;
