@@ -143,7 +143,7 @@ void usb_bridge_sleep(void)
 	}
 
 	hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SLEEP_CMD, 0x01);
-	xgb_printk("usb bridge sleep\n");
+	printk("usb bridge sleep\n");
 }
 
 void usb_bridge_wakeup(void)

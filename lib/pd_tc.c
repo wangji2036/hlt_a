@@ -1,0 +1,583 @@
+#include "regdef.h"
+#include "printk.h"
+#include "pd_tc.h"
+#include "isr.h"
+#include "bsp.h"
+#include "g_data.h"
+#include "pd.h"
+#include "osal.h"
+#include "usb_pd.h"
+#include "buckboost.h"
+#include "usbpd_config.h"
+#include "tcpm.h"
+#include "config.h"
+#include "pd_tc.h"
+
+uint8_t tcpc_transmit_retry_cnt;
+uint8_t tcpc_transmit_byte_index;
+struct usb_pd_pkt_t transmit_pkt;
+
+struct tcpc_s g_tcpc;
+
+void hal_tcpc_init(void)
+{
+if(lib_para.typec_a_support)
+{
+	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+	TCPC->CCA_CTRL.BITS.CC_DCSRC_DRP = 1; // 50%
+	TCPC->CCA_CTRL.BITS.CC_DB_RD_DIS = 1; // dead battary off
+	TCPC->CCA_CTRL.BITS.CC_LPMODE_RP = 0;
+	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+}
+
+if(lib_para.typec_b_support)
+{
+	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 0; // enable cc block
+	TCPC->CCB_CTRL.BITS.CC_DCSRC_DRP = 1; // 50%
+	TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1; // dead battary off
+	TCPC->CCB_CTRL.BITS.CC_LPMODE_RP = 0;
+	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+}
+
+
+#if(CONFIG_TYPECA_SUPPORT != 1)
+	TCPC->CCA_CTRL.BITS.CC_BLOCK_DIS = 1; // disable cc block
+	lib_printk("\n Dis_CCA_BLOCK \n");
+#endif
+
+#if(CONFIG_TYPECB_SUPPORT != 1)
+	TCPC->CCB_CTRL.BITS.CC_BLOCK_DIS = 1; // disable cc block
+	lib_printk("\n Dis_CCB_BLOCK \n");
+#endif
+
+
+	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x01;
+	TCPC->PHY_CTRL.BITS.PD_RX_VREF_SEL = 0x05;
+
+#if(PD_PORT_MAP == TYPEC_PORT_A)
+	g_tcpc.tc_port_map = TYPEC_PORT_A;
+	TCPC->PHY_CTRL.BITS.PD_CC_PORT_SEL = 0x01;
+#else
+	g_tcpc.tc_port_map = TYPEC_PORT_B;
+	TCPC->PHY_CTRL.BITS.PD_CC_PORT_SEL = 0x02;
+#endif
+	tcpc_transmit_retry_cnt = 0;
+}
+
+void hal_tcpc_set_phy_port(uint8_t tc_index)
+{
+	if(tc_index == 0)
+	{
+		g_tcpc.tc_port_map = TYPEC_PORT_A;
+		TCPC->PHY_CTRL.BITS.PD_CC_PORT_SEL = 0x01;
+	}
+	else
+	{
+		g_tcpc.tc_port_map = TYPEC_PORT_B;
+		TCPC->PHY_CTRL.BITS.PD_CC_PORT_SEL = 0x02;
+	}
+
+	lib_printk("pd phy sel = %d\n",tc_index);
+}
+
+void hal_tcpc_set_phy_rx_vref(enum rx_vref vref)
+{
+	TCPC->PHY_CTRL.BITS.PD_RX_VREF_SEL = vref;
+}
+
+void hal_tcpc_set_cc(uint8_t tc_index,enum tc_cc_status cc)
+{
+	if(tc_index == 0)
+	{
+	    switch (cc)
+	    {
+	        case TYPEC_CC_RA:
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RA;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RA;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RD:
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RD;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RD;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_DEF:
+	        	TCPC->CCA_ROLE.BITS.RP_VALUE = RP_VALUE_DEFAULT;
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_1_5:
+	        	TCPC->CCA_ROLE.BITS.RP_VALUE = RP_VALUE_1A5;
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_3_0://5
+	        	TCPC->CCA_ROLE.BITS.RP_VALUE = RP_VALUE_3A0;
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_TOGGLE:
+	        	TCPC->CCA_ROLE.BITS.RP_VALUE = RP_VALUE_DEFAULT;
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_RD;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_RD;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 1;
+	        	TCPC->CCA_CTRL.BITS.CC_DCSRC_DRP = 2;
+	        	TCPC->CCA_CTRL.BITS.CC_T_DRP_SEL = 3;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 1;
+	        	TCPC->CCA_CMD_.BITS.CMD_TYPE = 0x99;
+	        	break;
+	        case TYPEC_CC_OPEN:
+	        default:
+	        	TCPC->CCA_ROLE.BITS.CC1_ROLE = CC_STATE_OPEN;
+	        	TCPC->CCA_ROLE.BITS.CC2_ROLE = CC_STATE_OPEN;
+	        	TCPC->CCA_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCA_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	    }
+	    //lib_printk("CCA_ROLE = 0x%x\n",TCPC->CCA_ROLE.WORD);
+	    //lib_printk("CCA_CTRL = 0x%x\n",TCPC->CCA_CTRL.WORD);
+	}
+	else if(tc_index == 1)
+	{
+	    switch (cc)
+	    {
+	        case TYPEC_CC_RA:
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RA;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RA;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RD:
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RD;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RD;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_DEF:
+	        	TCPC->CCB_ROLE.BITS.RP_VALUE = RP_VALUE_DEFAULT;
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_1_5:
+	        	TCPC->CCB_ROLE.BITS.RP_VALUE = RP_VALUE_1A5;
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_RP_3_0://5
+	        	TCPC->CCB_ROLE.BITS.RP_VALUE = RP_VALUE_3A0;
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RP;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	        case TYPEC_CC_TOGGLE:
+	        	TCPC->CCB_ROLE.BITS.RP_VALUE = RP_VALUE_DEFAULT;
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_RD;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_RD;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1;
+	        	TCPC->CCB_CTRL.BITS.CC_DCSRC_DRP = 2;
+	        	TCPC->CCB_CTRL.BITS.CC_T_DRP_SEL = 3;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 1;
+	        	TCPC->CCB_CMD_.BITS.CMD_TYPE = 0x99;
+	        	break;
+	        case TYPEC_CC_OPEN:
+	        default:
+	        	TCPC->CCB_ROLE.BITS.CC1_ROLE = CC_STATE_OPEN;
+	        	TCPC->CCB_ROLE.BITS.CC2_ROLE = CC_STATE_OPEN;
+	        	TCPC->CCB_ROLE.BITS.DRP_MODE = 0;
+	        	TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 0;
+	            break;
+	    }
+	    //lib_printk("CCB_ROLE = 0x%x\n",TCPC->CCB_ROLE.WORD);
+	    //lib_printk("CCB_CTRL = 0x%x\n",TCPC->CCB_CTRL.WORD);
+	}
+}
+
+enum tc_cc_status hal_tcpc_to_typec_cc(uint32_t cc, bool sink)
+{
+    switch(cc)
+    {
+        case 0x00:
+            return sink ? TYPEC_CC_OPEN : TYPEC_CC_OPEN;
+        case 0x01:
+            return sink ? TYPEC_CC_RP_DEF : TYPEC_CC_RA;
+        case 0x02:
+            return sink ? TYPEC_CC_RP_1_5 : TYPEC_CC_RD;
+        case 0x03:
+            return sink ? TYPEC_CC_RP_3_0 : TYPEC_CC_OPEN;
+        default:
+            return TYPEC_CC_OPEN;
+    }
+}
+
+void hal_tcpc_get_cc(uint8_t tc_index,enum tc_cc_status *cc1, enum tc_cc_status *cc2)
+{
+	bool sink = 0;
+	uint32_t cc_status = 0;
+
+	if(tc_index == 0)
+	{
+		sink = (TCPC->CCA_ROLE.WORD & 0x03) == CC_STATE_RD? true : false;
+		cc_status = TCPC->CCA_STAT.WORD;
+	}
+	else
+	{
+		sink = (TCPC->CCB_ROLE.WORD & 0x03) == CC_STATE_RD? true : false;
+		cc_status = TCPC->CCB_STAT.WORD;
+	}
+    *cc1 = hal_tcpc_to_typec_cc(cc_status & 0x03,sink);
+    *cc2 = hal_tcpc_to_typec_cc((cc_status & 0x0c) >>2,sink);
+
+    /* Diagnostic: log raw CC registers for Port0 (throttled) */
+    if (tc_index == 0) {
+        static uint16_t cc_diag_cnt = 0;
+        if (++cc_diag_cnt >= 500) {
+            cc_diag_cnt = 0;
+            // lib_printk("[CC-RAW] ROLE=0x%x STAT=0x%x sink=%d -> cc1=%d cc2=%d\n",
+            //        TCPC->CCA_ROLE.WORD, cc_status, sink, *cc1, *cc2);
+        }
+    }
+
+    /* Force CCB CC2 to OPEN — Port1 CC2 (PC8) is repurposed as GPIO, not connected to TypeC */
+    if(tc_index == 1) *cc2 = TYPEC_CC_OPEN;
+}
+
+enum tc_drp_reult hal_get_drp_toggle_result(uint8_t tc_index)
+{
+
+	uint32_t  cc_stat = 0;
+
+	if(tc_index == 0)
+		cc_stat = TCPC->FSM_STAT.BITS.CCA_STAT;
+	else
+		cc_stat = TCPC->FSM_STAT.BITS.CCB_STAT;
+
+	//lib_printk("cc_stat=0x%x\n",cc_stat);
+
+	switch(cc_stat)
+	{
+		case 0x03:
+			return TYPEC_DRP_SNK_CONNECTED;
+		case 0x04:
+			return TYPEC_DRP_SRC_CONNECTED;
+		default:
+			return TYPEC_DRP_NO_CONNECT;
+	}
+
+
+}
+
+void hal_tcpc_set_data_role(uint8_t tc_index,enum data_role_e role)
+{
+	if(tc_index != g_tcpc.tc_port_map) return;
+	g_tcpc.data_role = role;
+
+	TCPC->RXD_CTRL.BITS.PHY_GDCRC_PDR = role;
+
+}
+
+void hal_tcpc_set_pwr_role(uint8_t tc_index,enum pwr_role_e role)
+{
+	if(tc_index != g_tcpc.tc_port_map) return;
+	g_tcpc.pwr_role = role;
+
+	TCPC->RXD_CTRL.BITS.PHY_GDCRC_PPR = role;
+}
+
+void hal_tcpc_set_vconn(uint8_t tc_index,bool en)
+{
+
+}
+
+void hal_tcpc_set_pd_rx(uint8_t tc_index,uint32_t sop,bool en)
+{
+	if(tc_index != g_tcpc.tc_port_map) return;
+
+	if(en)
+		TCPC->RXD_CTRL.WORD |= sop;
+	else
+		TCPC->RXD_CTRL.WORD &= ~sop;
+}
+void hal_tcpc_set_roles(uint8_t tc_index,enum pwr_role_e pwr_role,enum data_role_e data_role)
+{
+	if(tc_index != g_tcpc.tc_port_map) return;
+
+	g_tcpc.data_role = data_role;
+	g_tcpc.pwr_role = pwr_role;
+	TCPC->RXD_CTRL.BITS.PHY_GDCRC_PDR = data_role;
+	TCPC->RXD_CTRL.BITS.PHY_GDCRC_REV = 0x01;
+	TCPC->RXD_CTRL.BITS.PHY_GDCRC_PPR = pwr_role;
+}
+
+void hal_tcpc_set_polarity(uint8_t tc_index,enum tc_cc_polarity polarity)
+{
+	if(tc_index == 0)
+	{
+		if(polarity == TYPEC_POLARITY_CC1)
+			TCPC->CCA_CTRL.BITS.CC_PD_CH_SEL = 0x00;
+		else
+			TCPC->CCA_CTRL.BITS.CC_PD_CH_SEL = 0x01;
+	}
+	else
+	{
+		if(polarity == TYPEC_POLARITY_CC1)
+			TCPC->CCB_CTRL.BITS.CC_PD_CH_SEL = 0x00;
+		else
+			TCPC->CCB_CTRL.BITS.CC_PD_CH_SEL = 0x01;
+	}
+}
+
+void hal_tcpc_set_bist_data(bool on)
+{
+
+}
+
+void hal_tcpc_reset_pd_phy(void)
+{
+	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x00;
+	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x01;
+}
+
+void hal_tcpc_pd_phy_enable(void)
+{
+	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x01;
+	TCPC->INT_CTRL.BITS.PHY_RX_SUCCESSFUL_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_RX_HARD_RESET_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_TX_NO_GOODCRC_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_TX_CC_DISCARD_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_TX_SUCCESSFUL_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_RX_BUFF_UPDAT_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_TX_BUFF_EMPTY_INTE = 1;
+	TCPC->INT_CTRL.BITS.PHY_RX_DATA_ERROR_INTE = 1;
+}
+
+void hal_tcpc_pd_phy_disable(void)
+{
+	TCPC->PHY_CTRL.BITS.PD_PHY_EN = 0x00;
+	TCPC->INT_CTRL.BITS.PHY_RX_SUCCESSFUL_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_RX_HARD_RESET_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_TX_NO_GOODCRC_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_TX_CC_DISCARD_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_TX_SUCCESSFUL_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_RX_BUFF_UPDAT_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_TX_BUFF_EMPTY_INTE = 0;
+	TCPC->INT_CTRL.BITS.PHY_RX_DATA_ERROR_INTE = 0;
+}
+
+void hal_tcpc_send_hardreset(void)
+{
+	lib_printk("HARDRESET SENT\n");
+	transmit_pkt.msg_len = 0;
+	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_HARDRESER;
+	hal_tcpc_pkt_transmit(Transmit_HardReset,&transmit_pkt);
+}
+
+void hal_tcpc_send_bistdata(void)
+{
+	transmit_pkt.msg_len = 0;
+	g_usb_pd_s.pe_tran_cb_type = TRANSMITE_TYPE_BISTCARRYMODE;
+	hal_tcpc_pkt_transmit(Transmit_BIST_CarrierMode2,&transmit_pkt);
+}
+
+
+void hal_tcpc_pkt_transmit(enum transmit_frame_type frame, struct usb_pd_pkt_t *pkt)
+{
+	if(frame == Transmit_SOP || frame == Transmit_SOP1)
+	{
+		g_usb_pd_s.pe_prl_busy = 1;
+		tcpc_transmit_byte_index = 0;
+		TCPC->TXD_CTRL.BITS.TXD_SOP_TYP = frame;   // sop
+		TCPC->TXD_BUFF.WORD = pkt->msg.WORDS[0];
+		TCPC->TXD_INFO.WORD = BIG_LITTLE_SWAP16(pkt->hdr.WORD) | (((pkt->msg_len * 4) + 2) << 16);   // sop
+	}
+	else
+	{
+		TCPC->TXD_CTRL.BITS.TXD_SOP_TYP = frame;   // sop
+	}
+}
+
+void hal_tcpc_send_request_mgs(uint32_t rdo)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_REQUEST,g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
+	transmit_pkt.msg_len = 1;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.request.request.WORD = rdo;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_send_ctrl_mgs(enum pd_ctrl_msg_type msg_type)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(msg_type, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 0);
+	transmit_pkt.msg_len = 0;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_pd_send_revision(void)
+{
+
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_REVISION, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
+	transmit_pkt.msg_len = 1;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.WORDS[0] = 0x32110000;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_send_source_caps(uint32_t * pdos,uint32_t pdo_n)
+{
+
+	uint8_t fix_pdo_n = 0,tx_pdo_n = 0;
+	struct usb_pd_source_cap_packet_t * p = (struct usb_pd_source_cap_packet_t *)pdos;
+
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	if(pdo_n > 7) return;
+
+    for (uint8_t i = 0; i < pdo_n; i++)
+    {
+
+    	if(p->source_pdo[i].BITS.FIX_BITS.fixed == 0x00) fix_pdo_n ++;
+		transmit_pkt.msg.source_cap.source_pdo[i].WORD = pdos[i];
+		//lib_printk("0x%x ",transmit_pkt.msg.source_cap.source_pdo[i].WORD);
+    }
+    //lib_printk("\n");
+
+	#define USB_PDO_FLAG (PDO_FIXED_UNCONSTRAINED_POWER | PDO_FIXED_DUAL_ROLE | PDO_FIXED_SUSPEND | PDO_FIXED_USB_COMM)
+	if(gd->force_usb_mode)
+	{
+		transmit_pkt.msg.source_cap.source_pdo[0].WORD = (transmit_pkt.msg.source_cap.source_pdo[0].WORD & 0x0FFFFFFF) | USB_PDO_FLAG;
+	}
+	else
+	{
+		transmit_pkt.msg.source_cap.source_pdo[0].WORD = (transmit_pkt.msg.source_cap.source_pdo[0].WORD & 0x0FFFFFFF) | PDO_FIXED_UNCONSTRAINED_POWER;
+	}
+    tx_pdo_n = g_usb_pd_s.nego_revision < PD_REV30? fix_pdo_n : pdo_n;
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_SOURCE_CAP, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, tx_pdo_n);
+	transmit_pkt.msg_len = tx_pdo_n;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+
+	//lib_printk("\n%s :%d\n",__func__,pdo_n);
+
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_send_snk_caps(uint32_t * pdos,uint32_t pdo_n)
+{
+
+	uint8_t fix_pdo_n = 0,tx_pdo_n = 0;
+	struct usb_pd_sink_cap_packet_t * p = (struct usb_pd_sink_cap_packet_t *)pdos;
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	if(pdo_n > 7) return;
+
+    for (uint8_t i = 0; i < pdo_n; i++)
+    {
+    	if(p->sink_pdo[i].BITS.FIX_BITS.fixed == 0x00) fix_pdo_n ++;
+		transmit_pkt.msg.sink_cap.sink_pdo[i].WORD = pdos[i];
+		//lib_printk("0x%x ",transmit_pkt.msg.source_cap.source_pdo[i].WORD);
+    }
+    //lib_printk("\n");
+
+    tx_pdo_n = g_usb_pd_s.nego_revision < PD_REV30? fix_pdo_n : pdo_n;
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_SINK_CAP, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, tx_pdo_n);
+	transmit_pkt.msg_len = tx_pdo_n;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_send_sink_caps_ext(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_SNK_CAPABILITIES_EXTENDED, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 7);
+	transmit_pkt.hdr.BITS.externed = 1;
+	transmit_pkt.msg_len = 7;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.data_size = 24;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
+	transmit_pkt.msg.ext_msg.data[0] = (uint8_t)USBPD_VID;
+	transmit_pkt.msg.ext_msg.data[1] = (USBPD_VID >> 8);
+	transmit_pkt.msg.ext_msg.data[10] = 0x01;
+	transmit_pkt.msg.ext_msg.data[16] = 0x01;
+	transmit_pkt.msg.ext_msg.data[17] = 0x02;
+	transmit_pkt.msg.ext_msg.data[18] = 0;
+	transmit_pkt.msg.ext_msg.data[19] = 5;
+	transmit_pkt.msg.ext_msg.data[20] = 18;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void tcpc_pd_send_pps_status(void)
+{
+
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_PPS_STATUS, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 2);
+	transmit_pkt.hdr.BITS.externed = 1;
+	transmit_pkt.msg_len = 2;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.data_size = 4;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
+	transmit_pkt.msg.ext_msg.data[0] = PD_PPS_SET_OUTPUT_MV(g_buckboost.adc_vbus) & 0xFF;
+	transmit_pkt.msg.ext_msg.data[1] = PD_PPS_SET_OUTPUT_MV(g_buckboost.adc_vbus) >> 8;
+	transmit_pkt.msg.ext_msg.data[2] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[3] =  0x1 << 1 | ((g_buckboost.ibus_cc_flag) ? (0x1 << 3) : 0x0);
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void hal_tcpc_pd_send_batt_status(void)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_DATA_BAT_STATUS, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 1);
+	transmit_pkt.msg_len = 1;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+
+	if(g_tcpc.pwr_role == TYPEC_SOURCE)
+		transmit_pkt.msg.WORDS[0] = 0xFFFF0100;
+	else
+		transmit_pkt.msg.WORDS[0] = 0xFFFF0100;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+void tcpc_pd_send_bat_capability(uint8_t bat_index)
+{
+	osal_mem_clear(&transmit_pkt,sizeof(struct usb_pd_pkt_t));
+	transmit_pkt.hdr.WORD = PD_HEADER_LE(PD_EXT_BATT_CAP, g_tcpc.pwr_role, g_tcpc.data_role, g_usb_pd_s.nego_revision, g_usb_pd_s.tx_sop_msgid, 3);
+	transmit_pkt.hdr.BITS.externed = 1;
+	transmit_pkt.msg_len = 3;
+	tcpc_transmit_retry_cnt = (g_usb_pd_s.nego_revision == PD_REV30)? 2 : 3;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.data_size = 9;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.request_chunk = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunk_num = 0;
+	transmit_pkt.msg.ext_msg.ext_hrd.BITS.chunked = 1;
+	transmit_pkt.msg.ext_msg.data[0] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[1] = 0XFF;
+	transmit_pkt.msg.ext_msg.data[4] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[5] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[6] = 0xFF;
+	transmit_pkt.msg.ext_msg.data[7] = 0xFF;
+	if(bat_index == 0 && g_tcpc.pwr_role == TYPEC_SOURCE)
+		transmit_pkt.msg.ext_msg.data[8] = 0x00;
+	else
+		transmit_pkt.msg.ext_msg.data[8] = 0x01;
+	hal_tcpc_pkt_transmit(Transmit_SOP,&transmit_pkt);
+}
+
+
+
+

@@ -331,7 +331,7 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 						g_port.light0_cnt = 0;
 						gd->tc0_lighting_mode = 1;
-						tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
+						// tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 
 						/* AUTO POWER-OFF AFTER 2 H LOW-CURRENT */
 						tcpm_printk("port0 unconnect1\n");
@@ -349,7 +349,7 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
-							tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
+							// tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 						}
 					}
 					else
@@ -358,7 +358,7 @@ void tcpm_task_event_handler(uint32_t event)
 						{
 							g_port.light0_cnt = 0;
 							gd->tc0_lighting_mode = 1;
-							tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
+							// tcpm_printk("TC[0] light = 0x%x\n",gd->dp_result);
 						}
 					}
 
@@ -395,7 +395,7 @@ void tcpm_task_event_handler(uint32_t event)
 						//tcpm_dp_set_10uA();
 						//gd->dp_result = tcpm_dp_get_result();
 
-						tcpm_printk("TC[1] light = 0x%x\n",gd->dp_result);
+						// tcpm_printk("TC[1] light = 0x%x\n",gd->dp_result);
 					}
 				}
 				else

@@ -605,7 +605,7 @@ struct gd_t
 #endif
 	uint8_t real_soc_show;
 	uint8_t real_soc_obtained;
-	uint8_t dp_result;
+	// uint8_t dp_result;
 	uint8_t bat_dead_flag;
 	uint8_t bat_dead_flag_with_snk0;
 	uint8_t bat_dead_flag_with_snk1;

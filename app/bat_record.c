@@ -1467,10 +1467,10 @@ uint8_t battery_record_sleep_check(void)
 	           g_exception_cache.window_start_seconds,
 	           g_exception_cache.ov1_triggered);
 
-	// Initialize ADC
-	hal_badc_init();
 	_SET_I2CM_SDA_OUTPUT();
 	_SET_I2CM_SCL_OUTPUT();
+	// Initialize ADC
+	hal_badc_init();
 	buckboost_ops.init();
 
 	// Read current values

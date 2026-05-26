@@ -332,18 +332,22 @@ void SLP_vNormalToSleep(void)
 	TMR0->GEN_CTRL.WORD = 0;
 	TMR0->LOAD_CNT.WORD = 16 * 100 * 1 - 1; //first Q,100ms start.
 
-	if (SLP_u8IsShipMode())
-	{
-		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
-		hal_wdt_stop();
-	}
-	else if (!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+	// if (SLP_u8IsShipMode())
+	// {
+	// 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
+	// 	hal_wdt_stop();
+	// }
+	// else 
+	if (!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
 	{
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
 		hal_wdt_stop();
 	}
 	else
+	{
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk;                                  //LIRC: 64K
+	}
+		
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 	UART1->GEN_CTRL.WORD = 0;
 	UART1->BRG_CTRL.WORD = 0;
@@ -378,6 +382,7 @@ void SLP_vNormalToSleep(void)
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
 	SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0; // [NEW-VICTOR] 锟斤拷锟斤拷确锟斤拷GPIO锟斤拷锟窖癸拷锟斤拷使锟斤拷
 }
+
 void SLP_vSleepToSleep(void)
 {
 
@@ -417,18 +422,22 @@ void SLP_vSleepToSleep(void)
 		else
 			TMR0->LOAD_CNT.WORD = 16 * 127 * 1 - 1; //500ms
 	}
-	if (SLP_u8IsShipMode())
-	{
-		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
-		hal_wdt_stop();
-	}
-	else if (!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
+	// if (SLP_u8IsShipMode())
+	// {
+	// 	TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K
+	// 	hal_wdt_stop();
+	// }
+	// else 
+	if (!(gd->bat_dead_flag_with_snk0 || gd->bat_dead_flag_with_snk1) && gd->bat_dead_flag)
 	{
 		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos); //LIRC: 64K'
 		hal_wdt_stop();
 	}
 	else
-		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk;                                  //LIRC: 64K
+	{
+		TMR0->SPL_CTRL.WORD = (_TMR_CLK_SRC_LIRC << TMR_SPL_CTRL_CLK_SRC_Pos) | TMR_SPL_CTRL_WKUP_EN_Msk; //LIRC: 64K
+	}
+		
 	TMR0->GEN_CTRL.WORD = (2 << TMR_GEN_CTRL_CLK_PSC_Pos) | (_TMR_OP_MODE_ONE_SHOT << TMR_GEN_CTRL_OP_MODE_Pos) | TMR_GEN_CTRL_CNT_EN_Msk; //16K
 
 	SYS->CLK_CTRL.WORD = 0;
@@ -515,6 +524,10 @@ void SLP_vSleepToSleep(void)
 		/*    hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,&read);
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR,REG_Indt_Control,read & (~0x07));*/
 		hal_i2cm_wirte_one_byte(NU6805_I2C_DEV_ADDR, REG_Indt_Control, 0x03);
+
+		usb_bridge_sleep();
+		_SET_I2CM_SDA_IN_PUT();
+		_SET_I2CM_SCL_IN_PUT();
 	}
 #endif
 	GPA->PDEN.BITS.PIN0 = 1;
@@ -530,18 +543,23 @@ void SLP_vSleepToSleep(void)
 	SYS->PWR_CTRL.BITS.SLEEP_MODE_EN = 1;
 	SYS->PWR_CTRL.BITS.GPIO_WKUP_DIS = 0; // [NEW-VICTOR] 锟斤拷锟斤拷确锟斤拷GPIO锟斤拷锟窖癸拷锟斤拷使锟斤拷
 }
+
 void SLP_vSleepQToSleep(void)
 {
+
 }
 
 void SLP_vSleepQToNormal(void)
 {
+
 }
+
 uint8_t sleep_idle_qdt_back_to_normal(void)
 {
 	return (gd->tx_infos.q_fact + ap->q_factor_reco_value > ap->q_factor_base_value + sleep_q_68nf_thd && gd->tx_infos.q_fact < ap->q_factor_limH_value &&
 	        gd->tx_infos.f_self + ap->fs_reco_value > ap->fs_base_value + sleep_f_68nf_thd && gd->tx_infos.f_self < ap->fs_limH_value + 500);
 }
+
 uint8_t SLP_u8SleepModeQDetect(void)
 {
 
@@ -950,6 +968,7 @@ uint8_t tc_check_wake(void)
  *   - PROTOCOL: TypeC 设备接入，退出 sleep 进入正常工作
  *   - WARMUP/default: POR 或未知复位，清除 power_on_magic 强制冷启动
  */
+static uint8_t ship_bridge_sleep = 0;
 void RST_vCheck(void)
 {
 	uint32_t tmr_cnt;
@@ -1007,7 +1026,21 @@ void RST_vCheck(void)
 		}
 #endif
 		// Exception tracking during sleep
-		if (++gd->exception_sleep_counter >= SLEEP_EXCEPTION_CHECK_CYCLES)
+		// sleep_printk("\r\n shipmode%d", SLP_u8IsShipMode());
+		if (SLP_u8IsShipMode())
+		{
+			gd->exception_sleep_counter = 0;
+			// if (ship_bridge_sleep == 0)
+			// {
+			// 	ship_bridge_sleep = 1;
+			// 	_SET_I2CM_SDA_OUTPUT();
+			// 	_SET_I2CM_SCL_OUTPUT();
+			// 	usb_bridge_sleep();
+			// 	_SET_I2CM_SDA_IN_PUT();
+			// 	_SET_I2CM_SCL_IN_PUT();
+			// }
+		}
+		else if ((++gd->exception_sleep_counter >= SLEEP_EXCEPTION_CHECK_CYCLES))
 		{
 			gd->exception_sleep_counter = 0;
 			battery_record_sleep_check();

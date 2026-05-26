@@ -1545,6 +1545,10 @@ void port_enum_scan_handle(void)
 				}
 				//g_port.inhandle_port = g_port.incharge_port;
 			}
+			else
+			{
+				port_manager_set_state(PORT_IDLE_OR_READY);
+			}
 		}
 	}
 }
