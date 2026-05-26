@@ -160,7 +160,7 @@ void usb_bridge_wakeup(void)
 		xgb_printk("[WB] wake r=%d rb=%02X\n", retry, readback);
 	}
 
-	/* Initial ProductInfo sync on wakeup; cnt==14 handles periodic refresh */
+	/* Resync ProductInfo after wakeup */
 	usb_bridge_reset_product_info();
 
 	/* Resync cycle count: WB7720 resets i2c_buff[0x80] to 0x0000 on sleep/wakeup.
@@ -487,7 +487,7 @@ void usb_bridge_periodic_update(void)
      * 工程模式同理，进入条件是 PC 写 REG_WORK_MODE，不依赖三击。
      *
      * cnt 在 cnt 0-12 阶段由底部 cnt++ 推进（不论 force_usb_mode），确保每 14 轮
-     * 必然触发一次 cnt==13 检查。 */
+     * 必然触发一次 cnt==13 检查。cnt==13 末尾 cnt++ 后进入下一轮被归零。 */
     if (cnt == 13)
     {
         usb_bridge_check_eng_mode();
@@ -506,26 +506,6 @@ void usb_bridge_periodic_update(void)
         return;
     }
 
-	/* ---- cnt 14: 周期性刷新生产信息到 WB7720 (每 ~30s) ---- */
-	if (cnt == 14)
-	{
-		static uint8_t prodinfo_refresh_cnt = 0;
-		if (++prodinfo_refresh_cnt >= 42)
-		{ /* 42 × 15×47ms ≈ 30s */
-			prodinfo_refresh_cnt = 0;
-			uint8_t prod_flag = 0;
-			uint8_t prod_status = 0;
-			hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &prod_flag);
-			hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, &prod_status);
-			if (prod_flag != PROD_MODE_MAGIC && prod_status != ENG_STATUS_BUSY)
-			{
-				usb_bridge_reset_product_info();
-			}
-		}
-		cnt = 0;
-		return;
-	}
-
 	/* === USB 通信总开关 (cnt 0-12) === */
 	if (!gd->force_usb_mode)
 	{
@@ -539,7 +519,7 @@ void usb_bridge_periodic_update(void)
 			is_usb_enable = false;
 		}
 		cnt++;
-		if (cnt >= 15)
+		if (cnt >= 14)
 			cnt = 0;
 		return;
 	}
