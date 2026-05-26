@@ -8,6 +8,7 @@
 !*.s
 !*.S
 !*.ld
+!*.a
 !.cproject
 !.project
 !.gitignore
