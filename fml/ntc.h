@@ -129,4 +129,5 @@ extern uint8_t wpc_ntc_power_reduce_flag;
 
 void buckboost_ntc_handle(void);
 void wpc_power_handle(int16_t tntc, int16_t tbat);
+void wpc_typec_cowork_otputpcheck(void);
 #endif

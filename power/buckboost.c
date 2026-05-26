@@ -205,7 +205,8 @@ void buckboost_task_init(void)
 	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 #endif
 }
-
+static uvp_cnt = 0;
+static uvp_rev_cnt = 0;
 void buckboost_protection_handle(void)
 {
 	/* 保护状态由芯片故障位、NTC 限制和软保护共同组成。
@@ -285,7 +286,7 @@ void buckboost_protection_handle(void)
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_Low, &reg_cv_l);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting1, &reg_set1);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_sys);
-		bb_printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
+		printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
 		          reg_mode, reg_ibat, reg_ibus, reg_cv_h, reg_cv_l, reg_set1, reg_sys);
 	}
 	if (g_buckboost.adc_vbus > g_buckboost.ovp_value && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -333,20 +334,30 @@ void buckboost_protection_handle(void)
 		//if(g_tc[0].usb_tc_state == TC_SNK_Attached) status &= ~VBUS_FUALT_VBAT_UVP;
 	}
 
-	if((!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE))) && g_buckboost.adc_vbus > 4800 && (status & VBUS_FAULT_VBUS_UVP))
+	printk("test mode %d\n", !(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE)));
+	if((!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE))) && g_buckboost.adc_vbus > 4980 && (status & VBUS_FAULT_VBUS_UVP))
 	{
-		printk("testtestfff\n");
-		status &= ~VBUS_FAULT_VBUS_UVP;
-		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+		// if (++uvp_rev_cnt > 5)
+		// {
+		// 	printk("testtestfff\n");
+		// 	status &= ~VBUS_FAULT_VBUS_UVP;
+		// 	port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+		// }
+
 	}
 
 	printk("vbus %d woke_mode %d port_state %d\n", g_buckboost.adc_vbus, g_buckboost.woke_mode, g_port.port_state[0]);
-	if (g_buckboost.adc_vbus <= 4582 /*&& g_buckboost.adc_ibus == 0 */&& g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE  && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+	if (g_buckboost.adc_vbus <= 4583 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE  && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 	{
-		printk("testtestfffzzzz\n");
-		status |= VBUS_FAULT_VBUS_UVP;
-		g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
-		hal_nu6805_disbubo();
+		// if (++uvp_cnt > 5)
+		// {
+		// 	printk("testtestfffzzzz\n");
+		// 	uvp_cnt = 0;
+		// 	status |= VBUS_FAULT_VBUS_UVP;
+		// 	buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
+		// 	hal_nu6805_disbubo();
+		// }
+
 	}
 
 	//---1014      //
@@ -393,9 +404,10 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 1;
 	}
-	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag))
+	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag || gd->bat_ntc_dischg_lock == 1))
 	{
 		gd->led_fault1 = 1;
+		gd->flash_times = 0;
 	}
 #if (CONFIG_USE_NTC_FOR_CHAGER == 1)
 	if (gd->ntc_total_lock_flag)
@@ -419,7 +431,7 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault = 0;
 	}
-	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !gd->bat_ntc_stop_chrg_flag)
+	if (gd->led_fault1 && !gd->ntc_total_lock_flag && !gd->bat_ntc_stop_chrg_flag && gd->bat_ntc_dischg_lock == 0)
 	{
 		gd->led_fault1 = 0;
 	}
@@ -461,7 +473,7 @@ void buckboost_protection_handle(void)
 					pdlib_disable_typec(PORT0_INDEX);
 				if (g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
 					pdlib_disable_typec(PORT1_INDEX);
-				if (gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT) && !(status & VBUS_FAULT_VBUS_NTC))
+				if (gd->bat_ntc_dischg_lock == 3 || ((status & NTC_PCT) && !(status & VBUS_FAULT_VBUS_NTC)))
 				{
 					gd->bat_ntc_dischg_lock = 2;
 					gd->tc0_lighting_mode = 1;
