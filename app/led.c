@@ -196,24 +196,32 @@ static void ui_update_led(void)
 			soc_show_ram_led = 0x00;
 		flash_light++;
 	}
-	else if (gd->protect_ntc1 == 1 /*&& gd->air_protect_ntc1 != 2*/)
+	else if (gd->protect_ntc1 == 1 /*&& gd->air_protect_ntc1 != 2*/ )
 	{
 		printk("NTC1 protect_ntc1, LED flashing %d \n", gd->protect_ntc1);
-		if (cnt2 == 0)
+		if (gd->led_fault2 || gd->led_fault1) 
 		{
-			soc_show_ram_led = 0;
-		}
-		if (cnt2++ <= 8)
-		{
-			soc_show_ram_led ^= LED_FLOW_4;
+			gd->protect_ntc1 = 2;
 		}
 		else
 		{
-			if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
+			if (cnt2 == 0)
+			{
+				soc_show_ram_led = 0;
+			}
+			if (cnt2++ <= 8)
+			{
+				soc_show_ram_led ^= LED_FLOW_4;
+			}
+			else
+			{
+				if(gd->protect_ntc1 == 1) gd->protect_ntc1 = 2;
 
-			soc_show_ram_led = 0;
-			cnt2 = 0;
+				soc_show_ram_led = 0;
+				cnt2 = 0;
+			}
 		}
+
 	}
 	else if (g_port.is_mini_current_mode)
 	{
@@ -830,7 +838,10 @@ void key_sigle_click_process(void)
 
 #if (CONFIG_TYPECA_SUPPORT == 1)
 	if (gd->tc0_lighting_mode)
+	{
 		gd->tc0_lighting_mode = 0;
+	}
+		
 #endif
 
 #if (CONFIG_TYPECB_SUPPORT == 1)
@@ -846,7 +857,7 @@ void key_sigle_click_process(void)
 	g_port.is_mini_current_mode = 0;
 	g_port.light0_cnt = 0;
 	gd->air_protect_ntc1 = 0;
-	gd->protect_ntc1 = 0;
+	// gd->protect_ntc1 = 0;
 	// if(gd->sigle_clicked)
 	// {
 	// 	gd->sigle_clicked =0;
@@ -858,7 +869,6 @@ void key_sigle_click_process(void)
 	}
 	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && (gd->vpwr > 13000) && gd->sigle_clicked)
 	{
-		printk("testqqqq\n");
 		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 	}
 	printk("led port state %d %d\n", g_port.port_state[PORT0_INDEX], g_port.port_state[PORT3_INDEX]);
@@ -869,15 +879,20 @@ void key_sigle_click_process(void)
 		{
 			button_led_run = 1;
 		}
-		
 	}
-	if(gd->bat_ntc_stop_chrg_flag == 1 || gd->bat_ntc_dischg_lock != 0 || gd->key_led_fault2 == 1)
+	if((gd->bat_ntc_stop_chrg_flag == 1 /*|| gd->bat_ntc_dischg_lock != 0 */ || gd->key_led_fault2 == 1) )
 	{
 		gd->led_fault2 = 0xAA;
 	}
+	if (gd->bat_ntc_dischg_lock != 0 && gd->protect_ntc1 != 2)
+	{
+		gd->protect_ntc1 = 1;
+	}
+	// gd->protect_ntc1 = 0;
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;
 	gd->flash_times = 0; // 按键反馈：重新触发 led_fault1 的 5 次闪烁（NTC 锁仍在时也提示用户）
+	printk("sigle flash_times %d, button_led_run %d, gd->protect_ntc1 %d\r\n", gd->flash_times, button_led_run, gd->protect_ntc1);
 }
 
 void key_double_click_process(void)
@@ -1014,8 +1029,8 @@ void key_ship_process(void) // 开机状态短按一次后长按 8s，进入船�
 	charge_led_finish = 0;
 	key_ui_cnt = 0;
 	flash_flag = 3;
-	// printk("\r\n[SHIP] key sequence detected, feedback=%d mask=0x%x ship_cnt=%d",
-	// 	SHIP_MODE_LED_BLINK_TICKS, SHIP_MODE_LED_MASK, gd->ship_mode_cnt);
+	printk("\r\n[SHIP] key sequence detected, feedback=%d mask=0x%x ship_cnt=%d",
+		SHIP_MODE_LED_BLINK_TICKS, SHIP_MODE_LED_MASK, gd->ship_mode_cnt);
 }
 
 #if 0

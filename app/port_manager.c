@@ -638,7 +638,7 @@ void port_enum_port_enum_done(void)
 	}
 	if (g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && (gd->bat_ntc_dischg_lock == 2))
 	{
-		// gd->protect_ntc1 = 1;        // [removed] 已确认 protect_ntc1 仅用于 LED 分支B闪烁,与分支A 5闪视觉重复,串联触发导致约10次闪烁
+		gd->protect_ntc1 = 1;        // [removed] 已确认 protect_ntc1 仅用于 LED 分支B闪烁,与分支A 5闪视觉重复,串联触发导致约10次闪烁
 		gd->bat_ntc_dischg_lock = 3; // 保留: buckboost.c:428/445 依赖此状态触发 protect 分支
 	}
 	if (g_port.port_state[PORT1_INDEX] == PORT_STATE_SOURCE && !g_buckboost.set_typeca_gate_en)

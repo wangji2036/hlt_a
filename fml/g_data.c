@@ -394,7 +394,7 @@ void gd_data_init(void)
 	g_bat.bat_soe_in_cali = false;
 	gd->key_sleep_exit = 0;
 	gd->power_on_magic = 0xaaaa;
-	gd->bat_ntc_dischg_lock = 0;
+	// gd->bat_ntc_dischg_lock = 0;
 	gd->bat_ntc_stop_chrg_flag = 0;
 	/* Warm boot fix: derived LED-fault states must be cleared whenever their
 	 * source state (dischg_lock / stop_chrg_flag / vbus_ovp) is cleared above.

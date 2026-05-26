@@ -54,6 +54,7 @@ void buckboost_ntc_handle(void)
 			if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 			{
 				gd->bat_ntc_dischg_lock = 0;
+				gd->key_led_fault2 = 0;
 				if (bat_ntc_charge_ot_reduce12W_flag && g_buckboost.adc_vbat >= 8200)
 				{
 					ot_full_stop = true;
@@ -97,8 +98,10 @@ void buckboost_ntc_handle(void)
 						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 						{
+							printk("testtesttest\r\n");
 							gd->bat_ntc_stop_chrg_flag = 0;
 							gd->flash_times = 0;
+							gd->tc0_lighting_mode = 0;
 							port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 						}
 					}

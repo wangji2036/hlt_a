@@ -414,8 +414,8 @@ void buckboost_protection_handle(void)
 	{
 		gd->led_fault1 = 0;
 	}
-	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d  led_fault1 %d gd->led_fault %d gd->vbus_ovp%d\n", 
-	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1, gd->led_fault, gd->vbus_ovp);
+	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault1 %d gd->led_fault2 %d port_state %d\n", 
+	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault1, gd->led_fault2, g_port.port_state[0]);
 
 
 	gd->fault_status = status;
@@ -449,7 +449,7 @@ void buckboost_protection_handle(void)
 					pdlib_disable_typec(PORT0_INDEX);
 				if (g_port.port_state[PORT1_INDEX] == PORT_STATE_NONE)
 					pdlib_disable_typec(PORT1_INDEX);
-				if (gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT) && !(status &VBUS_FAULT_VBUS_NTC))
+				if (gd->bat_ntc_dischg_lock == 3 || (status & NTC_PCT) && !(status & VBUS_FAULT_VBUS_NTC))
 				{
 					gd->bat_ntc_dischg_lock = 2;
 					gd->tc0_lighting_mode = 1;
