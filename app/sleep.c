@@ -1267,7 +1267,10 @@ void RST_vCheck(void)
 			sleep_printk("\r\n GPIO wake-up: PC6=%d PB4=%d", PC6_KEY_PRESSED, PB4_TOUCH_PRESSED);
 			/* 真实按键唤醒对应“单击按键开机退出船运”。 */
 			if (PC6_KEY_PRESSED)
+			{
 				SLP_vExitShipMode();
+				key_ui_cnt = KEY_UI_DISPLAY_TICKS;
+			}
 			if (PB4_TOUCH_PRESSED && !PC6_KEY_PRESSED)
 			{
 				gd->touch_to_weakup = 1;
@@ -1299,7 +1302,6 @@ void RST_vCheck(void)
 		gd->wpc_disable = 0;
 #endif
 		//key_ui_cnt = 20;
-		key_ui_cnt = KEY_UI_DISPLAY_TICKS;
 		sleep_printk("\r\n sleep check- GPIO");
 		break;
 	/*------ POR 上电复位 / 未知复位源：强制走冷启动完整初始化 ------*/

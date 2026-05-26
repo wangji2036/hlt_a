@@ -198,7 +198,7 @@ static void ui_update_led(void)
 	}
 	else if (gd->protect_ntc1 == 1 /*&& gd->air_protect_ntc1 != 2*/ )
 	{
-		printk("NTC1 protect_ntc1, LED flashing %d \n", gd->protect_ntc1);
+		printk("NTC1 protect_ntc1, LED flashing %d cnt2 %d\n", gd->protect_ntc1, cnt2);
 		if (gd->led_fault2 || gd->led_fault1) 
 		{
 			gd->protect_ntc1 = 2;
@@ -287,20 +287,20 @@ static void ui_update_led(void)
 			gd->SOC_SleepTime_s = 0;
 		}
 	}
-	else if (gd->led_fault)
-	{
-		if (flash_light % 2)
-		{
-			soc_show_ram_led = 0x0F;
-		}
-		else
-		{
-			soc_show_ram_led = 0;
-			flash_flag = 0;
-		}
-		flash_light++;
-	}
-	else if (gd->led_fault1 || gd->led_fault2)
+	// else if (gd->led_fault)
+	// {
+	// 	if (flash_light % 2)
+	// 	{
+	// 		soc_show_ram_led = 0x0F;
+	// 	}
+	// 	else
+	// 	{
+	// 		soc_show_ram_led = 0;
+	// 		flash_flag = 0;
+	// 	}
+	// 	flash_light++;
+	// }
+	else if (gd->led_fault1 || gd->led_fault2 || gd->led_fault)
 	{
 		printk("test oo\n");
 		if (gd->flash_times < 10) // 10 ticks × 250ms: 5 on + 5 off = 5次闪烁
@@ -388,7 +388,6 @@ static void ui_update_led(void)
 				{
 					soc_show_ram_led ^= 1;
 				}
-				soc_show_ram_led |= 0x10;
 				if (button_cnt == 18)
 				{
 					soc_show_ram_led = 0;
@@ -732,7 +731,7 @@ void ui_update(void)
 		flash_light_on ^= 1; //qu fan
 	}
 	// int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
-	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1) //g_buckboost.charging_stat
+	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE) //g_buckboost.charging_stat
 	{
 		zero_soc_cnt = 0;
 		if (gd->real_soc_show >= 100)

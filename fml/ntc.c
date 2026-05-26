@@ -279,6 +279,7 @@ void buckboost_ntc_handle(void)
 				}
 				else
 				{
+					gd->key_led_fault2 = 0;
 					dual_dischg_lock_cnt = 0;
 				}
 			}
