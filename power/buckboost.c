@@ -205,8 +205,8 @@ void buckboost_task_init(void)
 	g_buckboost.usba_dectet_en = buckboost_ops.en_a2_detect(true);
 #endif
 }
-static uvp_cnt = 0;
-static uvp_rev_cnt = 0;
+static uint8_t uvp_cnt = 0;
+uint8_t is_uvp_chg;
 void buckboost_protection_handle(void)
 {
 	/* 保护状态由芯片故障位、NTC 限制和软保护共同组成。
@@ -334,20 +334,8 @@ void buckboost_protection_handle(void)
 		//if(g_tc[0].usb_tc_state == TC_SNK_Attached) status &= ~VBUS_FUALT_VBAT_UVP;
 	}
 
-	printk("test mode %d\n", !(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE)));
-	if((!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE))) && g_buckboost.adc_vbus > 4980 && (status & VBUS_FAULT_VBUS_UVP))
-	{
-		if (++uvp_rev_cnt > 5)
-		{
-			printk("testtestfff\n");
-			status &= ~VBUS_FAULT_VBUS_UVP;
-			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
-		// 	port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-		}
-	}
-
 	printk("vbus %d woke_mode %d port_state %d\n", g_buckboost.adc_vbus, g_buckboost.woke_mode, g_port.port_state[0]);
-	if (g_buckboost.adc_vbus <= 4583 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE  && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+	if (g_buckboost.adc_vbus <= 4555 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 	{
 		if (++uvp_cnt > 5)
 		{
@@ -355,8 +343,32 @@ void buckboost_protection_handle(void)
 			uvp_cnt = 0;
 			status |= VBUS_FAULT_VBUS_UVP;
 		// 	buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
-		// 	hal_nu6805_disbubo();
+			// hal_nu6805_disbubo();
 		}
+	}
+	else
+	{
+		uvp_cnt = 0;
+	}
+
+	printk("adc ibus %d\n", g_buckboost.adc_ibus);
+	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK && (status & VBUS_FAULT_VBUS_UVP) && g_buckboost.adc_ibus > 500)
+	{
+
+		printk("testtestfff\n");
+		if (!is_uvp_chg)
+		{
+			gd->flash_times = 0;
+		}
+		is_uvp_chg = 1;
+		status &= ~VBUS_FAULT_VBUS_UVP;
+		// g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
+		// 	port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+	}
+	else if (is_uvp_chg && g_buckboost.adc_vbus > 4800)
+	{
+		if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) port_manager_set_event(PORT_EVENT_RESET_CHARGE);
+		is_uvp_chg = 0;
 	}
 
 	//---1014      //
@@ -365,6 +377,7 @@ void buckboost_protection_handle(void)
 		adc_protect_flag = false;
 		status |= VBUS_SOFT_PROTECT;
 	}
+
 #if (BUCKBOOST_USED_NU6805 == 1)
 	if (status & VBUS_FUALT_VBUS_OCP)
 	{
@@ -399,9 +412,10 @@ void buckboost_protection_handle(void)
 	{
 		gd->ntc_total_lock_flag = 0;
 	}
-	if (!gd->led_fault && (((status & VBUS_FUALT_VBUS_OVP) || gd->vbus_ovp) || (status & VBUS_FAULT_VBUS_UVP)))
+	if (!gd->led_fault && (((status & VBUS_FUALT_VBUS_OVP) || gd->vbus_ovp) || /*(status & VBUS_FAULT_VBUS_UVP)*/is_uvp_chg == 1))
 	{
 		gd->led_fault = 1;
+		gd->flash_times = 0;
 	}
 	if (!gd->led_fault1 && (gd->ntc_total_lock_flag || gd->bat_ntc_stop_chrg_flag || gd->bat_ntc_dischg_lock == 1))
 	{
@@ -426,7 +440,7 @@ void buckboost_protection_handle(void)
 	// 	gd->air_protect_ntc1 = 1;
 	// }
 
-	if (gd->led_fault && !(status & 0x6060) && !gd->vbus_ovp)
+	if (gd->led_fault && !(status & 0x6060) && !gd->vbus_ovp && !is_uvp_chg)
 	{
 		gd->led_fault = 0;
 	}
