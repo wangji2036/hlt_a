@@ -328,7 +328,7 @@ static void ui_update_led(void)
 		       gd->led_fault1, gd->led_fault2, gd->flash_times, button_led_run);
 		soc_show_ram_led = 0;
 	}
-	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE/*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
+	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !is_uvp_chg /*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
 	{
 		printk("testg\n");
 		if (button_led_run)
@@ -731,7 +731,7 @@ void ui_update(void)
 		flash_light_on ^= 1; //qu fan
 	}
 	// int16_t bat_temp = ntc_to_temp(g_buckboost.adc_tbat1);
-	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE) //g_buckboost.charging_stat
+	if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !gd->led_fault1 && g_port.port_state[PORT0_INDEX] != PORT_STATE_NONE && !is_uvp_chg) //g_buckboost.charging_stat
 	{
 		zero_soc_cnt = 0;
 		if (gd->real_soc_show >= 100)
@@ -745,7 +745,7 @@ void ui_update(void)
 			flash_flag = 1;
 		}
 	}
-	else if ((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show <= 5) && !gd->led_fault1)
+	else if ((g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE) && (gd->real_soc_show <= 5) && !gd->led_fault1 && !gd->touch_to_weakup)
 	{
 		charge_led_finish = 0;
 		// flash_flag = 4; // low SOC state, all leds flash
