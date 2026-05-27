@@ -179,6 +179,13 @@ int usb_bridge_read_ntc_raw(ntc_ch_t ch, uint16_t *raw, uint8_t *status, uint8_t
     return 0;
 }
 
+void usb_bridge_reset(void)
+{
+	uint8_t buf = 0xF1;
+	printk("%s\n", __func__);
+	hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, 0xFA, (uint8_t *)&buf, 1);
+}
+
 /********************* Engineering Mode Helpers *********************/
 
 static void usb_bridge_read_virtual_params(void)

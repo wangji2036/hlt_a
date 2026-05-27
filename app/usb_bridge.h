@@ -123,6 +123,8 @@ void usb_bridge_sleep(void);
 /** WB7720 wakeup (USB re-enumerate) + ProductInfo resync */
 void usb_bridge_wakeup(void);
 
+void usb_bridge_reset(void);
+
 /** Write ProductInfo from Flash to i2c_buff (0x92~0xF5 + 0x18~0x2B) */
 void usb_bridge_reset_product_info(void);
 
