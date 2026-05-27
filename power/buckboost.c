@@ -337,27 +337,26 @@ void buckboost_protection_handle(void)
 	printk("test mode %d\n", !(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE)));
 	if((!(g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE && (g_port.port_state[0] == PORT_STATE_SOURCE))) && g_buckboost.adc_vbus > 4980 && (status & VBUS_FAULT_VBUS_UVP))
 	{
-		// if (++uvp_rev_cnt > 5)
-		// {
-		// 	printk("testtestfff\n");
-		// 	status &= ~VBUS_FAULT_VBUS_UVP;
+		if (++uvp_rev_cnt > 5)
+		{
+			printk("testtestfff\n");
+			status &= ~VBUS_FAULT_VBUS_UVP;
+			g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 		// 	port_manager_set_event(PORT_EVENT_RESET_CHARGE);
-		// }
-
+		}
 	}
 
 	printk("vbus %d woke_mode %d port_state %d\n", g_buckboost.adc_vbus, g_buckboost.woke_mode, g_port.port_state[0]);
 	if (g_buckboost.adc_vbus <= 4583 && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE  && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 	{
-		// if (++uvp_cnt > 5)
-		// {
-		// 	printk("testtestfffzzzz\n");
-		// 	uvp_cnt = 0;
-		// 	status |= VBUS_FAULT_VBUS_UVP;
+		if (++uvp_cnt > 5)
+		{
+			printk("testtestfffzzzz\n");
+			uvp_cnt = 0;
+			status |= VBUS_FAULT_VBUS_UVP;
 		// 	buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
 		// 	hal_nu6805_disbubo();
-		// }
-
+		}
 	}
 
 	//---1014      //
@@ -452,7 +451,7 @@ void buckboost_protection_handle(void)
 	if (status != 0 || gd->bat_ntc_dischg_lock == 3)
 	{
 #if (BUCKBOOST_USED_NU6805 == 1)
-		if (status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT | VBUS_FAULT_VBUS_NTC | NTC_SWITCH ) || gd->bat_ntc_dischg_lock == 3)
+		if (status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT | VBUS_FAULT_VBUS_NTC | NTC_SWITCH | VBUS_FAULT_VBUS_UVP) || gd->bat_ntc_dischg_lock == 3)
 		{
 			nu6805_ocp_cnt = 0;
 			printk("protect lock =0x%x\n", status);
@@ -466,7 +465,7 @@ void buckboost_protection_handle(void)
 				// if (gd->idle_to_sleep_cnt < 100) gd->idle_to_sleep_cnt += 250;
 			}
 
-			if (status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT ) || gd->bat_ntc_dischg_lock == 3)
+			if (status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT | VBUS_FAULT_VBUS_UVP) || gd->bat_ntc_dischg_lock == 3)
 			{
 				//lock
 				if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE)
