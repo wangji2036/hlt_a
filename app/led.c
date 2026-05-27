@@ -896,7 +896,6 @@ void key_sigle_click_process(void)
 
 void key_double_click_process(void)
 {
-	usb_bridge_reset();
 	if (g_buckboost.woke_mode == BUCKBOOST_DISCHG_MODE)
 	{
 #if (CONFIG_TYPECA_SUPPORT == 1)

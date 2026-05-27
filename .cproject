@@ -264,7 +264,7 @@
 			<resource resourceType="PROJECT" workspacePath="/WPC_15W_RX"/>
 		</configuration>
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/PowerBankEvk_relsease"/>
+			<resource resourceType="PROJECT" workspacePath="/NU17113A1_APROM_IP162_GB_NewPcb_init"/>
 		</configuration>
 		<configuration configurationName="out">
 			<resource resourceType="PROJECT" workspacePath="/NU17113A1_APROM_IP162_GB_NewPcb_init_lib"/>
