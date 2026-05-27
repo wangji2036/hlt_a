@@ -352,7 +352,7 @@ void buckboost_protection_handle(void)
 	}
 
 	printk("adc ibus %d\n", g_buckboost.adc_ibus);
-	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK && (status & VBUS_FAULT_VBUS_UVP) && g_buckboost.adc_ibus > 500)
+	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK && (status & VBUS_FAULT_VBUS_UVP))
 	{
 
 		printk("testtestfff\n");
@@ -365,7 +365,7 @@ void buckboost_protection_handle(void)
 		// g_port.port_state[PORT0_INDEX] = PORT_STATE_NONE;
 		// 	port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 	}
-	else if (is_uvp_chg && g_buckboost.adc_vbus > 4800)
+	else if (is_uvp_chg && g_buckboost.adc_vbus >= 4560 && g_buckboost.adc_ibus > 300)
 	{
 		if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK) port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 		is_uvp_chg = 0;
