@@ -578,6 +578,11 @@ void usb_bridge_periodic_update(void)
         }
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_EXC_TOTAL_COUNT, total);
 
+        /* Handshake: do not overwrite a record WB7720 has not consumed yet. */
+        uint8_t wb_ready = 0;
+        hal_i2cm_read_one_byte(USBD_WB7720_ADDR, REG_EXC_READY, &wb_ready);
+        if (wb_ready == 0xA5) goto exc_done;
+
         if (total == 0) goto exc_done;
 
         if (exc_cursor_page >= LOG_PAGE_COUNT) exc_cursor_page = 0;
