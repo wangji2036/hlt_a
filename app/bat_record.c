@@ -158,9 +158,9 @@ static bool is_new_hour(uint32_t last_seconds, uint32_t current_seconds) {
  * Charging:  60°C record exception (protection still at 40°C)
  * Discharging: 65°C record exception (protection still at 70°C)
  * Overvoltage: 4510mV record exception (protection still at 4500mV) */
-#define BR_CHRG_OT_VALUE          NTC_10K_3435_REAL_RT_60   // 60°C charging record threshold
+#define BR_CHRG_OT_VALUE          NTC_10K_3435_REAL_RT_55   // 60°C charging record threshold
 #define BR_CHRG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_50   // 50°C charging record restore (hysteresis 10°C)
-#define BR_DISG_OT_VALUE          NTC_10K_3435_REAL_RT_65   // 65°C discharging record threshold
+#define BR_DISG_OT_VALUE          NTC_10K_3435_REAL_RT_60   // 65°C discharging record threshold
 #define BR_DISG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_55   // 55°C discharging record restore (hysteresis 10°C)
 #define BR_OVER_VOLTAGE_THRESHOLD 4530                         // 4.51V record threshold (mV)
 
