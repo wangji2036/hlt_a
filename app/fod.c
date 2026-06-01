@@ -73,7 +73,7 @@ uint8_t pfod_action(void)
 			fod_count_filter = 3;
 			fod_count++;
 
-			if (((fod_count >= FOD_MAX_CNT && gd->rx_prect < 5000) || fod_count >= 40 || !pfo_en_reco))
+			if (((fod_count >= FOD_MAX_CNT && gd->rx_prect < 5000) || fod_count >= 15 || !pfo_en_reco))
 			{
 				gd->prot_sts.xfer_fod_flag = 1;
 				gd->ptx_idle_phase_status = WPC_IDLE_STAT_XER_FOD;
