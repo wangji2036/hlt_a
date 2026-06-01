@@ -85,9 +85,9 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE 1
 
 // Debug log switches (set to 0 to reduce Flash) -- synced with NF platform
-#define SUPPORT_BUCKBOOST_LOG 0                // buckboost.c debug logs
+#define SUPPORT_BUCKBOOST_LOG 1                // buckboost.c debug logs
 #define SUPPORT_BAT_LOG 1                      // bat.c debug logs
-#define SUPPORT_XGB_LOG 0                      // XGB/bat_record/usb_bridge debug logs
+#define SUPPORT_XGB_LOG 1                      // XGB/bat_record/usb_bridge debug logs
 #define SUPPORT_BAT_RECORD_LOG SUPPORT_XGB_LOG // legacy alias
 #define SUPPORT_GDATA_LOG 1                    // g_data.c debug logs
 #define SUPPORT_MAIN_LOG 1                     // main.c debug logs
@@ -99,7 +99,7 @@
 #define SUPPORT_PORTMGR_LOG 1                  // port_manager.c debug logs
 #define SUPPORT_LED_LOG 0                      // led.c debug logs
 #define SUPPORT_NTC_LOG 0                      // ntc.c debug logs
-#define SUPPORT_WPC_LOG 1                      // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
+#define SUPPORT_WPC_LOG 0                      // WPC 协议域 (epp/fod/pid/qfod/_wpc/wpc_*/fsk/nu103x/qdt/ask/pfod) debug logs
 #define BAT_RECORD_USE_STACK_BUFFER 0          // 0=static buffer (safe), 1=local variable (saves RAM)
 #define OVER_VOLTAGE_THRESHOLD 4450            // Per-cell OV record threshold (mV)
 #define OVER_VOLTAGE_HYSTERESIS 40             // OV recovery hysteresis (mV)
@@ -107,7 +107,7 @@
 #define Lion_Battery_Overcharge_Voltage 4450
 #define OVER_VOLTAGE_FORBID_CONSEC_COUNT 10 // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST 1           // 0=RAM only, cleared by power cycle
-#define OV_FORBID_FORCE_CLEAR 1             // 1=erase forbid flag on boot (debug/recovery), set 0 for production
+#define OV_FORBID_FORCE_CLEAR 0             // 1=erase forbid flag on boot (debug/recovery), set 0 for production
 #define OV_FORBID_KEY_CLEAR_ENABLE 0        // 1=single click clears OV forbid, 0=only power cycle clears
 #define CHRG_NTC_OT_TEMP_VALUE 600          // Charging over-temperature threshold (0.1degC = 60.0degC)
 #define DISG_NTC_OT_TEMP_VALUE 650          // Discharging over-temperature threshold (0.1degC = 65.0degC)
@@ -115,7 +115,7 @@
 #define CYCLE_COUNT_FLASH_OFFSET 20         // AP_CFG_ROM_ADDR_BASE + 20
 #define VREF_FLASH_OFFSET 24                // AP_CFG_ROM_ADDR_BASE + 24
 #define VREF_DEFAULT_MV 3270                // Default Vref before calibration
-#define EXCEPTION_WINDOW_SECONDS 3600       //180     // Exception record window (seconds): 120=2min, 3600=1h
+#define EXCEPTION_WINDOW_SECONDS 180       //180     // Exception record window (seconds): 120=2min, 3600=1h
 #define Cali_Vref 1
 #define CONFIG_RTC_USE_CUSTOM_TIME 1
 #define CONFIG_RTC_DEFAULT_YEAR 2026

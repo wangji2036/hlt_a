@@ -1335,13 +1335,14 @@ uint8_t battery_record_sleep_check(void) {
      * Vref 直接从 Flash 读取，不依赖 SRAM g_vref_mv（POR 后可能未恢复）。*/
     uint16_t vref_mv;
     uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
-    if (flash_vref != 0xFFFFFFFF && flash_vref >= 3240 && flash_vref <= 3300) {
+    if (flash_vref != 0xFFFFFFFF && flash_vref >= 3200 && flash_vref <= 3300) {
         vref_mv = (uint16_t)flash_vref;
     } else {
         vref_mv = VREF_DEFAULT_MV;
     }
     uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
-    int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)vref_mv;
+    int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)masonvref;
+    // int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)vref_mv;
 
     uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
     int32_t vcell1_raw = 3 * (int32_t)pc7_adc_mv - pack_neg;
@@ -1350,7 +1351,7 @@ uint8_t battery_record_sleep_check(void) {
     uint16_t sleep_vcell1 = (uint16_t)vcell1_raw;
 
     uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
-    int32_t vcell2_raw = 3 * (int32_t)pb6_adc_mv - pack_neg - vcell1_raw;
+    int32_t vcell2_raw = 3 * (int32_t)pb6_adc_mv - 3 * (int32_t)pc7_adc_mv;
     if (vcell2_raw < 0) vcell2_raw = 0;
     if (vcell2_raw > 5500) vcell2_raw = 5500;
     uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;

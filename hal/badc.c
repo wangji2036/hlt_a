@@ -223,12 +223,13 @@ static int16_t hal_badc_average_meas(enum badc_chan_t channel, uint8_t times)
  *         one of the defined enumeration values of type `badc_chan_t`.
  * @return Returns the measured voltage value in millivolts (mV).
  */
+uint16_t masonvref = 0;
 uint16_t hal_badc_meas(enum badc_chan_t channel)
 {
 	uint16_t rst = 1;
 
 	uint16_t BDAC_VREF_V3P3 = hal_badc_vref_update();
-
+	masonvref = BDAC_VREF_V3P3;
 	int tmp = (BDAC_VREF_V3P3 * hal_badc_average_meas(channel, 4)) >> 12; //100us
 	//int tmp = hal_badc_average_meas(channel, 4);
 	switch (channel)

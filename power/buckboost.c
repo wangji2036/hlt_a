@@ -19,6 +19,7 @@
 uint8_t buckboost_protection_flag = false;
 uint8_t zero_soc_cnt = 0;
 static bool adc_protect_flag = false;
+extern uint16_t masonvref;
 #if (BUCKBOOST_USED_NU6801 == 1)
 static bool adc_err_flag = 0;
 #endif
@@ -848,7 +849,7 @@ void buckboost_task_event_handler(uint32_t event)
 				{
 					g_vref_mv = 3 * pd3_adc_mv / 2;
 					bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV\n", pd3_adc_mv, g_vref_mv);
-					if (g_vref_mv >= 3240 && g_vref_mv <= 3300)
+					if (g_vref_mv >= 3200 && g_vref_mv <= 3300)
 					{
 						cycle_count_save_to_flash();
 						bb_printk("\r\nVref save to flash:%d", g_vref_mv);
@@ -869,14 +870,14 @@ void buckboost_task_event_handler(uint32_t event)
 			static uint8_t hist_idx = 0;
 			static uint8_t hist_cnt = 0; /* 已填入的采样数 0~3 */
 
-			g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - g_vref_mv * 2);
-
+			// g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - g_vref_mv * 2);
+			g_buckboost.adc_Packnegative = (int16_t)(3 * pd3_adc_mv - masonvref * 2);
 			uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
 			int16_t vcell1_raw = 3 * pc7_adc_mv - g_buckboost.adc_Packnegative;
 			c1_hist[hist_idx] = (vcell1_raw > 0) ? (uint16_t)vcell1_raw : 0;
 
 			uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
-			int16_t vcell2_raw = 3 * pb6_adc_mv - g_buckboost.adc_Packnegative - c1_hist[hist_idx];
+			int16_t vcell2_raw = 3 * pb6_adc_mv - 3 * pc7_adc_mv;
 			c2_hist[hist_idx] = (vcell2_raw > 0) ? (uint16_t)vcell2_raw : 0;
 
 			hist_idx = (hist_idx + 1) % 3;
@@ -894,11 +895,11 @@ void buckboost_task_event_handler(uint32_t event)
 				g_buckboost.adc_vcell1 = c1_hist[hist_idx ? hist_idx - 1 : 2];
 				g_buckboost.adc_vcell2 = c2_hist[hist_idx ? hist_idx - 1 : 2];
 			}
-
-			bb_printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref=%d total=%d\n",
+			bb_printk("\nadc_raw:%d,%d,%d\n",pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
+			bb_printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref1=%d  Vref2=%d total=%d\n",
 			          g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
 			          g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
-			          g_vref_mv, g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
+			          g_vref_mv,masonvref,g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
 
 #else
 			buckboost_ir_drop_handle();
