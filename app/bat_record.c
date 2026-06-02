@@ -26,7 +26,7 @@ static bool g_eng_virtual_triggered = false;
 
 // Monotonic record ID counter (initialized in battery_record_init, always >= 1, never 0)
 static uint32_t g_next_record_id = 0;  /* 单调 record ID，在 battery_record_init() 中初始化为 >=1 */
-
+extern uint16_t masonvref;
 // Print state tracker
 static struct {
     uint8_t current_page;       // Current page being printed
@@ -1343,7 +1343,7 @@ uint8_t battery_record_sleep_check(void) {
     uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
     int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)masonvref;
     // int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)vref_mv;
-
+    printk("\nsleepvref=%d\n",masonvref);
     uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
     int32_t vcell1_raw = 3 * (int32_t)pc7_adc_mv - pack_neg;
     if (vcell1_raw < 0) vcell1_raw = 0;
@@ -1355,7 +1355,7 @@ uint8_t battery_record_sleep_check(void) {
     if (vcell2_raw < 0) vcell2_raw = 0;
     if (vcell2_raw > 5500) vcell2_raw = 5500;
     uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;
-    xgb_printk("Sleep_Vref=%d,Vcell1=%d,Vcell2=%d,ADC=[%d,%d]\n",vref_mv,sleep_vcell1,sleep_vcell2,pc7_adc_mv,pb6_adc_mv);
+    printk("Vcell1=%d,Vcell2=%d,ADC=[%d,%d,%d]\n",sleep_vcell1,sleep_vcell2,pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
     /* Restore GPIO mode for sleep (disable input buffer to save power) */
     GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
     GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 → GPIO */
