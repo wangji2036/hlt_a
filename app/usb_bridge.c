@@ -310,6 +310,8 @@ static void usb_bridge_check_eng_cmd(void)
         xgb_printk("eng erase %s\n", ok ? "ok" : "fail");
     }
     else if (cmd == ENG_CMD_REFRESH) {
+        gd->bat_ov_forbid_flag =0;
+        cycle_count_save_to_flash();
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_ENG_CMD_STATUS, ENG_STATUS_BUSY);
 
         /* 从 WB7720 拉取最新虚拟电芯/温度等 */
@@ -367,7 +369,8 @@ static void usb_bridge_check_prod_mode(void)
     hal_i2cm_read_one_byte(USBD_WB7720_ADDR, PROD_MODE_FLAG, &flag);
 
     if (flag != PROD_MODE_MAGIC) return;
-
+    gd->bat_ov_forbid_flag =0;
+    cycle_count_save_to_flash();
     hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, PROD_WRITE_STATUS, ENG_STATUS_BUSY);
 
     ProductInfo_t info;
