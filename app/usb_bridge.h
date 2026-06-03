@@ -14,7 +14,7 @@
 #define REG_CAPACITY_MAH        0x01    // u32 LE, 4 bytes
 #define REG_VBAT_MV             0x05    // u16 LE
 #define REG_IBAT_MA             0x07    // s16 LE
-#define REG_TEMP_DC             0x09    // s16 LE, 0.1 deg C
+#define REG_TEMP_DC             0x09    // s16 LE, deg C
 #define REG_CYCLE_COUNT         0x0B    // u16 LE
 #define REG_R_INTERNAL_MOHM     0x0D    // u16 LE
 #define REG_SOH_PCT_X100        0x0F    // u16 LE
@@ -25,12 +25,12 @@
 #define REG_CELL_COUNT          0x2C    // u8: fixed 1 (single cell)
 #define REG_CELL1_VOLTAGE_MV    0x2D    // u16 LE
 #define REG_CELL2_VOLTAGE_MV    0x2F    // u16 LE
-#define REG_PCB_TEMP_DC         0x35    // s16 LE, 0.1 deg C
+#define REG_PCB_TEMP_DC         0x35    // s16 LE, deg C
 
 /* ===== Exception Log Rolling Write Region (NU17112 -> WB7720) ===== */
 #define REG_EXC_TOTAL_COUNT     0x37    // u8: 0~72
 #define REG_EXC_CURRENT_IDX     0x38    // u8: 0~71
-#define REG_EXC_READY           0x39    // u8: 0xA5=数据有效可读, 0x00=写入中
+#define REG_EXC_READY           0x39    // u8: 0xA5=数据有效可读, 0x00=写入�?
 #define REG_EXC_RECORD          0x3A    // 20 bytes: BatteryExceptionRecord_t
 
 /* ===== Sleep/Wake Commands ===== */
@@ -38,9 +38,9 @@
 #define REG_WAKEUP_CMD          0x4F    // write 0x01 -> WB7720 USB re-enumerate
 
 /* ===== Time Sync Register ===== */
-#define REG_TIME_SYNC           0x51    // u8: host/WB7720 置 0xCA；MCU 读到后按 REG_ENG_CURRENT_DATE 同步 Bat_RTC_Seconds 并写回 0
+#define REG_TIME_SYNC           0x51    // u8: host/WB7720 �?0xCA；MCU 读到后按 REG_ENG_CURRENT_DATE 同步 Bat_RTC_Seconds 并写�?0
 #define TIME_SYNC_MAGIC         0xCA
-#define REG_RTC_SECONDS         0x52    // u32 LE: Bat_RTC_Seconds (powerbank → WB7720 → host)
+#define REG_RTC_SECONDS         0x52    // u32 LE: Bat_RTC_Seconds (powerbank �?WB7720 �?host)
 
 /* ===== Engineering Mode Registers ===== */
 #define REG_WORK_MODE           0x50    // u8: 0x00=user, 0xA5=eng mode
@@ -105,8 +105,8 @@ typedef enum {
     NTC_CH_AUX  = 1,
 } ntc_ch_t;
 
-/* 读 WB7720 一路 NTC 寄存器（4 字节突发: RAW_LO, RAW_HI, STATUS, SEQ）.
- * ret: 0=I2C ok, 非0=I2C 失败. */
+/* �?WB7720 一�?NTC 寄存器（4 字节突发: RAW_LO, RAW_HI, STATUS, SEQ�?
+ * ret: 0=I2C ok, �?=I2C 失败. */
 int usb_bridge_read_ntc_raw(ntc_ch_t ch, uint16_t *raw, uint8_t *status, uint8_t *seq);
 
 /* ===== Public API ===== */

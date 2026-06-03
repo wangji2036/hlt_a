@@ -491,15 +491,15 @@ void usb_bridge_periodic_update(void)
         write_buf = (uint16_t)ibat;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_IBAT_MA, (uint8_t*)&write_buf, 2);
     }
-    /* ---- cnt 4: Temperature (0.1°C units for HID report) ---- */
+    /* ---- cnt 4: Temperature (degC units for HID report) ---- */
     else if (cnt == 4)
     {
         if (gd->eng_mode_active && gd->eng_virtual_temp != (int16_t)VIRTUAL_TEMP_SENTINEL) {
-            write_buf = (uint16_t)gd->eng_virtual_temp;           /* already 0.1°C */
+            write_buf = (uint16_t)gd->eng_virtual_temp;           /* already degC */
         } else {
-            /* Battery NTC (NU6805 adc_tbat1): resistance → °C → ×10 for 0.1°C */
+            /* Battery NTC (NU6805 adc_tbat1): resistance -> degC */
             int16_t temp_c = ntc_to_temp(g_buckboost.adc_tbat1);
-            write_buf = (uint16_t)(temp_c * 10);
+            write_buf = (uint16_t)temp_c;
         }
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_TEMP_DC, (uint8_t*)&write_buf, 2);
     }

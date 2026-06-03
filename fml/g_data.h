@@ -116,7 +116,7 @@ typedef struct
 		} ov_data;
 		struct
 		{
-			int16_t max_temperature; // Max temperature (0.1 deg C)
+			int16_t max_temperature; // Max temperature (deg C)
 			uint16_t reserved;
 		} temp_data;
 		uint8_t raw_data[6];
@@ -141,12 +141,12 @@ typedef struct
 	TimeStamp_t ov2_timestamp;
 
 	uint8_t temp_chg_triggered;
-	int16_t temp_chg_max; // 0.1 degC
+	int16_t temp_chg_max; // degC
 	uint8_t temp_chg_event_type;
 	TimeStamp_t temp_chg_timestamp;
 
 	uint8_t temp_dchg_triggered;
-	int16_t temp_dchg_max; // 0.1 degC
+	int16_t temp_dchg_max; // degC
 	uint8_t temp_dchg_event_type;
 	TimeStamp_t temp_dchg_timestamp;
 } ExceptionCache_t;

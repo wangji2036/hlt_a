@@ -155,42 +155,23 @@ static bool is_new_hour(uint32_t last_seconds, uint32_t current_seconds) {
 }
 
 /* Battery record exception thresholds (independent from NTC protection thresholds)
- * Charging:  60°C record exception (protection still at 40°C)
- * Discharging: 65°C record exception (protection still at 70°C)
+ * Charging:  55degC record exception (protection still at 40degC)
+ * Discharging: 60degC record exception (protection still at 70degC)
  * Overvoltage: 4510mV record exception (protection still at 4500mV) */
-#define BR_CHRG_OT_VALUE          NTC_10K_3435_REAL_RT_55   // 60°C charging record threshold
-#define BR_CHRG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_50   // 50°C charging record restore (hysteresis 10°C)
-#define BR_DISG_OT_VALUE          NTC_10K_3435_REAL_RT_60   // 65°C discharging record threshold
-#define BR_DISG_OT_RESTORE_VALUE  NTC_10K_3435_REAL_RT_55   // 55°C discharging record restore (hysteresis 10°C)
+#define BR_CHRG_OT_TEMP_DEGC      55    // Charging record threshold, degC
+#define BR_DISG_OT_TEMP_DEGC      60    // Discharging record threshold, degC
 #define BR_OVER_VOLTAGE_THRESHOLD 4530                         // 4.51V record threshold (mV)
 
-#if 0  /* Removed: unified window model no longer uses recovery-based tracking */
-static bool is_temperature_recovered(uint16_t ntc_resistance, uint8_t mode) {
-    if (mode == BUCKBOOST_CHAGER_MODE) {
-        return (ntc_resistance >= BR_CHRG_OT_RESTORE_VALUE);
-    } else if (mode == BUCKBOOST_DISCHG_MODE) {
-        return (ntc_resistance >= BR_DISG_OT_RESTORE_VALUE);
-    }
-    return true;
-}
-#endif
 
 // Check temperature abnormal status - different thresholds for charge/discharge
-static bool is_temperature_abnormal(uint16_t ntc_resistance, uint8_t mode, uint8_t *event_type) {
+static bool is_temperature_abnormal(int16_t temp_c, uint8_t mode, uint8_t *event_type) {
+    *event_type = EXCEPTION_TYPE_OVERTEMP;
     if (mode == BUCKBOOST_CHAGER_MODE) {
-        // Charging mode - 60°C record threshold
-        if (ntc_resistance < BR_CHRG_OT_VALUE) {
-            *event_type = EXCEPTION_TYPE_OVERTEMP;  // 0x02 Over temperature
-            return true;
-        }
+        return (temp_c >= BR_CHRG_OT_TEMP_DEGC);
     } else if (mode == BUCKBOOST_DISCHG_MODE) {
-        // Discharging mode - 65°C record threshold
-        if (ntc_resistance < BR_DISG_OT_VALUE) {
-            *event_type = EXCEPTION_TYPE_OVERTEMP;  // 0x02 Over temperature
-            return true;
-        }
+        return (temp_c >= BR_DISG_OT_TEMP_DEGC);
     }
-    return false;
+    return (temp_c >= BR_CHRG_OT_TEMP_DEGC);
 }
 
 /********************* Checksum Functions *********************/
@@ -221,9 +202,9 @@ static bool verify_storage_checksum(volatile BatteryRecordStorage_t *storage) {
 
 // Page switching function - switches to next page (supports 1-3 pages)
 static void switch_active_page(void) {
-    // Cycle to next page: 0 �� 1 �� 2 �� 0 (for 3 pages)
-    //                 or: 0 �� 1 �� 0 (for 2 pages)
-    //                 or: 0 �� 0 (for 1 page, no switching)
+    // Cycle to next page: 0 -> 1 -> 2 -> 0 (for 3 pages)
+    //                 or: 0 -> 1 -> 0 (for 2 pages)
+    //                 or: 0 -> 0 (for 1 page, no switching)
     g_record_storage.active_page = (g_record_storage.active_page + 1) % LOG_PAGE_COUNT;
 
     // Increment page sequence for wear leveling tracking
@@ -455,7 +436,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
     xgb_printk("\r\n[WRITE] Done. Next write will be at page %d, index %d",
               g_record_storage.active_page, g_record_storage.write_ptr);
 
-    // Check if Flash exception records are full → trigger OV_FORBID
+    // Check if Flash exception records are full �?trigger OV_FORBID
     {
         uint8_t flash_total = 0;
         for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
@@ -597,7 +578,7 @@ void battery_record_init(void) {
             xgb_printk("[BR-INIT] OK page=%d wptr=%d cnt=%d\n",
                    g_record_storage.active_page, g_record_storage.write_ptr,
                    g_record_storage.exception_counter);
-            /* 从 Flash 各页扫描最大 record_id，恢复单调计数器 */
+            /* Scan Flash pages for max record_id and restore monotonic counter */
             {
                 uint32_t max_rid = 0;
                 const uint32_t scan_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
@@ -718,16 +699,16 @@ void battery_record_update_overvoltage(void) {
     uint16_t cell2_voltage = ov_using_virtual2 ? gd->eng_virtual_cell2 : g_buckboost.adc_vcell2;
 
     /* Suspect reading filter: > 5500mV likely ADC glitch.
-     * Must see 50 consecutive readings (5 × 1s = 5s) before trusting it.
+     * Must see 5 consecutive readings (5 x 1s = 5s) before trusting it.
      * Engineering mode virtual values bypass this filter. */
     static uint8_t suspect_cell1_cnt = 0;
     static uint8_t suspect_cell2_cnt = 0;
     if (!ov_using_virtual1 && cell1_voltage > 5500) {
         if (suspect_cell1_cnt < 5) {
             suspect_cell1_cnt++;
-            cell1_voltage = 0;  /* 不够 5 次，暂不采信 */
+            cell1_voltage = 0;  /* Ignore until 5 consecutive suspect readings */
         }
-        /* >= 5 次：放行原值，让 process_cell_overvoltage 处理 */
+        /* After 5 consecutive suspect readings, pass the raw value to process_cell_overvoltage. */
     } else {
         suspect_cell1_cnt = 0;
     }
@@ -773,13 +754,6 @@ void battery_record_update_overvoltage(void) {
 #endif
 }
 
-/* Engineering mode temperature thresholds (0.1°C units, matching eng_virtual_temp from PC):
- *   BR_CHRG_OT = 60°C → 600 (0.1°C)
- *   BR_DISG_OT = 65°C → 650 (0.1°C)
- * Note: All temperature storage uses 0.1°C units for PC compatibility. */
-#define ENG_CHRG_OT_TEMP_DEGC   550   /* 60.0°C charging record threshold (0.1°C) */
-#define ENG_DISG_OT_TEMP_DEGC   600   /* 65.0°C discharging record threshold (0.1°C) */
-
 // Temperature abnormal detection and record function - New GB standard: fixed 1h window
 void battery_record_update_temperature(void) {
     uint8_t mode = g_buckboost.woke_mode;
@@ -789,23 +763,16 @@ void battery_record_update_temperature(void) {
 
     bool temp_using_virtual = (gd->eng_mode_active && gd->eng_virtual_temp != (int16_t)VIRTUAL_TEMP_SENTINEL);
     if (temp_using_virtual) {
-        /* Engineering mode: use virtual temperature (0.1 degC units) */
+        /* Engineering mode: use virtual temperature in degC */
         ntc_temp = gd->eng_virtual_temp;
-        if (mode == BUCKBOOST_CHAGER_MODE) {
-            is_temp_abnormal = (ntc_temp >= ENG_CHRG_OT_TEMP_DEGC);
-        } else if (mode == BUCKBOOST_DISCHG_MODE) {
-            is_temp_abnormal = (ntc_temp >= ENG_DISG_OT_TEMP_DEGC);
-        } else {
-            is_temp_abnormal = (ntc_temp >= ENG_CHRG_OT_TEMP_DEGC);
-        }
-        event_type = EXCEPTION_TYPE_OVERTEMP;
+        is_temp_abnormal = is_temperature_abnormal(ntc_temp, mode, &event_type);
         xgb_printk("[BR] TEMP(eng): mode=%d virt=%d abnormal=%d\n",
                   mode, ntc_temp, is_temp_abnormal);
     } else {
         /* Normal mode */
         uint16_t ntc_resistance = g_buckboost.adc_tbat1;
-        ntc_temp = ntc_to_temp(ntc_resistance) * 10;  // Convert to 0.1 degC
-        is_temp_abnormal = is_temperature_abnormal(ntc_resistance, mode, &event_type);
+        ntc_temp = ntc_to_temp(ntc_resistance);
+        is_temp_abnormal = is_temperature_abnormal(ntc_temp, mode, &event_type);
         xgb_printk("[BR] TEMP(real): mode=%d ntc=%d temp=%d abnormal=%d\n",
                   mode, g_buckboost.adc_tbat1, ntc_temp, is_temp_abnormal);
     }
@@ -814,7 +781,7 @@ void battery_record_update_temperature(void) {
         return;
     }
 
-    /* Write to unified exception_cache: charging → temp_chg, discharging → temp_dchg */
+    /* Write to unified exception_cache: charging �?temp_chg, discharging �?temp_dchg */
     if (mode == BUCKBOOST_CHAGER_MODE || (mode != BUCKBOOST_DISCHG_MODE)) {
         /* Charging (or idle/shutdown for engineering mode convenience) */
         if (!g_exception_cache.temp_chg_triggered || ntc_temp > g_exception_cache.temp_chg_max) {
@@ -1112,14 +1079,10 @@ void battery_record_print_next_log(void) {
 
                 case EXCEPTION_TYPE_OVERTEMP:
                 case EXCEPTION_TYPE_UNDERTEMP: {
-                    int16_t temp_int = record.data.temp_data.max_temperature / 10;
-                    int16_t temp_dec = record.data.temp_data.max_temperature % 10;
-                    if (temp_dec < 0) temp_dec = -temp_dec;
-
                     const char *state = (record.sub_type == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG";
                     const char *type = (record.error_type == EXCEPTION_TYPE_OVERTEMP) ? "OT" : "UT";
 
-                    xgb_printk("%s %s: %d.%ddegC", state, type, temp_int, temp_dec);
+                    xgb_printk("%s %s: %ddegC", state, type, record.data.temp_data.max_temperature);
                     break;
                 }
 
@@ -1175,14 +1138,10 @@ void battery_record_print_next_log(void) {
 
                 case EXCEPTION_TYPE_OVERTEMP:
                 case EXCEPTION_TYPE_UNDERTEMP: {
-                    int16_t temp_int = record.data.temp_data.max_temperature / 10;
-                    int16_t temp_dec = record.data.temp_data.max_temperature % 10;
-                    if (temp_dec < 0) temp_dec = -temp_dec;
-
                     const char *state = (record.sub_type == BUCKBOOST_CHAGER_MODE) ? "CHG" : "DCHG";
                     const char *type = (record.error_type == EXCEPTION_TYPE_OVERTEMP) ? "OT" : "UT";
 
-                    xgb_printk("%s %s: %d.%ddegC", state, type, temp_int, temp_dec);
+                    xgb_printk("%s %s: %ddegC", state, type, record.data.temp_data.max_temperature);
                     break;
                 }
 
@@ -1212,14 +1171,12 @@ void battery_record_print_next_log(void) {
                 g_exception_cache.ov2_max_voltage);
         }
         if (g_exception_cache.temp_chg_triggered) {
-            xgb_printk("\r\n[WINDOW] TEMP CHG: %d.%d degC (max in current window)",
-                g_exception_cache.temp_chg_max / 10,
-                abs(g_exception_cache.temp_chg_max % 10));
+            xgb_printk("\r\n[WINDOW] TEMP CHG: %d degC (max in current window)",
+                g_exception_cache.temp_chg_max);
         }
         if (g_exception_cache.temp_dchg_triggered) {
-            xgb_printk("\r\n[WINDOW] TEMP DCHG: %d.%d degC (max in current window)",
-                g_exception_cache.temp_dchg_max / 10,
-                abs(g_exception_cache.temp_dchg_max % 10));
+            xgb_printk("\r\n[WINDOW] TEMP DCHG: %d degC (max in current window)",
+                g_exception_cache.temp_dchg_max);
         }
 
         // If no active window tracking
@@ -1327,12 +1284,12 @@ uint8_t battery_record_sleep_check(void) {
 #elif(BUCKBOOST_USED_NU6805 == 1)
     
     /* Sleep ADC: temporarily enable BADC mode + input buffer on PB6/PC7/PD3 */
-    GPB->I_EN.BITS.PIN6 = 1;  GPB->MODE.BITS.PIN6 = 1;  /* PB6 → BADC7 (BAT2+) */
-    GPC->I_EN.BITS.PIN7 = 1;  GPC->MODE.BITS.PIN7 = 1;  /* PC7 → BADC4 (Cell2) */
-    GPD->I_EN.BITS.PIN3 = 1;  GPD->MODE.BITS.PIN3 = 1;  /* PD3 → BADC9 (VBAT-) */
+    GPB->I_EN.BITS.PIN6 = 1;  GPB->MODE.BITS.PIN6 = 1;  /* PB6 �?BADC7 (BAT2+) */
+    GPC->I_EN.BITS.PIN7 = 1;  GPC->MODE.BITS.PIN7 = 1;  /* PC7 �?BADC4 (Cell2) */
+    GPD->I_EN.BITS.PIN3 = 1;  GPD->MODE.BITS.PIN3 = 1;  /* PD3 �?BADC9 (VBAT-) */
 
-    /* Sample Cell1/Cell2 via BADC — formula aligned with buckboost.c step3.
-     * Vref 直接从 Flash 读取，不依赖 SRAM g_vref_mv（POR 后可能未恢复）。*/
+    /* Sample Cell1/Cell2 via BADC �?formula aligned with buckboost.c step3.
+     * Read Vref directly from Flash, independent of SRAM g_vref_mv after POR. */
     uint16_t vref_mv;
     uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
     if (flash_vref != 0xFFFFFFFF && flash_vref >= 3200 && flash_vref <= 3300) {
@@ -1357,14 +1314,14 @@ uint8_t battery_record_sleep_check(void) {
     uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;
     printk("Vcell1=%d,Vcell2=%d,ADC=[%d,%d,%d]\n",sleep_vcell1,sleep_vcell2,pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
     /* Restore GPIO mode for sleep (disable input buffer to save power) */
-    GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 → GPIO */
-    GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 → GPIO */
-    GPD->MODE.BITS.PIN3 = 0;  GPD->I_EN.BITS.PIN3 = 0;  /* PD3 → GPIO */
+    GPB->MODE.BITS.PIN6 = 0;  GPB->I_EN.BITS.PIN6 = 0;  /* PB6 �?GPIO */
+    GPC->MODE.BITS.PIN7 = 0;  GPC->I_EN.BITS.PIN7 = 0;  /* PC7 �?GPIO */
+    GPD->MODE.BITS.PIN3 = 0;  GPD->I_EN.BITS.PIN3 = 0;  /* PD3 �?GPIO */
 
-    /* 触发 NTC 通道切换 → 阻塞 1ms 等 ADC 采样 → 读真实值 */
+    /* Trigger NTC channel switch, wait for ADC sampling, then read the real value. */
     (void)hal_nu6805_buckboost_get_bat_temperature();
     delay_1us(300);
-    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();  /* Ohm → Ohm/100 */
+    uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();  /* Ohm �?Ohm/100 */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
     xgb_printk("ntc:%d t:%d\n",  ntc_resistance, ntc_temp);
@@ -1395,7 +1352,7 @@ uint8_t battery_record_sleep_check(void) {
         uint16_t cell2_voltage = sleep_vcell2;
 
         /* Suspect reading filter (same as non-sleep path):
-         * > 5500mV 连续 3 次才采信 (sleep 每 ~30s 调一次, 5 次 ≈ 150s) */
+         * > 5500mV must appear 3 consecutive times before it is trusted in sleep checks. */
         static uint8_t sleep_suspect_c1 = 0;
         static uint8_t sleep_suspect_c2 = 0;
         if (cell1_voltage > 5500) {
@@ -1436,19 +1393,19 @@ uint8_t battery_record_sleep_check(void) {
         uint8_t mode = g_buckboost.woke_mode;
         if (mode == BUCKBOOST_SHUTDOWM_MODE) mode = BUCKBOOST_DISCHG_MODE;
         uint8_t event_type;
-        if (is_temperature_abnormal(ntc_resistance, mode, &event_type)) {
-            int16_t current_temp_01c = ntc_temp * 10;
+        int16_t current_temp_c = ntc_temp;
+        if (is_temperature_abnormal(current_temp_c, mode, &event_type)) {
             if (mode == BUCKBOOST_CHAGER_MODE) {
-                if (!g_exception_cache.temp_chg_triggered || current_temp_01c > g_exception_cache.temp_chg_max) {
+                if (!g_exception_cache.temp_chg_triggered || current_temp_c > g_exception_cache.temp_chg_max) {
                     g_exception_cache.temp_chg_triggered = 1;
-                    g_exception_cache.temp_chg_max = current_temp_01c;
+                    g_exception_cache.temp_chg_max = current_temp_c;
                     g_exception_cache.temp_chg_event_type = event_type;
                     get_current_timestamp(&g_exception_cache.temp_chg_timestamp);
                 }
             } else if (mode == BUCKBOOST_DISCHG_MODE) {
-                if (!g_exception_cache.temp_dchg_triggered || current_temp_01c > g_exception_cache.temp_dchg_max) {
+                if (!g_exception_cache.temp_dchg_triggered || current_temp_c > g_exception_cache.temp_dchg_max) {
                     g_exception_cache.temp_dchg_triggered = 1;
-                    g_exception_cache.temp_dchg_max = current_temp_01c;
+                    g_exception_cache.temp_dchg_max = current_temp_c;
                     g_exception_cache.temp_dchg_event_type = event_type;
                     get_current_timestamp(&g_exception_cache.temp_dchg_timestamp);
                 }
@@ -1483,7 +1440,7 @@ uint8_t battery_record_sleep_check(void) {
                     }
                 }
                 g_next_record_id = (max_rid > 0) ? max_rid + 1 : 1;
-                // xgb_printk("[BR-SLEEP] restored rid=%u\n", (unsigned)g_next_record_id);
+                xgb_printk("[BR-SLEEP] restored rid=%u\n", (unsigned)g_next_record_id);
             }
         }
         process_window_end();
