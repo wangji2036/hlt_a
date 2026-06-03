@@ -7,6 +7,7 @@
 #include "_fml.h"
 #include "nu6805.h"
 #include "bat_record.h"
+#include "led.h"
 #include "i2cm.h"
 #include "printk.h"
 #include "../hal/badc.h"
@@ -391,7 +392,8 @@ static void usb_bridge_check_ship_mode_cmd(void)
 
     if (req == SHIP_MODE_MAGIC) {
         if (last_req != req) {
-            xgb_printk("ship mode request reserved\n");
+            xgb_printk("ship mode request accepted\n");
+            app_request_ship_mode();
         }
         last_req = req;
         hal_i2cm_wirte_one_byte(USBD_WB7720_ADDR, REG_SHIP_MODE_STATUS, SHIP_MODE_STATUS_SEEN);

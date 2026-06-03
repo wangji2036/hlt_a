@@ -1032,6 +1032,11 @@ void key_ship_process(void) // 开机状态短按一次后长按 8s，进入船�
 		SHIP_MODE_LED_BLINK_TICKS, SHIP_MODE_LED_MASK, gd->ship_mode_cnt);
 }
 
+void app_request_ship_mode(void)
+{
+	key_ship_process();
+}
+
 #if 0
 //// structure for key information
 //typedef struct KeyInfo {
