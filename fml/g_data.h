@@ -149,6 +149,13 @@ typedef struct
 	int16_t temp_dchg_max; // degC
 	uint8_t temp_dchg_event_type;
 	TimeStamp_t temp_dchg_timestamp;
+
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+	uint32_t ov1_record_id;
+	uint32_t ov2_record_id;
+	uint32_t temp_chg_record_id;
+	uint32_t temp_dchg_record_id;
+#endif
 } ExceptionCache_t;
 
 // Virtual parameter sentinel values (shared by usb_bridge and bat_record)

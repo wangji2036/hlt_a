@@ -7,6 +7,7 @@
 #include "fmc.h"
 #include "app.h"
 #include "printk.h"
+#include "config.h"
 #include <string.h>
 #include <stddef.h>
 #include "../hal/regdef.h"
@@ -19,6 +20,7 @@
 // Variables defined in ap_t structure, accessed via ap->
 #define g_exception_cache   (ap->exception_cache)
 #define g_record_storage    (ap->record_storage)
+
 
 // Flag: set when engineering mode virtual value injection triggers an exception
 // Used by periodic_check to decide whether to flush window immediately
@@ -411,8 +413,48 @@ static void load_storage_from_flash(void) {
               g_record_storage.active_page, g_record_storage.write_ptr, total_records);
 }
 
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+static void restore_next_record_id_from_flash(void) {
+    uint32_t max_rid = 0;
+    const uint32_t scan_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
+
+    DECLARE_PAGE_BUFFER();
+
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        flash_read_record(scan_addrs[p], (uint8_t*)PAGE_BUFFER_PTR, sizeof(FlashPageLayout_t));
+        if (PAGE_BUFFER.magic == MAGIC_VALUE) {
+            for (uint8_t i = 0; i < PAGE_BUFFER.page_records_count && i < MAX_RECORDS_PER_PAGE; i++) {
+                if (PAGE_BUFFER.records[i].record_id > max_rid) {
+                    max_rid = PAGE_BUFFER.records[i].record_id;
+                }
+            }
+        }
+    }
+
+    g_next_record_id = (max_rid > 0) ? max_rid + 1 : 1;
+}
+
+static void ensure_record_write_ready(void) {
+    if (g_record_storage.magic != MAGIC_VALUE) {
+        load_storage_from_flash();
+    }
+
+    if (g_next_record_id == 0) {
+        restore_next_record_id_from_flash();
+    }
+}
+#endif
+
 // Write exception record - directly to Flash (no RAM cache)
-static void write_exception_record(BatteryExceptionRecord_t *record) {
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+static void write_exception_record(BatteryExceptionRecord_t *record, uint32_t *written_record_id)
+#else
+static void write_exception_record(BatteryExceptionRecord_t *record)
+#endif
+{
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+    ensure_record_write_ready();
+#endif
     // Check if current page is full
     if (g_record_storage.write_ptr >= MAX_RECORDS_PER_PAGE) {
         // Page full, switch to other page
@@ -426,6 +468,11 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
 
     // Set record ID from monotonic counter (never 0, never repeats)
     record->record_id = g_next_record_id++;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+    if (written_record_id != NULL) {
+        *written_record_id = record->record_id;
+    }
+#endif
 
     // Write record directly to Flash at current position
     save_record_to_flash(record, g_record_storage.write_ptr);
@@ -436,6 +483,7 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
     xgb_printk("\r\n[WRITE] Done. Next write will be at page %d, index %d",
               g_record_storage.active_page, g_record_storage.write_ptr);
 
+#if BAT_RECORD_FULL_FORBID_ENABLE
     // Check if Flash exception records are full �?trigger OV_FORBID
     {
         uint8_t flash_total = 0;
@@ -452,7 +500,112 @@ static void write_exception_record(BatteryExceptionRecord_t *record) {
                    flash_total, MAX_TOTAL_RECORDS);
         }
     }
+#endif
 }
+
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+static bool update_record_in_flash_by_id(uint32_t record_id, BatteryExceptionRecord_t *record) {
+    const uint32_t page_addrs[3] = {FLASH_LOG_PAGE1, FLASH_LOG_PAGE2, FLASH_LOG_PAGE3};
+
+    DECLARE_PAGE_BUFFER();
+
+    if (record_id == 0 || record == NULL) {
+        return false;
+    }
+
+    for (uint8_t p = 0; p < LOG_PAGE_COUNT; p++) {
+        flash_read_record(page_addrs[p], (uint8_t*)PAGE_BUFFER_PTR, sizeof(FlashPageLayout_t));
+        if (PAGE_BUFFER.magic != MAGIC_VALUE) {
+            continue;
+        }
+
+        for (uint8_t i = 0; i < PAGE_BUFFER.page_records_count && i < MAX_RECORDS_PER_PAGE; i++) {
+            if (PAGE_BUFFER.records[i].record_id == record_id) {
+                record->record_id = record_id;
+                PAGE_BUFFER.records[i] = *record;
+                VIC_vModuleDisable();
+                PAGE_BUFFER.page_timestamp = gd->Bat_RTC_Seconds;
+                VIC_vModuleEnable();
+                PAGE_BUFFER.checksum = calculate_page_checksum(PAGE_BUFFER_PTR);
+
+                hal_fmc_erase_page(page_addrs[p]);
+                flash_write_record(page_addrs[p], (uint8_t*)PAGE_BUFFER_PTR, sizeof(FlashPageLayout_t));
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static void append_or_update_window_record(BatteryExceptionRecord_t *record) {
+    if (record == NULL) {
+        return;
+    }
+
+    if (record->record_id == 0 || !update_record_in_flash_by_id(record->record_id, record)) {
+        write_exception_record(record, NULL);
+    }
+}
+
+static void record_ov_first_write(uint8_t cell_num) {
+    BatteryExceptionRecord_t record;
+    uint32_t *record_id;
+
+    if (cell_num == 1) {
+        if (g_exception_cache.ov1_record_id != 0) {
+            return;
+        }
+        record.timestamp = g_exception_cache.ov1_timestamp;
+        record.sub_type = 1;
+        record.data.ov_data.max_voltage = g_exception_cache.ov1_max_voltage;
+        record.data.ov_data.total_voltage = g_exception_cache.ov1_total_voltage;
+        record_id = &g_exception_cache.ov1_record_id;
+    } else {
+        if (g_exception_cache.ov2_record_id != 0) {
+            return;
+        }
+        record.timestamp = g_exception_cache.ov2_timestamp;
+        record.sub_type = 2;
+        record.data.ov_data.max_voltage = g_exception_cache.ov2_max_voltage;
+        record.data.ov_data.total_voltage = g_exception_cache.ov2_total_voltage;
+        record_id = &g_exception_cache.ov2_record_id;
+    }
+
+    record.error_type = EXCEPTION_TYPE_OVERVOLTAGE;
+    record.record_id = 0;
+    write_exception_record(&record, record_id);
+}
+
+static void record_temp_first_write(uint8_t mode) {
+    BatteryExceptionRecord_t record;
+    uint32_t *record_id;
+
+    if (mode == BUCKBOOST_CHAGER_MODE || mode != BUCKBOOST_DISCHG_MODE) {
+        if (g_exception_cache.temp_chg_record_id != 0) {
+            return;
+        }
+        record.timestamp = g_exception_cache.temp_chg_timestamp;
+        record.error_type = g_exception_cache.temp_chg_event_type;
+        record.sub_type = BUCKBOOST_CHAGER_MODE;
+        record.data.temp_data.max_temperature = g_exception_cache.temp_chg_max;
+        record_id = &g_exception_cache.temp_chg_record_id;
+    } else {
+        if (g_exception_cache.temp_dchg_record_id != 0) {
+            return;
+        }
+        record.timestamp = g_exception_cache.temp_dchg_timestamp;
+        record.error_type = g_exception_cache.temp_dchg_event_type;
+        record.sub_type = BUCKBOOST_DISCHG_MODE;
+        record.data.temp_data.max_temperature = g_exception_cache.temp_dchg_max;
+        record_id = &g_exception_cache.temp_dchg_record_id;
+    }
+
+    record.data.temp_data.reserved = 0;
+    record.record_id = 0;
+    write_exception_record(&record, record_id);
+}
+#endif
 
 /********************* Public API Function Implementations *********************/
 
@@ -676,6 +829,9 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
             g_exception_cache.ov1_max_voltage = cell_voltage;
             g_exception_cache.ov1_total_voltage = total_voltage;
             get_current_timestamp(&g_exception_cache.ov1_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+            record_ov_first_write(1);
+#endif
             xgb_printk("[BR] OV Cell1: %dmV (window max updated)\n", cell_voltage);
         }
     } else {
@@ -684,6 +840,9 @@ static void process_cell_overvoltage(uint8_t cell_num, uint16_t cell_voltage,
             g_exception_cache.ov2_max_voltage = cell_voltage;
             g_exception_cache.ov2_total_voltage = total_voltage;
             get_current_timestamp(&g_exception_cache.ov2_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+            record_ov_first_write(2);
+#endif
             xgb_printk("[BR] OV Cell2: %dmV (window max updated)\n", cell_voltage);
         }
     }
@@ -789,6 +948,9 @@ void battery_record_update_temperature(void) {
             g_exception_cache.temp_chg_max = ntc_temp;
             g_exception_cache.temp_chg_event_type = event_type;
             get_current_timestamp(&g_exception_cache.temp_chg_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+            record_temp_first_write(BUCKBOOST_CHAGER_MODE);
+#endif
             xgb_printk("[BR] TEMP CHG: %d (window max updated)\n", ntc_temp);
         }
     } else {
@@ -798,6 +960,9 @@ void battery_record_update_temperature(void) {
             g_exception_cache.temp_dchg_max = ntc_temp;
             g_exception_cache.temp_dchg_event_type = event_type;
             get_current_timestamp(&g_exception_cache.temp_dchg_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+            record_temp_first_write(BUCKBOOST_DISCHG_MODE);
+#endif
             xgb_printk("[BR] TEMP DCHG: %d (window max updated)\n", ntc_temp);
         }
     }
@@ -818,8 +983,13 @@ static void process_window_end(void) {
         record.sub_type = 1;
         record.data.ov_data.max_voltage = g_exception_cache.ov1_max_voltage;
         record.data.ov_data.total_voltage = g_exception_cache.ov1_total_voltage;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+        record.record_id = g_exception_cache.ov1_record_id;
+        append_or_update_window_record(&record);
+#else
         record.record_id = 0;
         write_exception_record(&record);
+#endif
         xgb_printk("[BR] WINDOW OV Cell1: %dmV -> Flash\n", g_exception_cache.ov1_max_voltage);
     }
 
@@ -830,8 +1000,13 @@ static void process_window_end(void) {
         record.sub_type = 2;
         record.data.ov_data.max_voltage = g_exception_cache.ov2_max_voltage;
         record.data.ov_data.total_voltage = g_exception_cache.ov2_total_voltage;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+        record.record_id = g_exception_cache.ov2_record_id;
+        append_or_update_window_record(&record);
+#else
         record.record_id = 0;
         write_exception_record(&record);
+#endif
         xgb_printk("[BR] WINDOW OV Cell2: %dmV -> Flash\n", g_exception_cache.ov2_max_voltage);
     }
 
@@ -842,8 +1017,13 @@ static void process_window_end(void) {
         record.sub_type = BUCKBOOST_CHAGER_MODE;
         record.data.temp_data.max_temperature = g_exception_cache.temp_chg_max;
         record.data.temp_data.reserved = 0;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+        record.record_id = g_exception_cache.temp_chg_record_id;
+        append_or_update_window_record(&record);
+#else
         record.record_id = 0;
         write_exception_record(&record);
+#endif
         xgb_printk("[BR] WINDOW TEMP CHG: %d -> Flash\n", g_exception_cache.temp_chg_max);
     }
 
@@ -854,8 +1034,13 @@ static void process_window_end(void) {
         record.sub_type = BUCKBOOST_DISCHG_MODE;
         record.data.temp_data.max_temperature = g_exception_cache.temp_dchg_max;
         record.data.temp_data.reserved = 0;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+        record.record_id = g_exception_cache.temp_dchg_record_id;
+        append_or_update_window_record(&record);
+#else
         record.record_id = 0;
         write_exception_record(&record);
+#endif
         xgb_printk("[BR] WINDOW TEMP DCHG: %d -> Flash\n", g_exception_cache.temp_dchg_max);
     }
 
@@ -864,6 +1049,12 @@ static void process_window_end(void) {
     g_exception_cache.ov2_triggered = 0; g_exception_cache.ov2_max_voltage = 0;
     g_exception_cache.temp_chg_triggered = 0; g_exception_cache.temp_chg_max = 0;
     g_exception_cache.temp_dchg_triggered = 0; g_exception_cache.temp_dchg_max = 0;
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+    g_exception_cache.ov1_record_id = 0;
+    g_exception_cache.ov2_record_id = 0;
+    g_exception_cache.temp_chg_record_id = 0;
+    g_exception_cache.temp_dchg_record_id = 0;
+#endif
 }
 
 // Periodic check function - unified window using g_exception_cache
@@ -1290,13 +1481,13 @@ uint8_t battery_record_sleep_check(void) {
 
     /* Sample Cell1/Cell2 via BADC �?formula aligned with buckboost.c step3.
      * Read Vref directly from Flash, independent of SRAM g_vref_mv after POR. */
-    uint16_t vref_mv;
-    uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
-    if (flash_vref != 0xFFFFFFFF && flash_vref >= 3200 && flash_vref <= 3300) {
-        vref_mv = (uint16_t)flash_vref;
-    } else {
-        vref_mv = VREF_DEFAULT_MV;
-    }
+    // uint16_t vref_mv;
+    // uint32_t flash_vref = *(uint32_t *)(AP_CFG_ROM_ADDR_BASE + VREF_FLASH_OFFSET);
+    // if (flash_vref != 0xFFFFFFFF && flash_vref >= 3200 && flash_vref <= 3300) {
+    //     vref_mv = (uint16_t)flash_vref;
+    // } else {
+    //     vref_mv = VREF_DEFAULT_MV;
+    // }
     uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
     int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)masonvref;
     // int32_t pack_neg = 3 * (int32_t)pd3_adc_mv - 2 * (int32_t)vref_mv;
@@ -1304,13 +1495,13 @@ uint8_t battery_record_sleep_check(void) {
     uint16_t pc7_adc_mv = hal_badc_meas(_BADC_CH_PC7_ADC4);
     int32_t vcell1_raw = 3 * (int32_t)pc7_adc_mv - pack_neg;
     if (vcell1_raw < 0) vcell1_raw = 0;
-    if (vcell1_raw > 5500) vcell1_raw = 5500;
+    if (vcell1_raw > 6000) vcell1_raw = 6000;
     uint16_t sleep_vcell1 = (uint16_t)vcell1_raw;
 
     uint16_t pb6_adc_mv = hal_badc_meas(_BADC_CH_PB6_ADC7);
     int32_t vcell2_raw = 3 * (int32_t)pb6_adc_mv - 3 * (int32_t)pc7_adc_mv;
     if (vcell2_raw < 0) vcell2_raw = 0;
-    if (vcell2_raw > 5500) vcell2_raw = 5500;
+    if (vcell2_raw > 6000) vcell2_raw = 6000;
     uint16_t sleep_vcell2 = (uint16_t)vcell2_raw;
     printk("Vcell1=%d,Vcell2=%d,ADC=[%d,%d,%d]\n",sleep_vcell1,sleep_vcell2,pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
     /* Restore GPIO mode for sleep (disable input buffer to save power) */
@@ -1320,7 +1511,9 @@ uint8_t battery_record_sleep_check(void) {
 
     /* Trigger NTC channel switch, wait for ADC sampling, then read the real value. */
     (void)hal_nu6805_buckboost_get_bat_temperature();
-    delay_1us(300);
+    hal_wdt_feed();
+    delay_1ms(100);
+    hal_wdt_feed();
     uint16_t ntc_resistance = hal_nu6805_buckboost_get_bat_temperature();  /* Ohm �?Ohm/100 */
 #endif
     int16_t ntc_temp = ntc_to_temp(ntc_resistance);
@@ -1343,6 +1536,9 @@ uint8_t battery_record_sleep_check(void) {
                 g_exception_cache.ov1_max_voltage = cell1_voltage;
                 g_exception_cache.ov1_total_voltage = current_voltage;
                 get_current_timestamp(&g_exception_cache.ov1_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+                record_ov_first_write(1);
+#endif
             }
         }
     }
@@ -1373,6 +1569,9 @@ uint8_t battery_record_sleep_check(void) {
                 g_exception_cache.ov1_max_voltage = cell1_voltage;
                 g_exception_cache.ov1_total_voltage = total_voltage;
                 get_current_timestamp(&g_exception_cache.ov1_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+                record_ov_first_write(1);
+#endif
             }
         }
         if (cell2_voltage >= BR_OVER_VOLTAGE_THRESHOLD) {
@@ -1381,6 +1580,9 @@ uint8_t battery_record_sleep_check(void) {
                 g_exception_cache.ov2_max_voltage = cell2_voltage;
                 g_exception_cache.ov2_total_voltage = total_voltage;
                 get_current_timestamp(&g_exception_cache.ov2_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+                record_ov_first_write(2);
+#endif
                 // xgb_printk("[SLP-OV2] max=%d ADC=[%d,%d,%d] vref=%d\n",
                     //    cell2_voltage, pd3_adc_mv, pc7_adc_mv, pb6_adc_mv, vref_mv);
             }
@@ -1401,6 +1603,9 @@ uint8_t battery_record_sleep_check(void) {
                     g_exception_cache.temp_chg_max = current_temp_c;
                     g_exception_cache.temp_chg_event_type = event_type;
                     get_current_timestamp(&g_exception_cache.temp_chg_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+                    record_temp_first_write(BUCKBOOST_CHAGER_MODE);
+#endif
                 }
             } else if (mode == BUCKBOOST_DISCHG_MODE) {
                 if (!g_exception_cache.temp_dchg_triggered || current_temp_c > g_exception_cache.temp_dchg_max) {
@@ -1408,6 +1613,9 @@ uint8_t battery_record_sleep_check(void) {
                     g_exception_cache.temp_dchg_max = current_temp_c;
                     g_exception_cache.temp_dchg_event_type = event_type;
                     get_current_timestamp(&g_exception_cache.temp_dchg_timestamp);
+#if BAT_RECORD_IMMEDIATE_FIRST_WRITE
+                    record_temp_first_write(BUCKBOOST_DISCHG_MODE);
+#endif
                 }
             }
         }
