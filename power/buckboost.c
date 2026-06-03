@@ -738,7 +738,7 @@ void buckboost_task_event_handler(uint32_t event)
 #if (BUCKBOOST_USED_NU6801 == 1 && CONFIG_USE_NTC_FOR_CHAGER == 1)
 			hal_nu6801_buckboost_set_adc_channel(NU6801_ADC_RNTC1);
 #else
-			//bb_printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
+			bb_printk("Rntc = %d\n",buckboost_ops.get_bat_temperature());
 			g_buckboost.adc_tbat1 = buckboost_ops.get_bat_temperature();
 			buckboost_ntc_handle();
 			wpc_typec_cowork_otputpcheck();

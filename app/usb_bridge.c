@@ -485,8 +485,8 @@ void usb_bridge_periodic_update(void)
     else if (cnt == 3)
     {
         int16_t ibat = g_buckboost.adc_ibat;
-        /* SHUTDOWN mode: force 0 (NU6805 returns stale discharge value in idle) */
-        if (g_buckboost.woke_mode == BUCKBOOST_SHUTDOWM_MODE)
+        /* Keep real sampled current visible in USB debug mode; only suppress idle noise. */
+        if (g_buckboost.woke_mode == BUCKBOOST_SHUTDOWM_MODE && ibat > -30 && ibat < 30)
             ibat = 0;
         write_buf = (uint16_t)ibat;
         hal_i2cm_write_multi_bytes(USBD_WB7720_ADDR, REG_IBAT_MA, (uint8_t*)&write_buf, 2);
