@@ -28,7 +28,7 @@ extern uint8_t bat_cell_num;
 #endif
 struct buckboost_s g_buckboost;
 uint16_t g_vref_mv = VREF_DEFAULT_MV;
-uint8_t g_vref_cal_delay = 0;
+// uint8_t g_vref_cal_delay = 0;
 int16_t ibus_to_ibat(int16_t ibus, int16_t vbus, int16_t vbat)
 {
 	int16_t k, b;
@@ -842,22 +842,22 @@ void buckboost_task_event_handler(uint32_t event)
 			g_buckboost.adc_vbat = buckboost_ops.get_bat_voltage();
 			uint16_t pd3_adc_mv = hal_badc_meas(_BADC_CH_PD3_ADC9);
 
-			if (g_vref_cal_delay > 0)
-			{
-				g_vref_cal_delay--;
-				if (g_vref_cal_delay == 0)
-				{
-					g_vref_mv = 3 * pd3_adc_mv / 2;
-					bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV\n", pd3_adc_mv, g_vref_mv);
-					if (g_vref_mv >= 3200 && g_vref_mv <= 3300)
-					{
-						cycle_count_save_to_flash();
-						bb_printk("\r\nVref save to flash:%d", g_vref_mv);
-					}
-					else
-						g_vref_mv = VREF_DEFAULT_MV;
-				}
-			}
+			// if (g_vref_cal_delay > 0)
+			// {
+			// 	g_vref_cal_delay--;
+			// 	if (g_vref_cal_delay == 0)
+			// 	{
+			// 		g_vref_mv = 3 * pd3_adc_mv / 2;
+			// 		bb_printk("\r\n[VREF_CAL] pd3=%d Vref=%dmV\n", pd3_adc_mv, g_vref_mv);
+			// 		if (g_vref_mv >= 3200 && g_vref_mv <= 3300)
+			// 		{
+			// 			cycle_count_save_to_flash();
+			// 			bb_printk("\r\nVref save to flash:%d", g_vref_mv);
+			// 		}
+			// 		else
+			// 			g_vref_mv = VREF_DEFAULT_MV;
+			// 	}
+			// }
 
 /* ========== 6805 Vcell ADC + 跨周期 3 点中值滤波 ==========
 				 * 保留最近 3 次调用 (~150ms 间隔) 的计算结果，取中值输出。

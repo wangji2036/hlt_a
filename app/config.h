@@ -116,7 +116,8 @@
 #define VREF_FLASH_OFFSET 24                // AP_CFG_ROM_ADDR_BASE + 24
 #define VREF_DEFAULT_MV 3270                // Default Vref before calibration
 #define EXCEPTION_WINDOW_SECONDS 180       //180     // Exception record window (seconds): 120=2min, 3600=1h
-#define Cali_Vref 1
+#define BAT_RECORD_IMMEDIATE_FIRST_WRITE 0  // 0=write at window end, 1=write first trigger then update at window end
+#define Cali_Vref 0
 #define CONFIG_RTC_USE_CUSTOM_TIME 1
 #define CONFIG_RTC_DEFAULT_YEAR 2026
 #define CONFIG_RTC_DEFAULT_MONTH 2

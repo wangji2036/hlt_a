@@ -22,7 +22,7 @@ void key_double_click_process(void);
 void key_long_click_process(void);
 void key_ship_process(void);
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-void key_triple_click_process(void);
+// void key_triple_click_process(void);
 void key_quad_click_process(void);
 void key_quint_click_process(void);
 #endif
@@ -633,7 +633,7 @@ void ui_update(void)
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
 	else if (key_flag == 4)
 	{
-		key_triple_click_process();
+		// key_triple_click_process();
 		gd->idle_to_sleep_cnt = 0;
 	}
 	else if (key_flag == 5)
@@ -963,13 +963,13 @@ void key_long_click_process(void)
 }
 
 #if (CONFIG_TRIPLE_CLICK_COMM_ENABLE == 1)
-void key_triple_click_process(void) //3 参考电压校准
-{
-	extern uint8_t g_vref_cal_delay;
-	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
-	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
-	printk("\r\n[KEY] quint click: Vref cal scheduled");
-}
+// void key_triple_click_process(void) //3 参考电压校准
+// {
+// 	extern uint8_t g_vref_cal_delay;
+// 	g_vref_cal_delay = 30;  /* 30 × 136ms (step3 period) ≈ 4s delay, then calibrate in buckboost task */
+// 	comm_feedback_cnt = 10; /* 4-LED flash 5 times (on-off × 5 @ 250ms each = 2.5s) */
+// 	printk("\r\n[KEY] quint click: Vref cal scheduled");
+// }
 
 void key_quad_click_process(void) //4 通讯模式
 {
