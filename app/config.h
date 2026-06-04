@@ -85,9 +85,9 @@
 #define CONFIG_NEW_CCC_LOG_ENABLE 1
 
 // Debug log switches (set to 0 to reduce Flash) -- synced with NF platform
-#define SUPPORT_BUCKBOOST_LOG 1                // buckboost.c debug logs
-#define SUPPORT_BAT_LOG 1                      // bat.c debug logs
-#define SUPPORT_XGB_LOG 1                      // XGB/bat_record/usb_bridge debug logs
+#define SUPPORT_BUCKBOOST_LOG 0                // buckboost.c debug logs
+#define SUPPORT_BAT_LOG 0                      // bat.c debug logs
+#define SUPPORT_XGB_LOG 0                      // XGB/bat_record/usb_bridge debug logs
 #define SUPPORT_BAT_RECORD_LOG SUPPORT_XGB_LOG // legacy alias
 #define SUPPORT_GDATA_LOG 1                    // g_data.c debug logs
 #define SUPPORT_MAIN_LOG 1                     // main.c debug logs
@@ -105,7 +105,7 @@
 #define OVER_VOLTAGE_HYSTERESIS 40             // OV recovery hysteresis (mV)
 #define OVER_VOLTAGE_FORBID_THRESHOLD 4800     // Per-cell OV permanent forbid (mV), GB31241
 #define Lion_Battery_Overcharge_Voltage 4450
-#define OVER_VOLTAGE_FORBID_CONSEC_COUNT 10 // 5 consecutive 100ms samples = 500ms
+#define OVER_VOLTAGE_FORBID_CONSEC_COUNT 20 // 5 consecutive 100ms samples = 500ms
 #define OV_FORBID_FLASH_PERSIST 1           // 0=RAM only, cleared by power cycle
 #define OV_FORBID_FORCE_CLEAR 0             // 1=erase forbid flag on boot (debug/recovery), set 0 for production
 #define OV_FORBID_KEY_CLEAR_ENABLE 0        // 1=single click clears OV forbid, 0=only power cycle clears
@@ -116,7 +116,7 @@
 #define CYCLE_COUNT_FLASH_OFFSET 20         // AP_CFG_ROM_ADDR_BASE + 20
 #define VREF_FLASH_OFFSET 24                // AP_CFG_ROM_ADDR_BASE + 24
 #define VREF_DEFAULT_MV 3270                // Default Vref before calibration
-#define EXCEPTION_WINDOW_SECONDS 180       //180     // Exception record window (seconds): 120=2min, 3600=1h
+#define EXCEPTION_WINDOW_SECONDS 3600       //180     // Exception record window (seconds): 120=2min, 3600=1h
 #define BAT_RECORD_IMMEDIATE_FIRST_WRITE 0  // 0=write at window end, 1=write first trigger then update at window end
 #define Cali_Vref 0
 #define CONFIG_RTC_USE_CUSTOM_TIME 1

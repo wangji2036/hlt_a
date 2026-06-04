@@ -1162,7 +1162,7 @@ void fml_bat_ov_forbid_check(void)
 		{
 			buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
 		}
-		xgb_printk("\r\n[OV_FORBID] Active (flag=1)");
+		printk("\r\n[OV_FORBID] Active (flag=1)");
 		return;
 	}
 
@@ -1206,14 +1206,14 @@ void fml_bat_ov_forbid_check(void)
 	if (max_cell >= OVER_VOLTAGE_FORBID_THRESHOLD)
 	{
 		ov_forbid_consec_cnt++;
-		xgb_printk("\r\n[OV_FORBID] %dmV >= %dmV, cnt=%d",
+		printk("\r\n[OV_FORBID] %dmV >= %dmV, cnt=%d",
 		           max_cell, OVER_VOLTAGE_FORBID_THRESHOLD, ov_forbid_consec_cnt);
 		if (ov_forbid_consec_cnt >= OVER_VOLTAGE_FORBID_CONSEC_COUNT)
 		{
 			gd->bat_ov_forbid_flag = 1;
 #if OV_FORBID_FLASH_PERSIST
 			cycle_count_save_to_flash();
-			xgb_printk("\r\n[OV_FORBID] Persisted to Flash.");
+			printk("\r\n[OV_FORBID] Persisted to Flash.");
 #else
 			xgb_printk("\r\n[OV_FORBID] TRIGGERED! Forbidden until power cycle.");
 #endif

@@ -262,9 +262,9 @@ void buckboost_protection_handle(void)
 	status = buckboost_ops.get_protect_status();
 	bb_printk("g_port.port_state[PORT0_INDEX] = %d\n", g_port.port_state[PORT0_INDEX]);
 	bb_printk("gd->ntc_total_lock_flag=%d\n", gd->ntc_total_lock_flag);
-	printk("Flaut State = 0x%x\n", status);
-	printk("vbus = %d\n", g_buckboost.adc_vbus);
-	printk("[BB] mode=%d gate[a=%d b=%d] ov_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d\n",
+	bb_printk("Flaut State = 0x%x\n", status);
+	bb_printk("vbus = %d\n", g_buckboost.adc_vbus);
+	bb_printk("[BB] mode=%d gate[a=%d b=%d] ov_f=%d bypass=%d ibat=%d ibus=%d vbat=%d ilim[%d %d] soc=%d\n",
 	          g_buckboost.woke_mode,
 	          g_buckboost.set_typeca_gate_en,
 	          g_buckboost.set_typecb_gate_en,
@@ -287,7 +287,7 @@ void buckboost_protection_handle(void)
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_VbatVol_Low, &reg_cv_l);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_Charger_Setting1, &reg_set1);
 		hal_i2cm_read_one_byte(NU6805_I2C_DEV_ADDR, REG_System_Status, &reg_sys);
-		printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
+		bb_printk("\r\n[NU6805] mode=0x%02x ibat=0x%02x ibus=0x%02x cv[%02x:%02x] set1=0x%02x sys=0x%02x",
 		          reg_mode, reg_ibat, reg_ibus, reg_cv_h, reg_cv_l, reg_set1, reg_sys);
 	}
 	if (g_buckboost.adc_vbus > g_buckboost.ovp_value && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
@@ -335,12 +335,12 @@ void buckboost_protection_handle(void)
 		//if(g_tc[0].usb_tc_state == TC_SNK_Attached) status &= ~VBUS_FUALT_VBAT_UVP;
 	}
 
-	printk("vbus %d woke_mode %d port_state %d\n", g_buckboost.adc_vbus, g_buckboost.woke_mode, g_port.port_state[0]);
+	bb_printk("vbus %d woke_mode %d port_state %d\n", g_buckboost.adc_vbus, g_buckboost.woke_mode, g_port.port_state[0]);
 	if (g_buckboost.adc_vbus <= 4555 && g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 	{
 		if (++uvp_cnt > 5)
 		{
-			printk("testtestfffzzzz\n");
+			bb_printk("testtestfffzzzz\n");
 			uvp_cnt = 0;
 			status |= VBUS_FAULT_VBUS_UVP;
 		// 	buckboost_set_work_mode(BUCKBOOST_SHUTDOWM_MODE);
@@ -352,11 +352,11 @@ void buckboost_protection_handle(void)
 		uvp_cnt = 0;
 	}
 
-	printk("adc ibus %d\n", g_buckboost.adc_ibus);
+	bb_printk("adc ibus %d\n", g_buckboost.adc_ibus);
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK && (status & VBUS_FAULT_VBUS_UVP))
 	{
 
-		printk("testtestfff\n");
+		bb_printk("testtestfff\n");
 		if (!is_uvp_chg)
 		{
 			gd->flash_times = 0;
@@ -452,7 +452,7 @@ void buckboost_protection_handle(void)
 	// printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault %d led_fault1 %d gd->led_fault2 %d port_state %d\n", 
 	//  status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault, gd->led_fault1, gd->led_fault2, g_port.port_state[0]);
 
-	printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault %d led_fault1 %d gd->led_fault2 %d port_state %d\n", 
+	bb_printk("[BB]status = 0x%x  dischg_lock %d gd->bat_ntc_stop_chrg_flag %d mode%d led_fault %d led_fault1 %d gd->led_fault2 %d port_state %d\n", 
 	 status, gd->bat_ntc_dischg_lock, gd->bat_ntc_stop_chrg_flag, g_buckboost.woke_mode, gd->led_fault, gd->led_fault1, gd->led_fault2, g_port.port_state[0]);
 
 
@@ -469,7 +469,7 @@ void buckboost_protection_handle(void)
 		if (status & (VBUS_FUALT_VBUS_SCP | VBUS_FUALT_VBUS_OVP | VBUS_FUALT_VBUS_OCP | VBUS_FUALT_VBAT_UVP | VBUS_SOFT_PROTECT | NTC_PCT | VBUS_FAULT_VBUS_NTC | NTC_SWITCH | VBUS_FAULT_VBUS_UVP) || gd->bat_ntc_dischg_lock == 3)
 		{
 			nu6805_ocp_cnt = 0;
-			printk("protect lock =0x%x\n", status);
+			bb_printk("protect lock =0x%x\n", status);
 
 			if (status & VBUS_FAULT_VBUS_NTC)
 			{
@@ -895,11 +895,12 @@ void buckboost_task_event_handler(uint32_t event)
 				g_buckboost.adc_vcell1 = c1_hist[hist_idx ? hist_idx - 1 : 2];
 				g_buckboost.adc_vcell2 = c2_hist[hist_idx ? hist_idx - 1 : 2];
 			}
-			bb_printk("\nadc_raw:%d,%d,%d\n",pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
-			bb_printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref1=%d  Vref2=%d total=%d\n",
-			          g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
-			          g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
-			          g_vref_mv,masonvref,g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
+			printk("\nadc_raw:%d,%d,%d\n",pd3_adc_mv,pc7_adc_mv,pb6_adc_mv);
+			// bb_printk("\nvcell1=%d [%d,%d,%d] vcell2=%d [%d,%d,%d] Vref1=%d  Vref2=%d total=%d\n",
+			//           g_buckboost.adc_vcell1, c1_hist[0], c1_hist[1], c1_hist[2],
+			//           g_buckboost.adc_vcell2, c2_hist[0], c2_hist[1], c2_hist[2],
+			//           g_vref_mv,masonvref,g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
+			printk("\nvcell1=%d  vcell2=%d Vref1=%d  Vref2=%d total=%d\n", g_buckboost.adc_vcell1, g_buckboost.adc_vcell2, g_vref_mv, masonvref, g_buckboost.adc_vcell1 + g_buckboost.adc_vcell2);
 
 #else
 			buckboost_ir_drop_handle();

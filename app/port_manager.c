@@ -912,7 +912,7 @@ void port_enum_port_snk_setvolt(void)
 						{
 							// 充电限制输入最大 12V：
 							//   bat NTC 3-18°C(UT 5W) / 43-52°C(OT 12W)，typec NTC ≥68°C(20W)，单节电压<3.7V(20W)
-							printk("%d %d %d %d\n", bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, typec_ntc_charge_ot_reduce20W_flag, bat_low_volt_reduce);
+							pm_printk("%d %d %d %d\n", bat_ntc_charge_ut_reduce5W_flag, bat_ntc_charge_ot_reduce12W_flag, typec_ntc_charge_ot_reduce20W_flag, bat_low_volt_reduce);
 							uint32_t volt_cap = (bat_ntc_charge_ut_reduce5W_flag || bat_ntc_charge_ot_reduce12W_flag || typec_ntc_charge_ot_reduce20W_flag || bat_low_volt_reduce) ? VOLTAGE_12V : VOLTAGE_20V;
 							if (pdo_fixed_voltage(source_pdo) <= volt_cap)
 							{

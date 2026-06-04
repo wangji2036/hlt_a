@@ -98,7 +98,7 @@ void buckboost_ntc_handle(void)
 						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
 						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
 						{
-							printk("testtesttest\r\n");
+							ntc_printk("testtesttest\r\n");
 							gd->bat_ntc_stop_chrg_flag = 0;
 							gd->flash_times = 0;
 							gd->tc0_lighting_mode = 0;
@@ -250,7 +250,7 @@ void buckboost_ntc_handle(void)
 				static uint8_t ntc_dbg_cnt = 0;
 				if (++ntc_dbg_cnt >= 30) {
 					ntc_dbg_cnt = 0;
-					printk("[NTC] bat_t=%d dlock=%d cnt=%d ihport=%d pst=%d klf2=%d\n",
+					ntc_printk("[NTC] bat_t=%d dlock=%d cnt=%d ihport=%d pst=%d klf2=%d\n",
 					       (int)bat_temp,
 					       gd->bat_ntc_dischg_lock,
 					       dual_dischg_lock_cnt,
@@ -292,7 +292,7 @@ void buckboost_ntc_handle(void)
 						dual_dischg_lock_cnt = 0;
 						gd->bat_ntc_dischg_lock = 0;
 						gd->air_protect_ntc1 = 0;
-						printk("NTC_CLR klf2 was %d cnt=%d bat_t=%d\r\n", gd->key_led_fault2, dual_dischg_lock_cnt, (int)bat_temp);
+						ntc_printk("NTC_CLR klf2 was %d cnt=%d bat_t=%d\r\n", gd->key_led_fault2, dual_dischg_lock_cnt, (int)bat_temp);
 						gd->key_led_fault2 = 0;
 					}
 				}

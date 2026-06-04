@@ -182,8 +182,8 @@ static void ui_update_led(void)
 	static uint8_t cnt_time = 0;
 	static uint16_t cycle_count = 0; // 循环计数器，最多 3600 次 (2 h)
 
-	printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
-	printk("LED2 f1=%d f2=%d ft=%d blr=%d klf2=%d\r\n",
+	led_printk("flash_flag %d %d %d\r\n", flash_flag, gd->protect_ntc1, gd->air_protect_ntc1);
+	led_printk("LED2 f1=%d f2=%d ft=%d blr=%d klf2=%d\r\n",
 	       gd->led_fault1, gd->led_fault2, gd->flash_times,
 	       button_led_run, gd->key_led_fault2);
 	//	 if (gd->ptx_protocol_phase >= WPC_PHASE_NEGO || (gd->ptx_idle_phase_status >= WPC_IDLE_STAT_XER_FOD && gd->ptx_idle_phase_status <= WPC_IDLE_STAT_EPT_ERR))
@@ -198,7 +198,7 @@ static void ui_update_led(void)
 	}
 	else if (gd->protect_ntc1 == 1 /*&& gd->air_protect_ntc1 != 2*/ )
 	{
-		printk("NTC1 protect_ntc1, LED flashing %d cnt2 %d\n", gd->protect_ntc1, cnt2);
+		led_printk("NTC1 protect_ntc1, LED flashing %d cnt2 %d\n", gd->protect_ntc1, cnt2);
 		if (gd->led_fault2 || gd->led_fault1) 
 		{
 			gd->protect_ntc1 = 2;
@@ -302,7 +302,7 @@ static void ui_update_led(void)
 	// }
 	else if (gd->led_fault1 || gd->led_fault2 || gd->led_fault)
 	{
-		printk("test oo\n");
+		led_printk("test oo\n");
 		if (gd->flash_times < 10) // 10 ticks × 250ms: 5 on + 5 off = 5次闪烁
 		{
 			soc_show_ram_led = (gd->flash_times % 2 == 0) ? 0x0F : 0x00;
@@ -310,7 +310,7 @@ static void ui_update_led(void)
 		}
 		else
 		{
-			printk("KILL2 ft=%d f2=%d blr=%d\r\n", gd->flash_times, gd->led_fault2, button_led_run);
+			led_printk("KILL2 ft=%d f2=%d blr=%d\r\n", gd->flash_times, gd->led_fault2, button_led_run);
 			gd->led_fault2 = 0;
 			soc_show_ram_led = 0;
 			button_led_run = 0;  /* DEBUG fix: 5 次闪结束后，避免 testgg 分支 (L344) 显示 SOC */
@@ -324,13 +324,13 @@ static void ui_update_led(void)
 		 * key_led_fault2 是保护态 latch (ntc.c 解锁时清零), 用作顶层拦截
 		 * 不动 flash_light/flash_flag: 周边 LED-off 分支 (L289, L306, L474) 均只写 soc_show_ram_led
 		 */
-		printk("KLF2_HOLD f1=%d f2=%d ft=%d blr=%d\r\n",
+		led_printk("KLF2_HOLD f1=%d f2=%d ft=%d blr=%d\r\n",
 		       gd->led_fault1, gd->led_fault2, gd->flash_times, button_led_run);
 		soc_show_ram_led = 0;
 	}
 	else if (charge_led_run && g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE && !is_uvp_chg /*g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK*/)
 	{
-		printk("testg\n");
+		led_printk("testg\n");
 		if (button_led_run)
 		{
 			button_led_run = 0;
@@ -364,7 +364,7 @@ static void ui_update_led(void)
 	}
 	else if (button_led_run)
 	{
-		printk("testgg \n");
+		led_printk("testgg \n");
 		if (gd->real_soc_show > 5)
 		{
 
@@ -428,7 +428,7 @@ static void ui_update_led(void)
 		{
 			soc_show_ram_led |= 0x10; // fast LED5 is on
 		}
-		printk("testggg %d %d %d %d\n", flash_flag, flash_light_on, flash_flag_wls, soc_show_ram_led);
+		led_printk("testggg %d %d %d %d\n", flash_flag, flash_light_on, flash_flag_wls, soc_show_ram_led);
 		uint8_t _index = 3; // to get the highest bit to blink.
 		for (; _index > 0; _index--)
 		{
@@ -498,7 +498,7 @@ static void ui_update_led(void)
 	{
 		ui_display();
 	}
-	printk("ENDLED2 f2=%d ft=%d\r\n", gd->led_fault2, gd->flash_times);
+	led_printk("ENDLED2 f2=%d ft=%d\r\n", gd->led_fault2, gd->flash_times);
 }
 #endif
 
@@ -614,7 +614,7 @@ void ui_update(void)
 	{
 		key_sigle_click_process();
 		gd->idle_to_sleep_cnt = 0;
-		printk("\r\n ----------222------------------//-------key single click");
+		led_printk("\r\n ----------222------------------//-------key single click");
 		// 保持 idle_to_sleep_cnt 计数，用于 2h 休眠判定
 	}
 	else if (key_flag == 2)
@@ -870,7 +870,7 @@ void key_sigle_click_process(void)
 	{
 		port_manager_set_event(PORT_EVENT_RESET_CHARGE);
 	}
-	printk("led port state %d %d\n", g_port.port_state[PORT0_INDEX], g_port.port_state[PORT3_INDEX]);
+	led_printk("led port state %d %d\n", g_port.port_state[PORT0_INDEX], g_port.port_state[PORT3_INDEX]);
 	if (g_port.port_state[PORT0_INDEX] == PORT_STATE_NONE && g_port.port_state[PORT3_INDEX] == PORT_STATE_NONE)
 	{
 		flash_flag = 3;
@@ -891,7 +891,7 @@ void key_sigle_click_process(void)
 	gd->ntc_led_off = 0;
 	gd->touch_to_weakup = 0;
 	gd->flash_times = 0; // 按键反馈：重新触发 led_fault1 的 5 次闪烁（NTC 锁仍在时也提示用户）
-	printk("sigle flash_times %d, button_led_run %d, gd->protect_ntc1 %d\r\n", gd->flash_times, button_led_run, gd->protect_ntc1);
+	led_printk("sigle flash_times %d, button_led_run %d, gd->protect_ntc1 %d\r\n", gd->flash_times, button_led_run, gd->protect_ntc1);
 }
 
 void key_double_click_process(void)
@@ -983,7 +983,7 @@ void key_quad_click_process(void) //4 通讯模式
 		gd->force_usb_mode = 0;
 		usb_comm_lock();
 		comm_feedback_cnt = 6; // 3 flashes (on-off-on-off-on-off @ 250ms)
-		printk("USB comm activated by quint-click\n");
+		led_printk("USB comm activated by quint-click\n");
 		osal_start_timerEx(PORT_CONNECT_TIMER, 60000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_USB_BRIDGE_CLOSED);
 	}
 	else
@@ -993,7 +993,7 @@ void key_quad_click_process(void) //4 通讯模式
 		osal_stop_timerEx(PORT_CONNECT_TIMER);
 		usb_comm_unlock();
 		comm_feedback_cnt = 2; // 1 flash (on-off @ 250ms)
-		printk("USB comm deactivated by quint-click\n");
+		led_printk("USB comm deactivated by quint-click\n");
 	}
 	key_ui_cnt = 0;
 }
@@ -1008,11 +1008,11 @@ void key_quint_click_process(void) //5 过压禁用解除
 			gd->bat_ov_forbid_flag = 0;
 			led_printk("\r\n[FORBID] OV cleared by quad-click");
 		}
-		printk("\r\n[FORBID] Bypass ENABLED by quad-click");
+		led_printk("\r\n[FORBID] Bypass ENABLED by quad-click");
 	}
 	else
 	{
-		printk("\r\n[FORBID] Bypass DISABLED by quad-click");
+		led_printk("\r\n[FORBID] Bypass DISABLED by quad-click");
 	}
 	key_ui_cnt = 0;
 }
@@ -1028,7 +1028,7 @@ void key_ship_process(void) // 开机状态短按一次后长按 8s，进入船�
 	charge_led_finish = 0;
 	key_ui_cnt = 0;
 	flash_flag = 3;
-	printk("\r\n[SHIP] key sequence detected, feedback=%d mask=0x%x ship_cnt=%d",
+	led_printk("\r\n[SHIP] key sequence detected, feedback=%d mask=0x%x ship_cnt=%d",
 		SHIP_MODE_LED_BLINK_TICKS, SHIP_MODE_LED_MASK, gd->ship_mode_cnt);
 }
 
@@ -1158,7 +1158,7 @@ void key_handle_10ms()
 				key_click_cnt = 1;
 				ship_key_armed = 1;
 				ship_key_arm_ticks = SHIP_MODE_KEY_ARM_10MS_TICKS;
-				printk("\r\n[SHIPKEY] short release arm key_cnt=%d arm_window=%d",
+				led_printk("\r\n[SHIPKEY] short release arm key_cnt=%d arm_window=%d",
 				       key_cnt, SHIP_MODE_KEY_ARM_10MS_TICKS);
 			}
 			else
@@ -1166,7 +1166,7 @@ void key_handle_10ms()
 				key_click_cnt = 0;
 				key_delay_ms = 0;
 				key_flag = 2;
-				printk("\r\n[SHIPKEY] double click release");
+				led_printk("\r\n[SHIPKEY] double click release");
 				key_ship_disarm("double-click");
 			}
 #endif
