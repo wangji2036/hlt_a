@@ -22,7 +22,7 @@
 #define REG_ERR_OVERVOLT_CNT    0x13    // u16 LE
 #define REG_ERR_OVERCURR_CNT    0x15    // u16 LE
 #define REG_CHARGE_STATE        0x17    // u8: 0=idle, 1=charging, 2=discharging
-#define REG_CELL_COUNT          0x2C    // u8: fixed 1 (single cell)
+#define REG_CELL_COUNT          0x2C    // u8: platform cell count
 #define REG_CELL1_VOLTAGE_MV    0x2D    // u16 LE
 #define REG_CELL2_VOLTAGE_MV    0x2F    // u16 LE
 #define REG_PCB_TEMP_DC         0x35    // s16 LE, deg C
@@ -87,7 +87,7 @@
 #define REG_AUX_NTC_ADC_STATUS  0x5C
 #define REG_AUX_NTC_ADC_SEQ     0x5D
 
-/* Ship-mode production request: PC -> WB7720 -> NU17112, reserved only */
+/* Ship-mode production request: PC -> WB7720 -> NU17112 */
 #define REG_SHIP_MODE_REQ      0x5E  // u8: 0xA5=request ship mode, 0x00=clear
 #define REG_SHIP_MODE_STATUS   0x5F  // u8: 0x00=idle, 0x01=pending, 0xA5=seen, 0xFF=bad command
 #define SHIP_MODE_MAGIC        0xA5
