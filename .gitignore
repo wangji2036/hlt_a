@@ -1,0 +1,36 @@
+# ---- 构建产物 / build artifacts ----
+out/
+build/
+build_release/
+build_debug/
+*.elf
+*.asm
+*.map
+*.bin
+*.hex
+*.o
+*.obj
+*.a
+*.lib
+*.exe
+*.lst
+
+# ---- 安装包 / installer data ----
+*.cab
+*.msi
+
+# ---- 大二进制资源(按需保留) / large binary assets ----
+# 如确实需要纳入版本管理，请使用 git-lfs
+*.ttf
+*.otf
+
+# ---- IDE / 工具 ----
+.metadata/
+.settings/
+*.launch
+.cproject
+.project
+
+# ---- 系统文件 ----
+.DS_Store
+Thumbs.db
