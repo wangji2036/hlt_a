@@ -268,7 +268,8 @@ void SLP_vNormalToSleep(void)
 	//CCB
 	//(Enable CC, Disable RDB, Enter low power mode)
 #if (CONFIG_TYPECB_SUPPORT == 1)
-	if (!(gd->tc0_lighting_mode || gd->bat_dead_flag_with_snk1))
+	/* CCB 对应 PORT1，唤醒禁用条件应用 PORT1 自己的 lighting 标志（原误用 tc0_lighting_mode） */
+	if (!(gd->tc1_lighting_mode || gd->bat_dead_flag_with_snk1))
 	{
 		TCPC->CCB_CTRL.BITS.CC_DB_RD_DIS = 1;
 		TCPC->CCB_CTRL.BITS.CC_LPMODE_EN = 1;
