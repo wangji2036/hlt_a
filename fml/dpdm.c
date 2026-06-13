@@ -95,6 +95,52 @@ void usb_dpdm_select(uint8_t tc_index)
 	 * 必须设置 DPDM block 内部 MUX 路由到对应物理 pin，否则 BC1.2/QC 检测悬空 pin。
 	 * 历史回归：c617026 把本函数体整体注释掉，导致 QC/AFC/FCP 全部失效。 */
 	dpdm_printk("[DPDM] select port=%d\n", tc_index);
+#if defined(BOARD_X20)
+	/* X20 双口：index0=TYPEC1(PA0/PA1=DP_C, MUX1/PORT1)，index1=TYPEC2(PB2/PD0=DP_C2, MUX3/PORT3)，
+	 * index2=USB-A(MUX2/PORT2)。同时把对应 D+/D- GPIO 路由切过去、关掉另一路。
+	 * 注意 PA0/PA1 与 I2C1 从机分时共享：选中 TYPEC1 时占用，未选时归还 I2C 从机。 */
+	dpdm_sink_deinit();
+	if (tc_index == 0) // TYPEC1
+	{
+		usb_dpdm_port1_switch(false);
+		usb_dpdm_port0_switch(true); // PA0/PA1 -> DP_C/DM_C
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 1;
+		DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 1;
+	}
+	else if (tc_index == 1) // TYPEC2
+	{
+		usb_dpdm_port0_switch(false); // 归还 PA0/PA1 给 I2C 从机
+		usb_dpdm_port1_switch(true);  // PB2/PD0 -> DP_C2/DM_C2
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3;
+		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 1;
+	}
+	else if (tc_index == 2) // USB-A
+	{
+		usb_dpdm_port0_switch(false);
+		usb_dpdm_port1_switch(false);
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 2;
+		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 1;
+	}
+	else // DPDM_PHY_OFF
+	{
+		usb_dpdm_port0_switch(false);
+		usb_dpdm_port1_switch(false);
+		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	}
+	bc12_type = 0;
+	dpdm_map = tc_index;
+	dpdm_printk("[DPDM] X20 dpdm_map=%d\n", dpdm_map);
+#else
+	/* 162 单 C 口（出货固件，保持原样）：物理 TypeC-B(PB2/PD0)，PORT0_INDEX 映射到 TypeC-B */
 	if (tc_index == 0)
 	{
 		DPDM->SOURCE_CTRL.BITS.MUX_PORT_NUM = 3; // TypeC-B (PB2=DP_C2 / PD0=DM_C2)
@@ -120,6 +166,7 @@ void usb_dpdm_select(uint8_t tc_index)
 	bc12_type = 0;
 	dpdm_map = tc_index;
 	dpdm_printk("[DPDM] dpdm_map=%d PORT3_CTRL=1\n", dpdm_map);
+#endif
 }
 
 void usb_dpdm_autodcp_en(void)

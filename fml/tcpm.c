@@ -171,13 +171,19 @@ void tcpm_disable_usba_detect(void)
 
 void tcpm_set_port_sdp(uint8_t tc_index)
 {
-	/* index->物理 DPDM 端口须与 usb_dpdm_select() 的 MUX_PORT_NUM 映射一致：
-	 *   index0 -> MUX=3 -> PORT3 (TypeC-B), index1 -> MUX=1 -> PORT1 (TypeC-A), index2 -> MUX=2 -> PORT2 (USB-A)。
-	 * 原代码把 index0/index1 的 PORTx_CTRL 写反（index0 关 PORT1、index1 关 PORT3），与 select() 相悖。
-	 * 本函数当前三处调用均被注释（死代码），此修正为 X20 重新启用时铺路，不改变 162 运行行为。 */
+	/* index->物理 DPDM 端口须与 usb_dpdm_select() 的 MUX_PORT_NUM 映射一致（按板）。
+	 * 本函数三处调用当前均被注释（死代码），仅为重新启用时正确性铺路，不影响 162 运行行为。 */
+#if defined(BOARD_X20)
+	/* X20: index0->MUX1/PORT1(TYPEC1), index1->MUX3/PORT3(TYPEC2), index2->MUX2/PORT2(USB-A) */
+	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
+	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+#else
+	/* 162: index0 物理为 TypeC-B(MUX=3/PORT3)，与 usb_dpdm_select 一致 */
 	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
 	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
+#endif
 
 	pdlib_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
 

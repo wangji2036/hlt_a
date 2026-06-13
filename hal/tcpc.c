@@ -142,15 +142,19 @@ bool hal_tcpc_vbus_is_vsafe5v(void)
 
 void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 {
+#if defined(BOARD_X20)
+	/* X20: PORT0=TYPEC1, PORT1=TYPEC2（与 gate 映射一致） */
 	if(tc_index == 0)
-	{
-		buckboost_ops.typcb_dischg_en(en);
-	}
-
-	if(tc_index == 1)
-	{
 		buckboost_ops.typca_dischg_en(en);
-	}
+	else if(tc_index == 1)
+		buckboost_ops.typcb_dischg_en(en);
+#else
+	/* 162（保持不变）：PORT0->TypeC-B dischg, PORT1->TypeC-A dischg */
+	if(tc_index == 0)
+		buckboost_ops.typcb_dischg_en(en);
+	else if(tc_index == 1)
+		buckboost_ops.typca_dischg_en(en);
+#endif
 }
 
 
@@ -158,13 +162,23 @@ void hal_tcpc_port_dummyload_en(uint8_t tc_index,bool en)
 void hal_tcpc_set_gate_en(uint8_t tc_index,bool en)
 {
 	//printk("gate[%d]:%d\n",tc_index,en);
+#if defined(BOARD_X20)
+	/* X20: PORT0=TYPEC1->GATE1(typeca=bit1), PORT1=TYPEC2->GATE2(typecb=bit0) */
+	if(tc_index == 0)
+		buckboost_set_typeca_gate_en(en);
+	else if(tc_index == 1)
+		buckboost_set_typecb_gate_en(en);
+	else if(tc_index == 2)
+		buckboost_set_usb_a_gate_en(en);
+#else
+	/* 162 单口出货固件：PORT0->TypeC-B gate, PORT1->TypeC-A gate（保持不变） */
 	if(tc_index == 0)
 		buckboost_set_typecb_gate_en(en);
 	else if(tc_index == 1)
 		buckboost_set_typeca_gate_en(en);
-		
 	else if(tc_index == 2)
 		buckboost_set_usb_a_gate_en(en);
+#endif
 }
 
 void hal_tcpc_set_source_mode(enum buckboost_mode mode)
