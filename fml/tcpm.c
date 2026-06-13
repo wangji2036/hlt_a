@@ -171,8 +171,12 @@ void tcpm_disable_usba_detect(void)
 
 void tcpm_set_port_sdp(uint8_t tc_index)
 {
-	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
-	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	/* index->物理 DPDM 端口须与 usb_dpdm_select() 的 MUX_PORT_NUM 映射一致：
+	 *   index0 -> MUX=3 -> PORT3 (TypeC-B), index1 -> MUX=1 -> PORT1 (TypeC-A), index2 -> MUX=2 -> PORT2 (USB-A)。
+	 * 原代码把 index0/index1 的 PORTx_CTRL 写反（index0 关 PORT1、index1 关 PORT3），与 select() 相悖。
+	 * 本函数当前三处调用均被注释（死代码），此修正为 X20 重新启用时铺路，不改变 162 运行行为。 */
+	if(tc_index == 0) 		DPDM->SOURCE_CTRL.BITS.PORT3_CTRL = 0;
+	else if(tc_index == 1) 	DPDM->SOURCE_CTRL.BITS.PORT1_CTRL = 0;
 	else if(tc_index == 2) 	DPDM->SOURCE_CTRL.BITS.PORT2_CTRL = 0;
 
 	pdlib_tcpc_set_cc(tc_index,TYPEC_CC_RP_DEF);
