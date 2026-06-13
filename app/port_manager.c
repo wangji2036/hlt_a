@@ -1143,7 +1143,9 @@ void port_enum_port1_connect_success(void)
 				pdlib_set_pd_event(PORT1_INDEX, USB_PD_EVT_SNK_ATTACHED);
 				g_port.incharge_port = PORT1_INDEX;
 			}
-			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT0_SINK_SETVOLT);
+			/* 通用 handler 按 incharge/inhandle_port 处理，事件名不影响功能；此为 PORT1 charger 分支，
+			 * 统一用 PORT1 事件以与下方 discharge 分支(原1175)一致。 */
+			osal_start_timerEx(PORT_CONNECT_TIMER, 2000, 0, PORT_MANAGER_TASK, PORT_ENUM_EVT_PORT1_SINK_SETVOLT);
 		}
 		else //TC_SRC_Attached
 		{
@@ -1284,7 +1286,9 @@ void port_enum_port1_connect_start(void)
 #if (CONFIG_USBA_SUPPORT == 1)
 		hal_tcpc_set_gate_en(PORT2_INDEX, false);
 #endif
-		hal_tcpc_pd_set_bus_iv(PORT0_INDEX, 5000, 3500, 0, 0);
+		/* hal_tcpc_pd_set_bus_iv 的 tc_index 被忽略(单母线)，此处仅设 5V 基线；
+		 * PORT1 handler 内统一用 PORT1_INDEX 以免误导（功能等价）。 */
+		hal_tcpc_pd_set_bus_iv(PORT1_INDEX, 5000, 3500, 0, 0);
 	}
 }
 
