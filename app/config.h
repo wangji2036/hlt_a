@@ -19,6 +19,18 @@
 #define CYCLE_CV_TIER2_OFFSET 100
 #define POWERBANK_BUCK_EVK_V02
 
+/*------------------------------ BOARD SELECT ------------------------------*/
+/* 板级选择：
+ *   - 定义 BOARD_X20  -> X20 双 Type-C 口平台
+ *   - 不定义          -> 162 单 Type-C 口平台（默认）
+ * X20 与 162 的所有差异统一用 #if defined(BOARD_X20) 隔离，保证 162 可回归。
+ *
+ * X20 端口/脚位对应（路线 A，软件索引 -> 物理资源）：
+ *   PORT0 = TYPEC_PORT_A = CCA : D+/D- = PA0/PA1(DP_C/DM_C), CC = 原生 CC1/CC2,      Gate = GATE1
+ *   PORT1 = TYPEC_PORT_B = CCB : D+/D- = PB2/PD0(DP_C2/DM_C2), CC = CC1_L(PD2),       Gate = GATE2
+ * 充电 IC 与 162 相同（NU6805）。 */
+//#define BOARD_X20
+
 /*.....7.5w Debug......*/
 #define CONFIG_WPC_SUPPORT 1
 
@@ -63,8 +75,13 @@
  */
 /*********** lib config ***************/
 
-#define CONFIG_TYPECA_SUPPORT 1
+#if defined(BOARD_X20)
+#define CONFIG_TYPECA_SUPPORT 1 // X20: PORT0 = TYPEC1 (CCA)
+#define CONFIG_TYPECB_SUPPORT 1 // X20: PORT1 = TYPEC2 (CCB)
+#else
+#define CONFIG_TYPECA_SUPPORT 1 // 162: 单口
 #define CONFIG_TYPECB_SUPPORT 0
+#endif
 #define CONFIG_UFCS_SOURCE_SUPPORT 0 // current lib not included, contact nuvolta for support if needed.
 #define CONFIG_AFC_SOURCE_SUPPORT 1
 #define CONFIG_FCP_SOURCE_SUPPORT 1
