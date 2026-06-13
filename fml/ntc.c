@@ -74,7 +74,7 @@ void buckboost_ntc_handle(void)
 					{
 						ntc_stop_chg_cnt = 0;
 						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+						if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 						{
 							ntc_stop_chg_cnt = 0;
 							gd->bat_ntc_stop_chrg_flag = 1;
@@ -96,7 +96,7 @@ void buckboost_ntc_handle(void)
 					{
 						ntc_stop_chg_cnt = 0;
 						// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-						if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+						if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 						{
 							ntc_printk("testtesttest\r\n");
 							gd->bat_ntc_stop_chrg_flag = 0;
@@ -123,7 +123,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_ntc_ut_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_ntc_charge_ut_reduce5W_flag = 1;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -143,7 +143,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_ntc_ut_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_ntc_charge_ut_reduce5W_flag = 0;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -165,7 +165,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_ntc_ot_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_ntc_charge_ot_reduce12W_flag = 1;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -185,7 +185,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_ntc_ot_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_ntc_charge_ot_reduce12W_flag = 0;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -205,7 +205,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_low_volt_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_low_volt_reduce = 1;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
@@ -225,7 +225,7 @@ void buckboost_ntc_handle(void)
 						{
 							bat_low_volt_cnt = 0;
 							// if (g_buckboost.woke_mode == BUCKBOOST_CHAGER_MODE)
-							if (g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK)
+							if ((g_port.port_state[PORT0_INDEX] == PORT_STATE_SINK || g_port.port_state[PORT1_INDEX] == PORT_STATE_SINK))
 							{
 								bat_low_volt_reduce = 0;
 								port_manager_set_event(PORT_EVENT_RESET_CHARGE);
